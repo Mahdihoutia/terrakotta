@@ -38,8 +38,8 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Vue d&apos;ensemble</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl font-bold text-[#e8ecf4]">Overview</h1>
+        <p className="text-[#5a6478]">
           Bienvenue sur votre tableau de bord Terrakotta
         </p>
       </div>
