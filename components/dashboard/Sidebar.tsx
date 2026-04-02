@@ -47,7 +47,7 @@ export default function Sidebar() {
   return (
     <aside className="flex h-full w-[72px] flex-col items-center border-r border-white/[0.06] bg-[rgba(10,14,30,0.6)] py-4 backdrop-blur-xl">
       {/* Logo */}
-      <div className="mb-6 flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-lg shadow-emerald-500/20">
+      <div className="mb-6 flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 shadow-lg shadow-orange-500/20">
         <span className="text-sm font-black text-white">T</span>
       </div>
 
@@ -68,13 +68,13 @@ export default function Sidebar() {
                   className={cn(
                     "relative flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-200",
                     isActive
-                      ? "bg-white/[0.1] text-emerald-400 shadow-lg shadow-emerald-500/10"
+                      ? "bg-white/[0.1] text-orange-400 shadow-lg shadow-orange-500/10"
                       : "text-[#5a6478] hover:bg-white/[0.06] hover:text-[#c8d0e0]"
                   )}
                 >
                   <Icon className="h-[18px] w-[18px]" />
                   {isActive && (
-                    <span className="absolute -left-[14px] h-5 w-[3px] rounded-r-full bg-emerald-400" />
+                    <span className="absolute -left-[14px] h-5 w-[3px] rounded-r-full bg-orange-400" />
                   )}
                 </Link>
               </TooltipTrigger>
@@ -100,7 +100,7 @@ export default function Sidebar() {
                   className={cn(
                     "flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-200",
                     isActive
-                      ? "bg-white/[0.1] text-emerald-400"
+                      ? "bg-white/[0.1] text-orange-400"
                       : "text-[#5a6478] hover:bg-white/[0.06] hover:text-[#c8d0e0]"
                   )}
                 >

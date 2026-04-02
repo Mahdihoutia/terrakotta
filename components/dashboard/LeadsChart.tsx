@@ -39,8 +39,8 @@ export default function LeadsChart() {
                 <stop offset="100%" stopColor="#38bdf8" stopOpacity={0} />
               </linearGradient>
               <linearGradient id="convertGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#4ade80" stopOpacity={0.3} />
-                <stop offset="100%" stopColor="#4ade80" stopOpacity={0} />
+                <stop offset="0%" stopColor="#e07a5f" stopOpacity={0.3} />
+                <stop offset="100%" stopColor="#e07a5f" stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid stroke="rgba(255,255,255,0.04)" strokeDasharray="3 3" />
@@ -77,7 +77,7 @@ export default function LeadsChart() {
               type="monotone"
               dataKey="convertis"
               name="Convertis"
-              stroke="#4ade80"
+              stroke="#e07a5f"
               fill="url(#convertGradient)"
               strokeWidth={2}
             />

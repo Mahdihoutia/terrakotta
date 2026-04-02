@@ -25,7 +25,7 @@ const STATUS_STYLES: Record<LeadStatus, string> = {
   CONTACTE: "text-amber-400 bg-amber-400/10",
   QUALIFIE: "text-violet-400 bg-violet-400/10",
   PROPOSITION: "text-orange-400 bg-orange-400/10",
-  GAGNE: "text-emerald-400 bg-emerald-400/10",
+  GAGNE: "text-orange-400 bg-orange-400/10",
   PERDU: "text-red-400 bg-red-400/10",
 };
 

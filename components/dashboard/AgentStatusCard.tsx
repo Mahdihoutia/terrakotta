@@ -20,7 +20,7 @@ const DEMO_AGENTS: AgentSummary[] = [
 ];
 
 const STATUS_CONFIG: Record<AgentStatus, { label: string; color: string; dot: string; icon: React.ComponentType<{ className?: string }> }> = {
-  ACTIF: { label: "Actif", color: "text-emerald-400 bg-emerald-400/10", dot: "bg-emerald-400", icon: Zap },
+  ACTIF: { label: "Actif", color: "text-orange-400 bg-orange-400/10", dot: "bg-orange-400", icon: Zap },
   EN_PAUSE: { label: "Pause", color: "text-amber-400 bg-amber-400/10", dot: "bg-amber-400", icon: Pause },
   ERREUR: { label: "Erreur", color: "text-red-400 bg-red-400/10", dot: "bg-red-400", icon: AlertTriangle },
   INACTIF: { label: "Inactif", color: "text-[#5a6478] bg-white/5", dot: "bg-[#5a6478]", icon: Pause },

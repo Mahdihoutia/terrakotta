@@ -29,7 +29,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
 
 const ICON_COLORS: Record<string, string> = {
   users: "from-blue-400 to-blue-600",
-  trending: "from-emerald-400 to-emerald-600",
+  trending: "from-orange-400 to-orange-600",
   bot: "from-violet-400 to-violet-600",
   target: "from-amber-400 to-amber-600",
 };
@@ -44,7 +44,7 @@ export default function KpiCard({
 }: Props) {
   const Icon = ICON_MAP[icon] ?? Target;
   const isPositive = change !== undefined && change >= 0;
-  const gradient = ICON_COLORS[icon] ?? "from-emerald-400 to-emerald-600";
+  const gradient = ICON_COLORS[icon] ?? "from-orange-400 to-emerald-600";
 
   return (
     <motion.div
@@ -67,7 +67,7 @@ export default function KpiCard({
         {change !== undefined && (
           <div className="mt-3 flex items-center gap-1.5 text-xs">
             {isPositive ? (
-              <span className="flex items-center gap-0.5 rounded-full bg-emerald-500/10 px-2 py-0.5 text-emerald-400">
+              <span className="flex items-center gap-0.5 rounded-full bg-orange-500/10 px-2 py-0.5 text-orange-400">
                 <ArrowUpRight className="h-3 w-3" />
                 +{change}%
               </span>
