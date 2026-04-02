@@ -8,6 +8,8 @@ import {
   Bot,
   BarChart3,
   FileText,
+  Contact,
+  CalendarDays,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -30,7 +32,9 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { label: "Vue d'ensemble", href: "/", icon: LayoutDashboard, section: "PRINCIPAL" },
   { label: "Leads", href: "/leads", icon: Users, section: "PRINCIPAL" },
+  { label: "Contacts", href: "/contacts", icon: Contact, section: "PRINCIPAL" },
   { label: "AI Agents", href: "/agents", icon: Bot, section: "PRINCIPAL" },
+  { label: "Calendrier", href: "/calendrier", icon: CalendarDays, section: "OUTILS" },
   { label: "Documents", href: "/documents", icon: FileText, section: "OUTILS" },
   { label: "Statistiques", href: "/stats", icon: BarChart3, section: "OUTILS" },
   { label: "Paramètres", href: "/settings", icon: Settings, section: "SYSTÈME" },
