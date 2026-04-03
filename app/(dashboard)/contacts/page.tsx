@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -13,309 +12,379 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import StatusBadge from "@/components/dashboard/StatusBadge";
 import {
   Plus,
   Search,
   Filter,
   Mail,
   Phone,
-  MapPin,
   Building2,
   UserCircle,
   ArrowRight,
+  X,
+  Loader2,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useContacts } from "@/lib/hooks/use-contacts";
+import type { ClientType, LeadStatus, LeadSource } from "@/types";
+import { motion, AnimatePresence } from "framer-motion";
 
-type ContactType = "PARTICULIER" | "PROFESSIONNEL" | "COLLECTIVITE";
-type ContactSource = "LEAD_CONVERTI" | "MANUEL";
-
-interface ContactItem {
-  id: string;
-  nom: string;
-  email: string;
-  telephone?: string;
-  adresse?: string;
-  entreprise?: string;
-  type: ContactType;
-  source: ContactSource;
-  operationsCount: number;
-  documentsCount: number;
-  dateCreation: string;
-}
-
-const TYPE_STYLES: Record<ContactType, string> = {
-  PARTICULIER: "bg-blue-100 text-blue-700",
-  PROFESSIONNEL: "bg-emerald-100 text-emerald-700",
-  COLLECTIVITE: "bg-violet-100 text-violet-700",
+const TYPE_STYLES: Record<string, string> = {
+  PARTICULIER: "bg-blue-400/10 text-blue-400",
+  PROFESSIONNEL: "bg-emerald-400/10 text-emerald-400",
+  COLLECTIVITE: "bg-violet-400/10 text-violet-400",
 };
 
-const TYPE_LABELS: Record<ContactType, string> = {
+const TYPE_LABELS: Record<string, string> = {
   PARTICULIER: "Particulier",
   PROFESSIONNEL: "Professionnel",
   COLLECTIVITE: "Collectivité",
 };
 
-const DEMO_CONTACTS: ContactItem[] = [
-  {
-    id: "1",
-    nom: "Résidence Le Parc",
-    email: "syndic@leparc.fr",
-    telephone: "04 42 00 00 00",
-    adresse: "12 rue des Oliviers, 13100 Aix-en-Provence",
-    entreprise: "Syndic Le Parc",
-    type: "PROFESSIONNEL",
-    source: "LEAD_CONVERTI",
-    operationsCount: 2,
-    documentsCount: 5,
-    dateCreation: "2026-02-15",
-  },
-  {
-    id: "2",
-    nom: "Marie Dupont",
-    email: "marie.dupont@email.fr",
-    telephone: "06 12 34 56 78",
-    adresse: "8 boulevard Mirabeau, 13100 Aix-en-Provence",
-    type: "PARTICULIER",
-    source: "LEAD_CONVERTI",
-    operationsCount: 1,
-    documentsCount: 3,
-    dateCreation: "2026-03-10",
-  },
-  {
-    id: "3",
-    nom: "Mairie de Salon-de-Provence",
-    email: "urbanisme@salon.fr",
-    telephone: "04 90 00 00 00",
-    adresse: "Place Morgan, 13300 Salon-de-Provence",
-    type: "COLLECTIVITE",
-    source: "LEAD_CONVERTI",
-    operationsCount: 3,
-    documentsCount: 8,
-    dateCreation: "2026-01-20",
-  },
-  {
-    id: "4",
-    nom: "Pierre Lefèvre",
-    email: "p.lefevre@orange.fr",
-    telephone: "06 55 44 33 22",
-    adresse: "22 rue de la République, 13400 Aubagne",
-    type: "PARTICULIER",
-    source: "MANUEL",
-    operationsCount: 0,
-    documentsCount: 1,
-    dateCreation: "2026-03-25",
-  },
-  {
-    id: "5",
-    nom: "SCI Méditerranée",
-    email: "contact@sci-med.fr",
-    telephone: "04 91 11 22 33",
-    adresse: "45 La Canebière, 13001 Marseille",
-    entreprise: "SCI Méditerranée",
-    type: "PROFESSIONNEL",
-    source: "MANUEL",
-    operationsCount: 1,
-    documentsCount: 2,
-    dateCreation: "2026-03-28",
-  },
-];
+const SOURCE_LABELS: Record<string, string> = {
+  SITE_WEB: "Site web",
+  RECOMMANDATION: "Recommandation",
+  RESEAU: "Réseau",
+  DEMARCHAGE: "Démarchage",
+  AUTRE: "Autre",
+};
+
+function formatCurrency(amount?: number | null): string {
+  if (amount === undefined || amount === null) return "\u2014";
+  return new Intl.NumberFormat("fr-FR", {
+    style: "currency",
+    currency: "EUR",
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+const EMPTY_FORM = {
+  nom: "",
+  prenom: "",
+  email: "",
+  telephone: "",
+  adresse: "",
+  entreprise: "",
+  siret: "",
+  type: "PARTICULIER" as ClientType,
+  source: "SITE_WEB" as LeadSource,
+  statut: "NOUVEAU" as LeadStatus,
+  budgetEstime: "",
+  notes: "",
+};
 
 export default function ContactsPage() {
+  const { contacts, loading, error, addContact, deleteContact } = useContacts();
   const [filterType, setFilterType] = useState<string>("TOUS");
   const [search, setSearch] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [submitting, setSubmitting] = useState(false);
 
-  const filtered = DEMO_CONTACTS.filter((c) => {
+  const filtered = contacts.filter((c) => {
     const matchType = filterType === "TOUS" || c.type === filterType;
     const matchSearch =
       !search ||
       c.nom.toLowerCase().includes(search.toLowerCase()) ||
-      c.email.toLowerCase().includes(search.toLowerCase()) ||
+      c.prenom?.toLowerCase().includes(search.toLowerCase()) ||
+      c.email?.toLowerCase().includes(search.toLowerCase()) ||
       c.entreprise?.toLowerCase().includes(search.toLowerCase());
     return matchType && matchSearch;
   });
+
+  async function handleCreate() {
+    if (!form.nom.trim()) return;
+    setSubmitting(true);
+    await addContact({
+      nom: form.nom,
+      prenom: form.prenom || null,
+      email: form.email || null,
+      telephone: form.telephone || null,
+      adresse: form.adresse || null,
+      entreprise: form.entreprise || null,
+      siret: form.siret || null,
+      type: form.type,
+      source: form.source,
+      statut: form.statut,
+      budgetEstime: form.budgetEstime ? Number(form.budgetEstime) : null,
+      notes: form.notes || null,
+    });
+    setForm(EMPTY_FORM);
+    setShowForm(false);
+    setSubmitting(false);
+  }
+
+  async function handleDelete(id: string, e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    await deleteContact(id);
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="h-8 w-8 animate-spin text-[#5a6478]" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 gap-4">
+        <p className="text-red-400 text-sm">{error}</p>
+      </div>
+    );
+  }
+
+  const countByType = (type: string) => contacts.filter((c) => c.type === type).length;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Contacts</h1>
-          <p className="text-muted-foreground">
-            Clients et contacts professionnels
+          <h1 className="text-2xl font-bold text-[#e8ecf4]">Contacts</h1>
+          <p className="text-[#5a6478]">
+            Clients et contacts professionnels — {contacts.length} au total
           </p>
         </div>
-        <Button size="sm">
+        <Button size="sm" onClick={() => setShowForm(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Nouveau contact
         </Button>
       </div>
 
+      {/* Formulaire nouveau contact */}
+      <AnimatePresence>
+        {showForm && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+          >
+            <div className="glass rounded-2xl p-6">
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-[#e8ecf4]">Nouveau contact</h3>
+                <button onClick={() => setShowForm(false)} className="text-[#5a6478] hover:text-[#c8d0e0]">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-[#7a849a]">Nom *</label>
+                  <input type="text" value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })}
+                    placeholder="Nom de famille" className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-[#e8ecf4]" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-[#7a849a]">Prénom</label>
+                  <input type="text" value={form.prenom} onChange={(e) => setForm({ ...form, prenom: e.target.value })}
+                    placeholder="Prénom" className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-[#e8ecf4]" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-[#7a849a]">Email</label>
+                  <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    placeholder="email@exemple.fr" className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-[#e8ecf4]" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-[#7a849a]">Téléphone</label>
+                  <input type="tel" value={form.telephone} onChange={(e) => setForm({ ...form, telephone: e.target.value })}
+                    placeholder="06 XX XX XX XX" className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-[#e8ecf4]" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-[#7a849a]">Entreprise</label>
+                  <input type="text" value={form.entreprise} onChange={(e) => setForm({ ...form, entreprise: e.target.value })}
+                    placeholder="Nom de l'entreprise" className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-[#e8ecf4]" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-[#7a849a]">N° SIRET</label>
+                  <input type="text" value={form.siret} onChange={(e) => setForm({ ...form, siret: e.target.value })}
+                    placeholder="123 456 789 00012" className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-[#e8ecf4]" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-[#7a849a]">Type</label>
+                  <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as ClientType })}
+                    className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-[#e8ecf4]">
+                    <option value="PARTICULIER">Particulier</option>
+                    <option value="PROFESSIONNEL">Professionnel</option>
+                    <option value="COLLECTIVITE">Collectivité</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-[#7a849a]">Source</label>
+                  <select value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value as LeadSource })}
+                    className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-[#e8ecf4]">
+                    <option value="SITE_WEB">Site web</option>
+                    <option value="RECOMMANDATION">Recommandation</option>
+                    <option value="RESEAU">Réseau</option>
+                    <option value="DEMARCHAGE">Démarchage</option>
+                    <option value="AUTRE">Autre</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-[#7a849a]">Statut</label>
+                  <select value={form.statut} onChange={(e) => setForm({ ...form, statut: e.target.value as LeadStatus })}
+                    className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-[#e8ecf4]">
+                    <option value="NOUVEAU">Nouveau</option>
+                    <option value="CONTACTE">Contacté</option>
+                    <option value="QUALIFIE">Qualifié</option>
+                    <option value="PROPOSITION">Proposition</option>
+                    <option value="GAGNE">Gagné</option>
+                    <option value="PERDU">Perdu</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-[#7a849a]">Budget estimé (€)</label>
+                  <input type="number" value={form.budgetEstime} onChange={(e) => setForm({ ...form, budgetEstime: e.target.value })}
+                    placeholder="Ex: 25000" className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-[#e8ecf4]" />
+                </div>
+                <div className="space-y-1.5 sm:col-span-2 lg:col-span-2">
+                  <label className="text-xs font-medium text-[#7a849a]">Adresse</label>
+                  <input type="text" value={form.adresse} onChange={(e) => setForm({ ...form, adresse: e.target.value })}
+                    placeholder="Adresse complète" className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-[#e8ecf4]" />
+                </div>
+                <div className="space-y-1.5 sm:col-span-2 lg:col-span-3">
+                  <label className="text-xs font-medium text-[#7a849a]">Notes</label>
+                  <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                    rows={2} placeholder="Informations complémentaires..."
+                    className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-[#e8ecf4] resize-none" />
+                </div>
+              </div>
+              <div className="mt-4 flex gap-2">
+                <Button size="sm" onClick={handleCreate} disabled={submitting}>
+                  {submitting ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Plus className="mr-2 h-3.5 w-3.5" />}
+                  Créer le contact
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setShowForm(false)}
+                  className="border-white/10 bg-white/5 text-[#c8d0e0] hover:bg-white/10">
+                  Annuler
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Filtres */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="flex h-9 flex-1 items-center gap-2 rounded-lg border bg-muted/40 px-3 sm:max-w-xs">
-          <Search className="h-4 w-4 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Rechercher un contact..."
-            value={search}
+        <div className="flex h-9 flex-1 items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-3 sm:max-w-xs">
+          <Search className="h-4 w-4 text-[#5a6478]" />
+          <input type="text" placeholder="Rechercher un contact..." value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-full w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-          />
+            className="h-full w-full bg-transparent text-sm text-[#e8ecf4] outline-none placeholder:text-[#5a6478]" />
         </div>
         <div className="flex items-center gap-1">
-          <Filter className="mr-1 h-4 w-4 text-muted-foreground" />
+          <Filter className="mr-1 h-4 w-4 text-[#5a6478]" />
           {["TOUS", "PARTICULIER", "PROFESSIONNEL", "COLLECTIVITE"].map((t) => (
-            <Button
-              key={t}
-              variant={filterType === t ? "default" : "outline"}
-              size="sm"
+            <Button key={t} variant={filterType === t ? "default" : "outline"} size="sm"
               onClick={() => setFilterType(t)}
-              className="text-xs"
-            >
-              {t === "TOUS" ? "Tous" : TYPE_LABELS[t as ContactType]}
+              className={cn("text-xs", filterType !== t && "border-white/10 bg-white/5 text-[#7a849a] hover:bg-white/10 hover:text-[#c8d0e0]")}>
+              {t === "TOUS" ? "Tous" : TYPE_LABELS[t]}
             </Button>
           ))}
         </div>
       </div>
 
-      {/* Stats rapides */}
+      {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-4">
-        <Card>
-          <CardContent className="flex items-center gap-3 p-4">
-            <div className="rounded-lg bg-primary/10 p-2">
-              <UserCircle className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{DEMO_CONTACTS.length}</p>
-              <p className="text-xs text-muted-foreground">Contacts totaux</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center gap-3 p-4">
-            <div className="rounded-lg bg-blue-500/10 p-2">
-              <UserCircle className="h-5 w-5 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">
-                {DEMO_CONTACTS.filter((c) => c.type === "PARTICULIER").length}
-              </p>
-              <p className="text-xs text-muted-foreground">Particuliers</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center gap-3 p-4">
-            <div className="rounded-lg bg-emerald-500/10 p-2">
-              <Building2 className="h-5 w-5 text-emerald-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">
-                {DEMO_CONTACTS.filter((c) => c.type === "PROFESSIONNEL").length}
-              </p>
-              <p className="text-xs text-muted-foreground">Professionnels</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center gap-3 p-4">
-            <div className="rounded-lg bg-violet-500/10 p-2">
-              <Building2 className="h-5 w-5 text-violet-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">
-                {DEMO_CONTACTS.filter((c) => c.type === "COLLECTIVITE").length}
-              </p>
-              <p className="text-xs text-muted-foreground">Collectivités</p>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="glass rounded-2xl p-4 flex items-center gap-3">
+          <div className="rounded-lg bg-orange-500/10 p-2"><UserCircle className="h-5 w-5 text-orange-400" /></div>
+          <div><p className="text-2xl font-bold text-[#e8ecf4]">{contacts.length}</p><p className="text-xs text-[#5a6478]">Contacts totaux</p></div>
+        </div>
+        <div className="glass rounded-2xl p-4 flex items-center gap-3">
+          <div className="rounded-lg bg-blue-500/10 p-2"><UserCircle className="h-5 w-5 text-blue-400" /></div>
+          <div><p className="text-2xl font-bold text-[#e8ecf4]">{countByType("PARTICULIER")}</p><p className="text-xs text-[#5a6478]">Particuliers</p></div>
+        </div>
+        <div className="glass rounded-2xl p-4 flex items-center gap-3">
+          <div className="rounded-lg bg-emerald-500/10 p-2"><Building2 className="h-5 w-5 text-emerald-400" /></div>
+          <div><p className="text-2xl font-bold text-[#e8ecf4]">{countByType("PROFESSIONNEL")}</p><p className="text-xs text-[#5a6478]">Professionnels</p></div>
+        </div>
+        <div className="glass rounded-2xl p-4 flex items-center gap-3">
+          <div className="rounded-lg bg-violet-500/10 p-2"><Building2 className="h-5 w-5 text-violet-400" /></div>
+          <div><p className="text-2xl font-bold text-[#e8ecf4]">{countByType("COLLECTIVITE")}</p><p className="text-xs text-[#5a6478]">Collectivités</p></div>
+        </div>
       </div>
 
       {/* Tableau */}
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Contact</TableHead>
-                <TableHead>Coordonnées</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Source</TableHead>
-                <TableHead className="text-center">Opérations</TableHead>
-                <TableHead className="text-center">Documents</TableHead>
-                <TableHead className="w-[60px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((contact) => (
-                <TableRow key={contact.id} className="group cursor-pointer hover:bg-muted/50">
-                  <TableCell>
-                    <div>
-                      <p className="font-medium text-sm">{contact.nom}</p>
-                      {contact.entreprise && (
-                        <p className="text-xs text-muted-foreground">{contact.entreprise}</p>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-0.5">
-                      <span className="flex items-center gap-1 text-xs">
-                        <Mail className="h-3 w-3 text-muted-foreground" />
-                        {contact.email}
+      <div className="glass rounded-2xl overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-white/[0.06] hover:bg-transparent">
+              <TableHead>Contact</TableHead>
+              <TableHead>Coordonnées</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Source</TableHead>
+              <TableHead>Budget</TableHead>
+              <TableHead>Statut</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead className="w-[80px]"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered.map((contact) => (
+              <TableRow key={contact.id} className="group border-white/[0.04] hover:bg-white/[0.04]">
+                <TableCell>
+                  <Link href={`/contacts/${contact.id}`} className="block">
+                    <p className="font-medium text-[#e8ecf4]">
+                      {contact.prenom ? `${contact.prenom} ${contact.nom}` : contact.nom}
+                    </p>
+                    {contact.entreprise && <p className="text-[10px] text-[#5a6478]">{contact.entreprise}</p>}
+                  </Link>
+                </TableCell>
+                <TableCell>
+                  <div className="space-y-0.5">
+                    {contact.email && (
+                      <span className="flex items-center gap-1 text-xs text-[#c8d0e0]">
+                        <Mail className="h-3 w-3 text-[#5a6478]" /> {contact.email}
                       </span>
-                      {contact.telephone && (
-                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Phone className="h-3 w-3" />
-                          {contact.telephone}
-                        </span>
-                      )}
-                      {contact.adresse && (
-                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <MapPin className="h-3 w-3" />
-                          {contact.adresse}
-                        </span>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={cn("text-xs", TYPE_STYLES[contact.type])}>
-                      {TYPE_LABELS[contact.type]}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        "text-[10px]",
-                        contact.source === "LEAD_CONVERTI" && "border-emerald-300 text-emerald-700"
-                      )}
-                    >
-                      {contact.source === "LEAD_CONVERTI" ? "Lead converti" : "Ajouté manuellement"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <span className="text-sm font-medium">{contact.operationsCount}</span>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <span className="text-sm font-medium">{contact.documentsCount}</span>
-                  </TableCell>
-                  <TableCell>
+                    )}
+                    {contact.telephone && (
+                      <span className="flex items-center gap-1 text-xs text-[#7a849a]">
+                        <Phone className="h-3 w-3" /> {contact.telephone}
+                      </span>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge className={cn("text-xs", TYPE_STYLES[contact.type])}>
+                    {TYPE_LABELS[contact.type]}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-sm text-[#7a849a]">
+                  {SOURCE_LABELS[contact.source]}
+                </TableCell>
+                <TableCell className="text-sm font-medium text-[#c8d0e0]">
+                  {formatCurrency(contact.budgetEstime)}
+                </TableCell>
+                <TableCell>
+                  <StatusBadge statut={contact.statut} />
+                </TableCell>
+                <TableCell className="text-xs text-[#5a6478]">
+                  {contact.dateCreation}
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Link href={`/contacts/${contact.id}`}>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 opacity-0 transition-opacity group-hover:opacity-100"
-                      >
-                        <ArrowRight className="h-4 w-4" />
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-[#7a849a] hover:text-[#e8ecf4]">
+                        <ArrowRight className="h-3.5 w-3.5" />
                       </Button>
                     </Link>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-[#7a849a] hover:text-red-400"
+                      onClick={(e) => handleDelete(contact.id, e)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+            {filtered.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={8} className="py-12 text-center text-[#5a6478]">Aucun contact trouvé</TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

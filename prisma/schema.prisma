@@ -1,0 +1,155 @@
+// Terrakotta — Schéma Prisma pour Supabase (PostgreSQL)
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Utilisateur (mono-utilisateur) ─────────────────────────────
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("users")
+}
+
+// ─── Client ─────────────────────────────────────────────────────
+
+model Client {
+  id            String      @id @default(cuid())
+  type          ClientType  @default(PARTICULIER)
+  nom           String
+  prenom        String?
+  email         String?
+  telephone     String?
+  adresse       String?
+  entreprise    String?
+  siret         String?
+  source        LeadSource  @default(SITE_WEB)
+  statut        LeadStatus  @default(NOUVEAU)
+  budgetEstime  Decimal?    @map("budget_estime")
+  notes         String?
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @default(now()) @updatedAt @map("updated_at")
+  projets       Projet[]
+  devis         Devis[]
+
+  @@map("clients")
+}
+
+// ─── Lead (prospects) ───────────────────────────────────────────
+
+model Lead {
+  id            String     @id @default(cuid())
+  nom           String
+  email         String
+  telephone     String?
+  entreprise    String?
+  type          ClientType @default(PARTICULIER)
+  source        LeadSource @default(SITE_WEB)
+  statut        LeadStatus @default(NOUVEAU)
+  notes         String?
+  budgetEstime  Decimal?   @map("budget_estime")
+  dateCreation  DateTime   @default(now()) @map("date_creation")
+  dateMiseAJour DateTime   @updatedAt @map("date_mise_a_jour")
+
+  @@map("leads")
+}
+
+// ─── Projet ─────────────────────────────────────────────────────
+
+model Projet {
+  id            String       @id @default(cuid())
+  titre         String
+  description   String?
+  statut        ProjetStatut @default(EN_ATTENTE)
+  typeClient    ClientType   @map("type_client")
+  budgetPrevu   Decimal?     @map("budget_prevu")
+  budgetDepense Decimal?     @default(0) @map("budget_depense")
+  dateDebut     DateTime?    @map("date_debut")
+  dateFin       DateTime?    @map("date_fin")
+  clientId      String       @map("client_id")
+  client        Client       @relation(fields: [clientId], references: [id])
+  jalons        Jalon[]
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  @@map("projets")
+}
+
+// ─── Jalon (milestones) ─────────────────────────────────────────
+
+model Jalon {
+  id       String   @id @default(cuid())
+  projetId String   @map("projet_id")
+  titre    String
+  echeance DateTime
+  fait     Boolean  @default(false)
+  projet   Projet   @relation(fields: [projetId], references: [id])
+
+  @@map("jalons")
+}
+
+// ─── Devis ──────────────────────────────────────────────────────
+
+model Devis {
+  id         String      @id @default(cuid())
+  numero     String      @unique
+  statut     DevisStatut @default(BROUILLON)
+  montantHT  Decimal     @map("montant_ht")
+  tauxTVA    Decimal     @default(20) @map("taux_tva")
+  dateEmis   DateTime    @default(now()) @map("date_emis")
+  dateValide DateTime?   @map("date_valide")
+  clientId   String      @map("client_id")
+  client     Client      @relation(fields: [clientId], references: [id])
+
+  @@map("devis")
+}
+
+// ─── Enums ──────────────────────────────────────────────────────
+
+enum ClientType {
+  PARTICULIER
+  PROFESSIONNEL
+  COLLECTIVITE
+}
+
+enum LeadStatus {
+  NOUVEAU
+  CONTACTE
+  QUALIFIE
+  PROPOSITION
+  GAGNE
+  PERDU
+}
+
+enum LeadSource {
+  SITE_WEB
+  RECOMMANDATION
+  RESEAU
+  DEMARCHAGE
+  AUTRE
+}
+
+enum ProjetStatut {
+  EN_ATTENTE
+  EN_COURS
+  EN_PAUSE
+  TERMINE
+  ANNULE
+}
+
+enum DevisStatut {
+  BROUILLON
+  ENVOYE
+  ACCEPTE
+  REFUSE
+}

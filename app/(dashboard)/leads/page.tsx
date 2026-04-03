@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   Table,
   TableBody,
@@ -9,89 +10,26 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import StatusBadge from "@/components/dashboard/StatusBadge";
-import { Plus, Filter, Download, Mail, Phone } from "lucide-react";
-import type { Lead } from "@/types";
-
-const DEMO_LEADS: Lead[] = [
-  {
-    id: "1",
-    nom: "Marie Dupont",
-    email: "marie.dupont@email.fr",
-    telephone: "06 12 34 56 78",
-    type: "PARTICULIER",
-    source: "SITE_WEB",
-    statut: "NOUVEAU",
-    budgetEstime: 15000,
-    dateCreation: "2026-03-30",
-    dateMiseAJour: "2026-03-30",
-  },
-  {
-    id: "2",
-    nom: "SCI Les Oliviers",
-    email: "contact@sci-oliviers.fr",
-    telephone: "04 91 00 00 00",
-    entreprise: "SCI Les Oliviers",
-    type: "PROFESSIONNEL",
-    source: "RECOMMANDATION",
-    statut: "CONTACTE",
-    budgetEstime: 85000,
-    dateCreation: "2026-03-28",
-    dateMiseAJour: "2026-03-29",
-  },
-  {
-    id: "3",
-    nom: "Mairie de Salon-de-Provence",
-    email: "urbanisme@salon.fr",
-    telephone: "04 90 00 00 00",
-    type: "COLLECTIVITE",
-    source: "DEMARCHAGE",
-    statut: "QUALIFIE",
-    budgetEstime: 250000,
-    dateCreation: "2026-03-20",
-    dateMiseAJour: "2026-03-28",
-  },
-  {
-    id: "4",
-    nom: "Jean-Pierre Martin",
-    email: "jp.martin@gmail.com",
-    telephone: "06 98 76 54 32",
-    type: "PARTICULIER",
-    source: "SITE_WEB",
-    statut: "PROPOSITION",
-    budgetEstime: 22000,
-    dateCreation: "2026-03-15",
-    dateMiseAJour: "2026-03-27",
-  },
-  {
-    id: "5",
-    nom: "Résidence Le Parc",
-    email: "syndic@leparc.fr",
-    telephone: "04 42 00 00 00",
-    entreprise: "Syndic Le Parc",
-    type: "PROFESSIONNEL",
-    source: "RESEAU",
-    statut: "GAGNE",
-    budgetEstime: 120000,
-    dateCreation: "2026-02-10",
-    dateMiseAJour: "2026-03-25",
-  },
-  {
-    id: "6",
-    nom: "Pierre Lefèvre",
-    email: "p.lefevre@orange.fr",
-    type: "PARTICULIER",
-    source: "SITE_WEB",
-    statut: "PERDU",
-    budgetEstime: 8000,
-    dateCreation: "2026-02-05",
-    dateMiseAJour: "2026-03-20",
-    notes: "Budget insuffisant pour le scope demandé",
-  },
-];
+import {
+  Plus,
+  Filter,
+  Download,
+  Mail,
+  Phone,
+  ArrowRight,
+  FileSpreadsheet,
+  FileText,
+  X,
+  Trash2,
+  Loader2,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useLeads } from "@/lib/hooks/use-leads";
+import { exportToExcel, exportToPdf } from "@/lib/export-leads";
+import type { LeadStatus, LeadSource, ClientType } from "@/types";
+import { motion, AnimatePresence } from "framer-motion";
 
 const SOURCE_LABELS: Record<string, string> = {
   SITE_WEB: "Site web",
@@ -101,8 +39,8 @@ const SOURCE_LABELS: Record<string, string> = {
   AUTRE: "Autre",
 };
 
-function formatCurrency(amount?: number): string {
-  if (amount === undefined) return "—";
+function formatCurrency(amount?: number | null): string {
+  if (amount === undefined || amount === null) return "\u2014";
   return new Intl.NumberFormat("fr-FR", {
     style: "currency",
     currency: "EUR",
@@ -110,39 +48,262 @@ function formatCurrency(amount?: number): string {
   }).format(amount);
 }
 
+const EMPTY_FORM = {
+  nom: "",
+  email: "",
+  telephone: "",
+  entreprise: "",
+  type: "PARTICULIER" as ClientType,
+  source: "SITE_WEB" as LeadSource,
+  statut: "NOUVEAU" as LeadStatus,
+  budgetEstime: "",
+  notes: "",
+};
+
 export default function LeadsPage() {
+  const { leads, loading, error, addLead, deleteLead } = useLeads();
+
   const [filterStatut, setFilterStatut] = useState<string>("TOUS");
+  const [showForm, setShowForm] = useState(false);
+  const [showExport, setShowExport] = useState(false);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [submitting, setSubmitting] = useState(false);
 
   const filteredLeads =
     filterStatut === "TOUS"
-      ? DEMO_LEADS
-      : DEMO_LEADS.filter((l) => l.statut === filterStatut);
+      ? leads
+      : leads.filter((l) => l.statut === filterStatut);
 
   const statuts = ["TOUS", "NOUVEAU", "CONTACTE", "QUALIFIE", "PROPOSITION", "GAGNE", "PERDU"];
+
+  async function handleCreate() {
+    if (!form.nom.trim() || !form.email.trim()) return;
+    setSubmitting(true);
+    await addLead({
+      nom: form.nom,
+      email: form.email,
+      telephone: form.telephone || undefined,
+      entreprise: form.entreprise || undefined,
+      type: form.type,
+      source: form.source,
+      statut: form.statut,
+      budgetEstime: form.budgetEstime ? Number(form.budgetEstime) : undefined,
+      notes: form.notes || undefined,
+    });
+    setForm(EMPTY_FORM);
+    setShowForm(false);
+    setSubmitting(false);
+  }
+
+  async function handleDelete(id: string, e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    await deleteLead(id);
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="h-8 w-8 animate-spin text-[#5a6478]" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 gap-4">
+        <p className="text-red-400 text-sm">{error}</p>
+        <p className="text-[#5a6478] text-xs">
+          Vérifiez la connexion à la base de données Supabase.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Leads</h1>
-          <p className="text-muted-foreground">
-            Gérez et suivez vos prospects
+          <h1 className="text-2xl font-bold text-[#e8ecf4]">Leads</h1>
+          <p className="text-[#5a6478]">
+            Gérez et suivez vos prospects — {leads.length} au total
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm">
-            <Download className="mr-2 h-4 w-4" />
-            Exporter
-          </Button>
-          <Button size="sm">
+          {/* Export dropdown */}
+          <div className="relative">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowExport(!showExport)}
+              className="border-white/10 bg-white/5 text-[#c8d0e0] hover:bg-white/10"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Exporter
+            </Button>
+            <AnimatePresence>
+              {showExport && (
+                <motion.div
+                  initial={{ opacity: 0, y: -5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -5 }}
+                  className="absolute right-0 top-full z-50 mt-1 w-48 rounded-xl glass p-1"
+                >
+                  <button
+                    onClick={() => { exportToExcel(filteredLeads); setShowExport(false); }}
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-[#c8d0e0] hover:bg-white/[0.08]"
+                  >
+                    <FileSpreadsheet className="h-4 w-4 text-green-400" />
+                    Export Excel (.xlsx)
+                  </button>
+                  <button
+                    onClick={() => { exportToPdf(filteredLeads); setShowExport(false); }}
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-[#c8d0e0] hover:bg-white/[0.08]"
+                  >
+                    <FileText className="h-4 w-4 text-red-400" />
+                    Export PDF
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <Button size="sm" onClick={() => setShowForm(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Nouveau lead
           </Button>
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        <Filter className="h-4 w-4 text-muted-foreground" />
+      {/* Create form */}
+      <AnimatePresence>
+        {showForm && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+          >
+            <div className="glass rounded-2xl p-6">
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-[#e8ecf4]">Nouveau lead</h3>
+                <button onClick={() => setShowForm(false)} className="text-[#5a6478] hover:text-[#c8d0e0]">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-[#7a849a]">Nom *</label>
+                  <input
+                    type="text"
+                    value={form.nom}
+                    onChange={(e) => setForm({ ...form, nom: e.target.value })}
+                    placeholder="Nom complet ou raison sociale"
+                    className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-[#e8ecf4]"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-[#7a849a]">Email *</label>
+                  <input
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    placeholder="email@exemple.fr"
+                    className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-[#e8ecf4]"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-[#7a849a]">Téléphone</label>
+                  <input
+                    type="tel"
+                    value={form.telephone}
+                    onChange={(e) => setForm({ ...form, telephone: e.target.value })}
+                    placeholder="06 XX XX XX XX"
+                    className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-[#e8ecf4]"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-[#7a849a]">Entreprise</label>
+                  <input
+                    type="text"
+                    value={form.entreprise}
+                    onChange={(e) => setForm({ ...form, entreprise: e.target.value })}
+                    placeholder="Nom de l'entreprise (optionnel)"
+                    className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-[#e8ecf4]"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-[#7a849a]">Type</label>
+                  <select
+                    value={form.type}
+                    onChange={(e) => setForm({ ...form, type: e.target.value as ClientType })}
+                    className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-[#e8ecf4]"
+                  >
+                    <option value="PARTICULIER">Particulier</option>
+                    <option value="PROFESSIONNEL">Professionnel</option>
+                    <option value="COLLECTIVITE">Collectivité</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-[#7a849a]">Source</label>
+                  <select
+                    value={form.source}
+                    onChange={(e) => setForm({ ...form, source: e.target.value as LeadSource })}
+                    className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-[#e8ecf4]"
+                  >
+                    <option value="SITE_WEB">Site web</option>
+                    <option value="RECOMMANDATION">Recommandation</option>
+                    <option value="RESEAU">Réseau</option>
+                    <option value="DEMARCHAGE">Démarchage</option>
+                    <option value="AUTRE">Autre</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-[#7a849a]">Budget estimé</label>
+                  <input
+                    type="number"
+                    value={form.budgetEstime}
+                    onChange={(e) => setForm({ ...form, budgetEstime: e.target.value })}
+                    placeholder="Ex: 25000"
+                    className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-[#e8ecf4]"
+                  />
+                </div>
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label className="text-xs font-medium text-[#7a849a]">Notes</label>
+                  <textarea
+                    value={form.notes}
+                    onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                    rows={2}
+                    placeholder="Informations complémentaires..."
+                    className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-[#e8ecf4] resize-none"
+                  />
+                </div>
+              </div>
+              <div className="mt-4 flex gap-2">
+                <Button size="sm" onClick={handleCreate} disabled={submitting}>
+                  {submitting ? (
+                    <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Plus className="mr-2 h-3.5 w-3.5" />
+                  )}
+                  Créer le lead
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowForm(false)}
+                  className="border-white/10 bg-white/5 text-[#c8d0e0] hover:bg-white/10"
+                >
+                  Annuler
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Filters */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        <Filter className="h-4 w-4 shrink-0 text-[#5a6478]" />
         <div className="flex gap-1">
           {statuts.map((s) => (
             <Button
@@ -150,79 +311,104 @@ export default function LeadsPage() {
               variant={filterStatut === s ? "default" : "outline"}
               size="sm"
               onClick={() => setFilterStatut(s)}
-              className="text-xs"
+              className={cn(
+                "text-xs whitespace-nowrap",
+                filterStatut !== s && "border-white/10 bg-white/5 text-[#7a849a] hover:bg-white/10 hover:text-[#c8d0e0]"
+              )}
             >
-              {s === "TOUS" ? "Tous" : s.charAt(0) + s.slice(1).toLowerCase().replace("_", " ")}
+              {s === "TOUS" ? `Tous (${leads.length})` : s.charAt(0) + s.slice(1).toLowerCase().replace("_", " ")}
             </Button>
           ))}
         </div>
       </div>
 
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nom</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Source</TableHead>
-                <TableHead>Budget estimé</TableHead>
-                <TableHead>Statut</TableHead>
-                <TableHead>Date</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredLeads.map((lead) => (
-                <TableRow
-                  key={lead.id}
-                  className="cursor-pointer hover:bg-muted/50"
-                >
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">{lead.nom}</p>
-                      {lead.entreprise && (
-                        <p className="text-xs text-muted-foreground">
-                          {lead.entreprise}
-                        </p>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col gap-1">
-                      <span className="flex items-center gap-1 text-xs">
-                        <Mail className="h-3 w-3" /> {lead.email}
+      {/* Table */}
+      <div className="glass rounded-2xl overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-white/[0.06] hover:bg-transparent">
+              <TableHead>Nom</TableHead>
+              <TableHead>Contact</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Source</TableHead>
+              <TableHead>Budget estimé</TableHead>
+              <TableHead>Statut</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead className="w-[80px]"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredLeads.map((lead) => (
+              <TableRow
+                key={lead.id}
+                className="group border-white/[0.04] hover:bg-white/[0.04]"
+              >
+                <TableCell>
+                  <Link href={`/leads/${lead.id}`} className="block">
+                    <p className="font-medium text-[#e8ecf4]">{lead.nom}</p>
+                    {lead.entreprise && (
+                      <p className="text-[10px] text-[#5a6478]">{lead.entreprise}</p>
+                    )}
+                  </Link>
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="flex items-center gap-1 text-xs text-[#c8d0e0]">
+                      <Mail className="h-3 w-3 text-[#5a6478]" /> {lead.email}
+                    </span>
+                    {lead.telephone && (
+                      <span className="flex items-center gap-1 text-xs text-[#7a849a]">
+                        <Phone className="h-3 w-3" /> {lead.telephone}
                       </span>
-                      {lead.telephone && (
-                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Phone className="h-3 w-3" /> {lead.telephone}
-                        </span>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="text-xs">
-                      {lead.type.charAt(0) + lead.type.slice(1).toLowerCase()}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {SOURCE_LABELS[lead.source]}
-                  </TableCell>
-                  <TableCell className="text-sm font-medium">
-                    {formatCurrency(lead.budgetEstime)}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge statut={lead.statut} />
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {lead.dateCreation}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] text-[#7a849a]">
+                    {lead.type.charAt(0) + lead.type.slice(1).toLowerCase()}
+                  </span>
+                </TableCell>
+                <TableCell className="text-sm text-[#7a849a]">
+                  {SOURCE_LABELS[lead.source]}
+                </TableCell>
+                <TableCell className="text-sm font-medium text-[#c8d0e0]">
+                  {formatCurrency(lead.budgetEstime)}
+                </TableCell>
+                <TableCell>
+                  <StatusBadge statut={lead.statut} />
+                </TableCell>
+                <TableCell className="text-xs text-[#5a6478]">
+                  {lead.dateCreation}
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Link href={`/leads/${lead.id}`}>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-[#7a849a] hover:text-[#e8ecf4]">
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </Button>
+                    </Link>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-[#7a849a] hover:text-red-400"
+                      onClick={(e) => handleDelete(lead.id, e)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+            {filteredLeads.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={8} className="py-12 text-center text-[#5a6478]">
+                  Aucun lead trouvé pour ce filtre
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }
