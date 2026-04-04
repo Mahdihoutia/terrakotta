@@ -10,7 +10,7 @@ export interface Contact {
   email: string | null;
   telephone: string | null;
   adresse: string | null;
-  entreprise: string | null;
+  raisonSociale: string | null;
   siret: string | null;
   type: ClientType;
   source: LeadSource;

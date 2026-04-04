@@ -64,9 +64,11 @@ export default function LeadDetailPage({ params }: Props) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [form, setForm] = useState({
     nom: "",
+    prenom: "",
     email: "",
     telephone: "",
-    entreprise: "",
+    raisonSociale: "",
+    siret: "",
     type: "PARTICULIER" as ClientType,
     source: "SITE_WEB" as LeadSource,
     statut: "NOUVEAU" as LeadStatus,
@@ -84,9 +86,11 @@ export default function LeadDetailPage({ params }: Props) {
         setLead(data);
         setForm({
           nom: data.nom,
+          prenom: data.prenom ?? "",
           email: data.email,
           telephone: data.telephone ?? "",
-          entreprise: data.entreprise ?? "",
+          raisonSociale: data.raisonSociale ?? "",
+          siret: data.siret ?? "",
           type: data.type,
           source: data.source,
           statut: data.statut,
@@ -107,9 +111,11 @@ export default function LeadDetailPage({ params }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           nom: form.nom,
+          prenom: form.prenom || null,
           email: form.email,
           telephone: form.telephone || null,
-          entreprise: form.entreprise || null,
+          raisonSociale: form.raisonSociale || null,
+          siret: form.siret || null,
           type: form.type,
           source: form.source,
           statut: form.statut,
@@ -144,9 +150,11 @@ export default function LeadDetailPage({ params }: Props) {
     if (lead) {
       setForm({
         nom: lead.nom,
+        prenom: lead.prenom ?? "",
         email: lead.email,
         telephone: lead.telephone ?? "",
-        entreprise: lead.entreprise ?? "",
+        raisonSociale: lead.raisonSociale ?? "",
+        siret: lead.siret ?? "",
         type: lead.type,
         source: lead.source,
         statut: lead.statut,
@@ -310,7 +318,17 @@ export default function LeadDetailPage({ params }: Props) {
                 type="text"
                 value={form.nom}
                 onChange={(e) => setForm({ ...form, nom: e.target.value })}
-                placeholder="Nom complet ou raison sociale"
+                placeholder="Nom de famille"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Prénom</label>
+              <input
+                type="text"
+                value={form.prenom}
+                onChange={(e) => setForm({ ...form, prenom: e.target.value })}
+                placeholder="Prénom"
                 className={inputClass}
               />
             </div>
@@ -335,12 +353,22 @@ export default function LeadDetailPage({ params }: Props) {
               />
             </div>
             <div>
-              <label className={labelClass}>Entreprise</label>
+              <label className={labelClass}>Raison Sociale</label>
               <input
                 type="text"
-                value={form.entreprise}
-                onChange={(e) => setForm({ ...form, entreprise: e.target.value })}
-                placeholder="Nom de l'entreprise (optionnel)"
+                value={form.raisonSociale}
+                onChange={(e) => setForm({ ...form, raisonSociale: e.target.value })}
+                placeholder="Raison sociale (optionnel)"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>N° SIRET</label>
+              <input
+                type="text"
+                value={form.siret}
+                onChange={(e) => setForm({ ...form, siret: e.target.value })}
+                placeholder="123 456 789 00012"
                 className={inputClass}
               />
             </div>
@@ -417,9 +445,11 @@ export default function LeadDetailPage({ params }: Props) {
               <h2 className="text-sm font-semibold text-[#e8ecf4] mb-4">Informations de contact</h2>
               <div className="grid gap-4 sm:grid-cols-2">
                 <InfoRow icon={<User className="h-4 w-4" />} label="Nom" value={lead.nom} />
+                <InfoRow icon={<User className="h-4 w-4" />} label="Prénom" value={lead.prenom ?? "\u2014"} />
                 <InfoRow icon={<Mail className="h-4 w-4" />} label="Email" value={lead.email} />
                 <InfoRow icon={<Phone className="h-4 w-4" />} label="Téléphone" value={lead.telephone ?? "\u2014"} />
-                <InfoRow icon={<Building2 className="h-4 w-4" />} label="Entreprise" value={lead.entreprise ?? "\u2014"} />
+                <InfoRow icon={<Building2 className="h-4 w-4" />} label="Raison Sociale" value={lead.raisonSociale ?? "\u2014"} />
+                <InfoRow icon={<Building2 className="h-4 w-4" />} label="N° SIRET" value={lead.siret ?? "\u2014"} />
               </div>
             </div>
 

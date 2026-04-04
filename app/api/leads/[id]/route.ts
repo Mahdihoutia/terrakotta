@@ -25,9 +25,11 @@ export async function GET(_request: Request, context: RouteContext) {
 
 const updateLeadSchema = z.object({
   nom: z.string().min(1).optional(),
+  prenom: z.string().nullable().optional(),
   email: z.string().email().optional(),
   telephone: z.string().nullable().optional(),
-  entreprise: z.string().nullable().optional(),
+  raisonSociale: z.string().nullable().optional(),
+  siret: z.string().nullable().optional(),
   type: z.enum(["PARTICULIER", "PROFESSIONNEL", "COLLECTIVITE"]).optional(),
   source: z.enum(["SITE_WEB", "RECOMMANDATION", "RESEAU", "DEMARCHAGE", "AUTRE"]).optional(),
   statut: z.enum(["NOUVEAU", "CONTACTE", "QUALIFIE", "PROPOSITION", "GAGNE", "PERDU"]).optional(),

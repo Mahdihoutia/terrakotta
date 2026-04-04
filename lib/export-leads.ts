@@ -26,9 +26,11 @@ const TYPE_LABELS: Record<string, string> = {
 function formatRow(lead: Lead) {
   return {
     Nom: lead.nom,
+    Prénom: lead.prenom || "",
     Email: lead.email,
     Téléphone: lead.telephone || "",
-    Entreprise: lead.entreprise || "",
+    "Raison Sociale": lead.raisonSociale || "",
+    "N° SIRET": lead.siret || "",
     Type: TYPE_LABELS[lead.type] || lead.type,
     Source: SOURCE_LABELS[lead.source] || lead.source,
     Statut: STATUS_LABELS[lead.statut] || lead.statut,

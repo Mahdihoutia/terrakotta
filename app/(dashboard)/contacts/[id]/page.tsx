@@ -34,7 +34,7 @@ interface ContactDetail {
   email: string | null;
   telephone: string | null;
   adresse: string | null;
-  entreprise: string | null;
+  raisonSociale: string | null;
   siret: string | null;
   type: ClientType;
   source: LeadSource;
@@ -97,7 +97,7 @@ export default function ContactDetailPage({ params }: Props) {
     email: "",
     telephone: "",
     adresse: "",
-    entreprise: "",
+    raisonSociale: "",
     siret: "",
     type: "PARTICULIER" as ClientType,
     source: "SITE_WEB" as LeadSource,
@@ -127,7 +127,7 @@ export default function ContactDetailPage({ params }: Props) {
       email: data.email ?? "",
       telephone: data.telephone ?? "",
       adresse: data.adresse ?? "",
-      entreprise: data.entreprise ?? "",
+      raisonSociale: data.raisonSociale ?? "",
       siret: data.siret ?? "",
       type: data.type,
       source: data.source,
@@ -150,7 +150,7 @@ export default function ContactDetailPage({ params }: Props) {
           email: form.email || null,
           telephone: form.telephone || null,
           adresse: form.adresse || null,
-          entreprise: form.entreprise || null,
+          raisonSociale: form.raisonSociale || null,
           siret: form.siret || null,
           type: form.type,
           source: form.source,
@@ -319,9 +319,9 @@ export default function ContactDetailPage({ params }: Props) {
                 placeholder="06 XX XX XX XX" className={inputClass} />
             </div>
             <div>
-              <label className={labelClass}>Entreprise</label>
-              <input type="text" value={form.entreprise} onChange={(e) => setForm({ ...form, entreprise: e.target.value })}
-                placeholder="Nom de l'entreprise" className={inputClass} />
+              <label className={labelClass}>Raison Sociale</label>
+              <input type="text" value={form.raisonSociale} onChange={(e) => setForm({ ...form, raisonSociale: e.target.value })}
+                placeholder="Raison sociale" className={inputClass} />
             </div>
             <div>
               <label className={labelClass}>N° SIRET</label>
@@ -393,9 +393,9 @@ export default function ContactDetailPage({ params }: Props) {
             </div>
 
             <div className="glass rounded-2xl p-6">
-              <h2 className="text-sm font-semibold text-[#e8ecf4] mb-4">Entreprise</h2>
+              <h2 className="text-sm font-semibold text-[#e8ecf4] mb-4">Raison Sociale</h2>
               <div className="grid gap-4 sm:grid-cols-2">
-                <InfoRow icon={<Building2 className="h-4 w-4" />} label="Nom entreprise" value={contact.entreprise ?? "\u2014"} />
+                <InfoRow icon={<Building2 className="h-4 w-4" />} label="Raison Sociale" value={contact.raisonSociale ?? "\u2014"} />
                 <InfoRow icon={<Hash className="h-4 w-4" />} label="N° SIRET" value={contact.siret ?? "\u2014"} />
               </div>
             </div>

@@ -9,9 +9,11 @@ export type AgentStatus = "ACTIF" | "EN_PAUSE" | "ERREUR" | "INACTIF"
 export interface Lead {
   id: string
   nom: string
+  prenom?: string
   email: string
   telephone?: string
-  entreprise?: string
+  raisonSociale?: string
+  siret?: string
   type: ClientType
   source: LeadSource
   statut: LeadStatus

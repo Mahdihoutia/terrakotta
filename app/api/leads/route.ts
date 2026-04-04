@@ -33,9 +33,11 @@ export async function GET(request: Request) {
 
 const createLeadSchema = z.object({
   nom: z.string().min(1, "Le nom est requis"),
+  prenom: z.string().optional(),
   email: z.string().email("Email invalide"),
   telephone: z.string().optional(),
-  entreprise: z.string().optional(),
+  raisonSociale: z.string().optional(),
+  siret: z.string().optional(),
   type: z.enum(["PARTICULIER", "PROFESSIONNEL", "COLLECTIVITE"]).default("PARTICULIER"),
   source: z.enum(["SITE_WEB", "RECOMMANDATION", "RESEAU", "DEMARCHAGE", "AUTRE"]).default("SITE_WEB"),
   statut: z.enum(["NOUVEAU", "CONTACTE", "QUALIFIE", "PROPOSITION", "GAGNE", "PERDU"]).default("NOUVEAU"),
@@ -59,9 +61,11 @@ export async function POST(request: Request) {
   const lead = await prisma.lead.create({
     data: {
       nom: data.nom,
+      prenom: data.prenom ?? null,
       email: data.email,
       telephone: data.telephone ?? null,
-      entreprise: data.entreprise ?? null,
+      raisonSociale: data.raisonSociale ?? null,
+      siret: data.siret ?? null,
       type: data.type,
       source: data.source,
       statut: data.statut,

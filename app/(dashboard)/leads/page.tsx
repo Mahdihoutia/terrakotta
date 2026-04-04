@@ -50,9 +50,11 @@ function formatCurrency(amount?: number | null): string {
 
 const EMPTY_FORM = {
   nom: "",
+  prenom: "",
   email: "",
   telephone: "",
-  entreprise: "",
+  raisonSociale: "",
+  siret: "",
   type: "PARTICULIER" as ClientType,
   source: "SITE_WEB" as LeadSource,
   statut: "NOUVEAU" as LeadStatus,
@@ -81,9 +83,11 @@ export default function LeadsPage() {
     setSubmitting(true);
     await addLead({
       nom: form.nom,
+      prenom: form.prenom || undefined,
       email: form.email,
       telephone: form.telephone || undefined,
-      entreprise: form.entreprise || undefined,
+      raisonSociale: form.raisonSociale || undefined,
+      siret: form.siret || undefined,
       type: form.type,
       source: form.source,
       statut: form.statut,
@@ -197,7 +201,17 @@ export default function LeadsPage() {
                     type="text"
                     value={form.nom}
                     onChange={(e) => setForm({ ...form, nom: e.target.value })}
-                    placeholder="Nom complet ou raison sociale"
+                    placeholder="Nom de famille"
+                    className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-[#e8ecf4]"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-[#7a849a]">Prénom</label>
+                  <input
+                    type="text"
+                    value={form.prenom}
+                    onChange={(e) => setForm({ ...form, prenom: e.target.value })}
+                    placeholder="Prénom"
                     className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-[#e8ecf4]"
                   />
                 </div>
@@ -222,12 +236,22 @@ export default function LeadsPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-[#7a849a]">Entreprise</label>
+                  <label className="text-xs font-medium text-[#7a849a]">Raison Sociale</label>
                   <input
                     type="text"
-                    value={form.entreprise}
-                    onChange={(e) => setForm({ ...form, entreprise: e.target.value })}
-                    placeholder="Nom de l'entreprise (optionnel)"
+                    value={form.raisonSociale}
+                    onChange={(e) => setForm({ ...form, raisonSociale: e.target.value })}
+                    placeholder="Raison sociale (optionnel)"
+                    className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-[#e8ecf4]"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-[#7a849a]">N° SIRET</label>
+                  <input
+                    type="text"
+                    value={form.siret}
+                    onChange={(e) => setForm({ ...form, siret: e.target.value })}
+                    placeholder="123 456 789 00012"
                     className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-[#e8ecf4]"
                   />
                 </div>
@@ -345,9 +369,11 @@ export default function LeadsPage() {
               >
                 <TableCell>
                   <Link href={`/leads/${lead.id}`} className="block">
-                    <p className="font-medium text-[#e8ecf4]">{lead.nom}</p>
-                    {lead.entreprise && (
-                      <p className="text-[10px] text-[#5a6478]">{lead.entreprise}</p>
+                    <p className="font-medium text-[#e8ecf4]">
+                      {lead.prenom ? `${lead.prenom} ${lead.nom}` : lead.nom}
+                    </p>
+                    {lead.raisonSociale && (
+                      <p className="text-[10px] text-[#5a6478]">{lead.raisonSociale}</p>
                     )}
                   </Link>
                 </TableCell>

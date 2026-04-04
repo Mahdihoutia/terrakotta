@@ -66,7 +66,7 @@ const EMPTY_FORM = {
   email: "",
   telephone: "",
   adresse: "",
-  entreprise: "",
+  raisonSociale: "",
   siret: "",
   type: "PARTICULIER" as ClientType,
   source: "SITE_WEB" as LeadSource,
@@ -90,7 +90,7 @@ export default function ContactsPage() {
       c.nom.toLowerCase().includes(search.toLowerCase()) ||
       c.prenom?.toLowerCase().includes(search.toLowerCase()) ||
       c.email?.toLowerCase().includes(search.toLowerCase()) ||
-      c.entreprise?.toLowerCase().includes(search.toLowerCase());
+      c.raisonSociale?.toLowerCase().includes(search.toLowerCase());
     return matchType && matchSearch;
   });
 
@@ -103,7 +103,7 @@ export default function ContactsPage() {
       email: form.email || null,
       telephone: form.telephone || null,
       adresse: form.adresse || null,
-      entreprise: form.entreprise || null,
+      raisonSociale: form.raisonSociale || null,
       siret: form.siret || null,
       type: form.type,
       source: form.source,
@@ -193,8 +193,8 @@ export default function ContactsPage() {
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-[#7a849a]">Entreprise</label>
-                  <input type="text" value={form.entreprise} onChange={(e) => setForm({ ...form, entreprise: e.target.value })}
-                    placeholder="Nom de l'entreprise" className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-[#e8ecf4]" />
+                  <input type="text" value={form.raisonSociale} onChange={(e) => setForm({ ...form, raisonSociale: e.target.value })}
+                    placeholder="Raison sociale" className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-[#e8ecf4]" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-[#7a849a]">N° SIRET</label>
@@ -328,7 +328,7 @@ export default function ContactsPage() {
                     <p className="font-medium text-[#e8ecf4]">
                       {contact.prenom ? `${contact.prenom} ${contact.nom}` : contact.nom}
                     </p>
-                    {contact.entreprise && <p className="text-[10px] text-[#5a6478]">{contact.entreprise}</p>}
+                    {contact.raisonSociale && <p className="text-[10px] text-[#5a6478]">{contact.raisonSociale}</p>}
                   </Link>
                 </TableCell>
                 <TableCell>

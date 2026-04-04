@@ -31,7 +31,7 @@ model Client {
   email         String?
   telephone     String?
   adresse       String?
-  entreprise    String?
+  raisonSociale String?     @map("raison_sociale")
   siret         String?
   source        LeadSource  @default(SITE_WEB)
   statut        LeadStatus  @default(NOUVEAU)
@@ -50,9 +50,11 @@ model Client {
 model Lead {
   id            String     @id @default(cuid())
   nom           String
+  prenom        String?
   email         String
   telephone     String?
-  entreprise    String?
+  raisonSociale String?    @map("raison_sociale")
+  siret         String?
   type          ClientType @default(PARTICULIER)
   source        LeadSource @default(SITE_WEB)
   statut        LeadStatus @default(NOUVEAU)
