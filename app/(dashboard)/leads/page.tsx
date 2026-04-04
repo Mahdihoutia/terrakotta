@@ -24,6 +24,7 @@ import {
   X,
   Trash2,
   Loader2,
+  UserCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLeads } from "@/lib/hooks/use-leads";
@@ -63,7 +64,8 @@ const EMPTY_FORM = {
 };
 
 export default function LeadsPage() {
-  const { leads, loading, error, addLead, deleteLead } = useLeads();
+  const { leads, loading, error, addLead, deleteLead, convertToContact } = useLeads();
+  const [converting, setConverting] = useState<string | null>(null);
 
   const [filterStatut, setFilterStatut] = useState<string>("TOUS");
   const [showForm, setShowForm] = useState(false);
@@ -103,6 +105,14 @@ export default function LeadsPage() {
     e.preventDefault();
     e.stopPropagation();
     await deleteLead(id);
+  }
+
+  async function handleConvert(id: string, e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setConverting(id);
+    await convertToContact(id);
+    setConverting(null);
   }
 
   if (loading) {
@@ -408,6 +418,20 @@ export default function LeadsPage() {
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-[#7a849a] hover:text-emerald-400"
+                      title="Convertir en contact"
+                      disabled={converting === lead.id}
+                      onClick={(e) => handleConvert(lead.id, e)}
+                    >
+                      {converting === lead.id ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <UserCheck className="h-3.5 w-3.5" />
+                      )}
+                    </Button>
                     <Link href={`/leads/${lead.id}`}>
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-[#7a849a] hover:text-[#e8ecf4]">
                         <ArrowRight className="h-3.5 w-3.5" />

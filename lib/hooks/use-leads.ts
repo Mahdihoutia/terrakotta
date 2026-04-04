@@ -10,6 +10,7 @@ interface UseLeadsReturn {
   addLead: (lead: Omit<Lead, "id" | "dateCreation" | "dateMiseAJour">) => Promise<Lead | null>;
   updateLead: (id: string, data: Partial<Lead>) => Promise<Lead | null>;
   deleteLead: (id: string) => Promise<boolean>;
+  convertToContact: (id: string) => Promise<string | null>;
   refresh: () => Promise<void>;
 }
 
@@ -89,5 +90,18 @@ export function useLeads(): UseLeadsReturn {
     }
   }, []);
 
-  return { leads, loading, error, addLead, updateLead, deleteLead, refresh: fetchLeads };
+  const convertToContact = useCallback(async (id: string): Promise<string | null> => {
+    try {
+      const res = await fetch(`/api/leads/${id}/convert`, { method: "POST" });
+      if (!res.ok) throw new Error("Erreur lors de la conversion");
+      const data = await res.json();
+      setLeads((prev) => prev.filter((l) => l.id !== id));
+      return data.clientId;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur inconnue");
+      return null;
+    }
+  }, []);
+
+  return { leads, loading, error, addLead, updateLead, deleteLead, convertToContact, refresh: fetchLeads };
 }

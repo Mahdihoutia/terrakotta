@@ -19,6 +19,7 @@ import {
   Euro,
   StickyNote,
   User,
+  UserCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Lead, LeadStatus, LeadSource, ClientType } from "@/types";
@@ -61,7 +62,9 @@ export default function LeadDetailPage({ params }: Props) {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [converting, setConverting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showConvertConfirm, setShowConvertConfirm] = useState(false);
   const [form, setForm] = useState({
     nom: "",
     prenom: "",
@@ -143,6 +146,19 @@ export default function LeadDetailPage({ params }: Props) {
     } catch {
       setError("Erreur lors de la suppression");
       setDeleting(false);
+    }
+  }
+
+  async function handleConvert() {
+    setConverting(true);
+    try {
+      const res = await fetch(`/api/leads/${id}/convert`, { method: "POST" });
+      if (!res.ok) throw new Error("Erreur lors de la conversion");
+      const data = await res.json();
+      router.push(`/contacts/${data.clientId}`);
+    } catch {
+      setError("Erreur lors de la conversion");
+      setConverting(false);
     }
   }
 
@@ -239,6 +255,15 @@ export default function LeadDetailPage({ params }: Props) {
               <Button
                 variant="outline"
                 size="sm"
+                onClick={() => setShowConvertConfirm(true)}
+                className="border-emerald-500/20 bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300"
+              >
+                <UserCheck className="mr-2 h-3.5 w-3.5" />
+                Convertir en contact
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setShowDeleteConfirm(true)}
                 className="border-red-500/20 bg-red-500/5 text-red-400 hover:bg-red-500/10 hover:text-red-300"
               >
@@ -296,6 +321,55 @@ export default function LeadDetailPage({ params }: Props) {
                     <Trash2 className="mr-2 h-3.5 w-3.5" />
                   )}
                   Supprimer
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Convert confirmation modal */}
+      <AnimatePresence>
+        {showConvertConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowConvertConfirm(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="glass rounded-2xl p-6 max-w-sm mx-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-semibold text-[#e8ecf4] mb-2">Convertir en contact ?</h3>
+              <p className="text-sm text-[#7a849a] mb-6">
+                Le lead <span className="text-[#e8ecf4] font-medium">{lead.nom}</span> sera converti en contact et supprimé de la liste des leads.
+              </p>
+              <div className="flex gap-2 justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowConvertConfirm(false)}
+                  className="border-white/10 bg-white/5 text-[#c8d0e0] hover:bg-white/10"
+                >
+                  Annuler
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleConvert}
+                  disabled={converting}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                >
+                  {converting ? (
+                    <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <UserCheck className="mr-2 h-3.5 w-3.5" />
+                  )}
+                  Convertir
                 </Button>
               </div>
             </motion.div>
