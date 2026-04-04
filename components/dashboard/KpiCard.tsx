@@ -28,10 +28,10 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
 };
 
 const ICON_COLORS: Record<string, string> = {
-  users: "from-blue-400 to-blue-600",
-  trending: "from-orange-400 to-orange-600",
-  bot: "from-violet-400 to-violet-600",
-  target: "from-amber-400 to-amber-600",
+  users: "from-[#c2613a] to-[#8b4726]",
+  trending: "from-[#d4845a] to-[#a0522d]",
+  bot: "from-[#a0522d] to-[#7a3b1e]",
+  target: "from-[#c2613a] to-[#a0522d]",
 };
 
 export default function KpiCard({
@@ -55,10 +55,10 @@ export default function KpiCard({
       <div className="glass glass-hover group rounded-2xl p-5 transition-all duration-300">
         <div className="flex items-center justify-between">
           <div className="space-y-2">
-            <p className="text-xs font-medium uppercase tracking-wider text-[#7a849a]">
+            <p className="text-xs font-medium uppercase tracking-wider text-tk-text-muted">
               {label}
             </p>
-            <p className="text-3xl font-bold text-[#e8ecf4]">{value}</p>
+            <p className="text-3xl font-bold text-tk-text">{value}</p>
           </div>
           <div className={cn("rounded-2xl bg-gradient-to-br p-3 shadow-lg", gradient)}>
             <Icon className="h-5 w-5 text-white" />
@@ -67,7 +67,7 @@ export default function KpiCard({
         {change !== undefined && (
           <div className="mt-3 flex items-center gap-1.5 text-xs">
             {isPositive ? (
-              <span className="flex items-center gap-0.5 rounded-full bg-orange-500/10 px-2 py-0.5 text-orange-400">
+              <span className="flex items-center gap-0.5 rounded-full bg-tk-primary-light px-2 py-0.5 text-tk-primary">
                 <ArrowUpRight className="h-3 w-3" />
                 +{change}%
               </span>
@@ -78,7 +78,7 @@ export default function KpiCard({
               </span>
             )}
             {changeLabel && (
-              <span className="text-[#5a6478]">{changeLabel}</span>
+              <span className="text-tk-text-faint">{changeLabel}</span>
             )}
           </div>
         )}

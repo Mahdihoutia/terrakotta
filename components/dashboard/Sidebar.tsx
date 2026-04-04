@@ -12,6 +12,7 @@ import {
   CalendarDays,
   Settings,
   Search,
+  Leaf,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -42,17 +43,17 @@ export default function Sidebar() {
   return (
     <aside
       className={cn(
-        "group/sidebar flex h-full flex-col border-r border-white/[0.06] bg-[rgba(10,14,30,0.6)] py-4 backdrop-blur-xl",
+        "group/sidebar flex h-full flex-col border-r border-tk-border bg-tk-sidebar-bg py-4 backdrop-blur-xl",
         "w-[72px] hover:w-[240px] transition-[width] duration-300 ease-in-out overflow-hidden"
       )}
     >
       {/* Logo */}
-      <div className="mb-6 flex items-center gap-3 px-4">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 shadow-lg shadow-orange-500/20">
-          <span className="text-sm font-black text-white">T</span>
+      <div className="mb-6 flex items-center gap-3 px-3">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center">
+          <Leaf className="h-7 w-7 -rotate-12 text-tk-primary" />
         </div>
-        <span className="whitespace-nowrap text-base font-bold text-[#e8ecf4] opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-300 delay-75">
-          Terrakotta
+        <span className="whitespace-nowrap text-lg font-extrabold tracking-wide text-tk-text dark:text-tk-sidebar-text opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-300 delay-75">
+          TERRAKOTTA
         </span>
       </div>
 
@@ -72,8 +73,8 @@ export default function Sidebar() {
               className={cn(
                 "relative flex h-10 items-center gap-3 rounded-xl px-[11px] transition-all duration-200",
                 isActive
-                  ? "bg-white/[0.1] text-orange-400 shadow-lg shadow-orange-500/10"
-                  : "text-[#5a6478] hover:bg-white/[0.06] hover:text-[#c8d0e0]"
+                  ? "bg-tk-primary-light dark:bg-tk-sidebar-active text-tk-primary shadow-lg shadow-tk-primary/10"
+                  : "text-tk-text-muted dark:text-tk-sidebar-muted hover:bg-tk-hover dark:hover:bg-tk-sidebar-hover hover:text-tk-text dark:hover:text-tk-sidebar-text"
               )}
             >
               <Icon className="h-[18px] w-[18px] shrink-0" />
@@ -81,7 +82,7 @@ export default function Sidebar() {
                 {item.label}
               </span>
               {isActive && (
-                <span className="absolute -left-3 h-5 w-[3px] rounded-r-full bg-orange-400" />
+                <span className="absolute -left-3 h-5 w-[3px] rounded-r-full bg-tk-primary" />
               )}
             </Link>
           );
@@ -101,8 +102,8 @@ export default function Sidebar() {
               className={cn(
                 "flex h-10 items-center gap-3 rounded-xl px-[11px] transition-all duration-200",
                 isActive
-                  ? "bg-white/[0.1] text-orange-400"
-                  : "text-[#5a6478] hover:bg-white/[0.06] hover:text-[#c8d0e0]"
+                  ? "bg-tk-primary-light dark:bg-tk-sidebar-active text-tk-primary"
+                  : "text-tk-text-muted dark:text-tk-sidebar-muted hover:bg-tk-hover dark:hover:bg-tk-sidebar-hover hover:text-tk-text dark:hover:text-tk-sidebar-text"
               )}
             >
               <Icon className="h-[18px] w-[18px] shrink-0" />
@@ -115,10 +116,10 @@ export default function Sidebar() {
 
         {/* Avatar */}
         <div className="mt-2 flex items-center gap-3 px-[5px]">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-[10px] font-bold text-white">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#c2613a] to-[#8b4726] text-[10px] font-bold text-white">
             MH
           </div>
-          <span className="whitespace-nowrap text-xs font-medium text-[#c8d0e0] opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-300 delay-75">
+          <span className="whitespace-nowrap text-xs font-medium text-tk-text dark:text-tk-sidebar-text opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-300 delay-75">
             Mahdi Houtia
           </span>
         </div>

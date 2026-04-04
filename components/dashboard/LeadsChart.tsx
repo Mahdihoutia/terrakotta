@@ -23,10 +23,10 @@ export default function LeadsChart() {
   return (
     <div className="glass rounded-2xl p-5">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-[#e8ecf4]">
+        <h3 className="text-sm font-semibold text-tk-text">
           Évolution des leads
         </h3>
-        <span className="text-[10px] uppercase tracking-wider text-[#5a6478]">
+        <span className="text-[10px] uppercase tracking-wider text-tk-text-faint">
           6 derniers mois
         </span>
       </div>
@@ -35,33 +35,34 @@ export default function LeadsChart() {
           <AreaChart data={DATA}>
             <defs>
               <linearGradient id="leadGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#38bdf8" stopOpacity={0.3} />
-                <stop offset="100%" stopColor="#38bdf8" stopOpacity={0} />
+                <stop offset="0%" stopColor="#a0522d" stopOpacity={0.3} />
+                <stop offset="100%" stopColor="#a0522d" stopOpacity={0} />
               </linearGradient>
               <linearGradient id="convertGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#e07a5f" stopOpacity={0.3} />
-                <stop offset="100%" stopColor="#e07a5f" stopOpacity={0} />
+                <stop offset="0%" stopColor="#d4845a" stopOpacity={0.3} />
+                <stop offset="100%" stopColor="#d4845a" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid stroke="rgba(255,255,255,0.04)" strokeDasharray="3 3" />
+            <CartesianGrid stroke="var(--tk-border)" strokeDasharray="3 3" />
             <XAxis
               dataKey="mois"
-              tick={{ fill: "#5a6478", fontSize: 11 }}
+              tick={{ fill: "var(--tk-text-faint)", fontSize: 11 }}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
-              tick={{ fill: "#5a6478", fontSize: 11 }}
+              tick={{ fill: "var(--tk-text-faint)", fontSize: 11 }}
               axisLine={false}
               tickLine={false}
             />
+            {/* TODO: tooltip needs theme-aware colors via CSS variables */}
             <Tooltip
               contentStyle={{
-                backgroundColor: "rgba(15, 20, 35, 0.95)",
-                border: "1px solid rgba(255,255,255,0.1)",
+                backgroundColor: "var(--tk-surface)",
+                border: "1px solid var(--tk-border)",
                 borderRadius: "12px",
                 boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
-                color: "#e8ecf4",
+                color: "var(--tk-text)",
                 fontSize: "12px",
               }}
             />
@@ -69,7 +70,7 @@ export default function LeadsChart() {
               type="monotone"
               dataKey="leads"
               name="Leads entrants"
-              stroke="#38bdf8"
+              stroke="#a0522d"
               fill="url(#leadGradient)"
               strokeWidth={2}
             />
@@ -77,7 +78,7 @@ export default function LeadsChart() {
               type="monotone"
               dataKey="convertis"
               name="Convertis"
-              stroke="#e07a5f"
+              stroke="#d4845a"
               fill="url(#convertGradient)"
               strokeWidth={2}
             />

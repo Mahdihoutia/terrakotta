@@ -50,107 +50,176 @@
   --color-glass-border: var(--glass-border);
   --color-glass-hover: var(--glass-hover);
   --color-glow: var(--glow);
+
+  /* Semantic color tokens for theming */
+  --color-tk-bg: var(--tk-bg);
+  --color-tk-surface: var(--tk-surface);
+  --color-tk-text: var(--tk-text);
+  --color-tk-text-secondary: var(--tk-text-secondary);
+  --color-tk-text-muted: var(--tk-text-muted);
+  --color-tk-text-faint: var(--tk-text-faint);
+  --color-tk-border: var(--tk-border);
+  --color-tk-border-hover: var(--tk-border-hover);
+  --color-tk-input: var(--tk-input);
+  --color-tk-sidebar-bg: var(--tk-sidebar-bg);
+  --color-tk-sidebar-text: var(--tk-sidebar-text);
+  --color-tk-sidebar-muted: var(--tk-sidebar-muted);
+  --color-tk-sidebar-hover: var(--tk-sidebar-hover);
+  --color-tk-sidebar-active: var(--tk-sidebar-active);
+  --color-tk-primary: var(--tk-primary);
+  --color-tk-primary-hover: var(--tk-primary-hover);
+  --color-tk-primary-light: var(--tk-primary-light);
+  --color-tk-hover: var(--tk-hover);
 }
 
 :root {
-  /* Terrakotta — Dark Glassmorphism / iOS style */
-  --background: #0a0e1a;
-  --foreground: #e8ecf4;
-  --card: rgba(255, 255, 255, 0.05);
-  --card-foreground: #e8ecf4;
-  --popover: rgba(15, 20, 35, 0.95);
-  --popover-foreground: #e8ecf4;
-  --primary: #e07a5f;
-  --primary-foreground: #0a0e1a;
-  --secondary: rgba(255, 255, 255, 0.08);
-  --secondary-foreground: #c8d0e0;
-  --muted: rgba(255, 255, 255, 0.06);
-  --muted-foreground: #7a849a;
-  --accent: rgba(255, 255, 255, 0.08);
-  --accent-foreground: #c8d0e0;
-  --destructive: #f87171;
-  --border: rgba(255, 255, 255, 0.08);
-  --input: rgba(255, 255, 255, 0.08);
-  --ring: #e07a5f;
-  --chart-1: #e07a5f;
-  --chart-2: #38bdf8;
-  --chart-3: #a78bfa;
-  --chart-4: #fb923c;
-  --chart-5: #f472b6;
-  --radius: 1rem;
+  /* ═══ Terrakotta — Light Mode ═══ */
+  /* Fond beige/crème, texte brun foncé, accent terracotta */
+  --background: #f5f0e8;
+  --foreground: #1a1410;
+  --card: #efe9df;
+  --card-foreground: #1a1410;
+  --popover: #f5f0e8;
+  --popover-foreground: #1a1410;
+  --primary: #a0522d;
+  --primary-foreground: #ffffff;
+  --secondary: #e8e0d4;
+  --secondary-foreground: #3d2e22;
+  --muted: #e8e0d4;
+  --muted-foreground: #6b5b50;
+  --accent: #e8e0d4;
+  --accent-foreground: #3d2e22;
+  --destructive: #c62828;
+  --border: #d9d0c4;
+  --input: #d9d0c4;
+  --ring: #a0522d;
+  --chart-1: #a0522d;
+  --chart-2: #8b4726;
+  --chart-3: #c2613a;
+  --chart-4: #7a3b1e;
+  --chart-5: #d4845a;
+  --radius: 0.75rem;
 
-  /* Glass tokens */
-  --glass: rgba(255, 255, 255, 0.04);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-hover: rgba(255, 255, 255, 0.08);
-  --glow: rgba(224, 122, 95, 0.15);
+  /* Glass tokens — light */
+  --glass: #efe9df;
+  --glass-border: #d9d0c4;
+  --glass-hover: #e8e0d4;
+  --glow: rgba(160, 82, 45, 0.06);
 
-  /* Sidebar — dark panel */
-  --sidebar: rgba(10, 14, 30, 0.8);
-  --sidebar-foreground: #c8d0e0;
-  --sidebar-primary: #e07a5f;
-  --sidebar-primary-foreground: #0a0e1a;
-  --sidebar-accent: rgba(255, 255, 255, 0.08);
-  --sidebar-accent-foreground: #e8ecf4;
-  --sidebar-border: rgba(255, 255, 255, 0.06);
-  --sidebar-ring: #e07a5f;
+  /* Sidebar — beige clair */
+  --sidebar: #ebe4d8;
+  --sidebar-foreground: #3d2e22;
+  --sidebar-primary: #a0522d;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: rgba(160, 82, 45, 0.08);
+  --sidebar-accent-foreground: #3d2e22;
+  --sidebar-border: #d9d0c4;
+  --sidebar-ring: #a0522d;
+
+  /* Semantic tokens — light */
+  --tk-bg: #f5f0e8;
+  --tk-surface: #efe9df;
+  --tk-text: #1a1410;
+  --tk-text-secondary: #3d2e22;
+  --tk-text-muted: #6b5b50;
+  --tk-text-faint: #9a8a7c;
+  --tk-border: #d9d0c4;
+  --tk-border-hover: #c8bfb2;
+  --tk-input: #efe9df;
+  --tk-sidebar-bg: #ebe4d8;
+  --tk-sidebar-text: #3d2e22;
+  --tk-sidebar-muted: #6b5b50;
+  --tk-sidebar-hover: rgba(160, 82, 45, 0.06);
+  --tk-sidebar-active: rgba(160, 82, 45, 0.10);
+  --tk-primary: #a0522d;
+  --tk-primary-hover: #8b4726;
+  --tk-primary-light: rgba(160, 82, 45, 0.10);
+  --tk-hover: #e8e0d4;
 }
 
 .dark {
-  /* Same as root — already dark by default */
-  --background: #0a0e1a;
-  --foreground: #e8ecf4;
-  --card: rgba(255, 255, 255, 0.05);
-  --card-foreground: #e8ecf4;
-  --popover: rgba(15, 20, 35, 0.95);
-  --popover-foreground: #e8ecf4;
-  --primary: #e07a5f;
-  --primary-foreground: #0a0e1a;
-  --secondary: rgba(255, 255, 255, 0.08);
-  --secondary-foreground: #c8d0e0;
-  --muted: rgba(255, 255, 255, 0.06);
-  --muted-foreground: #7a849a;
-  --accent: rgba(255, 255, 255, 0.08);
-  --accent-foreground: #c8d0e0;
+  /* ═══ Terrakotta — Dark Mode ═══ */
+  /* Fond gris foncé, texte clair, accent terracotta clair */
+  --background: #2b2b2b;
+  --foreground: #ececec;
+  --card: #333333;
+  --card-foreground: #ececec;
+  --popover: #333333;
+  --popover-foreground: #ececec;
+  --primary: #d4845a;
+  --primary-foreground: #1a1410;
+  --secondary: #3a3a3a;
+  --secondary-foreground: #d4d4d4;
+  --muted: #3a3a3a;
+  --muted-foreground: #8a8a8a;
+  --accent: #3a3a3a;
+  --accent-foreground: #d4d4d4;
   --destructive: #f87171;
-  --border: rgba(255, 255, 255, 0.08);
-  --input: rgba(255, 255, 255, 0.08);
-  --ring: #e07a5f;
-  --chart-1: #e07a5f;
-  --chart-2: #38bdf8;
-  --chart-3: #a78bfa;
-  --chart-4: #fb923c;
-  --chart-5: #f472b6;
-  --sidebar: rgba(10, 14, 30, 0.8);
-  --sidebar-foreground: #c8d0e0;
-  --sidebar-primary: #e07a5f;
-  --sidebar-primary-foreground: #0a0e1a;
-  --sidebar-accent: rgba(255, 255, 255, 0.08);
-  --sidebar-accent-foreground: #e8ecf4;
-  --sidebar-border: rgba(255, 255, 255, 0.06);
-  --sidebar-ring: #e07a5f;
+  --border: #444444;
+  --input: #444444;
+  --ring: #d4845a;
+  --chart-1: #d4845a;
+  --chart-2: #c2613a;
+  --chart-3: #e8a87c;
+  --chart-4: #a0522d;
+  --chart-5: #b5714a;
+
+  /* Glass tokens — dark */
+  --glass: #333333;
+  --glass-border: #444444;
+  --glass-hover: #3a3a3a;
+  --glow: rgba(212, 132, 90, 0.10);
+
+  /* Sidebar — gris plus foncé */
+  --sidebar: #222222;
+  --sidebar-foreground: #d4d4d4;
+  --sidebar-primary: #d4845a;
+  --sidebar-primary-foreground: #1a1410;
+  --sidebar-accent: rgba(212, 132, 90, 0.10);
+  --sidebar-accent-foreground: #ececec;
+  --sidebar-border: #3a3a3a;
+  --sidebar-ring: #d4845a;
+
+  /* Semantic tokens — dark */
+  --tk-bg: #2b2b2b;
+  --tk-surface: #333333;
+  --tk-text: #ececec;
+  --tk-text-secondary: #d4d4d4;
+  --tk-text-muted: #8a8a8a;
+  --tk-text-faint: #666666;
+  --tk-border: #444444;
+  --tk-border-hover: #555555;
+  --tk-input: #333333;
+  --tk-sidebar-bg: #222222;
+  --tk-sidebar-text: #d4d4d4;
+  --tk-sidebar-muted: #666666;
+  --tk-sidebar-hover: rgba(255, 255, 255, 0.06);
+  --tk-sidebar-active: rgba(212, 132, 90, 0.15);
+  --tk-primary: #d4845a;
+  --tk-primary-hover: #c2743e;
+  --tk-primary-light: rgba(212, 132, 90, 0.15);
+  --tk-hover: #3a3a3a;
 }
 
 /* Glass card utility */
 .glass {
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--tk-surface);
+  border: 1px solid var(--tk-border);
+  border-radius: 1rem;
 }
 
 .glass-hover:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.12);
+  background: var(--tk-hover);
+  border-color: var(--tk-border-hover);
 }
 
 /* Glow effects */
-.glow-green {
-  box-shadow: 0 0 20px rgba(224, 122, 95, 0.1), 0 0 60px rgba(224, 122, 95, 0.05);
+.glow-primary {
+  box-shadow: 0 0 20px rgba(160, 82, 45, 0.08), 0 0 60px rgba(160, 82, 45, 0.04);
 }
 
-.glow-blue {
-  box-shadow: 0 0 20px rgba(56, 189, 248, 0.1), 0 0 60px rgba(56, 189, 248, 0.05);
+.dark .glow-primary {
+  box-shadow: 0 0 20px rgba(212, 132, 90, 0.12), 0 0 60px rgba(212, 132, 90, 0.06);
 }
 
 @layer base {
@@ -164,37 +233,41 @@
     @apply font-sans;
   }
 
-  /* Override card styles globally for glass effect */
+  /* Card styles */
   [data-slot="card"] {
-    background: rgba(255, 255, 255, 0.04) !important;
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background: var(--tk-surface) !important;
+    border: 1px solid var(--tk-border) !important;
   }
 
   [data-slot="card"]:hover {
-    border-color: rgba(255, 255, 255, 0.12) !important;
+    border-color: var(--tk-border-hover) !important;
   }
 
-  /* Inputs — glass style */
+  /* Inputs */
   input, select, textarea {
-    background: rgba(255, 255, 255, 0.04) !important;
-    border-color: rgba(255, 255, 255, 0.1) !important;
-    color: #e8ecf4;
+    background: var(--tk-input) !important;
+    border-color: var(--tk-border) !important;
+    color: var(--tk-text);
   }
 
   input:focus, select:focus, textarea:focus {
-    border-color: rgba(224, 122, 95, 0.4) !important;
-    box-shadow: 0 0 0 2px rgba(224, 122, 95, 0.1);
+    border-color: var(--tk-primary) !important;
+    box-shadow: 0 0 0 2px var(--tk-primary-light);
   }
 
   input::placeholder, textarea::placeholder {
-    color: #5a6478 !important;
+    color: var(--tk-text-faint) !important;
+  }
+
+  /* Select option styling for light mode */
+  select option {
+    background: var(--tk-bg);
+    color: var(--tk-text);
   }
 
   /* Tables */
   th {
-    color: #7a849a !important;
+    color: var(--tk-text-muted) !important;
   }
 
   /* Scrollbar */
@@ -205,10 +278,10 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--tk-border);
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--tk-text-faint);
   }
 }
