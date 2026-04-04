@@ -11,8 +11,6 @@ import {
   MapPin,
   User,
   Trash2,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";

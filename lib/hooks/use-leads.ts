@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import type { Lead, LeadStatus, LeadSource, ClientType } from "@/types";
+import type { Lead } from "@/types";
 
 interface UseLeadsReturn {
   leads: Lead[];

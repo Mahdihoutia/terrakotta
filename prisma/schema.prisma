@@ -1,12 +1,12 @@
 // Terrakotta — Schéma Prisma pour Supabase (PostgreSQL)
 
 generator client {
-  provider = "prisma-client"
-  output   = "../lib/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // ─── Utilisateur (mono-utilisateur) ─────────────────────────────
