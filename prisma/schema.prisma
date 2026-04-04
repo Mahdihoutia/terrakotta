@@ -42,6 +42,7 @@ model Client {
   updatedAt     DateTime    @default(now()) @updatedAt @map("updated_at")
   projets       Projet[]
   devis         Devis[]
+  evenements    Evenement[]
 
   @@map("clients")
 }
@@ -63,6 +64,7 @@ model Lead {
   budgetEstime  Decimal?   @map("budget_estime")
   dateCreation  DateTime   @default(now()) @map("date_creation")
   dateMiseAJour DateTime   @updatedAt @map("date_mise_a_jour")
+  evenements    Evenement[]
 
   @@map("leads")
 }
@@ -117,6 +119,27 @@ model Devis {
   @@map("devis")
 }
 
+// ─── Événement (calendrier) ─────────────────────────────────────
+
+model Evenement {
+  id          String        @id @default(cuid())
+  titre       String
+  date        DateTime
+  heureDebut  String        @map("heure_debut")
+  heureFin    String        @map("heure_fin")
+  type        EvenementType @default(RDV_CLIENT)
+  lieu        String?
+  commentaire String?
+  clientId    String?       @map("client_id")
+  client      Client?       @relation(fields: [clientId], references: [id])
+  leadId      String?       @map("lead_id")
+  lead        Lead?         @relation(fields: [leadId], references: [id])
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  @@map("evenements")
+}
+
 // ─── Enums ──────────────────────────────────────────────────────
 
 enum ClientType {
@@ -155,4 +178,11 @@ enum DevisStatut {
   ENVOYE
   ACCEPTE
   REFUSE
+}
+
+enum EvenementType {
+  VISITE
+  RDV_CLIENT
+  REUNION
+  AUTRE
 }

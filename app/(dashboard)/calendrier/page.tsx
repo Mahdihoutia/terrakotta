@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,96 +11,80 @@ import {
   MapPin,
   User,
   Trash2,
+  Pencil,
+  X,
+  Loader2,
+  UserCheck,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
-interface Rdv {
+// ─── Types ──────────────────────────────────────────────────────
+
+type EvenementType = "VISITE" | "RDV_CLIENT" | "REUNION" | "AUTRE";
+
+interface AssignedEntity {
+  id: string;
+  nom: string;
+  prenom?: string | null;
+  type: string;
+}
+
+interface Evenement {
   id: string;
   titre: string;
   date: string;
   heureDebut: string;
   heureFin: string;
-  lieu?: string;
-  client?: string;
-  type: "VISITE" | "RDV_CLIENT" | "REUNION" | "AUTRE";
-  commentaire?: string;
+  type: EvenementType;
+  lieu?: string | null;
+  commentaire?: string | null;
+  clientId?: string | null;
+  leadId?: string | null;
+  client?: AssignedEntity | null;
+  lead?: AssignedEntity | null;
 }
 
-const TYPE_CONFIG: Record<string, { label: string; color: string; dot: string }> = {
-  VISITE: { label: "Visite technique", color: "bg-blue-100 text-blue-700", dot: "bg-blue-500" },
-  RDV_CLIENT: { label: "RDV client", color: "bg-emerald-100 text-emerald-700", dot: "bg-emerald-500" },
-  REUNION: { label: "Réunion", color: "bg-violet-100 text-violet-700", dot: "bg-violet-500" },
-  AUTRE: { label: "Autre", color: "bg-zinc-100 text-zinc-700", dot: "bg-zinc-400" },
+interface FormData {
+  titre: string;
+  heureDebut: string;
+  heureFin: string;
+  type: EvenementType;
+  lieu: string;
+  commentaire: string;
+  assignType: "none" | "client" | "lead";
+  assignId: string;
+}
+
+const EMPTY_FORM: FormData = {
+  titre: "",
+  heureDebut: "09:00",
+  heureFin: "10:00",
+  type: "RDV_CLIENT",
+  lieu: "",
+  commentaire: "",
+  assignType: "none",
+  assignId: "",
 };
 
-const DEMO_RDVS: Rdv[] = [
-  {
-    id: "1",
-    titre: "Visite technique — Résidence Le Parc",
-    date: "2026-04-02",
-    heureDebut: "09:00",
-    heureFin: "11:00",
-    lieu: "12 rue des Oliviers, 13100 Aix-en-Provence",
-    client: "Résidence Le Parc",
-    type: "VISITE",
-    commentaire: "Apporter le thermomètre infrarouge. Vérifier l'isolation des combles et l'état de la VMC.",
-  },
-  {
-    id: "2",
-    titre: "Présentation devis — Dupont",
-    date: "2026-04-02",
-    heureDebut: "14:00",
-    heureFin: "15:00",
-    client: "Marie Dupont",
-    type: "RDV_CLIENT",
-    commentaire: "Devis isolation combles + remplacement chaudière. Budget estimé 15k€.",
-  },
-  {
-    id: "3",
-    titre: "Réunion mairie — DPE collectif",
-    date: "2026-04-03",
-    heureDebut: "10:00",
-    heureFin: "12:00",
-    lieu: "Mairie de Salon-de-Provence",
-    client: "Mairie de Salon",
-    type: "REUNION",
-    commentaire: "Présentation des résultats d'audit énergétique du patrimoine communal.",
-  },
-  {
-    id: "4",
-    titre: "Relevé thermique — Martin",
-    date: "2026-04-07",
-    heureDebut: "08:30",
-    heureFin: "10:30",
-    lieu: "45 avenue Jean Jaurès, 13400 Aubagne",
-    client: "Jean-Pierre Martin",
-    type: "VISITE",
-  },
-  {
-    id: "5",
-    titre: "Suivi chantier SCI Les Oliviers",
-    date: "2026-04-10",
-    heureDebut: "09:00",
-    heureFin: "11:30",
-    lieu: "Résidence Les Oliviers, 13008 Marseille",
-    client: "SCI Les Oliviers",
-    type: "VISITE",
-    commentaire: "Vérifier l'avancement de l'isolation par l'extérieur. Photos à prendre pour le rapport.",
-  },
-  {
-    id: "6",
-    titre: "Appel partenaire CEE",
-    date: "2026-04-04",
-    heureDebut: "16:00",
-    heureFin: "16:30",
-    type: "AUTRE",
-    commentaire: "Discuter des nouveaux barèmes CEE pour le T2 2026.",
-  },
-];
+// ─── Config ─────────────────────────────────────────────────────
+
+const TYPE_CONFIG: Record<EvenementType, { label: string; color: string; dot: string }> = {
+  VISITE: { label: "Visite technique", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300", dot: "bg-blue-500" },
+  RDV_CLIENT: { label: "RDV client", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300", dot: "bg-amber-500" },
+  REUNION: { label: "Réunion", color: "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300", dot: "bg-violet-500" },
+  AUTRE: { label: "Autre", color: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800/50 dark:text-zinc-300", dot: "bg-zinc-400" },
+};
+
+// ─── Helpers ────────────────────────────────────────────────────
 
 function formatDateKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function formatMoisKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
 function formatDateFr(d: Date): string {
@@ -112,61 +96,198 @@ function formatDateFr(d: Date): string {
   });
 }
 
+function entityName(e: AssignedEntity): string {
+  return e.prenom ? `${e.prenom} ${e.nom}` : e.nom;
+}
+
+// ─── Page ───────────────────────────────────────────────────────
+
 export default function CalendrierPage() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [showForm, setShowForm] = useState(false);
-  const [rdvs, setRdvs] = useState<Rdv[]>(DEMO_RDVS);
+  const [evenements, setEvenements] = useState<Evenement[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  const [newRdv, setNewRdv] = useState({
-    titre: "",
-    heureDebut: "09:00",
-    heureFin: "10:00",
-    lieu: "",
-    client: "",
-    type: "RDV_CLIENT" as Rdv["type"],
-    commentaire: "",
-  });
+  // Formulaire
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState<FormData>(EMPTY_FORM);
+
+  // Clients & Leads pour l'assignation
+  const [clients, setClients] = useState<AssignedEntity[]>([]);
+  const [leads, setLeads] = useState<AssignedEntity[]>([]);
 
   const selectedKey = formatDateKey(selectedDate);
+  const moisKey = formatMoisKey(selectedDate);
+
+  // ─── Fetch événements du mois ─────────────────────────────
+
+  const fetchEvenements = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/evenements?mois=${moisKey}`);
+      if (res.ok) {
+        const data: Evenement[] = await res.json();
+        setEvenements(data);
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setLoading(false);
+    }
+  }, [moisKey]);
+
+  useEffect(() => {
+    setLoading(true);
+    fetchEvenements();
+  }, [fetchEvenements]);
+
+  // ─── Fetch clients & leads (une seule fois) ──────────────
+
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/clients").then((r) => r.json()),
+      fetch("/api/leads").then((r) => r.json()),
+    ])
+      .then(([c, l]) => {
+        setClients(
+          (c as AssignedEntity[]).map((x) => ({ id: x.id, nom: x.nom, prenom: x.prenom, type: x.type }))
+        );
+        setLeads(
+          (l as AssignedEntity[]).map((x) => ({ id: x.id, nom: x.nom, prenom: x.prenom, type: x.type }))
+        );
+      })
+      .catch(() => {});
+  }, []);
+
+  // ─── Événements du jour ───────────────────────────────────
 
   const rdvsJour = useMemo(
-    () => rdvs.filter((r) => r.date === selectedKey).sort((a, b) => a.heureDebut.localeCompare(b.heureDebut)),
-    [rdvs, selectedKey]
+    () =>
+      evenements
+        .filter((e) => e.date.startsWith(selectedKey))
+        .sort((a, b) => a.heureDebut.localeCompare(b.heureDebut)),
+    [evenements, selectedKey]
   );
 
   const datesAvecRdv = useMemo(() => {
     const map = new Map<string, string[]>();
-    rdvs.forEach((r) => {
-      const types = map.get(r.date) || [];
-      types.push(r.type);
-      map.set(r.date, types);
+    evenements.forEach((e) => {
+      const key = e.date.substring(0, 10);
+      const types = map.get(key) || [];
+      types.push(e.type);
+      map.set(key, types);
     });
     return map;
-  }, [rdvs]);
+  }, [evenements]);
 
-  function handleAddRdv() {
-    if (!newRdv.titre.trim()) return;
-    const rdv: Rdv = {
-      id: crypto.randomUUID(),
-      ...newRdv,
-      date: selectedKey,
-    };
-    setRdvs((prev) => [...prev, rdv]);
-    setNewRdv({
-      titre: "",
-      heureDebut: "09:00",
-      heureFin: "10:00",
-      lieu: "",
-      client: "",
-      type: "RDV_CLIENT",
-      commentaire: "",
+  // ─── Ouvrir le formulaire ─────────────────────────────────
+
+  function openCreate() {
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+    setShowForm(true);
+  }
+
+  function openEdit(evt: Evenement) {
+    setEditingId(evt.id);
+    setForm({
+      titre: evt.titre,
+      heureDebut: evt.heureDebut,
+      heureFin: evt.heureFin,
+      type: evt.type,
+      lieu: evt.lieu || "",
+      commentaire: evt.commentaire || "",
+      assignType: evt.clientId ? "client" : evt.leadId ? "lead" : "none",
+      assignId: evt.clientId || evt.leadId || "",
     });
-    setShowForm(false);
+    setShowForm(true);
   }
 
-  function handleDeleteRdv(id: string) {
-    setRdvs((prev) => prev.filter((r) => r.id !== id));
+  function closeForm() {
+    setShowForm(false);
+    setEditingId(null);
+    setForm(EMPTY_FORM);
   }
+
+  // ─── Sauvegarder (créer ou modifier) ─────────────────────
+
+  async function handleSave() {
+    if (!form.titre.trim()) return;
+    setSaving(true);
+
+    const payload = {
+      titre: form.titre,
+      date: selectedKey,
+      heureDebut: form.heureDebut,
+      heureFin: form.heureFin,
+      type: form.type,
+      lieu: form.lieu || null,
+      commentaire: form.commentaire || null,
+      clientId: form.assignType === "client" ? form.assignId : null,
+      leadId: form.assignType === "lead" ? form.assignId : null,
+    };
+
+    try {
+      if (editingId) {
+        const res = await fetch(`/api/evenements/${editingId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) {
+          const updated: Evenement = await res.json();
+          setEvenements((prev) =>
+            prev.map((e) => (e.id === editingId ? updated : e))
+          );
+        }
+      } else {
+        const res = await fetch("/api/evenements", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) {
+          const created: Evenement = await res.json();
+          setEvenements((prev) => [...prev, created]);
+        }
+      }
+      closeForm();
+    } catch {
+      // silently fail
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // ─── Supprimer ────────────────────────────────────────────
+
+  async function handleDelete(id: string) {
+    try {
+      const res = await fetch(`/api/evenements/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setEvenements((prev) => prev.filter((e) => e.id !== id));
+      }
+    } catch {
+      // silently fail
+    }
+  }
+
+  // ─── Mettre à jour le formulaire ──────────────────────────
+
+  function updateForm(patch: Partial<FormData>) {
+    setForm((prev) => {
+      const next = { ...prev, ...patch };
+      // Reset assignId when changing assignType
+      if (patch.assignType && patch.assignType !== prev.assignType) {
+        next.assignId = "";
+      }
+      return next;
+    });
+  }
+
+  const assignOptions = form.assignType === "client" ? clients : form.assignType === "lead" ? leads : [];
+
+  // ─── Render ───────────────────────────────────────────────
 
   return (
     <div className="space-y-6">
@@ -177,7 +298,7 @@ export default function CalendrierPage() {
             {formatDateFr(selectedDate)}
           </p>
         </div>
-        <Button size="sm" onClick={() => setShowForm(true)}>
+        <Button size="sm" onClick={openCreate}>
           <Plus className="mr-2 h-4 w-4" />
           Nouveau RDV
         </Button>
@@ -191,6 +312,7 @@ export default function CalendrierPage() {
               mode="single"
               selected={selectedDate}
               onSelect={(d) => d && setSelectedDate(d)}
+              onMonthChange={(d) => setSelectedDate(d)}
               className="w-full"
               components={{
                 DayButton: ({ day, modifiers, ...props }) => {
@@ -215,7 +337,7 @@ export default function CalendrierPage() {
                           {[...new Set(types)].slice(0, 3).map((t, i) => (
                             <span
                               key={i}
-                              className={cn("h-1 w-1 rounded-full", TYPE_CONFIG[t]?.dot || "bg-zinc-400")}
+                              className={cn("h-1 w-1 rounded-full", TYPE_CONFIG[t as EvenementType]?.dot || "bg-zinc-400")}
                             />
                           ))}
                         </span>
@@ -250,28 +372,36 @@ export default function CalendrierPage() {
               >
                 <Card className="border-primary/30">
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-base">
-                      Nouveau rendez-vous — {formatDateFr(selectedDate)}
-                    </CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base">
+                        {editingId ? "Modifier le rendez-vous" : "Nouveau rendez-vous"} — {formatDateFr(selectedDate)}
+                      </CardTitle>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={closeForm}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2">
+                      {/* Titre */}
                       <div className="col-span-full space-y-1.5">
                         <label className="text-sm font-medium">Titre</label>
                         <input
                           type="text"
-                          value={newRdv.titre}
-                          onChange={(e) => setNewRdv({ ...newRdv, titre: e.target.value })}
+                          value={form.titre}
+                          onChange={(e) => updateForm({ titre: e.target.value })}
                           placeholder="Ex: Visite technique — Nom du client"
                           className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
                         />
                       </div>
+
+                      {/* Heures */}
                       <div className="space-y-1.5">
                         <label className="text-sm font-medium">Heure début</label>
                         <input
                           type="time"
-                          value={newRdv.heureDebut}
-                          onChange={(e) => setNewRdv({ ...newRdv, heureDebut: e.target.value })}
+                          value={form.heureDebut}
+                          onChange={(e) => updateForm({ heureDebut: e.target.value })}
                           className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
                         />
                       </div>
@@ -279,60 +409,101 @@ export default function CalendrierPage() {
                         <label className="text-sm font-medium">Heure fin</label>
                         <input
                           type="time"
-                          value={newRdv.heureFin}
-                          onChange={(e) => setNewRdv({ ...newRdv, heureFin: e.target.value })}
+                          value={form.heureFin}
+                          onChange={(e) => updateForm({ heureFin: e.target.value })}
                           className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
                         />
                       </div>
+
+                      {/* Type */}
                       <div className="space-y-1.5">
                         <label className="text-sm font-medium">Type</label>
                         <select
-                          value={newRdv.type}
-                          onChange={(e) => setNewRdv({ ...newRdv, type: e.target.value as Rdv["type"] })}
+                          value={form.type}
+                          onChange={(e) => updateForm({ type: e.target.value as EvenementType })}
                           className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
                         >
-                          <option value="VISITE">Visite technique</option>
-                          <option value="RDV_CLIENT">RDV client</option>
-                          <option value="REUNION">Réunion</option>
-                          <option value="AUTRE">Autre</option>
+                          {Object.entries(TYPE_CONFIG).map(([key, cfg]) => (
+                            <option key={key} value={key}>{cfg.label}</option>
+                          ))}
                         </select>
                       </div>
+
+                      {/* Assignation Client / Lead */}
                       <div className="space-y-1.5">
-                        <label className="text-sm font-medium">Client</label>
-                        <input
-                          type="text"
-                          value={newRdv.client}
-                          onChange={(e) => setNewRdv({ ...newRdv, client: e.target.value })}
-                          placeholder="Nom du client"
+                        <label className="text-sm font-medium">Assigner à</label>
+                        <select
+                          value={form.assignType}
+                          onChange={(e) => updateForm({ assignType: e.target.value as FormData["assignType"] })}
                           className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
-                        />
+                        >
+                          <option value="none">— Aucun —</option>
+                          <option value="client">Client</option>
+                          <option value="lead">Lead</option>
+                        </select>
                       </div>
+
+                      {/* Sélection du client ou lead */}
+                      {form.assignType !== "none" && (
+                        <div className="col-span-full space-y-1.5">
+                          <label className="text-sm font-medium flex items-center gap-1.5">
+                            {form.assignType === "client" ? (
+                              <><UserCheck className="h-3.5 w-3.5" /> Choisir un client</>
+                            ) : (
+                              <><Users className="h-3.5 w-3.5" /> Choisir un lead</>
+                            )}
+                          </label>
+                          <select
+                            value={form.assignId}
+                            onChange={(e) => updateForm({ assignId: e.target.value })}
+                            className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                          >
+                            <option value="">— Sélectionner —</option>
+                            {assignOptions.map((opt) => (
+                              <option key={opt.id} value={opt.id}>
+                                {entityName(opt)} ({opt.type.toLowerCase()})
+                              </option>
+                            ))}
+                          </select>
+                          {assignOptions.length === 0 && (
+                            <p className="text-xs text-muted-foreground">
+                              Aucun {form.assignType === "client" ? "client" : "lead"} trouvé
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Lieu */}
                       <div className="col-span-full space-y-1.5">
                         <label className="text-sm font-medium">Lieu</label>
                         <input
                           type="text"
-                          value={newRdv.lieu}
-                          onChange={(e) => setNewRdv({ ...newRdv, lieu: e.target.value })}
+                          value={form.lieu}
+                          onChange={(e) => updateForm({ lieu: e.target.value })}
                           placeholder="Adresse du rendez-vous"
                           className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
                         />
                       </div>
+
+                      {/* Commentaire */}
                       <div className="col-span-full space-y-1.5">
                         <label className="text-sm font-medium">Commentaire</label>
                         <textarea
-                          value={newRdv.commentaire}
-                          onChange={(e) => setNewRdv({ ...newRdv, commentaire: e.target.value })}
+                          value={form.commentaire}
+                          onChange={(e) => updateForm({ commentaire: e.target.value })}
                           rows={3}
                           placeholder="Notes, matériel à apporter, points à vérifier..."
                           className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none resize-none"
                         />
                       </div>
                     </div>
+
                     <div className="flex gap-2">
-                      <Button size="sm" onClick={handleAddRdv}>
-                        Ajouter le RDV
+                      <Button size="sm" onClick={handleSave} disabled={saving || !form.titre.trim()}>
+                        {saving && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
+                        {editingId ? "Enregistrer" : "Ajouter le RDV"}
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => setShowForm(false)}>
+                      <Button variant="outline" size="sm" onClick={closeForm}>
                         Annuler
                       </Button>
                     </div>
@@ -343,7 +514,13 @@ export default function CalendrierPage() {
           </AnimatePresence>
 
           {/* Liste des RDVs */}
-          {rdvsJour.length === 0 ? (
+          {loading ? (
+            <Card>
+              <CardContent className="flex items-center justify-center py-12">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </CardContent>
+            </Card>
+          ) : rdvsJour.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12 text-center">
                 <div className="rounded-full bg-muted p-4">
@@ -357,7 +534,7 @@ export default function CalendrierPage() {
                   variant="outline"
                   size="sm"
                   className="mt-4"
-                  onClick={() => setShowForm(true)}
+                  onClick={openCreate}
                 >
                   <Plus className="mr-2 h-3.5 w-3.5" />
                   Ajouter un RDV
@@ -366,11 +543,14 @@ export default function CalendrierPage() {
             </Card>
           ) : (
             <div className="space-y-3">
-              {rdvsJour.map((rdv, i) => {
-                const cfg = TYPE_CONFIG[rdv.type];
+              {rdvsJour.map((evt, i) => {
+                const cfg = TYPE_CONFIG[evt.type];
+                const assigned = evt.client || evt.lead;
+                const assignLabel = evt.client ? "Client" : evt.lead ? "Lead" : null;
+
                 return (
                   <motion.div
-                    key={rdv.id}
+                    key={evt.id}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.05 }}
@@ -379,45 +559,59 @@ export default function CalendrierPage() {
                       <div className={cn("absolute left-0 top-0 h-full w-1", cfg.dot)} />
                       <CardContent className="p-4 pl-5">
                         <div className="flex items-start justify-between">
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2">
+                          <div className="space-y-2 flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <Badge className={cn("text-xs", cfg.color)}>
                                 {cfg.label}
                               </Badge>
                               <span className="flex items-center gap-1 text-xs text-muted-foreground">
                                 <Clock className="h-3 w-3" />
-                                {rdv.heureDebut} — {rdv.heureFin}
+                                {evt.heureDebut} — {evt.heureFin}
                               </span>
                             </div>
-                            <h3 className="font-semibold text-sm">{rdv.titre}</h3>
+                            <h3 className="font-semibold text-sm">{evt.titre}</h3>
                             <div className="flex flex-wrap gap-x-4 gap-y-1">
-                              {rdv.client && (
+                              {assigned && (
                                 <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                                  <User className="h-3 w-3" />
-                                  {rdv.client}
+                                  {evt.client ? (
+                                    <UserCheck className="h-3 w-3 text-tk-primary" />
+                                  ) : (
+                                    <Users className="h-3 w-3 text-blue-500" />
+                                  )}
+                                  <span className="font-medium">{assignLabel}</span>: {entityName(assigned)}
                                 </span>
                               )}
-                              {rdv.lieu && (
+                              {evt.lieu && (
                                 <span className="flex items-center gap-1 text-xs text-muted-foreground">
                                   <MapPin className="h-3 w-3" />
-                                  {rdv.lieu}
+                                  {evt.lieu}
                                 </span>
                               )}
                             </div>
-                            {rdv.commentaire && (
+                            {evt.commentaire && (
                               <p className="text-xs text-muted-foreground leading-relaxed rounded-lg bg-muted/50 p-2.5 mt-1">
-                                {rdv.commentaire}
+                                {evt.commentaire}
                               </p>
                             )}
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
-                            onClick={() => handleDeleteRdv(rdv.id)}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
+                          <div className="flex gap-1 shrink-0 ml-2 opacity-0 transition-opacity group-hover:opacity-100">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                              onClick={() => openEdit(evt)}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                              onClick={() => handleDelete(evt.id)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
