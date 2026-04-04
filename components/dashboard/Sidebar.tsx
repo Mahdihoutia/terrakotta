@@ -15,6 +15,7 @@ import {
   Leaf,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSearch } from "./SearchProvider";
 
 interface NavItem {
   label: string;
@@ -33,12 +34,12 @@ const TOP_ITEMS: NavItem[] = [
 ];
 
 const BOTTOM_ITEMS: NavItem[] = [
-  { label: "Recherche", href: "#", icon: Search },
   { label: "Paramètres", href: "/settings", icon: Settings },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { openSearch } = useSearch();
 
   return (
     <aside
@@ -91,6 +92,17 @@ export default function Sidebar() {
 
       {/* Bottom nav */}
       <div className="flex flex-col gap-1 px-3">
+        {/* Recherche */}
+        <button
+          onClick={openSearch}
+          className="flex h-10 items-center gap-3 rounded-xl px-[11px] transition-all duration-200 text-tk-text-muted dark:text-tk-sidebar-muted hover:bg-tk-hover dark:hover:bg-tk-sidebar-hover hover:text-tk-text dark:hover:text-tk-sidebar-text"
+        >
+          <Search className="h-[18px] w-[18px] shrink-0" />
+          <span className="whitespace-nowrap text-sm font-medium opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-300 delay-75">
+            Recherche
+          </span>
+        </button>
+
         {BOTTOM_ITEMS.map((item) => {
           const isActive = item.href !== "#" && pathname.startsWith(item.href);
           const Icon = item.icon;
