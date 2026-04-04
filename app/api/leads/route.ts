@@ -4,23 +4,31 @@ import { z } from "zod";
 
 /** GET /api/leads — Liste tous les leads */
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const statut = searchParams.get("statut");
+  try {
+    const { searchParams } = new URL(request.url);
+    const statut = searchParams.get("statut");
 
-  const leads = await prisma.lead.findMany({
-    where: statut && statut !== "TOUS" ? { statut: statut as never } : undefined,
-    orderBy: { dateCreation: "desc" },
-  });
+    const leads = await prisma.lead.findMany({
+      where: statut && statut !== "TOUS" ? { statut: statut as never } : undefined,
+      orderBy: { dateCreation: "desc" },
+    });
 
-  // Sérialise les Decimals pour le JSON
-  const serialized = leads.map((lead) => ({
-    ...lead,
-    budgetEstime: lead.budgetEstime ? Number(lead.budgetEstime) : null,
-    dateCreation: lead.dateCreation.toISOString().split("T")[0],
-    dateMiseAJour: lead.dateMiseAJour.toISOString().split("T")[0],
-  }));
+    // Sérialise les Decimals pour le JSON
+    const serialized = leads.map((lead) => ({
+      ...lead,
+      budgetEstime: lead.budgetEstime ? Number(lead.budgetEstime) : null,
+      dateCreation: lead.dateCreation.toISOString().split("T")[0],
+      dateMiseAJour: lead.dateMiseAJour.toISOString().split("T")[0],
+    }));
 
-  return NextResponse.json(serialized);
+    return NextResponse.json(serialized);
+  } catch (error) {
+    console.error("[API /api/leads GET]", error);
+    return NextResponse.json(
+      { error: "Erreur serveur", message: error instanceof Error ? error.message : "Unknown" },
+      { status: 500 }
+    );
+  }
 }
 
 const createLeadSchema = z.object({
