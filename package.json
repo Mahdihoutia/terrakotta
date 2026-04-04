@@ -2,13 +2,9 @@
   "name": "terrakotta",
   "version": "0.1.0",
   "private": true,
-  "engines": {
-    "node": "20.x"
-  },
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
-    "vercel-build": "prisma generate && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "postinstall": "prisma generate",
