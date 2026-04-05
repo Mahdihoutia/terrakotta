@@ -1933,8 +1933,22 @@ const PHOTO_CATEGORIES: Record<FicheId, string[]> = {
 
 // ─── Props ──────────────────────────────────────────────────────
 
+interface DocumentRecord {
+  id: string;
+  titre: string;
+  reference: string;
+  type: string;
+  statut: string;
+  clientNom: string | null;
+  donnees: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface Props {
   onBack: () => void;
+  onSaved?: () => void;
+  existingDoc?: DocumentRecord | null;
 }
 
 // ─── PDF Generation ─────────────────────────────────────────────
@@ -2133,11 +2147,26 @@ async function generatePDF(
 
 // ─── Component ──────────────────────────────────────────────────
 
-export default function NoteDimensionnement({ onBack }: Props) {
-  const [selectedFiche, setSelectedFiche] = useState<FicheId | null>(null);
+export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Props) {
+  const [selectedFiche, setSelectedFiche] = useState<FicheId | null>(() => {
+    if (existingDoc?.donnees) {
+      try {
+        const d = JSON.parse(existingDoc.donnees);
+        return d._ficheId || null;
+      } catch { return null; }
+    }
+    return null;
+  });
   const [activeSection, setActiveSection] = useState(0);
-  const [values, setValues] = useState<FormValues>({});
+  const [values, setValues] = useState<FormValues>(() => {
+    if (existingDoc?.donnees) {
+      try { return JSON.parse(existingDoc.donnees); } catch { return {}; }
+    }
+    return {};
+  });
+  const [docId, setDocId] = useState<string | null>(existingDoc?.id ?? null);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const [showPhotos, setShowPhotos] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -2148,9 +2177,59 @@ export default function NoteDimensionnement({ onBack }: Props) {
     setSaved(false);
   }
 
-  function handleSave() {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  async function handleSave() {
+    if (!selectedFiche) return;
+    setSaving(true);
+    try {
+      const ficheConfig = FICHES.find((f) => f.id === selectedFiche);
+      const titre = values.ref_projet
+        ? `${selectedFiche} — ${values.client_nom || "Sans client"}`
+        : `Note de dimensionnement ${selectedFiche} (brouillon)`;
+      const reference = values.ref_projet || `ND-${Date.now().toString(36).toUpperCase()}`;
+      const donnees = JSON.stringify({ ...values, _ficheId: selectedFiche, _ficheTitre: ficheConfig?.sousTitre });
+
+      if (docId) {
+        const res = await fetch(`/api/documents/${docId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            titre,
+            clientNom: values.client_nom || null,
+            donnees,
+            statut: "EN_COURS",
+          }),
+        });
+        if (res.ok) {
+          setSaved(true);
+          setTimeout(() => setSaved(false), 2000);
+          onSaved?.();
+        }
+      } else {
+        const res = await fetch("/api/documents", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            titre,
+            reference,
+            type: "NOTE_DIMENSIONNEMENT",
+            statut: "EN_COURS",
+            clientNom: values.client_nom || null,
+            donnees,
+          }),
+        });
+        if (res.ok) {
+          const created = await res.json();
+          setDocId(created.id);
+          setSaved(true);
+          setTimeout(() => setSaved(false), 2000);
+          onSaved?.();
+        }
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setSaving(false);
+    }
   }
 
   const handleAddPhotos = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -2194,6 +2273,17 @@ export default function NoteDimensionnement({ onBack }: Props) {
       const fiche = FICHES.find((f) => f.id === selectedFiche)!;
       const sections = QUESTIONNAIRES[selectedFiche];
       await generatePDF(fiche, sections, values, photos);
+      // Mark as TERMINE after PDF generation
+      if (docId) {
+        await fetch(`/api/documents/${docId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ statut: "TERMINE" }),
+        });
+        onSaved?.();
+      } else {
+        await handleSave();
+      }
     } finally {
       setGenerating(false);
     }
@@ -2309,9 +2399,9 @@ export default function NoteDimensionnement({ onBack }: Props) {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleSave}>
-            {saved ? <CheckCircle2 className="mr-2 h-4 w-4 text-emerald-500" /> : <Save className="mr-2 h-4 w-4" />}
-            {saved ? "Sauvegardé" : "Sauvegarder"}
+          <Button variant="outline" size="sm" onClick={handleSave} disabled={saving}>
+            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : saved ? <CheckCircle2 className="mr-2 h-4 w-4 text-emerald-500" /> : <Save className="mr-2 h-4 w-4" />}
+            {saving ? "Sauvegarde..." : saved ? "Sauvegardé" : "Sauvegarder"}
           </Button>
           <Button size="sm" onClick={handleGeneratePDF} disabled={generating}>
             {generating ? (

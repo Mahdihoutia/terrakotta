@@ -187,6 +187,22 @@ model Evenement {
   @@map("evenements")
 }
 
+// ─── Document (rapports, notes de dimensionnement, audits) ─────
+
+model Document {
+  id            String         @id @default(cuid())
+  titre         String
+  reference     String         @unique
+  type          DocumentType
+  statut        DocumentStatut @default(BROUILLON)
+  clientNom     String?        @map("client_nom")
+  donnees       String?        // JSON stringified form values
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  @@map("documents")
+}
+
 // ─── Enums ──────────────────────────────────────────────────────
 
 enum ClientType {
@@ -245,6 +261,20 @@ enum AideType {
   AIDE_LOCALE
   COUP_DE_POUCE
   AUTRE
+}
+
+enum DocumentType {
+  RAPPORT_VISITE
+  NOTE_DIMENSIONNEMENT
+  DEVIS
+  AUDIT
+}
+
+enum DocumentStatut {
+  BROUILLON
+  EN_COURS
+  TERMINE
+  ENVOYE
 }
 
 enum AideStatut {
