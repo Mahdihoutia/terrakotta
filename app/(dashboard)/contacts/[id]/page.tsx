@@ -49,9 +49,9 @@ interface ContactDetail {
 }
 
 const TYPE_STYLES: Record<string, string> = {
-  PARTICULIER: "bg-blue-400/10 text-blue-400",
-  PROFESSIONNEL: "bg-emerald-400/10 text-emerald-400",
-  COLLECTIVITE: "bg-violet-400/10 text-violet-400",
+  PARTICULIER: "bg-blue-500/10 text-blue-700 dark:text-blue-400",
+  PROFESSIONNEL: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+  COLLECTIVITE: "bg-violet-500/10 text-violet-700 dark:text-violet-400",
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -194,7 +194,7 @@ export default function ContactDetailPage({ params }: Props) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <Loader2 className="h-8 w-8 animate-spin text-[#5a6478]" />
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -202,9 +202,9 @@ export default function ContactDetailPage({ params }: Props) {
   if (error || !contact) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-4">
-        <p className="text-red-400 text-sm">{error ?? "Contact introuvable"}</p>
+        <p className="text-red-600 dark:text-red-400 text-sm">{error ?? "Contact introuvable"}</p>
         <Link href="/contacts">
-          <Button variant="outline" size="sm" className="border-white/10 bg-white/5 text-[#c8d0e0]">
+          <Button variant="outline" size="sm">
             <ArrowLeft className="mr-2 h-4 w-4" /> Retour aux contacts
           </Button>
         </Link>
@@ -217,8 +217,8 @@ export default function ContactDetailPage({ params }: Props) {
     : contact.nom;
 
   const inputClass =
-    "w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-[#e8ecf4] focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/30 transition-colors";
-  const labelClass = "text-xs font-medium text-[#7a849a] mb-1.5 block";
+    "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/30 transition-colors";
+  const labelClass = "text-xs font-medium text-muted-foreground mb-1.5 block";
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -226,12 +226,12 @@ export default function ContactDetailPage({ params }: Props) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link href="/contacts">
-            <Button variant="ghost" size="icon" className="h-9 w-9 text-[#5a6478] hover:text-[#e8ecf4] hover:bg-white/[0.06]">
+            <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-foreground">
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-[#e8ecf4]">
+            <h1 className="text-2xl font-bold text-foreground">
               {editing ? "Modifier le contact" : displayName}
             </h1>
             <div className="flex items-center gap-2 mt-1">
@@ -239,7 +239,7 @@ export default function ContactDetailPage({ params }: Props) {
                 {TYPE_LABELS[editing ? form.type : contact.type]}
               </Badge>
               <StatusBadge statut={editing ? form.statut : contact.statut} />
-              <span className="text-xs text-[#5a6478]">
+              <span className="text-xs text-muted-foreground">
                 Créé le {contact.dateCreation} · Modifié le {contact.dateMiseAJour}
               </span>
             </div>
@@ -248,8 +248,7 @@ export default function ContactDetailPage({ params }: Props) {
         <div className="flex gap-2">
           {editing ? (
             <>
-              <Button variant="outline" size="sm" onClick={handleCancel}
-                className="border-white/10 bg-white/5 text-[#c8d0e0] hover:bg-white/10">
+              <Button variant="outline" size="sm" onClick={handleCancel}>
                 <X className="mr-2 h-3.5 w-3.5" /> Annuler
               </Button>
               <Button size="sm" onClick={handleSave} disabled={saving}>
@@ -260,7 +259,7 @@ export default function ContactDetailPage({ params }: Props) {
           ) : (
             <>
               <Button variant="outline" size="sm" onClick={() => setShowDeleteConfirm(true)}
-                className="border-red-500/20 bg-red-500/5 text-red-400 hover:bg-red-500/10 hover:text-red-300">
+                className="border-red-500/20 bg-red-500/5 text-red-600 dark:text-red-400 hover:bg-red-500/10">
                 <Trash2 className="mr-2 h-3.5 w-3.5" /> Supprimer
               </Button>
               <Button size="sm" onClick={() => setEditing(true)}>
@@ -278,14 +277,13 @@ export default function ContactDetailPage({ params }: Props) {
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
             onClick={() => setShowDeleteConfirm(false)}>
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-              className="glass rounded-2xl p-6 max-w-sm mx-4" onClick={(e) => e.stopPropagation()}>
-              <h3 className="text-lg font-semibold text-[#e8ecf4] mb-2">Supprimer ce contact ?</h3>
-              <p className="text-sm text-[#7a849a] mb-6">
-                Cette action est irréversible. Le contact <span className="text-[#e8ecf4] font-medium">{displayName}</span> sera définitivement supprimé.
+              className="rounded-2xl border bg-card p-6 max-w-sm mx-4 shadow-lg" onClick={(e) => e.stopPropagation()}>
+              <h3 className="text-lg font-semibold text-foreground mb-2">Supprimer ce contact ?</h3>
+              <p className="text-sm text-muted-foreground mb-6">
+                Cette action est irréversible. Le contact <span className="text-foreground font-medium">{displayName}</span> sera définitivement supprimé.
               </p>
               <div className="flex gap-2 justify-end">
-                <Button variant="outline" size="sm" onClick={() => setShowDeleteConfirm(false)}
-                  className="border-white/10 bg-white/5 text-[#c8d0e0] hover:bg-white/10">
+                <Button variant="outline" size="sm" onClick={() => setShowDeleteConfirm(false)}>
                   Annuler
                 </Button>
                 <Button size="sm" onClick={handleDelete} disabled={deleting} className="bg-red-600 hover:bg-red-700 text-white">
@@ -300,7 +298,7 @@ export default function ContactDetailPage({ params }: Props) {
 
       {/* Content */}
       {editing ? (
-        <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-2xl p-6">
+        <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl border bg-card p-6">
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             <div>
               <label className={labelClass}>Nom *</label>
@@ -388,8 +386,8 @@ export default function ContactDetailPage({ params }: Props) {
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Colonne principale */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="glass rounded-2xl p-6">
-              <h2 className="text-sm font-semibold text-[#e8ecf4] mb-4">Informations de contact</h2>
+            <div className="rounded-2xl border bg-card p-6">
+              <h2 className="text-sm font-semibold text-foreground mb-4">Informations de contact</h2>
               <div className="grid gap-4 sm:grid-cols-2">
                 <InfoRow icon={<User className="h-4 w-4" />} label="Nom" value={contact.nom} />
                 <InfoRow icon={<User className="h-4 w-4" />} label="Prénom" value={contact.prenom ?? "\u2014"} />
@@ -401,8 +399,8 @@ export default function ContactDetailPage({ params }: Props) {
               </div>
             </div>
 
-            <div className="glass rounded-2xl p-6">
-              <h2 className="text-sm font-semibold text-[#e8ecf4] mb-4">Raison Sociale</h2>
+            <div className="rounded-2xl border bg-card p-6">
+              <h2 className="text-sm font-semibold text-foreground mb-4">Raison Sociale</h2>
               <div className="grid gap-4 sm:grid-cols-2">
                 <InfoRow icon={<Building2 className="h-4 w-4" />} label="Raison Sociale" value={contact.raisonSociale ?? "\u2014"} />
                 <InfoRow icon={<Hash className="h-4 w-4" />} label="N° SIRET" value={contact.siret ?? "\u2014"} />
@@ -410,11 +408,11 @@ export default function ContactDetailPage({ params }: Props) {
               </div>
             </div>
 
-            <div className="glass rounded-2xl p-6">
-              <h2 className="text-sm font-semibold text-[#e8ecf4] mb-4 flex items-center gap-2">
-                <StickyNote className="h-4 w-4 text-[#5a6478]" /> Notes
+            <div className="rounded-2xl border bg-card p-6">
+              <h2 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+                <StickyNote className="h-4 w-4 text-muted-foreground" /> Notes
               </h2>
-              <p className="text-sm text-[#c8d0e0] whitespace-pre-wrap leading-relaxed">
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
                 {contact.notes || "Aucune note pour ce contact."}
               </p>
             </div>
@@ -422,12 +420,12 @@ export default function ContactDetailPage({ params }: Props) {
 
           {/* Barre latérale */}
           <div className="space-y-6">
-            <div className="glass rounded-2xl p-6">
-              <h2 className="text-sm font-semibold text-[#e8ecf4] mb-4">Détails</h2>
+            <div className="rounded-2xl border bg-card p-6">
+              <h2 className="text-sm font-semibold text-foreground mb-4">Détails</h2>
               <div className="space-y-4">
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider text-[#5a6478] mb-1">Source</p>
-                  <span className="inline-block rounded-full bg-white/[0.06] px-2.5 py-1 text-xs text-[#c8d0e0]">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Source</p>
+                  <span className="inline-block rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
                     {SOURCE_LABELS[contact.source]}
                   </span>
                 </div>
@@ -435,32 +433,32 @@ export default function ContactDetailPage({ params }: Props) {
               </div>
             </div>
 
-            <div className="glass rounded-2xl p-6">
-              <h2 className="text-sm font-semibold text-[#e8ecf4] mb-4">Activité</h2>
+            <div className="rounded-2xl border bg-card p-6">
+              <h2 className="text-sm font-semibold text-foreground mb-4">Activité</h2>
               <div className="space-y-4">
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider text-[#5a6478]">Projets liés</p>
-                  <p className="text-2xl font-bold text-[#e8ecf4]">{contact.projetsCount}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Projets liés</p>
+                  <p className="text-2xl font-bold text-foreground">{contact.projetsCount}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider text-[#5a6478]">Devis</p>
-                  <p className="text-2xl font-bold text-[#e8ecf4]">{contact.devisCount}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Devis</p>
+                  <p className="text-2xl font-bold text-foreground">{contact.devisCount}</p>
                 </div>
               </div>
             </div>
 
-            <div className="glass rounded-2xl p-6">
-              <h2 className="text-sm font-semibold text-[#e8ecf4] mb-4 flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-[#5a6478]" /> Historique
+            <div className="rounded-2xl border bg-card p-6">
+              <h2 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-muted-foreground" /> Historique
               </h2>
               <div className="space-y-3">
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider text-[#5a6478]">Créé le</p>
-                  <p className="text-sm text-[#c8d0e0]">{contact.dateCreation}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Créé le</p>
+                  <p className="text-sm text-muted-foreground">{contact.dateCreation}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider text-[#5a6478]">Dernière modification</p>
-                  <p className="text-sm text-[#c8d0e0]">{contact.dateMiseAJour}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Dernière modification</p>
+                  <p className="text-sm text-muted-foreground">{contact.dateMiseAJour}</p>
                 </div>
               </div>
             </div>
@@ -474,10 +472,10 @@ export default function ContactDetailPage({ params }: Props) {
 function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="mt-0.5 text-[#5a6478]">{icon}</div>
+      <div className="mt-0.5 text-muted-foreground">{icon}</div>
       <div>
-        <p className="text-[10px] uppercase tracking-wider text-[#5a6478]">{label}</p>
-        <p className="text-sm text-[#c8d0e0]">{value}</p>
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
+        <p className="text-sm text-muted-foreground">{value}</p>
       </div>
     </div>
   );
