@@ -23,7 +23,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 // ─── Types ──────────────────────────────────────────────────────
 
-type FicheId = "BAT-TH-134" | "BAT-TH-163";
+type FicheId = "BAT-TH-134" | "BAT-TH-163" | "BAR-TH-171" | "BAR-TH-159" | "BAR-EN-101" | "BAR-EN-102" | "BAR-EN-103" | "BAT-TH-116";
 
 interface FicheConfig {
   id: FicheId;
@@ -64,6 +64,54 @@ const FICHES: FicheConfig[] = [
       "Mise en place d'une pompe à chaleur de type air/eau pour le chauffage des locaux en bâtiment tertiaire existant.",
     secteur: "Tertiaire",
   },
+  {
+    id: "BAR-TH-171",
+    titre: "BAR-TH-171",
+    sousTitre: "Pompe à chaleur de type air/eau (résidentiel)",
+    description:
+      "Mise en place d'une pompe à chaleur de type air/eau pour le chauffage et/ou l'eau chaude sanitaire en maison individuelle ou appartement existant.",
+    secteur: "Résidentiel",
+  },
+  {
+    id: "BAR-TH-159",
+    titre: "BAR-TH-159",
+    sousTitre: "Pompe à chaleur hybride (résidentiel)",
+    description:
+      "Mise en place d'un système hybride combinant une pompe à chaleur air/eau et une chaudière à condensation avec régulation intelligente.",
+    secteur: "Résidentiel",
+  },
+  {
+    id: "BAR-EN-101",
+    titre: "BAR-EN-101",
+    sousTitre: "Isolation de combles ou de toitures",
+    description:
+      "Mise en place d'une isolation thermique en combles perdus, en rampants de toiture ou en toiture terrasse dans un bâtiment résidentiel existant.",
+    secteur: "Résidentiel",
+  },
+  {
+    id: "BAR-EN-102",
+    titre: "BAR-EN-102",
+    sousTitre: "Isolation des murs",
+    description:
+      "Mise en place d'une isolation thermique des murs par l'intérieur (ITI) ou par l'extérieur (ITE) dans un bâtiment résidentiel existant.",
+    secteur: "Résidentiel",
+  },
+  {
+    id: "BAR-EN-103",
+    titre: "BAR-EN-103",
+    sousTitre: "Isolation d'un plancher",
+    description:
+      "Mise en place d'une isolation thermique d'un plancher bas sur vide sanitaire, sous-sol non chauffé ou terre-plein dans un bâtiment résidentiel existant.",
+    secteur: "Résidentiel",
+  },
+  {
+    id: "BAT-TH-116",
+    titre: "BAT-TH-116",
+    sousTitre: "Système de gestion technique du bâtiment (GTB)",
+    description:
+      "Mise en place d'un système de gestion technique du bâtiment (GTB) de classe A ou B selon la norme EN 15232 pour un bâtiment tertiaire existant.",
+    secteur: "Tertiaire",
+  },
 ];
 
 // ─── Catégories de photos ───────────────────────────────────────
@@ -89,6 +137,77 @@ const PHOTO_CATEGORIES_163 = [
   "Local technique",
   "Tableau électrique",
   "Vue générale de l'installation",
+  "Autre",
+];
+
+const PHOTO_CATEGORIES_171 = [
+  "Plaque signalétique PAC",
+  "Unité extérieure installée",
+  "Module hydraulique intérieur",
+  "Chaudière existante (avant travaux)",
+  "Émetteurs de chaleur (radiateurs / plancher)",
+  "Régulateur / thermostat",
+  "Ballon tampon / ECS",
+  "Vue générale de l'installation",
+  "Autre",
+];
+
+const PHOTO_CATEGORIES_159 = [
+  "Plaque signalétique PAC hybride",
+  "Unité extérieure PAC",
+  "Chaudière condensation intégrée",
+  "Chaudière existante (avant travaux)",
+  "Régulation intelligente / boîtier de commande",
+  "Émetteurs de chaleur",
+  "Raccordement hydraulique",
+  "Vue générale de l'installation",
+  "Autre",
+];
+
+const PHOTO_CATEGORIES_101 = [
+  "Combles avant travaux (vue générale)",
+  "Toiture / charpente existante",
+  "Isolation existante (si présente)",
+  "Isolant projeté / posé (après travaux)",
+  "Détail de pose (jonctions, trappe)",
+  "Étiquette isolant (marque, R, lambda)",
+  "Repérage des points singuliers",
+  "Vue générale après travaux",
+  "Autre",
+];
+
+const PHOTO_CATEGORIES_102 = [
+  "Mur avant travaux (intérieur / extérieur)",
+  "Isolation existante (si présente)",
+  "Mise en œuvre de l'isolant",
+  "Détail de pose (jonctions, angles, fenêtres)",
+  "Étiquette isolant (marque, R, lambda)",
+  "Traitement des ponts thermiques",
+  "Finition (enduit / bardage / parement)",
+  "Vue générale après travaux",
+  "Autre",
+];
+
+const PHOTO_CATEGORIES_103 = [
+  "Plancher / sous-face avant travaux",
+  "Vide sanitaire / sous-sol / terre-plein",
+  "Isolation existante (si présente)",
+  "Mise en œuvre de l'isolant",
+  "Détail de pose (jonctions, passages de gaines)",
+  "Étiquette isolant (marque, R, lambda)",
+  "Vue générale après travaux",
+  "Autre",
+];
+
+const PHOTO_CATEGORIES_116 = [
+  "Automate / contrôleur GTB",
+  "Interface de supervision (écran)",
+  "Capteurs / sondes installés",
+  "Actionneurs (vannes, registres)",
+  "Armoire électrique / tableau de commande",
+  "Installation existante (avant travaux)",
+  "Schéma d'architecture GTB",
+  "Vue générale du local technique",
   "Autre",
 ];
 
@@ -821,14 +940,995 @@ const QUESTIONNAIRE_163: QuestionSection[] = [
   },
 ];
 
+// ─── BAR-TH-171 — PAC air/eau résidentiel ─────────────────────
+
+const QUESTIONNAIRE_171: QuestionSection[] = [
+  {
+    titre: "1. Informations du projet",
+    description: "Identification du logement, du demandeur et du bureau d'étude",
+    fields: [
+      { id: "ref_projet", label: "Référence du projet", type: "text", placeholder: "Ex: ND-2026-XXX", required: true },
+      { id: "date_visite", label: "Date de visite technique", type: "date", required: true },
+      { id: "date_note", label: "Date de la note", type: "date", required: true },
+      { id: "redacteur", label: "Rédacteur de la note", type: "text", placeholder: "Nom du technicien / ingénieur", required: true },
+      { id: "client_nom", label: "Bénéficiaire", type: "text", placeholder: "Nom et prénom", required: true },
+      { id: "adresse", label: "Adresse du logement", type: "text", placeholder: "Adresse complète", required: true, colSpan: 2 },
+      { id: "installateur", label: "Installateur / entreprise RGE", type: "text", placeholder: "Raison sociale de l'installateur", required: true },
+      { id: "installateur_rge", label: "N° qualification RGE", type: "text", placeholder: "Ex: QUA-XXX-XXXX" },
+    ],
+  },
+  {
+    titre: "2. Caractéristiques du logement",
+    description: "Description du logement et de l'enveloppe thermique",
+    fields: [
+      {
+        id: "type_logement",
+        label: "Type de logement",
+        type: "select",
+        options: ["Maison individuelle", "Appartement"],
+        required: true,
+      },
+      { id: "surface_habitable", label: "Surface habitable", type: "number", placeholder: "Ex: 120", unit: "m²", required: true },
+      { id: "annee_construction", label: "Année de construction", type: "number", placeholder: "Ex: 1985", required: true },
+      {
+        id: "zone_climatique",
+        label: "Zone climatique",
+        type: "select",
+        options: ["H1a — Nord", "H1b — Nord-Est", "H1c — Est", "H2a — Nord-Ouest", "H2b — Ouest", "H2c — Sud-Ouest", "H2d — Centre", "H3 — Méditerranée"],
+        required: true,
+      },
+      { id: "nb_pieces", label: "Nombre de pièces principales", type: "number", placeholder: "Ex: 5" },
+      { id: "hauteur_plafond", label: "Hauteur sous plafond moyenne", type: "number", placeholder: "Ex: 2.5", unit: "m" },
+    ],
+  },
+  {
+    titre: "3. Installation existante",
+    description: "Équipement de chauffage actuel avant travaux",
+    fields: [
+      {
+        id: "energie_existante",
+        label: "Énergie de chauffage existante",
+        type: "select",
+        options: ["Gaz naturel", "Fioul domestique", "Électricité (effet Joule)", "GPL", "Charbon", "Bois", "Autre"],
+        required: true,
+      },
+      {
+        id: "type_chauffage_existant",
+        label: "Type de chauffage existant",
+        type: "select",
+        options: ["Chaudière standard", "Chaudière basse température", "Chaudière condensation", "Convecteurs électriques", "Radiateurs électriques", "PAC existante (à remplacer)", "Autre"],
+        required: true,
+      },
+      { id: "puissance_existante", label: "Puissance nominale installée", type: "number", placeholder: "Ex: 24", unit: "kW", required: true },
+      {
+        id: "emetteurs_existants",
+        label: "Type d'émetteurs",
+        type: "select",
+        options: ["Radiateurs haute température (70/50°C)", "Radiateurs moyenne température (55/45°C)", "Radiateurs basse température (45/35°C)", "Plancher chauffant", "Ventilo-convecteurs", "Autre"],
+        required: true,
+      },
+    ],
+  },
+  {
+    titre: "4. PAC air/eau projetée",
+    description: "Caractéristiques techniques de la PAC — conformité au règlement EU 813/2013",
+    fields: [
+      { id: "marque_pac", label: "Marque", type: "text", placeholder: "Ex: Daikin, Atlantic, Mitsubishi...", required: true },
+      { id: "modele_pac", label: "Modèle / Référence", type: "text", placeholder: "Référence constructeur", required: true },
+      { id: "puissance_calorifique", label: "Puissance calorifique nominale", type: "number", placeholder: "Ex: 12", unit: "kW", required: true },
+      { id: "cop", label: "COP à A7/W35", type: "number", placeholder: "Ex: 4.5", required: true },
+      { id: "scop", label: "SCOP (EN 14825)", type: "number", placeholder: "Ex: 4.2", required: true },
+      {
+        id: "etas",
+        label: "Efficacité énergétique saisonnière (ηs)",
+        type: "number",
+        placeholder: "Ex: 130",
+        unit: "%",
+        required: true,
+        help: "Exigence : ηs ≥ 111% (moyenne T°) ou ηs ≥ 126% (basse T°) selon règlement EU 813/2013",
+      },
+      {
+        id: "regime_temperature",
+        label: "Application de température",
+        type: "select",
+        options: [
+          "Basse température (départ ≤ 35°C) — ηs ≥ 126%",
+          "Moyenne température (départ 35–55°C) — ηs ≥ 111%",
+        ],
+        required: true,
+      },
+      {
+        id: "fluide_frigorigene",
+        label: "Fluide frigorigène",
+        type: "select",
+        options: ["R-32", "R-410A", "R-290 (propane)", "R-454B", "R-1234ze", "Autre"],
+        required: true,
+      },
+      {
+        id: "justification_choix",
+        label: "Justification du choix de la PAC",
+        type: "textarea",
+        placeholder: "Expliquer pourquoi cette PAC a été retenue : adéquation aux déperditions, compatibilité émetteurs, performance ηs, conformité BAR-TH-171...",
+        colSpan: 2,
+        required: true,
+      },
+    ],
+  },
+  {
+    titre: "5. Calcul des gains énergétiques",
+    description: "Dimensionnement et preuve du gain d'énergie",
+    fields: [
+      {
+        id: "detail_calcul",
+        label: "Détail du calcul de dimensionnement et du bilan énergétique",
+        type: "textarea",
+        placeholder: "Détailler :\n1. Calcul des déperditions du logement\n2. Justification du dimensionnement PAC vs déperditions\n3. Conso avant = Besoins / rendement générateur existant\n4. Conso après = Besoins / SCOP de la PAC\n5. Gain = Conso avant - Conso après",
+        colSpan: 2,
+        required: true,
+        help: "Le détail du calcul prouve le gain d'énergie — pièce essentielle du dossier CEE",
+      },
+      { id: "gain_energetique_pct", label: "Gain énergétique", type: "number", placeholder: "Ex: 65", unit: "%", required: true },
+      { id: "gain_energetique_mwh", label: "Gain annuel en énergie finale", type: "number", placeholder: "Ex: 12", unit: "MWh/an", required: true },
+      { id: "economie_cee_cumac", label: "Volume CEE estimé", type: "number", placeholder: "Ex: 250", unit: "MWh cumac", help: "Selon la fiche standardisée BAR-TH-171" },
+      { id: "economie_euros", label: "Économie financière annuelle", type: "number", placeholder: "Ex: 1500", unit: "€/an" },
+      { id: "cout_investissement", label: "Coût total de l'investissement", type: "number", placeholder: "Ex: 15000", unit: "€ HT" },
+      { id: "duree_retour", label: "Temps de retour sur investissement", type: "number", placeholder: "Ex: 6", unit: "ans" },
+    ],
+  },
+  {
+    titre: "6. Conformité et conclusion",
+    description: "Vérification de la conformité à la fiche CEE BAR-TH-171",
+    fields: [
+      {
+        id: "conformite_etas",
+        label: "L'efficacité énergétique saisonnière (ηs) respecte le seuil réglementaire",
+        type: "select",
+        options: ["Oui — ηs ≥ 111% (moyenne température)", "Oui — ηs ≥ 126% (basse température)", "Non — non conforme"],
+        required: true,
+      },
+      {
+        id: "conformite_installateur",
+        label: "L'installateur est qualifié RGE",
+        type: "select",
+        options: ["Oui — qualification vérifiée", "Non — non qualifié", "En cours de vérification"],
+        required: true,
+      },
+      { id: "date_installation_prevue", label: "Date d'installation prévue", type: "date", required: true },
+      { id: "duree_vie_equipement", label: "Durée de vie conventionnelle", type: "text", placeholder: "17 ans (selon fiche BAR-TH-171)" },
+      {
+        id: "conclusion",
+        label: "Conclusion et avis technique du bureau d'étude",
+        type: "textarea",
+        placeholder: "Synthèse : confirmer le dimensionnement, le gain justifié, la conformité BAR-TH-171, émettre un avis favorable ou réserves.",
+        colSpan: 2,
+        required: true,
+      },
+    ],
+  },
+];
+
+// ─── BAR-TH-159 — PAC hybride résidentiel ─────────────────────
+
+const QUESTIONNAIRE_159: QuestionSection[] = [
+  {
+    titre: "1. Informations du projet",
+    description: "Identification du logement, du demandeur et du bureau d'étude",
+    fields: [
+      { id: "ref_projet", label: "Référence du projet", type: "text", placeholder: "Ex: ND-2026-XXX", required: true },
+      { id: "date_visite", label: "Date de visite technique", type: "date", required: true },
+      { id: "date_note", label: "Date de la note", type: "date", required: true },
+      { id: "redacteur", label: "Rédacteur de la note", type: "text", placeholder: "Nom du technicien / ingénieur", required: true },
+      { id: "client_nom", label: "Bénéficiaire", type: "text", placeholder: "Nom et prénom", required: true },
+      { id: "adresse", label: "Adresse du logement", type: "text", placeholder: "Adresse complète", required: true, colSpan: 2 },
+      { id: "installateur", label: "Installateur / entreprise RGE", type: "text", placeholder: "Raison sociale de l'installateur", required: true },
+      { id: "installateur_rge", label: "N° qualification RGE", type: "text", placeholder: "Ex: QUA-XXX-XXXX" },
+    ],
+  },
+  {
+    titre: "2. Caractéristiques du logement",
+    description: "Description du logement existant",
+    fields: [
+      {
+        id: "type_logement",
+        label: "Type de logement",
+        type: "select",
+        options: ["Maison individuelle", "Appartement"],
+        required: true,
+      },
+      { id: "surface_habitable", label: "Surface habitable", type: "number", placeholder: "Ex: 120", unit: "m²", required: true },
+      { id: "annee_construction", label: "Année de construction", type: "number", placeholder: "Ex: 1985", required: true },
+      {
+        id: "zone_climatique",
+        label: "Zone climatique",
+        type: "select",
+        options: ["H1a — Nord", "H1b — Nord-Est", "H1c — Est", "H2a — Nord-Ouest", "H2b — Ouest", "H2c — Sud-Ouest", "H2d — Centre", "H3 — Méditerranée"],
+        required: true,
+      },
+      { id: "nb_pieces", label: "Nombre de pièces principales", type: "number", placeholder: "Ex: 5" },
+    ],
+  },
+  {
+    titre: "3. Installation existante",
+    description: "Équipement de chauffage actuel avant travaux",
+    fields: [
+      {
+        id: "energie_existante",
+        label: "Énergie de chauffage existante",
+        type: "select",
+        options: ["Gaz naturel", "Fioul domestique", "Électricité (effet Joule)", "GPL", "Charbon", "Autre"],
+        required: true,
+      },
+      {
+        id: "type_chauffage_existant",
+        label: "Type de chauffage existant",
+        type: "select",
+        options: ["Chaudière standard", "Chaudière basse température", "Chaudière condensation", "Convecteurs électriques", "Autre"],
+        required: true,
+      },
+      { id: "puissance_existante", label: "Puissance nominale installée", type: "number", placeholder: "Ex: 24", unit: "kW", required: true },
+      {
+        id: "emetteurs_existants",
+        label: "Type d'émetteurs",
+        type: "select",
+        options: ["Radiateurs haute température (70/50°C)", "Radiateurs moyenne température (55/45°C)", "Radiateurs basse température (45/35°C)", "Plancher chauffant", "Autre"],
+        required: true,
+      },
+    ],
+  },
+  {
+    titre: "4. PAC hybride projetée",
+    description: "PAC air/eau couplée à une chaudière gaz condensation avec régulation intelligente",
+    fields: [
+      { id: "marque_pac_hybride", label: "Marque du système hybride", type: "text", placeholder: "Ex: Daikin, Atlantic, Saunier Duval...", required: true },
+      { id: "modele_pac_hybride", label: "Modèle / Référence", type: "text", placeholder: "Référence constructeur", required: true },
+      { id: "puissance_pac", label: "Puissance calorifique PAC", type: "number", placeholder: "Ex: 8", unit: "kW", required: true },
+      { id: "puissance_chaudiere", label: "Puissance chaudière condensation", type: "number", placeholder: "Ex: 24", unit: "kW", required: true },
+      { id: "cop", label: "COP de la PAC à A7/W35", type: "number", placeholder: "Ex: 4.0", required: true },
+      {
+        id: "regulation_intelligente",
+        label: "Type de régulation intelligente",
+        type: "select",
+        options: [
+          "Alternance automatique PAC / chaudière selon T° extérieure",
+          "Optimisation coût énergie (PAC vs gaz)",
+          "Alternance selon COP et prix énergie",
+        ],
+        required: true,
+        help: "La régulation doit alterner automatiquement entre PAC et chaudière selon la température extérieure",
+      },
+      { id: "temp_bascule", label: "Température de bascule PAC → chaudière", type: "number", placeholder: "Ex: -2", unit: "°C", help: "Température extérieure en dessous de laquelle la chaudière prend le relais" },
+      {
+        id: "fluide_frigorigene",
+        label: "Fluide frigorigène de la PAC",
+        type: "select",
+        options: ["R-32", "R-410A", "R-290 (propane)", "R-454B", "Autre"],
+        required: true,
+      },
+      {
+        id: "justification_choix",
+        label: "Justification du choix du système hybride",
+        type: "textarea",
+        placeholder: "Expliquer pourquoi un système hybride est retenu : climat, réseau gaz existant, émetteurs haute température, optimisation énergétique, conformité BAR-TH-159...",
+        colSpan: 2,
+        required: true,
+      },
+    ],
+  },
+  {
+    titre: "5. Calcul des gains énergétiques",
+    description: "Dimensionnement et preuve du gain d'énergie",
+    fields: [
+      {
+        id: "detail_calcul",
+        label: "Détail du calcul de dimensionnement et du bilan énergétique",
+        type: "textarea",
+        placeholder: "Détailler :\n1. Déperditions du logement\n2. Répartition PAC / chaudière selon profil climatique\n3. Conso avant = Besoins / rendement générateur existant\n4. Conso après = (Besoins PAC / SCOP) + (Besoins chaudière / rendement condensation)\n5. Gain global",
+        colSpan: 2,
+        required: true,
+        help: "Le détail du calcul prouve le gain d'énergie — pièce essentielle du dossier CEE",
+      },
+      { id: "gain_energetique_pct", label: "Gain énergétique", type: "number", placeholder: "Ex: 40", unit: "%", required: true },
+      { id: "gain_energetique_mwh", label: "Gain annuel en énergie finale", type: "number", placeholder: "Ex: 8", unit: "MWh/an", required: true },
+      { id: "economie_cee_cumac", label: "Volume CEE estimé", type: "number", placeholder: "Ex: 200", unit: "MWh cumac", help: "Selon la fiche standardisée BAR-TH-159" },
+      { id: "economie_euros", label: "Économie financière annuelle", type: "number", placeholder: "Ex: 900", unit: "€/an" },
+      { id: "cout_investissement", label: "Coût total de l'investissement", type: "number", placeholder: "Ex: 12000", unit: "€ HT" },
+      { id: "duree_retour", label: "Temps de retour sur investissement", type: "number", placeholder: "Ex: 8", unit: "ans" },
+    ],
+  },
+  {
+    titre: "6. Conformité et conclusion",
+    description: "Vérification de la conformité à la fiche CEE BAR-TH-159",
+    fields: [
+      {
+        id: "conformite_hybride",
+        label: "Le système combine bien une PAC air/eau et une chaudière à condensation",
+        type: "select",
+        options: ["Oui — conforme", "Non — non conforme"],
+        required: true,
+      },
+      {
+        id: "conformite_regulation",
+        label: "La régulation intelligente alterne automatiquement PAC / chaudière selon la T° extérieure",
+        type: "select",
+        options: ["Oui — conforme", "Non — non conforme"],
+        required: true,
+      },
+      {
+        id: "conformite_installateur",
+        label: "L'installateur est qualifié RGE",
+        type: "select",
+        options: ["Oui — qualification vérifiée", "Non — non qualifié", "En cours de vérification"],
+        required: true,
+      },
+      { id: "date_installation_prevue", label: "Date d'installation prévue", type: "date", required: true },
+      { id: "duree_vie_equipement", label: "Durée de vie conventionnelle", type: "text", placeholder: "17 ans (selon fiche BAR-TH-159)" },
+      {
+        id: "conclusion",
+        label: "Conclusion et avis technique du bureau d'étude",
+        type: "textarea",
+        placeholder: "Synthèse : confirmer le dimensionnement, le gain justifié, la conformité BAR-TH-159, émettre un avis favorable ou réserves.",
+        colSpan: 2,
+        required: true,
+      },
+    ],
+  },
+];
+
+// ─── BAR-EN-101 — Isolation combles / toitures ────────────────
+
+const QUESTIONNAIRE_101: QuestionSection[] = [
+  {
+    titre: "1. Informations du projet",
+    description: "Identification du logement, du demandeur et du bureau d'étude",
+    fields: [
+      { id: "ref_projet", label: "Référence du projet", type: "text", placeholder: "Ex: ND-2026-XXX", required: true },
+      { id: "date_visite", label: "Date de visite technique", type: "date", required: true },
+      { id: "date_note", label: "Date de la note", type: "date", required: true },
+      { id: "redacteur", label: "Rédacteur de la note", type: "text", placeholder: "Nom du technicien / ingénieur", required: true },
+      { id: "client_nom", label: "Bénéficiaire", type: "text", placeholder: "Nom et prénom", required: true },
+      { id: "adresse", label: "Adresse du logement", type: "text", placeholder: "Adresse complète", required: true, colSpan: 2 },
+      { id: "installateur", label: "Installateur / entreprise RGE", type: "text", placeholder: "Raison sociale de l'installateur", required: true },
+      { id: "installateur_rge", label: "N° qualification RGE", type: "text", placeholder: "Ex: QUA-XXX-XXXX" },
+    ],
+  },
+  {
+    titre: "2. Caractéristiques du logement",
+    description: "Description du logement existant",
+    fields: [
+      {
+        id: "type_logement",
+        label: "Type de logement",
+        type: "select",
+        options: ["Maison individuelle", "Appartement", "Immeuble collectif"],
+        required: true,
+      },
+      { id: "surface_habitable", label: "Surface habitable", type: "number", placeholder: "Ex: 120", unit: "m²", required: true },
+      { id: "annee_construction", label: "Année de construction", type: "number", placeholder: "Ex: 1975", required: true },
+      {
+        id: "zone_climatique",
+        label: "Zone climatique",
+        type: "select",
+        options: ["H1a — Nord", "H1b — Nord-Est", "H1c — Est", "H2a — Nord-Ouest", "H2b — Ouest", "H2c — Sud-Ouest", "H2d — Centre", "H3 — Méditerranée"],
+        required: true,
+      },
+    ],
+  },
+  {
+    titre: "3. Combles / toiture existants",
+    description: "État actuel des combles ou de la toiture avant travaux",
+    fields: [
+      {
+        id: "type_combles",
+        label: "Type de combles / toiture",
+        type: "select",
+        options: ["Combles perdus", "Combles aménagés (rampants)", "Toiture terrasse"],
+        required: true,
+      },
+      { id: "surface_isolee", label: "Surface à isoler", type: "number", placeholder: "Ex: 80", unit: "m²", required: true },
+      {
+        id: "isolation_actuelle",
+        label: "Isolation actuelle",
+        type: "select",
+        options: ["Aucune isolation", "Isolation insuffisante (< 100 mm)", "Isolation dégradée", "Isolation partielle"],
+        required: true,
+      },
+      { id: "r_actuel", label: "Résistance thermique actuelle (si connue)", type: "number", placeholder: "Ex: 1.5", unit: "m².K/W" },
+    ],
+  },
+  {
+    titre: "4. Isolation projetée",
+    description: "Caractéristiques de l'isolation mise en œuvre",
+    fields: [
+      {
+        id: "type_isolant",
+        label: "Type d'isolant",
+        type: "select",
+        options: ["Laine de verre", "Laine de roche", "Ouate de cellulose", "Laine de bois", "Polystyrène expansé (PSE)", "Polyuréthane (PUR)", "Laine de chanvre", "Autre"],
+        required: true,
+      },
+      {
+        id: "r_thermique",
+        label: "Résistance thermique R de l'isolant posé",
+        type: "number",
+        placeholder: "Ex: 7",
+        unit: "m².K/W",
+        required: true,
+        help: "Exigence : R ≥ 7 m².K/W pour combles perdus, R ≥ 6 m².K/W pour rampants / toiture terrasse",
+      },
+      { id: "epaisseur", label: "Épaisseur de l'isolant", type: "number", placeholder: "Ex: 300", unit: "mm", required: true },
+      { id: "lambda", label: "Conductivité thermique (λ)", type: "number", placeholder: "Ex: 0.035", unit: "W/(m.K)", required: true },
+      { id: "marque_isolant", label: "Marque de l'isolant", type: "text", placeholder: "Ex: Isover, Rockwool, Knauf...", required: true },
+      { id: "reference_isolant", label: "Référence produit", type: "text", placeholder: "Référence commerciale" },
+      {
+        id: "justification_choix",
+        label: "Justification du choix de l'isolant",
+        type: "textarea",
+        placeholder: "Expliquer le choix : performance thermique, compatibilité avec le support, certification ACERMI, conformité BAR-EN-101...",
+        colSpan: 2,
+        required: true,
+      },
+    ],
+  },
+  {
+    titre: "5. Calcul des gains énergétiques",
+    description: "Estimation des économies d'énergie générées par l'isolation",
+    fields: [
+      {
+        id: "detail_calcul",
+        label: "Détail du calcul de gain énergétique",
+        type: "textarea",
+        placeholder: "Détailler :\n1. Déperditions avant travaux par la toiture (U avant × S × ΔT × DJU)\n2. Déperditions après travaux (U après × S × ΔT × DJU)\n3. Gain = Déperditions avant - Déperditions après\n4. Conversion en énergie finale selon le rendement du système de chauffage",
+        colSpan: 2,
+        required: true,
+        help: "Le détail du calcul prouve le gain d'énergie",
+      },
+      { id: "gain_energetique_pct", label: "Gain énergétique", type: "number", placeholder: "Ex: 30", unit: "%", required: true },
+      { id: "gain_energetique_mwh", label: "Gain annuel en énergie finale", type: "number", placeholder: "Ex: 5", unit: "MWh/an", required: true },
+      { id: "economie_cee_cumac", label: "Volume CEE estimé", type: "number", placeholder: "Ex: 120", unit: "MWh cumac", help: "Selon la fiche standardisée BAR-EN-101" },
+      { id: "economie_euros", label: "Économie financière annuelle", type: "number", placeholder: "Ex: 600", unit: "€/an" },
+      { id: "cout_investissement", label: "Coût total de l'investissement", type: "number", placeholder: "Ex: 4000", unit: "€ HT" },
+      { id: "duree_retour", label: "Temps de retour sur investissement", type: "number", placeholder: "Ex: 5", unit: "ans" },
+    ],
+  },
+  {
+    titre: "6. Conformité et conclusion",
+    description: "Vérification de la conformité à la fiche CEE BAR-EN-101",
+    fields: [
+      {
+        id: "conformite_r",
+        label: "La résistance thermique R respecte le seuil de la fiche",
+        type: "select",
+        options: ["Oui — R ≥ 7 m².K/W (combles perdus)", "Oui — R ≥ 6 m².K/W (rampants / toiture terrasse)", "Non — non conforme"],
+        required: true,
+      },
+      {
+        id: "conformite_installateur",
+        label: "L'installateur est qualifié RGE",
+        type: "select",
+        options: ["Oui — qualification vérifiée", "Non — non qualifié", "En cours de vérification"],
+        required: true,
+      },
+      { id: "date_installation_prevue", label: "Date d'installation prévue", type: "date", required: true },
+      { id: "duree_vie_equipement", label: "Durée de vie conventionnelle", type: "text", placeholder: "30 ans (selon fiche BAR-EN-101)" },
+      {
+        id: "conclusion",
+        label: "Conclusion et avis technique du bureau d'étude",
+        type: "textarea",
+        placeholder: "Synthèse : confirmer que l'isolation est adaptée, le gain justifié, la conformité BAR-EN-101, émettre un avis favorable ou réserves.",
+        colSpan: 2,
+        required: true,
+      },
+    ],
+  },
+];
+
+// ─── BAR-EN-102 — Isolation des murs ──────────────────────────
+
+const QUESTIONNAIRE_102: QuestionSection[] = [
+  {
+    titre: "1. Informations du projet",
+    description: "Identification du logement, du demandeur et du bureau d'étude",
+    fields: [
+      { id: "ref_projet", label: "Référence du projet", type: "text", placeholder: "Ex: ND-2026-XXX", required: true },
+      { id: "date_visite", label: "Date de visite technique", type: "date", required: true },
+      { id: "date_note", label: "Date de la note", type: "date", required: true },
+      { id: "redacteur", label: "Rédacteur de la note", type: "text", placeholder: "Nom du technicien / ingénieur", required: true },
+      { id: "client_nom", label: "Bénéficiaire", type: "text", placeholder: "Nom et prénom", required: true },
+      { id: "adresse", label: "Adresse du logement", type: "text", placeholder: "Adresse complète", required: true, colSpan: 2 },
+      { id: "installateur", label: "Installateur / entreprise RGE", type: "text", placeholder: "Raison sociale de l'installateur", required: true },
+      { id: "installateur_rge", label: "N° qualification RGE", type: "text", placeholder: "Ex: QUA-XXX-XXXX" },
+    ],
+  },
+  {
+    titre: "2. Caractéristiques du logement",
+    description: "Description du logement existant",
+    fields: [
+      {
+        id: "type_logement",
+        label: "Type de logement",
+        type: "select",
+        options: ["Maison individuelle", "Appartement", "Immeuble collectif"],
+        required: true,
+      },
+      { id: "surface_habitable", label: "Surface habitable", type: "number", placeholder: "Ex: 120", unit: "m²", required: true },
+      { id: "annee_construction", label: "Année de construction", type: "number", placeholder: "Ex: 1975", required: true },
+      {
+        id: "zone_climatique",
+        label: "Zone climatique",
+        type: "select",
+        options: ["H1a — Nord", "H1b — Nord-Est", "H1c — Est", "H2a — Nord-Ouest", "H2b — Ouest", "H2c — Sud-Ouest", "H2d — Centre", "H3 — Méditerranée"],
+        required: true,
+      },
+    ],
+  },
+  {
+    titre: "3. Murs existants",
+    description: "État actuel des murs avant travaux",
+    fields: [
+      {
+        id: "type_mur",
+        label: "Type de mur",
+        type: "select",
+        options: ["Béton banché", "Parpaing / agglo", "Brique creuse", "Brique pleine", "Pierre", "Ossature bois", "Autre"],
+        required: true,
+      },
+      { id: "surface_murs", label: "Surface de murs à isoler", type: "number", placeholder: "Ex: 150", unit: "m²", required: true },
+      {
+        id: "isolation_actuelle",
+        label: "Isolation actuelle des murs",
+        type: "select",
+        options: ["Aucune isolation", "Isolation insuffisante (< 50 mm)", "Isolation dégradée", "Isolation partielle"],
+        required: true,
+      },
+      { id: "r_actuel", label: "Résistance thermique actuelle (si connue)", type: "number", placeholder: "Ex: 0.5", unit: "m².K/W" },
+    ],
+  },
+  {
+    titre: "4. Isolation projetée",
+    description: "Caractéristiques de l'isolation mise en œuvre — R ≥ 3.7 m².K/W",
+    fields: [
+      {
+        id: "technique_isolation",
+        label: "Technique d'isolation",
+        type: "select",
+        options: ["ITE — Isolation Thermique par l'Extérieur", "ITI — Isolation Thermique par l'Intérieur"],
+        required: true,
+      },
+      {
+        id: "type_isolant",
+        label: "Type d'isolant",
+        type: "select",
+        options: ["Laine de verre", "Laine de roche", "Polystyrène expansé (PSE)", "Polystyrène extrudé (XPS)", "Polyuréthane (PUR)", "Laine de bois", "Fibre de bois", "Ouate de cellulose", "Autre"],
+        required: true,
+      },
+      {
+        id: "r_thermique",
+        label: "Résistance thermique R de l'isolant posé",
+        type: "number",
+        placeholder: "Ex: 3.7",
+        unit: "m².K/W",
+        required: true,
+        help: "Exigence fiche BAR-EN-102 : R ≥ 3.7 m².K/W",
+      },
+      { id: "epaisseur", label: "Épaisseur de l'isolant", type: "number", placeholder: "Ex: 140", unit: "mm", required: true },
+      { id: "lambda", label: "Conductivité thermique (λ)", type: "number", placeholder: "Ex: 0.038", unit: "W/(m.K)", required: true },
+      { id: "marque_isolant", label: "Marque de l'isolant", type: "text", placeholder: "Ex: Isover, Rockwool, STO...", required: true },
+      { id: "reference_isolant", label: "Référence produit", type: "text", placeholder: "Référence commerciale" },
+      {
+        id: "justification_choix",
+        label: "Justification du choix de l'isolant et de la technique",
+        type: "textarea",
+        placeholder: "Expliquer le choix : ITE vs ITI, performance thermique, traitement des ponts thermiques, certification ACERMI, conformité BAR-EN-102...",
+        colSpan: 2,
+        required: true,
+      },
+    ],
+  },
+  {
+    titre: "5. Calcul des gains énergétiques",
+    description: "Estimation des économies d'énergie générées par l'isolation des murs",
+    fields: [
+      {
+        id: "detail_calcul",
+        label: "Détail du calcul de gain énergétique",
+        type: "textarea",
+        placeholder: "Détailler :\n1. Déperditions avant travaux par les murs (U avant × S × ΔT × DJU)\n2. Déperditions après travaux (U après × S × ΔT × DJU)\n3. Gain = Déperditions avant - Déperditions après\n4. Traitement des ponts thermiques si ITE",
+        colSpan: 2,
+        required: true,
+        help: "Le détail du calcul prouve le gain d'énergie",
+      },
+      { id: "gain_energetique_pct", label: "Gain énergétique", type: "number", placeholder: "Ex: 25", unit: "%", required: true },
+      { id: "gain_energetique_mwh", label: "Gain annuel en énergie finale", type: "number", placeholder: "Ex: 4", unit: "MWh/an", required: true },
+      { id: "economie_cee_cumac", label: "Volume CEE estimé", type: "number", placeholder: "Ex: 100", unit: "MWh cumac", help: "Selon la fiche standardisée BAR-EN-102" },
+      { id: "economie_euros", label: "Économie financière annuelle", type: "number", placeholder: "Ex: 500", unit: "€/an" },
+      { id: "cout_investissement", label: "Coût total de l'investissement", type: "number", placeholder: "Ex: 12000", unit: "€ HT" },
+      { id: "duree_retour", label: "Temps de retour sur investissement", type: "number", placeholder: "Ex: 15", unit: "ans" },
+    ],
+  },
+  {
+    titre: "6. Conformité et conclusion",
+    description: "Vérification de la conformité à la fiche CEE BAR-EN-102",
+    fields: [
+      {
+        id: "conformite_r",
+        label: "La résistance thermique R respecte le seuil de la fiche",
+        type: "select",
+        options: ["Oui — R ≥ 3.7 m².K/W", "Non — non conforme"],
+        required: true,
+        help: "Exigence fiche BAR-EN-102 : R ≥ 3.7 m².K/W",
+      },
+      {
+        id: "conformite_installateur",
+        label: "L'installateur est qualifié RGE",
+        type: "select",
+        options: ["Oui — qualification vérifiée", "Non — non qualifié", "En cours de vérification"],
+        required: true,
+      },
+      { id: "date_installation_prevue", label: "Date d'installation prévue", type: "date", required: true },
+      { id: "duree_vie_equipement", label: "Durée de vie conventionnelle", type: "text", placeholder: "30 ans (selon fiche BAR-EN-102)" },
+      {
+        id: "conclusion",
+        label: "Conclusion et avis technique du bureau d'étude",
+        type: "textarea",
+        placeholder: "Synthèse : confirmer que l'isolation est adaptée, le gain justifié, la conformité BAR-EN-102, émettre un avis favorable ou réserves.",
+        colSpan: 2,
+        required: true,
+      },
+    ],
+  },
+];
+
+// ─── BAR-EN-103 — Isolation plancher ──────────────────────────
+
+const QUESTIONNAIRE_103: QuestionSection[] = [
+  {
+    titre: "1. Informations du projet",
+    description: "Identification du logement, du demandeur et du bureau d'étude",
+    fields: [
+      { id: "ref_projet", label: "Référence du projet", type: "text", placeholder: "Ex: ND-2026-XXX", required: true },
+      { id: "date_visite", label: "Date de visite technique", type: "date", required: true },
+      { id: "date_note", label: "Date de la note", type: "date", required: true },
+      { id: "redacteur", label: "Rédacteur de la note", type: "text", placeholder: "Nom du technicien / ingénieur", required: true },
+      { id: "client_nom", label: "Bénéficiaire", type: "text", placeholder: "Nom et prénom", required: true },
+      { id: "adresse", label: "Adresse du logement", type: "text", placeholder: "Adresse complète", required: true, colSpan: 2 },
+      { id: "installateur", label: "Installateur / entreprise RGE", type: "text", placeholder: "Raison sociale de l'installateur", required: true },
+      { id: "installateur_rge", label: "N° qualification RGE", type: "text", placeholder: "Ex: QUA-XXX-XXXX" },
+    ],
+  },
+  {
+    titre: "2. Caractéristiques du logement",
+    description: "Description du logement existant",
+    fields: [
+      {
+        id: "type_logement",
+        label: "Type de logement",
+        type: "select",
+        options: ["Maison individuelle", "Appartement", "Immeuble collectif"],
+        required: true,
+      },
+      { id: "surface_habitable", label: "Surface habitable", type: "number", placeholder: "Ex: 120", unit: "m²", required: true },
+      { id: "annee_construction", label: "Année de construction", type: "number", placeholder: "Ex: 1975", required: true },
+      {
+        id: "zone_climatique",
+        label: "Zone climatique",
+        type: "select",
+        options: ["H1a — Nord", "H1b — Nord-Est", "H1c — Est", "H2a — Nord-Ouest", "H2b — Ouest", "H2c — Sud-Ouest", "H2d — Centre", "H3 — Méditerranée"],
+        required: true,
+      },
+    ],
+  },
+  {
+    titre: "3. Plancher existant",
+    description: "État actuel du plancher bas avant travaux",
+    fields: [
+      {
+        id: "type_plancher",
+        label: "Type de plancher bas",
+        type: "select",
+        options: ["Sur vide sanitaire", "Sur sous-sol non chauffé", "Sur terre-plein"],
+        required: true,
+      },
+      { id: "surface_plancher", label: "Surface de plancher à isoler", type: "number", placeholder: "Ex: 90", unit: "m²", required: true },
+      {
+        id: "isolation_actuelle",
+        label: "Isolation actuelle du plancher",
+        type: "select",
+        options: ["Aucune isolation", "Isolation insuffisante", "Isolation dégradée", "Isolation partielle"],
+        required: true,
+      },
+      { id: "r_actuel", label: "Résistance thermique actuelle (si connue)", type: "number", placeholder: "Ex: 0.5", unit: "m².K/W" },
+    ],
+  },
+  {
+    titre: "4. Isolation projetée",
+    description: "Caractéristiques de l'isolation mise en œuvre — R ≥ 3 m².K/W",
+    fields: [
+      {
+        id: "type_isolant",
+        label: "Type d'isolant",
+        type: "select",
+        options: ["Laine de verre", "Laine de roche", "Polystyrène expansé (PSE)", "Polystyrène extrudé (XPS)", "Polyuréthane (PUR) projeté", "Polyuréthane (PUR) en panneaux", "Laine de bois", "Autre"],
+        required: true,
+      },
+      {
+        id: "r_thermique",
+        label: "Résistance thermique R de l'isolant posé",
+        type: "number",
+        placeholder: "Ex: 3",
+        unit: "m².K/W",
+        required: true,
+        help: "Exigence fiche BAR-EN-103 : R ≥ 3 m².K/W",
+      },
+      { id: "epaisseur", label: "Épaisseur de l'isolant", type: "number", placeholder: "Ex: 100", unit: "mm", required: true },
+      { id: "lambda", label: "Conductivité thermique (λ)", type: "number", placeholder: "Ex: 0.032", unit: "W/(m.K)", required: true },
+      { id: "marque_isolant", label: "Marque de l'isolant", type: "text", placeholder: "Ex: Isover, Knauf, Recticel...", required: true },
+      { id: "reference_isolant", label: "Référence produit", type: "text", placeholder: "Référence commerciale" },
+      {
+        id: "justification_choix",
+        label: "Justification du choix de l'isolant",
+        type: "textarea",
+        placeholder: "Expliquer le choix : performance thermique, adaptation au support (vide sanitaire / sous-sol), résistance à l'humidité, certification ACERMI, conformité BAR-EN-103...",
+        colSpan: 2,
+        required: true,
+      },
+    ],
+  },
+  {
+    titre: "5. Calcul des gains énergétiques",
+    description: "Estimation des économies d'énergie générées par l'isolation du plancher",
+    fields: [
+      {
+        id: "detail_calcul",
+        label: "Détail du calcul de gain énergétique",
+        type: "textarea",
+        placeholder: "Détailler :\n1. Déperditions avant travaux par le plancher (U avant × S × ΔT × DJU)\n2. Déperditions après travaux (U après × S × ΔT × DJU)\n3. Gain = Déperditions avant - Déperditions après\n4. Conversion en énergie finale selon le rendement du système de chauffage",
+        colSpan: 2,
+        required: true,
+        help: "Le détail du calcul prouve le gain d'énergie",
+      },
+      { id: "gain_energetique_pct", label: "Gain énergétique", type: "number", placeholder: "Ex: 15", unit: "%", required: true },
+      { id: "gain_energetique_mwh", label: "Gain annuel en énergie finale", type: "number", placeholder: "Ex: 3", unit: "MWh/an", required: true },
+      { id: "economie_cee_cumac", label: "Volume CEE estimé", type: "number", placeholder: "Ex: 80", unit: "MWh cumac", help: "Selon la fiche standardisée BAR-EN-103" },
+      { id: "economie_euros", label: "Économie financière annuelle", type: "number", placeholder: "Ex: 350", unit: "€/an" },
+      { id: "cout_investissement", label: "Coût total de l'investissement", type: "number", placeholder: "Ex: 3000", unit: "€ HT" },
+      { id: "duree_retour", label: "Temps de retour sur investissement", type: "number", placeholder: "Ex: 6", unit: "ans" },
+    ],
+  },
+  {
+    titre: "6. Conformité et conclusion",
+    description: "Vérification de la conformité à la fiche CEE BAR-EN-103",
+    fields: [
+      {
+        id: "conformite_r",
+        label: "La résistance thermique R respecte le seuil de la fiche",
+        type: "select",
+        options: ["Oui — R ≥ 3 m².K/W", "Non — non conforme"],
+        required: true,
+        help: "Exigence fiche BAR-EN-103 : R ≥ 3 m².K/W",
+      },
+      {
+        id: "conformite_installateur",
+        label: "L'installateur est qualifié RGE",
+        type: "select",
+        options: ["Oui — qualification vérifiée", "Non — non qualifié", "En cours de vérification"],
+        required: true,
+      },
+      { id: "date_installation_prevue", label: "Date d'installation prévue", type: "date", required: true },
+      { id: "duree_vie_equipement", label: "Durée de vie conventionnelle", type: "text", placeholder: "30 ans (selon fiche BAR-EN-103)" },
+      {
+        id: "conclusion",
+        label: "Conclusion et avis technique du bureau d'étude",
+        type: "textarea",
+        placeholder: "Synthèse : confirmer que l'isolation est adaptée, le gain justifié, la conformité BAR-EN-103, émettre un avis favorable ou réserves.",
+        colSpan: 2,
+        required: true,
+      },
+    ],
+  },
+];
+
+// ─── BAT-TH-116 — GTB tertiaire ──────────────────────────────
+
+const QUESTIONNAIRE_116: QuestionSection[] = [
+  {
+    titre: "1. Informations du projet",
+    description: "Identification du site, du demandeur et du bureau d'étude",
+    fields: [
+      { id: "ref_projet", label: "Référence du projet", type: "text", placeholder: "Ex: ND-2026-XXX", required: true },
+      { id: "date_visite", label: "Date de visite technique", type: "date", required: true },
+      { id: "date_note", label: "Date de la note", type: "date", required: true },
+      { id: "redacteur", label: "Rédacteur de la note", type: "text", placeholder: "Nom du technicien / ingénieur", required: true },
+      { id: "client_nom", label: "Bénéficiaire (raison sociale)", type: "text", placeholder: "Raison sociale", required: true },
+      { id: "client_siret", label: "SIRET du bénéficiaire", type: "text", placeholder: "Ex: 123 456 789 00012" },
+      { id: "adresse", label: "Adresse du site des travaux", type: "text", placeholder: "Adresse complète", required: true, colSpan: 2 },
+      { id: "installateur", label: "Installateur / intégrateur GTB", type: "text", placeholder: "Raison sociale de l'intégrateur", required: true },
+      { id: "installateur_rge", label: "N° qualification RGE", type: "text", placeholder: "Ex: QUA-XXX-XXXX" },
+    ],
+  },
+  {
+    titre: "2. Caractéristiques du bâtiment",
+    description: "Description du bâtiment tertiaire existant",
+    fields: [
+      {
+        id: "type_batiment",
+        label: "Type de bâtiment",
+        type: "select",
+        options: ["Bureau", "Commerce", "Enseignement", "Santé / Hôpital", "Hôtellerie / Restauration", "Sport / Loisirs", "Entrepôt / Logistique", "Autre tertiaire"],
+        required: true,
+      },
+      { id: "surface_batiment", label: "Surface totale du bâtiment", type: "number", placeholder: "Ex: 3000", unit: "m²", required: true },
+      { id: "annee_construction", label: "Année de construction", type: "number", placeholder: "Ex: 1995" },
+      { id: "nb_niveaux", label: "Nombre de niveaux", type: "number", placeholder: "Ex: 4" },
+      {
+        id: "zone_climatique",
+        label: "Zone climatique",
+        type: "select",
+        options: ["H1a — Nord", "H1b — Nord-Est", "H1c — Est", "H2a — Nord-Ouest", "H2b — Ouest", "H2c — Sud-Ouest", "H2d — Centre", "H3 — Méditerranée"],
+        required: true,
+      },
+    ],
+  },
+  {
+    titre: "3. Système de gestion existant",
+    description: "État actuel de la gestion technique du bâtiment avant travaux",
+    fields: [
+      {
+        id: "gtb_existante",
+        label: "Système de gestion existant",
+        type: "select",
+        options: ["Aucune GTB", "GTB de classe D (non éligible)", "GTB de classe C", "Régulation locale uniquement", "Système obsolète à remplacer"],
+        required: true,
+      },
+      {
+        id: "regulation_chauffage_existante",
+        label: "Régulation du chauffage existante",
+        type: "select",
+        options: ["Aucune régulation", "Régulation locale (thermostat simple)", "Programmation horaire", "Loi d'eau", "Autre"],
+        required: true,
+      },
+      {
+        id: "regulation_clim_existante",
+        label: "Régulation de la climatisation existante",
+        type: "select",
+        options: ["Aucune climatisation", "Aucune régulation", "Régulation locale", "Programmation horaire", "Autre"],
+      },
+      {
+        id: "gestion_eclairage_existante",
+        label: "Gestion de l'éclairage existante",
+        type: "select",
+        options: ["Interrupteurs manuels uniquement", "Détecteurs de présence partiels", "Programmation horaire", "Aucune gestion centralisée"],
+      },
+    ],
+  },
+  {
+    titre: "4. GTB projetée",
+    description: "Système de GTB de classe A ou B selon la norme EN 15232",
+    fields: [
+      {
+        id: "classe_gtb",
+        label: "Classe de la GTB projetée (EN 15232)",
+        type: "select",
+        options: ["Classe A — Haute performance énergétique", "Classe B — Avancée"],
+        required: true,
+        help: "Exigence fiche BAT-TH-116 : GTB de classe A ou B selon EN 15232",
+      },
+      { id: "marque_gtb", label: "Marque du système GTB", type: "text", placeholder: "Ex: Siemens, Schneider, Honeywell, Sauter...", required: true },
+      { id: "modele_gtb", label: "Modèle / plateforme logicielle", type: "text", placeholder: "Ex: Desigo CC, EcoStruxure...", required: true },
+      {
+        id: "fonc_chauffage",
+        label: "Régulation chauffage",
+        type: "select",
+        options: ["Oui — régulation pièce par pièce avec programmation", "Oui — régulation par zone avec programmation", "Non inclus"],
+        required: true,
+      },
+      {
+        id: "fonc_climatisation",
+        label: "Régulation climatisation",
+        type: "select",
+        options: ["Oui — régulation pièce par pièce avec programmation", "Oui — régulation par zone avec programmation", "Non applicable", "Non inclus"],
+      },
+      {
+        id: "fonc_eclairage",
+        label: "Gestion de l'éclairage",
+        type: "select",
+        options: ["Oui — détection de présence + gradation", "Oui — détection de présence", "Oui — programmation horaire", "Non inclus"],
+      },
+      {
+        id: "fonc_ventilation",
+        label: "Gestion de la ventilation",
+        type: "select",
+        options: ["Oui — régulation en fonction de l'occupation", "Oui — programmation horaire", "Non inclus"],
+      },
+      {
+        id: "justification_choix",
+        label: "Justification du choix du système GTB",
+        type: "textarea",
+        placeholder: "Expliquer le choix : classe A ou B justifiée, fonctionnalités couvertes, protocoles de communication, interopérabilité, conformité BAT-TH-116...",
+        colSpan: 2,
+        required: true,
+      },
+    ],
+  },
+  {
+    titre: "5. Calcul des gains énergétiques",
+    description: "Estimation des économies d'énergie générées par la GTB",
+    fields: [
+      {
+        id: "detail_calcul",
+        label: "Détail du calcul de gain énergétique",
+        type: "textarea",
+        placeholder: "Détailler :\n1. Consommations avant travaux par poste (chauffage, climatisation, éclairage, ventilation)\n2. Facteurs de réduction selon la classe GTB (EN 15232)\n3. Consommations après travaux estimées\n4. Gain global par poste et total",
+        colSpan: 2,
+        required: true,
+        help: "Le détail du calcul prouve le gain d'énergie — utiliser les facteurs de la norme EN 15232",
+      },
+      { id: "gain_energetique_pct", label: "Gain énergétique global", type: "number", placeholder: "Ex: 20", unit: "%", required: true },
+      { id: "gain_energetique_mwh", label: "Gain annuel en énergie finale", type: "number", placeholder: "Ex: 80", unit: "MWh/an", required: true },
+      { id: "economie_cee_cumac", label: "Volume CEE estimé", type: "number", placeholder: "Ex: 1500", unit: "MWh cumac", help: "Selon la fiche standardisée BAT-TH-116" },
+      { id: "economie_euros", label: "Économie financière annuelle", type: "number", placeholder: "Ex: 12000", unit: "€/an" },
+      { id: "cout_investissement", label: "Coût total de l'investissement", type: "number", placeholder: "Ex: 60000", unit: "€ HT" },
+      { id: "duree_retour", label: "Temps de retour sur investissement", type: "number", placeholder: "Ex: 5", unit: "ans" },
+    ],
+  },
+  {
+    titre: "6. Conformité et conclusion",
+    description: "Vérification de la conformité à la fiche CEE BAT-TH-116",
+    fields: [
+      {
+        id: "conformite_classe",
+        label: "La GTB est de classe A ou B selon EN 15232",
+        type: "select",
+        options: ["Oui — classe A", "Oui — classe B", "Non — non conforme"],
+        required: true,
+      },
+      {
+        id: "conformite_fonctions",
+        label: "Les fonctions de régulation couvrent les postes principaux (chauffage, clim, éclairage, ventilation)",
+        type: "select",
+        options: ["Oui — tous les postes couverts", "Partiellement — certains postes non couverts", "Non — non conforme"],
+        required: true,
+      },
+      {
+        id: "conformite_installateur",
+        label: "L'intégrateur est qualifié",
+        type: "select",
+        options: ["Oui — qualification vérifiée", "Non — non qualifié", "En cours de vérification"],
+        required: true,
+      },
+      { id: "date_installation_prevue", label: "Date d'installation prévue", type: "date", required: true },
+      { id: "duree_vie_equipement", label: "Durée de vie conventionnelle", type: "text", placeholder: "20 ans (selon fiche BAT-TH-116)" },
+      {
+        id: "conclusion",
+        label: "Conclusion et avis technique du bureau d'étude",
+        type: "textarea",
+        placeholder: "Synthèse : confirmer que la GTB est adaptée, le gain justifié, la conformité BAT-TH-116, émettre un avis favorable ou réserves.",
+        colSpan: 2,
+        required: true,
+      },
+    ],
+  },
+];
+
 const QUESTIONNAIRES: Record<FicheId, QuestionSection[]> = {
   "BAT-TH-134": QUESTIONNAIRE_134,
   "BAT-TH-163": QUESTIONNAIRE_163,
+  "BAR-TH-171": QUESTIONNAIRE_171,
+  "BAR-TH-159": QUESTIONNAIRE_159,
+  "BAR-EN-101": QUESTIONNAIRE_101,
+  "BAR-EN-102": QUESTIONNAIRE_102,
+  "BAR-EN-103": QUESTIONNAIRE_103,
+  "BAT-TH-116": QUESTIONNAIRE_116,
 };
 
 const PHOTO_CATEGORIES: Record<FicheId, string[]> = {
   "BAT-TH-134": PHOTO_CATEGORIES_134,
   "BAT-TH-163": PHOTO_CATEGORIES_163,
+  "BAR-TH-171": PHOTO_CATEGORIES_171,
+  "BAR-TH-159": PHOTO_CATEGORIES_159,
+  "BAR-EN-101": PHOTO_CATEGORIES_101,
+  "BAR-EN-102": PHOTO_CATEGORIES_102,
+  "BAR-EN-103": PHOTO_CATEGORIES_103,
+  "BAT-TH-116": PHOTO_CATEGORIES_116,
 };
 
 // ─── Props ──────────────────────────────────────────────────────

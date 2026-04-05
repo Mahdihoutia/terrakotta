@@ -74,20 +74,24 @@ model Lead {
 // ─── Projet ─────────────────────────────────────────────────────
 
 model Projet {
-  id            String       @id @default(cuid())
-  titre         String
-  description   String?
-  statut        ProjetStatut @default(EN_ATTENTE)
-  typeClient    ClientType   @map("type_client")
-  budgetPrevu   Decimal?     @map("budget_prevu")
-  budgetDepense Decimal?     @default(0) @map("budget_depense")
-  dateDebut     DateTime?    @map("date_debut")
-  dateFin       DateTime?    @map("date_fin")
-  clientId      String       @map("client_id")
-  client        Client       @relation(fields: [clientId], references: [id])
-  jalons        Jalon[]
-  createdAt     DateTime     @default(now()) @map("created_at")
-  updatedAt     DateTime     @updatedAt @map("updated_at")
+  id             String         @id @default(cuid())
+  titre          String
+  description    String?
+  statut         ProjetStatut   @default(EN_ATTENTE)
+  typeClient     ClientType     @map("type_client")
+  typeTravaux    String?        @map("type_travaux")
+  adresseChantier String?       @map("adresse_chantier")
+  budgetPrevu    Decimal?       @map("budget_prevu")
+  budgetDepense  Decimal?       @default(0) @map("budget_depense")
+  dateDebut      DateTime?      @map("date_debut")
+  dateFin        DateTime?      @map("date_fin")
+  clientId       String         @map("client_id")
+  client         Client         @relation(fields: [clientId], references: [id])
+  jalons         Jalon[]
+  devis          Devis[]
+  aides          Aide[]
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
 
   @@map("projets")
 }
@@ -110,6 +114,7 @@ model Jalon {
 model Devis {
   id         String      @id @default(cuid())
   numero     String      @unique
+  objet      String?
   statut     DevisStatut @default(BROUILLON)
   montantHT  Decimal     @map("montant_ht")
   tauxTVA    Decimal     @default(20) @map("taux_tva")
@@ -117,8 +122,48 @@ model Devis {
   dateValide DateTime?   @map("date_valide")
   clientId   String      @map("client_id")
   client     Client      @relation(fields: [clientId], references: [id])
+  projetId   String?     @map("projet_id")
+  projet     Projet?     @relation(fields: [projetId], references: [id])
+  lignes     LigneDevis[]
+  createdAt  DateTime    @default(now()) @map("created_at")
+  updatedAt  DateTime    @updatedAt @map("updated_at")
 
   @@map("devis")
+}
+
+// ─── Ligne de devis ────────────────────────────────────────────
+
+model LigneDevis {
+  id          String  @id @default(cuid())
+  devisId     String  @map("devis_id")
+  designation String
+  unite       String  @default("U")
+  quantite    Decimal @default(1)
+  prixUnitHT  Decimal @map("prix_unit_ht")
+  tauxTVA     Decimal @default(20) @map("taux_tva")
+  ordre       Int     @default(0)
+  devis       Devis   @relation(fields: [devisId], references: [id], onDelete: Cascade)
+
+  @@map("lignes_devis")
+}
+
+// ─── Aide financière ───────────────────────────────────────────
+
+model Aide {
+  id            String     @id @default(cuid())
+  projetId      String     @map("projet_id")
+  type          AideType
+  nom           String
+  montant       Decimal?
+  numeroDossier String?    @map("numero_dossier")
+  statut        AideStatut @default(EN_ATTENTE)
+  dateDepot     DateTime?  @map("date_depot")
+  dateAccord    DateTime?  @map("date_accord")
+  notes         String?
+  projet        Projet     @relation(fields: [projetId], references: [id], onDelete: Cascade)
+  createdAt     DateTime   @default(now()) @map("created_at")
+
+  @@map("aides")
 }
 
 // ─── Événement (calendrier) ─────────────────────────────────────
@@ -187,4 +232,22 @@ enum EvenementType {
   RDV_CLIENT
   REUNION
   AUTRE
+}
+
+enum AideType {
+  MAPRIMERENOVATION
+  CEE
+  ECO_PTZ
+  AIDE_LOCALE
+  COUP_DE_POUCE
+  AUTRE
+}
+
+enum AideStatut {
+  EN_ATTENTE
+  DEPOSE
+  EN_INSTRUCTION
+  ACCORDE
+  REFUSE
+  VERSE
 }

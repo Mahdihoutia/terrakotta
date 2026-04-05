@@ -4,6 +4,62 @@ export type LeadSource = "SITE_WEB" | "RECOMMANDATION" | "RESEAU" | "DEMARCHAGE"
 
 export type ClientType = "PARTICULIER" | "PROFESSIONNEL" | "COLLECTIVITE"
 
+export type DevisStatut = "BROUILLON" | "ENVOYE" | "ACCEPTE" | "REFUSE"
+
+export type ProjetStatut = "EN_ATTENTE" | "EN_COURS" | "EN_PAUSE" | "TERMINE" | "ANNULE"
+
+export interface LigneDevis {
+  id?: string
+  designation: string
+  unite: string
+  quantite: number
+  prixUnitHT: number
+  tauxTVA: number
+  ordre: number
+}
+
+export interface DevisClient {
+  id: string
+  nom: string
+  prenom: string | null
+  type: string
+}
+
+export interface DevisClientDetail extends DevisClient {
+  email: string | null
+  telephone: string | null
+}
+
+export interface DevisProjet {
+  id: string
+  titre: string
+  statut: string
+}
+
+export interface Devis {
+  id: string
+  numero: string
+  objet: string | null
+  statut: DevisStatut
+  montantHT: number
+  tauxTVA: number
+  montantTTC: number
+  dateEmis: string
+  dateValide: string | null
+  clientId: string
+  client: DevisClient
+  projetId: string | null
+  projet: DevisProjet | null
+  lignesCount: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface DevisDetail extends Omit<Devis, "client" | "lignesCount"> {
+  client: DevisClientDetail
+  lignes: LigneDevis[]
+}
+
 export type AgentStatus = "ACTIF" | "EN_PAUSE" | "ERREUR" | "INACTIF"
 
 export interface Lead {

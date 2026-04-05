@@ -13,6 +13,8 @@ import {
   Settings,
   Search,
   Leaf,
+  FolderKanban,
+  Receipt,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSearch } from "./SearchProvider";
@@ -27,6 +29,8 @@ const TOP_ITEMS: NavItem[] = [
   { label: "Vue d'ensemble", href: "/", icon: LayoutDashboard },
   { label: "Leads", href: "/leads", icon: Users },
   { label: "Contacts", href: "/contacts", icon: Contact },
+  { label: "Projets", href: "/projets", icon: FolderKanban },
+  { label: "Devis", href: "/devis", icon: Receipt },
   { label: "AI Agents", href: "/agents", icon: Bot },
   { label: "Calendrier", href: "/calendrier", icon: CalendarDays },
   { label: "Documents", href: "/documents", icon: FileText },
