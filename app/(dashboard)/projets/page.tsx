@@ -67,8 +67,8 @@ const STATUT_LABELS: Record<ProjetStatut, string> = {
   EN_ATTENTE: "En attente",
   EN_COURS: "En cours",
   EN_PAUSE: "En pause",
-  TERMINE: "Termin\u00e9",
-  ANNULE: "Annul\u00e9",
+  TERMINE: "Terminé",
+  ANNULE: "Annulé",
 };
 
 const TYPES_TRAVAUX = [
@@ -78,9 +78,9 @@ const TYPES_TRAVAUX = [
   "Isolation combles",
   "Isolation plancher",
   "VMC",
-  "Chaudi\u00e8re",
-  "Audit \u00e9nerg\u00e9tique",
-  "R\u00e9novation globale",
+  "Chaudière",
+  "Audit énergétique",
+  "Rénovation globale",
   "Autre",
 ];
 
@@ -190,7 +190,7 @@ export default function ProjetsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error("Erreur lors de la cr\u00e9ation");
+      if (!res.ok) throw new Error("Erreur lors de la création");
       const created: Projet = await res.json();
       setProjets((prev) => [created, ...prev]);
       setForm(EMPTY_FORM);
@@ -227,7 +227,7 @@ export default function ProjetsPage() {
       <div className="flex flex-col items-center justify-center py-24 gap-4">
         <p className="text-red-400 text-sm">{error}</p>
         <p className="text-tk-text-faint text-xs">
-          V\u00e9rifiez la connexion \u00e0 la base de donn\u00e9es.
+          Vérifiez la connexion à la base de données.
         </p>
       </div>
     );
@@ -240,7 +240,7 @@ export default function ProjetsPage() {
         <div>
           <h1 className="text-2xl font-bold text-tk-text">Projets</h1>
           <p className="text-tk-text-faint">
-            G\u00e9rez vos projets de r\u00e9novation \u00e9nerg\u00e9tique &mdash; {projets.length} au total
+            Gérez vos projets de rénovation énergétique &mdash; {projets.length} au total
           </p>
         </div>
         <Button size="sm" onClick={() => setShowForm(true)}>
@@ -274,7 +274,7 @@ export default function ProjetsPage() {
                     type="text"
                     value={form.titre}
                     onChange={(e) => setForm({ ...form, titre: e.target.value })}
-                    placeholder="Ex: R\u00e9novation Villa Dupont"
+                    placeholder="Ex: Rénovation Villa Dupont"
                     className="w-full rounded-lg border border-tk-border bg-tk-surface px-3 py-2 text-sm text-tk-text"
                   />
                 </div>
@@ -285,7 +285,7 @@ export default function ProjetsPage() {
                     onChange={(e) => setForm({ ...form, clientId: e.target.value })}
                     className="w-full rounded-lg border border-tk-border bg-tk-surface px-3 py-2 text-sm text-tk-text"
                   >
-                    <option value="">S\u00e9lectionner un client</option>
+                    <option value="">Sélectionner un client</option>
                     {clients.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.prenom ? `${c.prenom} ${c.nom}` : c.nom} ({c.type.charAt(0) + c.type.slice(1).toLowerCase()})
@@ -302,7 +302,7 @@ export default function ProjetsPage() {
                   >
                     <option value="PARTICULIER">Particulier</option>
                     <option value="PROFESSIONNEL">Professionnel</option>
-                    <option value="COLLECTIVITE">Collectivit\u00e9</option>
+                    <option value="COLLECTIVITE">Collectivité</option>
                   </select>
                 </div>
                 <div className="space-y-1.5">
@@ -312,7 +312,7 @@ export default function ProjetsPage() {
                     onChange={(e) => setForm({ ...form, typeTravaux: e.target.value })}
                     className="w-full rounded-lg border border-tk-border bg-tk-surface px-3 py-2 text-sm text-tk-text"
                   >
-                    <option value="">S\u00e9lectionner</option>
+                    <option value="">Sélectionner</option>
                     {TYPES_TRAVAUX.map((t) => (
                       <option key={t} value={t}>
                         {t}
@@ -331,7 +331,7 @@ export default function ProjetsPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-tk-text-muted">Budget pr\u00e9vu</label>
+                  <label className="text-xs font-medium text-tk-text-muted">Budget prévu</label>
                   <input
                     type="number"
                     value={form.budgetPrevu}
@@ -341,7 +341,7 @@ export default function ProjetsPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-tk-text-muted">Date de d\u00e9but</label>
+                  <label className="text-xs font-medium text-tk-text-muted">Date de début</label>
                   <input
                     type="date"
                     value={form.dateDebut}
@@ -376,7 +376,7 @@ export default function ProjetsPage() {
                   ) : (
                     <Plus className="mr-2 h-3.5 w-3.5" />
                   )}
-                  Cr\u00e9er le projet
+                  Créer le projet
                 </Button>
                 <Button
                   variant="outline"
@@ -534,7 +534,7 @@ export default function ProjetsPage() {
             {filteredProjets.length === 0 && (
               <TableRow>
                 <TableCell colSpan={6} className="py-12 text-center text-tk-text-faint">
-                  Aucun projet trouv\u00e9 pour ce filtre
+                  Aucun projet trouvé pour ce filtre
                 </TableCell>
               </TableRow>
             )}

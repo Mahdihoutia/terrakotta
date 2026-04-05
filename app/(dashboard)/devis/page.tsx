@@ -28,9 +28,9 @@ type DevisStatutFilter = DevisStatut | "TOUS";
 
 const STATUT_LABELS: Record<DevisStatut, string> = {
   BROUILLON: "Brouillon",
-  ENVOYE: "Envoy\u00e9",
-  ACCEPTE: "Accept\u00e9",
-  REFUSE: "Refus\u00e9",
+  ENVOYE: "Envoyé",
+  ACCEPTE: "Accepté",
+  REFUSE: "Refusé",
 };
 
 const STATUT_STYLES: Record<DevisStatut, string> = {
@@ -479,7 +479,7 @@ export default function DevisListPage() {
         <Table>
           <TableHeader>
             <TableRow className="border-tk-border hover:bg-transparent">
-              <TableHead>N\u00b0</TableHead>
+              <TableHead>N°</TableHead>
               <TableHead>Objet</TableHead>
               <TableHead>Client</TableHead>
               <TableHead>Montant HT</TableHead>

@@ -35,9 +35,9 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const STATUT_LABELS: Record<DevisStatut, string> = {
   BROUILLON: "Brouillon",
-  ENVOYE: "Envoy\u00e9",
-  ACCEPTE: "Accept\u00e9",
-  REFUSE: "Refus\u00e9",
+  ENVOYE: "Envoyé",
+  ACCEPTE: "Accepté",
+  REFUSE: "Refusé",
 };
 
 const STATUT_STYLES: Record<DevisStatut, string> = {

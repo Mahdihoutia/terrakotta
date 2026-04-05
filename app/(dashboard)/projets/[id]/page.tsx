@@ -122,8 +122,8 @@ const STATUT_LABELS: Record<ProjetStatut, string> = {
   EN_ATTENTE: "En attente",
   EN_COURS: "En cours",
   EN_PAUSE: "En pause",
-  TERMINE: "Termin\u00e9",
-  ANNULE: "Annul\u00e9",
+  TERMINE: "Terminé",
+  ANNULE: "Annulé",
 };
 
 const DEVIS_STATUT_COLORS: Record<DevisStatut, string> = {
@@ -135,15 +135,15 @@ const DEVIS_STATUT_COLORS: Record<DevisStatut, string> = {
 
 const DEVIS_STATUT_LABELS: Record<DevisStatut, string> = {
   BROUILLON: "Brouillon",
-  ENVOYE: "Envoy\u00e9",
-  ACCEPTE: "Accept\u00e9",
-  REFUSE: "Refus\u00e9",
+  ENVOYE: "Envoyé",
+  ACCEPTE: "Accepté",
+  REFUSE: "Refusé",
 };
 
 const TYPE_LABELS: Record<ClientType, string> = {
   PARTICULIER: "Particulier",
   PROFESSIONNEL: "Professionnel",
-  COLLECTIVITE: "Collectivit\u00e9",
+  COLLECTIVITE: "Collectivité",
 };
 
 const AIDE_TYPE_COLORS: Record<string, string> = {
@@ -160,9 +160,9 @@ const TYPES_TRAVAUX = [
   "Isolation combles",
   "Isolation plancher",
   "VMC",
-  "Chaudi\u00e8re",
-  "Audit \u00e9nerg\u00e9tique",
-  "R\u00e9novation globale",
+  "Chaudière",
+  "Audit énergétique",
+  "Rénovation globale",
   "Autre",
 ];
 
@@ -364,7 +364,7 @@ export default function ProjetDetailPage({ params }: Props) {
                 {STATUT_LABELS[editing ? form.statut : projet.statut]}
               </span>
               <span className="text-xs text-tk-text-faint">
-                Cr\u00e9\u00e9 le {formatDate(projet.createdAt)} \u00b7 Modifi\u00e9 le {formatDate(projet.updatedAt)}
+                Créé le {formatDate(projet.createdAt)} · Modifié le {formatDate(projet.updatedAt)}
               </span>
             </div>
           </div>
@@ -429,9 +429,9 @@ export default function ProjetDetailPage({ params }: Props) {
             >
               <h3 className="text-lg font-semibold text-tk-text mb-2">Supprimer ce projet ?</h3>
               <p className="text-sm text-tk-text-muted mb-6">
-                Cette action est irr\u00e9versible. Le projet{" "}
+                Cette action est irréversible. Le projet{" "}
                 <span className="text-tk-text font-medium">{projet.titre}</span> sera
-                d\u00e9finitivement supprim\u00e9.
+                définitivement supprimé.
               </p>
               <div className="flex gap-2 justify-end">
                 <Button
@@ -463,7 +463,7 @@ export default function ProjetDetailPage({ params }: Props) {
 
       {/* ─── Content ─────────────────────────────────── */}
       {editing ? (
-        /* ─── Mode \u00e9dition ──────────────────────────── */
+        /* ─── Mode édition ──────────────────────────── */
         <motion.div
           initial={{ opacity: 0, y: 5 }}
           animate={{ opacity: 1, y: 0 }}
@@ -500,8 +500,8 @@ export default function ProjetDetailPage({ params }: Props) {
                 <option value="EN_ATTENTE">En attente</option>
                 <option value="EN_COURS">En cours</option>
                 <option value="EN_PAUSE">En pause</option>
-                <option value="TERMINE">Termin\u00e9</option>
-                <option value="ANNULE">Annul\u00e9</option>
+                <option value="TERMINE">Terminé</option>
+                <option value="ANNULE">Annulé</option>
               </select>
             </div>
             <div>
@@ -513,7 +513,7 @@ export default function ProjetDetailPage({ params }: Props) {
               >
                 <option value="PARTICULIER">Particulier</option>
                 <option value="PROFESSIONNEL">Professionnel</option>
-                <option value="COLLECTIVITE">Collectivit\u00e9</option>
+                <option value="COLLECTIVITE">Collectivité</option>
               </select>
             </div>
             <div>
@@ -523,7 +523,7 @@ export default function ProjetDetailPage({ params }: Props) {
                 onChange={(e) => setForm({ ...form, clientId: e.target.value })}
                 className={inputClass}
               >
-                <option value="">S\u00e9lectionner un client</option>
+                <option value="">Sélectionner un client</option>
                 {clients.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.nom}
@@ -539,7 +539,7 @@ export default function ProjetDetailPage({ params }: Props) {
                 onChange={(e) => setForm({ ...form, typeTravaux: e.target.value })}
                 className={inputClass}
               >
-                <option value="">S\u00e9lectionner</option>
+                <option value="">Sélectionner</option>
                 {TYPES_TRAVAUX.map((t) => (
                   <option key={t} value={t}>
                     {t}
@@ -553,12 +553,12 @@ export default function ProjetDetailPage({ params }: Props) {
                 type="text"
                 value={form.adresseChantier}
                 onChange={(e) => setForm({ ...form, adresseChantier: e.target.value })}
-                placeholder="Adresse compl\u00e8te"
+                placeholder="Adresse complète"
                 className={inputClass}
               />
             </div>
             <div>
-              <label className={labelClass}>Budget pr\u00e9vu (EUR)</label>
+              <label className={labelClass}>Budget prévu (EUR)</label>
               <input
                 type="number"
                 value={form.budgetPrevu}
@@ -568,7 +568,7 @@ export default function ProjetDetailPage({ params }: Props) {
               />
             </div>
             <div>
-              <label className={labelClass}>Budget d\u00e9pens\u00e9 (EUR)</label>
+              <label className={labelClass}>Budget dépensé (EUR)</label>
               <input
                 type="number"
                 value={form.budgetDepense}
@@ -578,7 +578,7 @@ export default function ProjetDetailPage({ params }: Props) {
               />
             </div>
             <div>
-              <label className={labelClass}>Date de d\u00e9but</label>
+              <label className={labelClass}>Date de début</label>
               <input
                 type="date"
                 value={form.dateDebut}
@@ -645,7 +645,7 @@ export default function ProjetDetailPage({ params }: Props) {
                 Jalons
                 {jalonsTotal > 0 && (
                   <span className="text-xs text-tk-text-faint font-normal ml-auto">
-                    {jalonsComplete}/{jalonsTotal} termin\u00e9(s)
+                    {jalonsComplete}/{jalonsTotal} terminé(s)
                   </span>
                 )}
               </h2>
@@ -678,11 +678,11 @@ export default function ProjetDetailPage({ params }: Props) {
               )}
             </div>
 
-            {/* Devis li\u00e9s */}
+            {/* Devis liés */}
             <div className="glass rounded-2xl p-6">
               <h2 className="text-sm font-semibold text-tk-text mb-4 flex items-center gap-2">
                 <FileText className="h-4 w-4 text-tk-text-faint" />
-                Devis li\u00e9s
+                Devis liés
                 {projet.devis.length > 0 && (
                   <span className="text-xs text-tk-text-faint font-normal ml-auto">
                     {projet.devis.length} devis
@@ -690,14 +690,14 @@ export default function ProjetDetailPage({ params }: Props) {
                 )}
               </h2>
               {projet.devis.length === 0 ? (
-                <p className="text-sm text-tk-text-faint">Aucun devis li\u00e9 \u00e0 ce projet.</p>
+                <p className="text-sm text-tk-text-faint">Aucun devis lié à ce projet.</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-tk-border">
                         <th className="pb-2 text-left text-[10px] uppercase tracking-wider text-tk-text-faint font-medium">
-                          N\u00b0
+                          N°
                         </th>
                         <th className="pb-2 text-left text-[10px] uppercase tracking-wider text-tk-text-faint font-medium">
                           Objet
@@ -760,11 +760,11 @@ export default function ProjetDetailPage({ params }: Props) {
               )}
             </div>
 
-            {/* Aides financi\u00e8res */}
+            {/* Aides financières */}
             <div className="glass rounded-2xl p-6">
               <h2 className="text-sm font-semibold text-tk-text mb-4 flex items-center gap-2">
                 <BadgeEuro className="h-4 w-4 text-tk-text-faint" />
-                Aides financi\u00e8res
+                Aides financières
                 {projet.aides.length > 0 && (
                   <span className="text-xs text-tk-text-faint font-normal ml-auto">
                     {projet.aides.length} aide(s)
@@ -772,7 +772,7 @@ export default function ProjetDetailPage({ params }: Props) {
                 )}
               </h2>
               {projet.aides.length === 0 ? (
-                <p className="text-sm text-tk-text-faint">Aucune aide financi\u00e8re enregistr\u00e9e.</p>
+                <p className="text-sm text-tk-text-faint">Aucune aide financière enregistrée.</p>
               ) : (
                 <div className="space-y-3">
                   {projet.aides.map((aide) => (
@@ -807,7 +807,7 @@ export default function ProjetDetailPage({ params }: Props) {
             </div>
           </div>
 
-          {/* ─── Barre lat\u00e9rale ──────────────────────────── */}
+          {/* ─── Barre latérale ──────────────────────────── */}
           <div className="space-y-6">
             {/* Statut & Budget */}
             <div className="glass rounded-2xl p-6">
@@ -829,12 +829,12 @@ export default function ProjetDetailPage({ params }: Props) {
                 </div>
                 <InfoRow
                   icon={<Euro className="h-4 w-4" />}
-                  label="Budget pr\u00e9vu"
+                  label="Budget prévu"
                   value={formatCurrency(projet.budgetPrevu)}
                 />
                 <InfoRow
                   icon={<Euro className="h-4 w-4" />}
-                  label="Budget d\u00e9pens\u00e9"
+                  label="Budget dépensé"
                   value={formatCurrency(projet.budgetDepense)}
                 />
                 {/* Progress bar */}
@@ -907,7 +907,7 @@ export default function ProjetDetailPage({ params }: Props) {
                   </p>
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider text-tk-text-faint">T\u00e9l\u00e9phone</p>
+                  <p className="text-[10px] uppercase tracking-wider text-tk-text-faint">Téléphone</p>
                   <p className="text-sm text-tk-text-secondary">
                     {projet.client.telephone ?? "\u2014"}
                   </p>
@@ -929,7 +929,7 @@ export default function ProjetDetailPage({ params }: Props) {
               </h2>
               <div className="space-y-3">
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider text-tk-text-faint">Date de d\u00e9but</p>
+                  <p className="text-[10px] uppercase tracking-wider text-tk-text-faint">Date de début</p>
                   <p className="text-sm text-tk-text-secondary">{formatDate(projet.dateDebut)}</p>
                 </div>
                 <div>
@@ -937,11 +937,11 @@ export default function ProjetDetailPage({ params }: Props) {
                   <p className="text-sm text-tk-text-secondary">{formatDate(projet.dateFin)}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider text-tk-text-faint">Cr\u00e9\u00e9 le</p>
+                  <p className="text-[10px] uppercase tracking-wider text-tk-text-faint">Créé le</p>
                   <p className="text-sm text-tk-text-secondary">{formatDate(projet.createdAt)}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider text-tk-text-faint">Derni\u00e8re modification</p>
+                  <p className="text-[10px] uppercase tracking-wider text-tk-text-faint">Dernière modification</p>
                   <p className="text-sm text-tk-text-secondary">{formatDate(projet.updatedAt)}</p>
                 </div>
               </div>
@@ -953,7 +953,7 @@ export default function ProjetDetailPage({ params }: Props) {
   );
 }
 
-/** Ligne d'information r\u00e9utilisable */
+/** Ligne d'information réutilisable */
 function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <div className="flex items-start gap-3">
