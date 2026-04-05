@@ -7,6 +7,12 @@ import {
   Target,
   ArrowUpRight,
   ArrowDownRight,
+  Briefcase,
+  FileText,
+  HandCoins,
+  CalendarCheck,
+  CheckCircle2,
+  Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -25,6 +31,12 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   trending: TrendingUp,
   bot: Bot,
   target: Target,
+  briefcase: Briefcase,
+  filetext: FileText,
+  handcoins: HandCoins,
+  calendar: CalendarCheck,
+  check: CheckCircle2,
+  clock: Clock,
 };
 
 const ICON_COLORS: Record<string, string> = {
@@ -32,6 +44,12 @@ const ICON_COLORS: Record<string, string> = {
   trending: "from-[#d4845a] to-[#a0522d]",
   bot: "from-[#a0522d] to-[#7a3b1e]",
   target: "from-[#c2613a] to-[#a0522d]",
+  briefcase: "from-[#c2613a] to-[#8b4726]",
+  filetext: "from-[#d4845a] to-[#a0522d]",
+  handcoins: "from-[#a0522d] to-[#7a3b1e]",
+  calendar: "from-[#c2613a] to-[#a0522d]",
+  check: "from-[#6b8e5a] to-[#4a6b3a]",
+  clock: "from-[#d4845a] to-[#c2613a]",
 };
 
 export default function KpiCard({

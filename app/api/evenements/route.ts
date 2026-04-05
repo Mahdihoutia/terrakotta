@@ -7,7 +7,7 @@ const createSchema = z.object({
   date: z.string().min(1, "Date requise"),
   heureDebut: z.string().min(1, "Heure de début requise"),
   heureFin: z.string().min(1, "Heure de fin requise"),
-  type: z.enum(["VISITE", "RDV_CLIENT", "REUNION", "AUTRE"]),
+  type: z.enum(["VISITE", "VISITE_TECHNIQUE", "RECEPTION_CHANTIER", "AUDIT_ENERGETIQUE", "REUNION_CHANTIER", "RDV_CLIENT", "REUNION", "AUTRE"]),
   lieu: z.string().optional().nullable(),
   commentaire: z.string().optional().nullable(),
   clientId: z.string().optional().nullable(),

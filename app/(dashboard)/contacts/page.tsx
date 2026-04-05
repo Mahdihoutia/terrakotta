@@ -84,15 +84,22 @@ export default function ContactsPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
 
+  const [filterStatut, setFilterStatut] = useState<string>("TOUS");
+
   const filtered = contacts.filter((c) => {
     const matchType = filterType === "TOUS" || c.type === filterType;
+    const matchStatut = filterStatut === "TOUS" || c.statut === filterStatut;
+    const q = search.toLowerCase();
     const matchSearch =
       !search ||
-      c.nom.toLowerCase().includes(search.toLowerCase()) ||
-      c.prenom?.toLowerCase().includes(search.toLowerCase()) ||
-      c.email?.toLowerCase().includes(search.toLowerCase()) ||
-      c.raisonSociale?.toLowerCase().includes(search.toLowerCase());
-    return matchType && matchSearch;
+      c.nom.toLowerCase().includes(q) ||
+      c.prenom?.toLowerCase().includes(q) ||
+      c.email?.toLowerCase().includes(q) ||
+      c.telephone?.toLowerCase().includes(q) ||
+      c.raisonSociale?.toLowerCase().includes(q) ||
+      c.adresse?.toLowerCase().includes(q) ||
+      c.fonction?.toLowerCase().includes(q);
+    return matchType && matchStatut && matchSearch;
   });
 
   async function handleCreate() {
@@ -274,11 +281,16 @@ export default function ContactsPage() {
 
       {/* Filtres */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="flex h-9 flex-1 items-center gap-2 rounded-lg border border-tk-border bg-tk-surface px-3 sm:max-w-xs">
+        <div className="flex h-9 flex-1 items-center gap-2 rounded-lg border border-tk-border bg-tk-surface px-3 sm:max-w-sm">
           <Search className="h-4 w-4 text-tk-text-faint" />
-          <input type="text" placeholder="Rechercher un contact..." value={search}
+          <input type="text" placeholder="Nom, adresse, téléphone, fonction..." value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="h-full w-full bg-transparent text-sm text-tk-text outline-none placeholder:text-tk-text-faint" />
+          {search && (
+            <button onClick={() => setSearch("")} className="text-tk-text-faint hover:text-tk-text-secondary">
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-1">
           <Filter className="mr-1 h-4 w-4 text-tk-text-faint" />
@@ -289,6 +301,21 @@ export default function ContactsPage() {
               {t === "TOUS" ? "Tous" : TYPE_LABELS[t]}
             </Button>
           ))}
+        </div>
+        <div className="flex items-center gap-1">
+          <select
+            value={filterStatut}
+            onChange={(e) => setFilterStatut(e.target.value)}
+            className="rounded-lg border border-tk-border bg-tk-surface px-2 py-1.5 text-xs text-tk-text-muted focus:outline-none"
+          >
+            <option value="TOUS">Tous les statuts</option>
+            <option value="NOUVEAU">Nouveau</option>
+            <option value="CONTACTE">Contacté</option>
+            <option value="QUALIFIE">Qualifié</option>
+            <option value="PROPOSITION">Proposition</option>
+            <option value="GAGNE">Gagné</option>
+            <option value="PERDU">Perdu</option>
+          </select>
         </div>
       </div>
 

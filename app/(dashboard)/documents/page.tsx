@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import NoteDimensionnement from "@/components/dashboard/NoteDimensionnement";
+import RapportVisite from "@/components/dashboard/RapportVisite";
 
 type DocumentType = "RAPPORT_VISITE" | "DEVIS" | "NOTE_DIMENSIONNEMENT" | "AUDIT";
 type DocumentStatus = "BROUILLON" | "EN_COURS" | "TERMINE" | "ENVOYE";
@@ -205,6 +206,8 @@ export default function DocumentsPage() {
             </div>
           ) : selectedType === "NOTE_DIMENSIONNEMENT" ? (
             <NoteDimensionnement onBack={() => setSelectedType(null)} />
+          ) : selectedType === "RAPPORT_VISITE" ? (
+            <RapportVisite onBack={() => setSelectedType(null)} />
           ) : (
             <DocumentForm type={selectedType} onBack={() => setSelectedType(null)} />
           )}

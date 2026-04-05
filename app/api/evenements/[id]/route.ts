@@ -7,7 +7,7 @@ const updateSchema = z.object({
   date: z.string().optional(),
   heureDebut: z.string().optional(),
   heureFin: z.string().optional(),
-  type: z.enum(["VISITE", "RDV_CLIENT", "REUNION", "AUTRE"]).optional(),
+  type: z.enum(["VISITE", "VISITE_TECHNIQUE", "RECEPTION_CHANTIER", "AUDIT_ENERGETIQUE", "REUNION_CHANTIER", "RDV_CLIENT", "REUNION", "AUTRE"]).optional(),
   lieu: z.string().optional().nullable(),
   commentaire: z.string().optional().nullable(),
   clientId: z.string().optional().nullable(),
