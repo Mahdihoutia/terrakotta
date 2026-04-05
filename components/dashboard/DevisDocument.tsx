@@ -1,0 +1,915 @@
+"use client";
+
+import { useState, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  ArrowLeft,
+  ChevronRight,
+  CheckCircle2,
+  AlertCircle,
+  Save,
+  Calculator,
+  Plus,
+  Trash2,
+  Loader2,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
+
+// ─── Types ──────────────────────────────────────────────────────
+
+interface FormValues {
+  [key: string]: string;
+}
+
+interface LigneDevis {
+  id: string;
+  designation: string;
+  unite: string;
+  quantite: string;
+  prixUnitaire: string;
+  tva: string;
+}
+
+interface QuestionField {
+  id: string;
+  label: string;
+  type: "text" | "number" | "select" | "textarea" | "date";
+  placeholder?: string;
+  unit?: string;
+  options?: string[];
+  required?: boolean;
+  help?: string;
+  colSpan?: 1 | 2;
+}
+
+interface QuestionSection {
+  titre: string;
+  description?: string;
+  fields: QuestionField[];
+}
+
+interface DocumentRecord {
+  id: string;
+  titre: string;
+  reference: string;
+  type: string;
+  statut: string;
+  clientNom: string | null;
+  donnees: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Props {
+  onBack: () => void;
+  onSaved?: () => void;
+  existingDoc?: DocumentRecord | null;
+}
+
+// ─── Questionnaire sections ─────────────────────────────────────
+
+const SECTIONS: QuestionSection[] = [
+  {
+    titre: "1. Coordonnées de l'entreprise",
+    description: "Informations du bureau d'étude émetteur du devis",
+    fields: [
+      { id: "entreprise_nom", label: "Raison sociale", type: "text", placeholder: "TERRAKOTTA", required: true },
+      { id: "entreprise_siret", label: "SIRET", type: "text", placeholder: "XXX XXX XXX XXXXX" },
+      { id: "entreprise_adresse", label: "Adresse", type: "text", placeholder: "Adresse complète", colSpan: 2 },
+      { id: "entreprise_telephone", label: "Téléphone", type: "text", placeholder: "06 XX XX XX XX" },
+      { id: "entreprise_email", label: "Email", type: "text", placeholder: "contact@terrakotta.fr" },
+      { id: "entreprise_rge", label: "Qualification RGE", type: "text", placeholder: "N° de qualification" },
+    ],
+  },
+  {
+    titre: "2. Coordonnées du client",
+    description: "Identification du bénéficiaire des travaux",
+    fields: [
+      { id: "client_nom", label: "Nom / Raison sociale", type: "text", placeholder: "Nom complet", required: true },
+      {
+        id: "client_type", label: "Type de client", type: "select", required: true,
+        options: ["Particulier", "Professionnel", "Collectivité", "Copropriété"],
+      },
+      { id: "client_adresse", label: "Adresse", type: "text", placeholder: "Adresse complète", colSpan: 2 },
+      { id: "client_telephone", label: "Téléphone", type: "text", placeholder: "06 XX XX XX XX" },
+      { id: "client_email", label: "Email", type: "text", placeholder: "email@exemple.fr" },
+    ],
+  },
+  {
+    titre: "3. Informations du devis",
+    description: "Référence, dates et conditions du devis",
+    fields: [
+      { id: "ref_devis", label: "Référence du devis", type: "text", placeholder: "Ex: DV-2026-XXX", required: true },
+      { id: "date_emission", label: "Date d'émission", type: "date", required: true },
+      { id: "date_validite", label: "Date de validité", type: "date" },
+      { id: "objet", label: "Objet du devis", type: "text", placeholder: "Ex: Travaux de rénovation énergétique", required: true, colSpan: 2 },
+      { id: "adresse_chantier", label: "Adresse du chantier", type: "text", placeholder: "Si différente de l'adresse client", colSpan: 2 },
+      {
+        id: "delai_execution", label: "Délai d'exécution", type: "text",
+        placeholder: "Ex: 3 semaines à compter de l'acceptation du devis",
+      },
+    ],
+  },
+  {
+    titre: "4. Conditions et mentions légales",
+    description: "Modalités de paiement, garanties et mentions obligatoires",
+    fields: [
+      {
+        id: "modalite_paiement", label: "Modalités de paiement", type: "select",
+        options: [
+          "30% à la commande, 70% à la réception",
+          "50% à la commande, 50% à la réception",
+          "100% à la réception des travaux",
+          "30% à la commande, 40% en cours de travaux, 30% à la réception",
+          "Autre (préciser dans observations)",
+        ],
+      },
+      {
+        id: "garantie", label: "Garantie", type: "select",
+        options: [
+          "Garantie décennale",
+          "Garantie décennale + biennale",
+          "Garantie constructeur (matériel)",
+          "Selon conditions générales de vente",
+        ],
+      },
+      { id: "assurance_rc", label: "Assurance RC Pro", type: "text", placeholder: "N° de police et assureur" },
+      {
+        id: "tva_applicable", label: "TVA applicable", type: "select",
+        options: ["5,5% (travaux de rénovation énergétique)", "10% (travaux d'amélioration)", "20% (taux normal)"],
+      },
+      {
+        id: "observations", label: "Observations / Conditions particulières", type: "textarea",
+        placeholder: "Conditions spécifiques, exclusions, remarques...",
+        colSpan: 2,
+      },
+    ],
+  },
+  {
+    titre: "5. Aides financières mobilisables",
+    description: "Informations sur les aides et subventions applicables",
+    fields: [
+      {
+        id: "maprimereno", label: "MaPrimeRénov'", type: "select",
+        options: ["Non applicable", "Bleu (très modestes)", "Jaune (modestes)", "Violet (intermédiaires)", "Rose (supérieurs)", "À déterminer"],
+      },
+      { id: "maprimereno_montant", label: "Montant estimé MaPrimeRénov'", type: "number", placeholder: "0", unit: "€" },
+      { id: "cee_montant", label: "Prime CEE estimée", type: "number", placeholder: "0", unit: "€" },
+      { id: "autres_aides", label: "Autres aides (collectivités, ANAH...)", type: "text", placeholder: "Préciser les aides complémentaires", colSpan: 2 },
+      { id: "reste_a_charge", label: "Reste à charge estimé", type: "number", placeholder: "0", unit: "€" },
+      {
+        id: "notes_aides", label: "Notes sur les aides", type: "textarea",
+        placeholder: "Précisions sur les conditions d'éligibilité, démarches à effectuer...",
+        colSpan: 2,
+      },
+    ],
+  },
+];
+
+// ─── PDF Generation ─────────────────────────────────────────────
+
+async function generatePDF(
+  sections: QuestionSection[],
+  values: FormValues,
+  lignes: LigneDevis[],
+) {
+  const { default: jsPDF } = await import("jspdf");
+  const { default: autoTable } = await import("jspdf-autotable");
+
+  const doc = new jsPDF("p", "mm", "a4");
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 20;
+  const contentWidth = pageWidth - margin * 2;
+  let y = 20;
+
+  function checkPage(needed: number) {
+    if (y + needed > doc.internal.pageSize.getHeight() - 25) {
+      doc.addPage();
+      y = 20;
+    }
+  }
+
+  function addFooter(pageNum: number, totalPages: number) {
+    const footerY = doc.internal.pageSize.getHeight() - 10;
+    doc.setFontSize(8);
+    doc.setTextColor(130);
+    doc.text("Devis", margin, footerY);
+    doc.text(
+      `${values.ref_devis || "Réf. non définie"} — Page ${pageNum}/${totalPages}`,
+      pageWidth - margin,
+      footerY,
+      { align: "right" }
+    );
+    doc.text("TERRAKOTTA — Bureau d'étude en rénovation énergétique", pageWidth / 2, footerY, { align: "center" });
+  }
+
+  // ─── Page de garde ────────────────────────────────────────
+  doc.setFillColor(160, 82, 45);
+  doc.rect(0, 0, pageWidth, 55, "F");
+
+  doc.setTextColor(255);
+  doc.setFontSize(12);
+  doc.text("TERRAKOTTA", margin, 18);
+  doc.setFontSize(9);
+  doc.text("Bureau d'étude en rénovation énergétique", margin, 25);
+
+  doc.setFontSize(22);
+  doc.setFont("helvetica", "bold");
+  doc.text("DEVIS", margin, 42);
+
+  doc.setTextColor(50);
+  y = 70;
+
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "normal");
+  doc.text(values.objet || "Travaux de rénovation énergétique", margin, y);
+  y += 12;
+
+  doc.setDrawColor(160, 82, 45);
+  doc.setLineWidth(0.5);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 10;
+
+  // Info box
+  const infoData = [
+    ["Référence", values.ref_devis || "—"],
+    ["Client", values.client_nom || "—"],
+    ["Adresse chantier", values.adresse_chantier || values.client_adresse || "—"],
+    ["Date d'émission", values.date_emission || "—"],
+    ["Date de validité", values.date_validite || "—"],
+    ["Délai d'exécution", values.delai_execution || "—"],
+  ];
+  autoTable(doc, {
+    startY: y,
+    head: [["Information", "Valeur"]],
+    body: infoData,
+    margin: { left: margin, right: margin },
+    styles: { fontSize: 9, cellPadding: 3 },
+    headStyles: { fillColor: [160, 82, 45], textColor: 255, fontStyle: "bold" },
+    alternateRowStyles: { fillColor: [250, 245, 235] },
+    columnStyles: { 0: { fontStyle: "bold", cellWidth: 50 } },
+  });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  y = (doc as any).lastAutoTable.finalY + 15;
+
+  // ─── Tableau des lignes de devis ──────────────────────────
+  checkPage(40);
+  doc.setFillColor(160, 82, 45);
+  doc.rect(margin, y, contentWidth, 8, "F");
+  doc.setTextColor(255);
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "bold");
+  doc.text("Désignation des travaux", margin + 3, y + 5.5);
+  doc.setTextColor(50);
+  y += 12;
+
+  const lignesData = lignes.map((l) => {
+    const qty = parseFloat(l.quantite) || 0;
+    const prix = parseFloat(l.prixUnitaire) || 0;
+    const totalHT = qty * prix;
+    return [
+      l.designation || "—",
+      l.unite || "—",
+      qty.toFixed(2),
+      `${prix.toFixed(2)} €`,
+      `${totalHT.toFixed(2)} €`,
+    ];
+  });
+
+  // Totals
+  const totalHT = lignes.reduce((sum, l) => {
+    return sum + (parseFloat(l.quantite) || 0) * (parseFloat(l.prixUnitaire) || 0);
+  }, 0);
+
+  const tvaRate = values.tva_applicable?.includes("5,5") ? 5.5
+    : values.tva_applicable?.includes("10%") ? 10
+    : 20;
+  const totalTVA = totalHT * (tvaRate / 100);
+  const totalTTC = totalHT + totalTVA;
+
+  autoTable(doc, {
+    startY: y,
+    head: [["Désignation", "Unité", "Quantité", "P.U. HT", "Total HT"]],
+    body: lignesData,
+    margin: { left: margin, right: margin },
+    styles: { fontSize: 9, cellPadding: 3 },
+    headStyles: { fillColor: [160, 82, 45], textColor: 255, fontStyle: "bold" },
+    alternateRowStyles: { fillColor: [250, 245, 235] },
+    columnStyles: {
+      0: { cellWidth: 70 },
+      1: { cellWidth: 20, halign: "center" },
+      2: { cellWidth: 20, halign: "right" },
+      3: { cellWidth: 30, halign: "right" },
+      4: { cellWidth: 30, halign: "right" },
+    },
+  });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  y = (doc as any).lastAutoTable.finalY + 5;
+
+  // Totaux
+  autoTable(doc, {
+    startY: y,
+    body: [
+      ["Total HT", `${totalHT.toFixed(2)} €`],
+      [`TVA (${tvaRate}%)`, `${totalTVA.toFixed(2)} €`],
+      ["Total TTC", `${totalTTC.toFixed(2)} €`],
+    ],
+    margin: { left: margin + contentWidth - 80, right: margin },
+    styles: { fontSize: 10, cellPadding: 3 },
+    columnStyles: {
+      0: { fontStyle: "bold", cellWidth: 40 },
+      1: { halign: "right", cellWidth: 40 },
+    },
+    didParseCell: (data) => {
+      if (data.row.index === 2) {
+        data.cell.styles.fillColor = [160, 82, 45];
+        data.cell.styles.textColor = [255, 255, 255];
+        data.cell.styles.fontStyle = "bold";
+      }
+    },
+  });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  y = (doc as any).lastAutoTable.finalY + 10;
+
+  // Aides
+  const aidesData: string[][] = [];
+  if (values.maprimereno && values.maprimereno !== "Non applicable") {
+    aidesData.push(["MaPrimeRénov'", `${values.maprimereno}${values.maprimereno_montant ? ` — ${values.maprimereno_montant} €` : ""}`]);
+  }
+  if (values.cee_montant && parseFloat(values.cee_montant) > 0) {
+    aidesData.push(["Prime CEE", `${values.cee_montant} €`]);
+  }
+  if (values.autres_aides) {
+    aidesData.push(["Autres aides", values.autres_aides]);
+  }
+  if (values.reste_a_charge && parseFloat(values.reste_a_charge) > 0) {
+    aidesData.push(["Reste à charge estimé", `${values.reste_a_charge} €`]);
+  }
+
+  if (aidesData.length > 0) {
+    checkPage(30);
+    doc.setFillColor(160, 82, 45);
+    doc.rect(margin, y, contentWidth, 8, "F");
+    doc.setTextColor(255);
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text("Aides financières mobilisables", margin + 3, y + 5.5);
+    doc.setTextColor(50);
+    y += 12;
+
+    autoTable(doc, {
+      startY: y,
+      body: aidesData,
+      margin: { left: margin, right: margin },
+      styles: { fontSize: 9, cellPadding: 2.5 },
+      columnStyles: {
+        0: { fontStyle: "bold", cellWidth: 60 },
+        1: { cellWidth: contentWidth - 60 },
+      },
+      alternateRowStyles: { fillColor: [250, 248, 242] },
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    y = (doc as any).lastAutoTable.finalY + 10;
+  }
+
+  // ─── Remaining sections (conditions, etc.) ────────────────
+  // Sections 3 (already used for info box) and 4,5
+  for (const section of sections.slice(3)) {
+    checkPage(30);
+
+    doc.setFillColor(160, 82, 45);
+    doc.rect(margin, y, contentWidth, 8, "F");
+    doc.setTextColor(255);
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text(section.titre, margin + 3, y + 5.5);
+    doc.setTextColor(50);
+    y += 12;
+
+    const tableData: string[][] = [];
+    for (const field of section.fields) {
+      const val = values[field.id] || "—";
+      if (val !== "—") {
+        const label = field.unit ? `${field.label} (${field.unit})` : field.label;
+        tableData.push([label, val]);
+      }
+    }
+
+    if (tableData.length > 0) {
+      autoTable(doc, {
+        startY: y,
+        body: tableData,
+        margin: { left: margin, right: margin },
+        styles: { fontSize: 9, cellPadding: 2.5, overflow: "linebreak" },
+        columnStyles: {
+          0: { fontStyle: "bold", cellWidth: 70, textColor: [80, 80, 80] },
+          1: { cellWidth: contentWidth - 70 },
+        },
+        alternateRowStyles: { fillColor: [250, 248, 242] },
+      });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      y = (doc as any).lastAutoTable.finalY + 10;
+    }
+  }
+
+  // ─── Signature ────────────────────────────────────────────
+  checkPage(50);
+  y += 5;
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.text("Bon pour accord — Date et signature du client :", margin, y);
+  y += 5;
+  doc.text('Mention manuscrite : "Lu et approuvé, bon pour accord"', margin, y);
+  y += 20;
+  doc.setDrawColor(180);
+  doc.setLineWidth(0.3);
+  doc.line(margin, y, margin + 70, y);
+  doc.text("Signature", margin, y + 5);
+  doc.line(pageWidth - margin - 70, y, pageWidth - margin, y);
+  doc.text("Date", pageWidth - margin - 70, y + 5);
+
+  // ─── Footers ──────────────────────────────────────────────
+  const totalPages = doc.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    addFooter(i, totalPages);
+  }
+
+  const filename = `Devis_${values.ref_devis || "DRAFT"}_${new Date().toISOString().slice(0, 10)}.pdf`;
+  doc.save(filename);
+}
+
+// ─── Component ──────────────────────────────────────────────────
+
+export default function DevisDocument({ onBack, onSaved, existingDoc }: Props) {
+  const [activeSection, setActiveSection] = useState(0);
+  const [values, setValues] = useState<FormValues>(() => {
+    if (existingDoc?.donnees) {
+      try {
+        const parsed = JSON.parse(existingDoc.donnees);
+        // Separate lignes from form values
+        if (parsed._lignes) {
+          delete parsed._lignes;
+        }
+        return parsed;
+      } catch { return {}; }
+    }
+    return {};
+  });
+  const [lignes, setLignes] = useState<LigneDevis[]>(() => {
+    if (existingDoc?.donnees) {
+      try {
+        const parsed = JSON.parse(existingDoc.donnees);
+        if (parsed._lignes) return parsed._lignes;
+      } catch { /* ignore */ }
+    }
+    return [createLigne()];
+  });
+  const [docId, setDocId] = useState<string | null>(existingDoc?.id ?? null);
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [showLignes, setShowLignes] = useState(false);
+
+  function createLigne(): LigneDevis {
+    return {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      designation: "",
+      unite: "forfait",
+      quantite: "1",
+      prixUnitaire: "",
+      tva: "5.5",
+    };
+  }
+
+  function updateValue(id: string, value: string) {
+    setValues((prev) => ({ ...prev, [id]: value }));
+    setSaved(false);
+  }
+
+  function addLigne() {
+    setLignes((prev) => [...prev, createLigne()]);
+  }
+
+  function removeLigne(id: string) {
+    setLignes((prev) => prev.filter((l) => l.id !== id));
+  }
+
+  function updateLigne(id: string, field: keyof LigneDevis, value: string) {
+    setLignes((prev) => prev.map((l) => (l.id === id ? { ...l, [field]: value } : l)));
+    setSaved(false);
+  }
+
+  // ─── Totals ─────────────────────────────────────────────────
+  const totalHT = lignes.reduce((sum, l) => {
+    return sum + (parseFloat(l.quantite) || 0) * (parseFloat(l.prixUnitaire) || 0);
+  }, 0);
+
+  const tvaRate = values.tva_applicable?.includes("5,5") ? 5.5
+    : values.tva_applicable?.includes("10%") ? 10
+    : 20;
+  const totalTVA = totalHT * (tvaRate / 100);
+  const totalTTC = totalHT + totalTVA;
+
+  // ─── Save ───────────────────────────────────────────────────
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const titre = values.objet
+        ? `Devis — ${values.client_nom || "Sans client"}`
+        : "Devis (brouillon)";
+      const reference = values.ref_devis || `DV-${Date.now().toString(36).toUpperCase()}`;
+      const donnees = JSON.stringify({ ...values, _lignes: lignes });
+
+      if (docId) {
+        const res = await fetch(`/api/documents/${docId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            titre,
+            clientNom: values.client_nom || null,
+            donnees,
+            statut: "EN_COURS",
+          }),
+        });
+        if (res.ok) {
+          setSaved(true);
+          setTimeout(() => setSaved(false), 2000);
+          onSaved?.();
+        }
+      } else {
+        const res = await fetch("/api/documents", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            titre,
+            reference,
+            type: "DEVIS",
+            statut: "EN_COURS",
+            clientNom: values.client_nom || null,
+            donnees,
+          }),
+        });
+        if (res.ok) {
+          const created = await res.json();
+          setDocId(created.id);
+          setSaved(true);
+          setTimeout(() => setSaved(false), 2000);
+          onSaved?.();
+        }
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleGeneratePDF() {
+    setGenerating(true);
+    try {
+      await generatePDF(SECTIONS, values, lignes);
+      if (docId) {
+        await fetch(`/api/documents/${docId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ statut: "TERMINE" }),
+        });
+        onSaved?.();
+      } else {
+        await handleSave();
+      }
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  const currentSection = showLignes ? null : SECTIONS[activeSection];
+
+  const filledFieldsCount = SECTIONS.reduce((count, section) => {
+    return count + section.fields.filter((f) => values[f.id]?.trim()).length;
+  }, 0);
+  const totalFieldsCount = SECTIONS.reduce((count, s) => count + s.fields.length, 0);
+  const progress = Math.round((filledFieldsCount / totalFieldsCount) * 100);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.3 }}
+      className="space-y-4"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={onBack}>
+            <ArrowLeft className="mr-1 h-4 w-4" />
+            Retour
+          </Button>
+          <div className="rounded-lg p-2 bg-emerald-500/10 text-emerald-700">
+            <Calculator className="h-5 w-5" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold">
+              {existingDoc ? "Modifier le devis" : "Nouveau devis"}
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              {filledFieldsCount}/{totalFieldsCount} champs remplis · {progress}%
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <AnimatePresence>
+            {saved && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex items-center gap-1 text-emerald-600 text-sm"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                Sauvegardé
+              </motion.div>
+            )}
+          </AnimatePresence>
+          <Button variant="outline" size="sm" onClick={handleSave} disabled={saving}>
+            {saving ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Save className="mr-1 h-3.5 w-3.5" />}
+            Sauvegarder
+          </Button>
+          <Button size="sm" onClick={handleGeneratePDF} disabled={generating}>
+            {generating ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Calculator className="mr-1 h-3.5 w-3.5" />}
+            Générer PDF
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-12 gap-4">
+        {/* Sidebar nav */}
+        <div className="col-span-3 space-y-1">
+          {SECTIONS.map((section, idx) => {
+            const sectionFilled = section.fields.filter((f) => values[f.id]?.trim()).length;
+            const sectionTotal = section.fields.length;
+            const isComplete = sectionFilled === sectionTotal;
+            const isActive = !showLignes && activeSection === idx;
+
+            return (
+              <button
+                key={idx}
+                onClick={() => { setActiveSection(idx); setShowLignes(false); }}
+                className={cn(
+                  "w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors",
+                  isActive
+                    ? "bg-emerald-50 text-emerald-900 font-medium"
+                    : "hover:bg-muted/50 text-muted-foreground"
+                )}
+              >
+                {isComplete ? (
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                ) : sectionFilled > 0 ? (
+                  <AlertCircle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                ) : (
+                  <div className="h-3.5 w-3.5 rounded-full border border-muted-foreground/30 shrink-0" />
+                )}
+                <span className="truncate">{section.titre}</span>
+                <ChevronRight className="ml-auto h-3.5 w-3.5 shrink-0 opacity-50" />
+              </button>
+            );
+          })}
+
+          {/* Lignes de devis button */}
+          <button
+            onClick={() => setShowLignes(true)}
+            className={cn(
+              "w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors",
+              showLignes
+                ? "bg-emerald-50 text-emerald-900 font-medium"
+                : "hover:bg-muted/50 text-muted-foreground"
+            )}
+          >
+            <Calculator className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">Postes de travaux</span>
+            <Badge variant="outline" className="ml-auto text-[10px]">{lignes.length}</Badge>
+          </button>
+
+          {/* Totals */}
+          <div className="mt-4 rounded-lg border p-3 space-y-1.5">
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>Total HT</span>
+              <span className="font-mono">{totalHT.toFixed(2)} €</span>
+            </div>
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>TVA ({tvaRate}%)</span>
+              <span className="font-mono">{totalTVA.toFixed(2)} €</span>
+            </div>
+            <div className="border-t pt-1.5 flex justify-between text-sm font-semibold">
+              <span>Total TTC</span>
+              <span className="font-mono text-emerald-700">{totalTTC.toFixed(2)} €</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Main content */}
+        <div className="col-span-9">
+          <AnimatePresence mode="wait">
+            {showLignes ? (
+              <motion.div
+                key="lignes"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Card>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base">Postes de travaux</CardTitle>
+                      <Button variant="outline" size="sm" onClick={addLigne}>
+                        <Plus className="mr-1 h-3.5 w-3.5" />
+                        Ajouter un poste
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {lignes.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-8 text-center">
+                        <Calculator className="h-8 w-8 text-muted-foreground/30" />
+                        <p className="mt-3 text-sm text-muted-foreground">Aucun poste de travaux</p>
+                        <Button variant="outline" size="sm" className="mt-3" onClick={addLigne}>
+                          <Plus className="mr-1 h-3.5 w-3.5" />
+                          Ajouter un poste
+                        </Button>
+                      </div>
+                    ) : (
+                      lignes.map((ligne, idx) => {
+                        const ligneTotal = (parseFloat(ligne.quantite) || 0) * (parseFloat(ligne.prixUnitaire) || 0);
+                        return (
+                          <div key={ligne.id} className="rounded-lg border p-4 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium text-muted-foreground">Poste {idx + 1}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-mono font-semibold">{ligneTotal.toFixed(2)} € HT</span>
+                                {lignes.length > 1 && (
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => removeLigne(ligne.id)}>
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-1 gap-3">
+                              <div>
+                                <label className="text-xs font-medium text-muted-foreground mb-1 block">Désignation</label>
+                                <textarea
+                                  value={ligne.designation}
+                                  onChange={(e) => updateLigne(ligne.id, "designation", e.target.value)}
+                                  placeholder="Description du poste de travaux (ex: Isolation des combles perdus par soufflage de laine de roche — 30 cm — R=7)"
+                                  className="w-full rounded-md border px-3 py-2 text-sm min-h-[60px] resize-y focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                                />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-3 gap-3">
+                              <div>
+                                <label className="text-xs font-medium text-muted-foreground mb-1 block">Unité</label>
+                                <select
+                                  value={ligne.unite}
+                                  onChange={(e) => updateLigne(ligne.id, "unite", e.target.value)}
+                                  className="w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                                >
+                                  <option value="forfait">Forfait</option>
+                                  <option value="m²">m²</option>
+                                  <option value="ml">ml</option>
+                                  <option value="m³">m³</option>
+                                  <option value="unité">Unité</option>
+                                  <option value="h">Heure</option>
+                                  <option value="jour">Jour</option>
+                                  <option value="lot">Lot</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="text-xs font-medium text-muted-foreground mb-1 block">Quantité</label>
+                                <input
+                                  type="number"
+                                  value={ligne.quantite}
+                                  onChange={(e) => updateLigne(ligne.id, "quantite", e.target.value)}
+                                  placeholder="1"
+                                  min="0"
+                                  step="0.01"
+                                  className="w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-xs font-medium text-muted-foreground mb-1 block">Prix unitaire HT (€)</label>
+                                <input
+                                  type="number"
+                                  value={ligne.prixUnitaire}
+                                  onChange={(e) => updateLigne(ligne.id, "prixUnitaire", e.target.value)}
+                                  placeholder="0.00"
+                                  min="0"
+                                  step="0.01"
+                                  className="w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ) : currentSection ? (
+              <motion.div
+                key={activeSection}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">{currentSection.titre}</CardTitle>
+                    {currentSection.description && (
+                      <p className="text-xs text-muted-foreground">{currentSection.description}</p>
+                    )}
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-4">
+                      {currentSection.fields.map((field) => (
+                        <div key={field.id} className={field.colSpan === 2 ? "col-span-2" : ""}>
+                          <label className="text-sm font-medium mb-1.5 flex items-center gap-1">
+                            {field.label}
+                            {field.required && <span className="text-red-500">*</span>}
+                            {field.unit && (
+                              <span className="text-xs text-muted-foreground font-normal">({field.unit})</span>
+                            )}
+                          </label>
+                          {field.type === "select" ? (
+                            <select
+                              value={values[field.id] || ""}
+                              onChange={(e) => updateValue(field.id, e.target.value)}
+                              className="w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                            >
+                              <option value="">— Sélectionner —</option>
+                              {field.options?.map((opt) => (
+                                <option key={opt} value={opt}>{opt}</option>
+                              ))}
+                            </select>
+                          ) : field.type === "textarea" ? (
+                            <textarea
+                              value={values[field.id] || ""}
+                              onChange={(e) => updateValue(field.id, e.target.value)}
+                              placeholder={field.placeholder}
+                              className="w-full rounded-md border px-3 py-2 text-sm min-h-[80px] resize-y focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                            />
+                          ) : (
+                            <input
+                              type={field.type}
+                              value={values[field.id] || ""}
+                              onChange={(e) => updateValue(field.id, e.target.value)}
+                              placeholder={field.placeholder}
+                              className="w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                            />
+                          )}
+                          {field.help && (
+                            <p className="mt-1 text-xs text-muted-foreground">{field.help}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Navigation */}
+                <div className="flex justify-between mt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={activeSection === 0}
+                    onClick={() => setActiveSection((s) => s - 1)}
+                  >
+                    ← Précédent
+                  </Button>
+                  {activeSection < SECTIONS.length - 1 ? (
+                    <Button
+                      size="sm"
+                      onClick={() => setActiveSection((s) => s + 1)}
+                    >
+                      Suivant →
+                    </Button>
+                  ) : (
+                    <Button size="sm" onClick={handleGeneratePDF} disabled={generating}>
+                      {generating ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Calculator className="mr-1 h-3.5 w-3.5" />}
+                      Générer le PDF
+                    </Button>
+                  )}
+                </div>
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
+        </div>
+      </div>
+    </motion.div>
+  );
+}

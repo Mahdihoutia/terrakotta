@@ -29,6 +29,8 @@ import {
 import { motion } from "framer-motion";
 import NoteDimensionnement from "@/components/dashboard/NoteDimensionnement";
 import RapportVisite from "@/components/dashboard/RapportVisite";
+import AuditEnergetique from "@/components/dashboard/AuditEnergetique";
+import DevisDocument from "@/components/dashboard/DevisDocument";
 
 type DocumentType = "RAPPORT_VISITE" | "DEVIS" | "NOTE_DIMENSIONNEMENT" | "AUDIT";
 type DocumentStatus = "BROUILLON" | "EN_COURS" | "TERMINE" | "ENVOYE";
@@ -221,6 +223,18 @@ export default function DocumentsPage() {
             />
           ) : selectedType === "RAPPORT_VISITE" ? (
             <RapportVisite
+              onBack={() => { setSelectedType(null); setEditingDoc(null); }}
+              onSaved={handleDocumentSaved}
+              existingDoc={editingDoc}
+            />
+          ) : selectedType === "AUDIT" ? (
+            <AuditEnergetique
+              onBack={() => { setSelectedType(null); setEditingDoc(null); }}
+              onSaved={handleDocumentSaved}
+              existingDoc={editingDoc}
+            />
+          ) : selectedType === "DEVIS" ? (
+            <DevisDocument
               onBack={() => { setSelectedType(null); setEditingDoc(null); }}
               onSaved={handleDocumentSaved}
               existingDoc={editingDoc}
