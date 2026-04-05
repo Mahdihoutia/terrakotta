@@ -14,6 +14,7 @@ export interface Lead {
   telephone?: string
   raisonSociale?: string
   siret?: string
+  fonction?: string
   type: ClientType
   source: LeadSource
   statut: LeadStatus

@@ -56,6 +56,7 @@ const EMPTY_FORM = {
   telephone: "",
   raisonSociale: "",
   siret: "",
+  fonction: "",
   type: "PARTICULIER" as ClientType,
   source: "SITE_WEB" as LeadSource,
   statut: "NOUVEAU" as LeadStatus,
@@ -90,6 +91,7 @@ export default function LeadsPage() {
       telephone: form.telephone || undefined,
       raisonSociale: form.raisonSociale || undefined,
       siret: form.siret || undefined,
+      fonction: form.fonction || undefined,
       type: form.type,
       source: form.source,
       statut: form.statut,
@@ -262,6 +264,16 @@ export default function LeadsPage() {
                     value={form.siret}
                     onChange={(e) => setForm({ ...form, siret: e.target.value })}
                     placeholder="123 456 789 00012"
+                    className="w-full rounded-lg border border-tk-border bg-tk-surface px-3 py-2 text-sm text-tk-text"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-tk-text-muted">Fonction</label>
+                  <input
+                    type="text"
+                    value={form.fonction}
+                    onChange={(e) => setForm({ ...form, fonction: e.target.value })}
+                    placeholder="Ex: Directeur technique"
                     className="w-full rounded-lg border border-tk-border bg-tk-surface px-3 py-2 text-sm text-tk-text"
                   />
                 </div>

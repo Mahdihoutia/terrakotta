@@ -34,6 +34,7 @@ model Client {
   adresse       String?
   raisonSociale String?     @map("raison_sociale")
   siret         String?
+  fonction      String?
   source        LeadSource  @default(SITE_WEB)
   statut        LeadStatus  @default(NOUVEAU)
   budgetEstime  Decimal?    @map("budget_estime")
@@ -57,6 +58,7 @@ model Lead {
   telephone     String?
   raisonSociale String?    @map("raison_sociale")
   siret         String?
+  fonction      String?
   type          ClientType @default(PARTICULIER)
   source        LeadSource @default(SITE_WEB)
   statut        LeadStatus @default(NOUVEAU)

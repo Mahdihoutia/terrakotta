@@ -15,6 +15,7 @@ function serializeClient(c: {
   adresse: string | null;
   raisonSociale: string | null;
   siret: string | null;
+  fonction: string | null;
   type: string;
   source: string;
   statut: string;
@@ -34,6 +35,7 @@ function serializeClient(c: {
     adresse: c.adresse,
     raisonSociale: c.raisonSociale,
     siret: c.siret,
+    fonction: c.fonction,
     type: c.type,
     source: c.source,
     statut: c.statut,
@@ -74,6 +76,7 @@ const updateClientSchema = z.object({
   adresse: z.string().nullable().optional(),
   raisonSociale: z.string().nullable().optional(),
   siret: z.string().nullable().optional(),
+  fonction: z.string().nullable().optional(),
   type: z.enum(["PARTICULIER", "PROFESSIONNEL", "COLLECTIVITE"]).optional(),
   source: z.enum(["SITE_WEB", "RECOMMANDATION", "RESEAU", "DEMARCHAGE", "AUTRE"]).optional(),
   statut: z.enum(["NOUVEAU", "CONTACTE", "QUALIFIE", "PROPOSITION", "GAGNE", "PERDU"]).optional(),

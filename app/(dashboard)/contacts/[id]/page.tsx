@@ -36,6 +36,7 @@ interface ContactDetail {
   adresse: string | null;
   raisonSociale: string | null;
   siret: string | null;
+  fonction: string | null;
   type: ClientType;
   source: LeadSource;
   statut: LeadStatus;
@@ -99,6 +100,7 @@ export default function ContactDetailPage({ params }: Props) {
     adresse: "",
     raisonSociale: "",
     siret: "",
+    fonction: "",
     type: "PARTICULIER" as ClientType,
     source: "SITE_WEB" as LeadSource,
     statut: "NOUVEAU" as LeadStatus,
@@ -129,6 +131,7 @@ export default function ContactDetailPage({ params }: Props) {
       adresse: data.adresse ?? "",
       raisonSociale: data.raisonSociale ?? "",
       siret: data.siret ?? "",
+      fonction: data.fonction ?? "",
       type: data.type,
       source: data.source,
       statut: data.statut,
@@ -152,6 +155,7 @@ export default function ContactDetailPage({ params }: Props) {
           adresse: form.adresse || null,
           raisonSociale: form.raisonSociale || null,
           siret: form.siret || null,
+          fonction: form.fonction || null,
           type: form.type,
           source: form.source,
           statut: form.statut,
@@ -329,6 +333,11 @@ export default function ContactDetailPage({ params }: Props) {
                 placeholder="123 456 789 00012" className={inputClass} />
             </div>
             <div>
+              <label className={labelClass}>Fonction</label>
+              <input type="text" value={form.fonction} onChange={(e) => setForm({ ...form, fonction: e.target.value })}
+                placeholder="Ex: Directeur technique" className={inputClass} />
+            </div>
+            <div>
               <label className={labelClass}>Type</label>
               <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as ClientType })} className={inputClass}>
                 <option value="PARTICULIER">Particulier</option>
@@ -397,6 +406,7 @@ export default function ContactDetailPage({ params }: Props) {
               <div className="grid gap-4 sm:grid-cols-2">
                 <InfoRow icon={<Building2 className="h-4 w-4" />} label="Raison Sociale" value={contact.raisonSociale ?? "\u2014"} />
                 <InfoRow icon={<Hash className="h-4 w-4" />} label="N° SIRET" value={contact.siret ?? "\u2014"} />
+                <InfoRow icon={<User className="h-4 w-4" />} label="Fonction" value={contact.fonction ?? "\u2014"} />
               </div>
             </div>
 

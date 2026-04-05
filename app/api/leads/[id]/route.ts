@@ -30,6 +30,7 @@ const updateLeadSchema = z.object({
   telephone: z.string().nullable().optional(),
   raisonSociale: z.string().nullable().optional(),
   siret: z.string().nullable().optional(),
+  fonction: z.string().nullable().optional(),
   type: z.enum(["PARTICULIER", "PROFESSIONNEL", "COLLECTIVITE"]).optional(),
   source: z.enum(["SITE_WEB", "RECOMMANDATION", "RESEAU", "DEMARCHAGE", "AUTRE"]).optional(),
   statut: z.enum(["NOUVEAU", "CONTACTE", "QUALIFIE", "PROPOSITION", "GAGNE", "PERDU"]).optional(),

@@ -12,6 +12,7 @@ export interface Contact {
   adresse: string | null;
   raisonSociale: string | null;
   siret: string | null;
+  fonction: string | null;
   type: ClientType;
   source: LeadSource;
   statut: LeadStatus;

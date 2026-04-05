@@ -31,6 +31,7 @@ function formatRow(lead: Lead) {
     Téléphone: lead.telephone || "",
     "Raison Sociale": lead.raisonSociale || "",
     "N° SIRET": lead.siret || "",
+    Fonction: lead.fonction || "",
     Type: TYPE_LABELS[lead.type] || lead.type,
     Source: SOURCE_LABELS[lead.source] || lead.source,
     Statut: STATUS_LABELS[lead.statut] || lead.statut,

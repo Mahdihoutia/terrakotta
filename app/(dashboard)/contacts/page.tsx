@@ -68,6 +68,7 @@ const EMPTY_FORM = {
   adresse: "",
   raisonSociale: "",
   siret: "",
+  fonction: "",
   type: "PARTICULIER" as ClientType,
   source: "SITE_WEB" as LeadSource,
   statut: "NOUVEAU" as LeadStatus,
@@ -105,6 +106,7 @@ export default function ContactsPage() {
       adresse: form.adresse || null,
       raisonSociale: form.raisonSociale || null,
       siret: form.siret || null,
+      fonction: form.fonction || null,
       type: form.type,
       source: form.source,
       statut: form.statut,
@@ -200,6 +202,11 @@ export default function ContactsPage() {
                   <label className="text-xs font-medium text-tk-text-muted">N° SIRET</label>
                   <input type="text" value={form.siret} onChange={(e) => setForm({ ...form, siret: e.target.value })}
                     placeholder="123 456 789 00012" className="w-full rounded-lg border border-tk-border bg-tk-surface px-3 py-2 text-sm text-tk-text" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-tk-text-muted">Fonction</label>
+                  <input type="text" value={form.fonction} onChange={(e) => setForm({ ...form, fonction: e.target.value })}
+                    placeholder="Ex: Directeur technique" className="w-full rounded-lg border border-tk-border bg-tk-surface px-3 py-2 text-sm text-tk-text" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-tk-text-muted">Type</label>

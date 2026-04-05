@@ -24,6 +24,7 @@ export async function POST(_request: Request, context: RouteContext) {
         telephone: lead.telephone,
         raisonSociale: lead.raisonSociale,
         siret: lead.siret,
+        fonction: lead.fonction,
         type: lead.type,
         source: lead.source,
         statut: lead.statut,

@@ -72,6 +72,7 @@ export default function LeadDetailPage({ params }: Props) {
     telephone: "",
     raisonSociale: "",
     siret: "",
+    fonction: "",
     type: "PARTICULIER" as ClientType,
     source: "SITE_WEB" as LeadSource,
     statut: "NOUVEAU" as LeadStatus,
@@ -94,6 +95,7 @@ export default function LeadDetailPage({ params }: Props) {
           telephone: data.telephone ?? "",
           raisonSociale: data.raisonSociale ?? "",
           siret: data.siret ?? "",
+          fonction: data.fonction ?? "",
           type: data.type,
           source: data.source,
           statut: data.statut,
@@ -119,6 +121,7 @@ export default function LeadDetailPage({ params }: Props) {
           telephone: form.telephone || null,
           raisonSociale: form.raisonSociale || null,
           siret: form.siret || null,
+          fonction: form.fonction || null,
           type: form.type,
           source: form.source,
           statut: form.statut,
@@ -171,6 +174,7 @@ export default function LeadDetailPage({ params }: Props) {
         telephone: lead.telephone ?? "",
         raisonSociale: lead.raisonSociale ?? "",
         siret: lead.siret ?? "",
+        fonction: lead.fonction ?? "",
         type: lead.type,
         source: lead.source,
         statut: lead.statut,
@@ -447,6 +451,16 @@ export default function LeadDetailPage({ params }: Props) {
               />
             </div>
             <div>
+              <label className={labelClass}>Fonction</label>
+              <input
+                type="text"
+                value={form.fonction}
+                onChange={(e) => setForm({ ...form, fonction: e.target.value })}
+                placeholder="Ex: Directeur technique"
+                className={inputClass}
+              />
+            </div>
+            <div>
               <label className={labelClass}>Type</label>
               <select
                 value={form.type}
@@ -524,6 +538,7 @@ export default function LeadDetailPage({ params }: Props) {
                 <InfoRow icon={<Phone className="h-4 w-4" />} label="Téléphone" value={lead.telephone ?? "\u2014"} />
                 <InfoRow icon={<Building2 className="h-4 w-4" />} label="Raison Sociale" value={lead.raisonSociale ?? "\u2014"} />
                 <InfoRow icon={<Building2 className="h-4 w-4" />} label="N° SIRET" value={lead.siret ?? "\u2014"} />
+                <InfoRow icon={<User className="h-4 w-4" />} label="Fonction" value={lead.fonction ?? "\u2014"} />
               </div>
             </div>
 
