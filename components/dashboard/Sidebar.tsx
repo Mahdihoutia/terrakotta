@@ -26,19 +26,19 @@ interface NavItem {
 }
 
 const TOP_ITEMS: NavItem[] = [
-  { label: "Vue d'ensemble", href: "/", icon: LayoutDashboard },
-  { label: "Leads", href: "/leads", icon: Users },
-  { label: "Contacts", href: "/contacts", icon: Contact },
-  { label: "Projets", href: "/projets", icon: FolderKanban },
-  { label: "Devis", href: "/devis", icon: Receipt },
-  { label: "AI Agents", href: "/agents", icon: Bot },
-  { label: "Calendrier", href: "/calendrier", icon: CalendarDays },
-  { label: "Documents", href: "/documents", icon: FileText },
-  { label: "Statistiques", href: "/stats", icon: BarChart3 },
+  { label: "Vue d'ensemble", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Leads", href: "/dashboard/leads", icon: Users },
+  { label: "Contacts", href: "/dashboard/contacts", icon: Contact },
+  { label: "Projets", href: "/dashboard/projets", icon: FolderKanban },
+  { label: "Devis", href: "/dashboard/devis", icon: Receipt },
+  { label: "AI Agents", href: "/dashboard/agents", icon: Bot },
+  { label: "Calendrier", href: "/dashboard/calendrier", icon: CalendarDays },
+  { label: "Documents", href: "/dashboard/documents", icon: FileText },
+  { label: "Statistiques", href: "/dashboard/stats", icon: BarChart3 },
 ];
 
 const BOTTOM_ITEMS: NavItem[] = [
-  { label: "Paramètres", href: "/settings", icon: Settings },
+  { label: "Paramètres", href: "/dashboard/settings", icon: Settings },
 ];
 
 export default function Sidebar() {
@@ -66,8 +66,8 @@ export default function Sidebar() {
       <nav className="flex flex-1 flex-col gap-1 px-3">
         {TOP_ITEMS.map((item) => {
           const isActive =
-            item.href === "/"
-              ? pathname === "/"
+            item.href === "/dashboard"
+              ? pathname === "/dashboard"
               : pathname.startsWith(item.href);
           const Icon = item.icon;
 

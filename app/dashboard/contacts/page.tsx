@@ -358,7 +358,7 @@ export default function ContactsPage() {
             {filtered.map((contact) => (
               <TableRow key={contact.id} className="group border-white/[0.04] hover:bg-tk-surface">
                 <TableCell>
-                  <Link href={`/contacts/${contact.id}`} className="block">
+                  <Link href={`/dashboard/contacts/${contact.id}`} className="block">
                     <p className="font-medium text-tk-text">
                       {contact.prenom ? `${contact.prenom} ${contact.nom}` : contact.nom}
                     </p>
@@ -398,7 +398,7 @@ export default function ContactsPage() {
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Link href={`/contacts/${contact.id}`}>
+                    <Link href={`/dashboard/contacts/${contact.id}`}>
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-tk-text-muted hover:text-tk-text">
                         <ArrowRight className="h-3.5 w-3.5" />
                       </Button>

@@ -295,7 +295,7 @@ export default function ProjetDetailPage({ params }: Props) {
     try {
       const res = await fetch(`/api/projets/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Erreur lors de la suppression");
-      router.push("/projets");
+      router.push("/dashboard/projets");
     } catch {
       setError("Erreur lors de la suppression");
       setDeleting(false);
@@ -321,7 +321,7 @@ export default function ProjetDetailPage({ params }: Props) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-4">
         <p className="text-red-400 text-sm">{error ?? "Projet introuvable"}</p>
-        <Link href="/projets">
+        <Link href="/dashboard/projets">
           <Button variant="outline" size="sm" className="border-tk-border bg-tk-surface text-tk-text-secondary">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Retour aux projets
@@ -345,7 +345,7 @@ export default function ProjetDetailPage({ params }: Props) {
       {/* ─── Header ─────────────────────────────────────── */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/projets">
+          <Link href="/dashboard/projets">
             <Button variant="ghost" size="icon" className="h-9 w-9 text-tk-text-faint hover:text-tk-text hover:bg-tk-hover">
               <ArrowLeft className="h-5 w-5" />
             </Button>
@@ -619,7 +619,7 @@ export default function ProjetDetailPage({ params }: Props) {
                   <div>
                     <p className="text-[10px] uppercase tracking-wider text-tk-text-faint">Client</p>
                     <Link
-                      href={`/contacts/${projet.client.id}`}
+                      href={`/dashboard/contacts/${projet.client.id}`}
                       className="text-sm text-blue-400 hover:text-blue-300 hover:underline transition-colors"
                     >
                       {projet.client.nom}
@@ -723,7 +723,7 @@ export default function ProjetDetailPage({ params }: Props) {
                           <tr key={devis.id} className="border-b border-tk-border/50 last:border-0">
                             <td className="py-2.5">
                               <Link
-                                href={`/devis/${devis.id}`}
+                                href={`/dashboard/devis/${devis.id}`}
                                 className="text-blue-400 hover:text-blue-300 hover:underline transition-colors"
                               >
                                 {devis.numero}
@@ -893,7 +893,7 @@ export default function ProjetDetailPage({ params }: Props) {
                 <div>
                   <p className="text-[10px] uppercase tracking-wider text-tk-text-faint">Nom</p>
                   <Link
-                    href={`/contacts/${projet.client.id}`}
+                    href={`/dashboard/contacts/${projet.client.id}`}
                     className="text-sm text-blue-400 hover:text-blue-300 hover:underline transition-colors"
                   >
                     {projet.client.nom}

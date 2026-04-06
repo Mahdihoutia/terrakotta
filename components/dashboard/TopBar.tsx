@@ -23,7 +23,7 @@ export default function TopBar() {
 
       <div className="flex items-center gap-2">
         <Link
-          href="/calendrier"
+          href="/dashboard/calendrier"
           className="flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm text-tk-text-muted transition-colors hover:bg-tk-hover hover:text-tk-text-secondary"
         >
           <CalendarDays className="h-4 w-4 text-tk-primary" />

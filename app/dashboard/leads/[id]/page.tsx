@@ -145,7 +145,7 @@ export default function LeadDetailPage({ params }: Props) {
     try {
       const res = await fetch(`/api/leads/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Erreur lors de la suppression");
-      router.push("/leads");
+      router.push("/dashboard/leads");
     } catch {
       setError("Erreur lors de la suppression");
       setDeleting(false);
@@ -158,7 +158,7 @@ export default function LeadDetailPage({ params }: Props) {
       const res = await fetch(`/api/leads/${id}/convert`, { method: "POST" });
       if (!res.ok) throw new Error("Erreur lors de la conversion");
       const data = await res.json();
-      router.push(`/contacts/${data.clientId}`);
+      router.push(`/dashboard/contacts/${data.clientId}`);
     } catch {
       setError("Erreur lors de la conversion");
       setConverting(false);
@@ -197,7 +197,7 @@ export default function LeadDetailPage({ params }: Props) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-4">
         <p className="text-red-400 text-sm">{error ?? "Lead introuvable"}</p>
-        <Link href="/leads">
+        <Link href="/dashboard/leads">
           <Button variant="outline" size="sm" className="border-tk-border bg-tk-surface text-tk-text-secondary">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Retour aux leads
@@ -216,7 +216,7 @@ export default function LeadDetailPage({ params }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/leads">
+          <Link href="/dashboard/leads">
             <Button variant="ghost" size="icon" className="h-9 w-9 text-tk-text-faint hover:text-tk-text hover:bg-tk-hover">
               <ArrowLeft className="h-5 w-5" />
             </Button>

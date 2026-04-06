@@ -390,7 +390,7 @@ export default function LeadsPage() {
                 className="group border-tk-border hover:bg-tk-hover"
               >
                 <TableCell>
-                  <Link href={`/leads/${lead.id}`} className="block">
+                  <Link href={`/dashboard/leads/${lead.id}`} className="block">
                     <p className="font-medium text-tk-text">
                       {lead.prenom ? `${lead.prenom} ${lead.nom}` : lead.nom}
                     </p>
@@ -444,7 +444,7 @@ export default function LeadsPage() {
                         <UserCheck className="h-3.5 w-3.5" />
                       )}
                     </Button>
-                    <Link href={`/leads/${lead.id}`}>
+                    <Link href={`/dashboard/leads/${lead.id}`}>
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-tk-text-muted hover:text-tk-text">
                         <ArrowRight className="h-3.5 w-3.5" />
                       </Button>

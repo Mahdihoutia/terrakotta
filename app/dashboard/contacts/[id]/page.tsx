@@ -179,7 +179,7 @@ export default function ContactDetailPage({ params }: Props) {
     try {
       const res = await fetch(`/api/clients/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Erreur lors de la suppression");
-      router.push("/contacts");
+      router.push("/dashboard/contacts");
     } catch {
       setError("Erreur lors de la suppression");
       setDeleting(false);
@@ -203,7 +203,7 @@ export default function ContactDetailPage({ params }: Props) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-4">
         <p className="text-red-600 dark:text-red-400 text-sm">{error ?? "Contact introuvable"}</p>
-        <Link href="/contacts">
+        <Link href="/dashboard/contacts">
           <Button variant="outline" size="sm">
             <ArrowLeft className="mr-2 h-4 w-4" /> Retour aux contacts
           </Button>
@@ -225,7 +225,7 @@ export default function ContactDetailPage({ params }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/contacts">
+          <Link href="/dashboard/contacts">
             <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-foreground">
               <ArrowLeft className="h-5 w-5" />
             </Button>

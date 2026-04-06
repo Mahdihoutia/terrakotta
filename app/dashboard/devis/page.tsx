@@ -496,14 +496,14 @@ export default function DevisListPage() {
                 className="group border-tk-border hover:bg-tk-hover"
               >
                 <TableCell>
-                  <Link href={`/devis/${devis.id}`} className="block">
+                  <Link href={`/dashboard/devis/${devis.id}`} className="block">
                     <p className="font-mono text-sm font-medium text-tk-text">
                       {devis.numero}
                     </p>
                   </Link>
                 </TableCell>
                 <TableCell>
-                  <Link href={`/devis/${devis.id}`} className="block">
+                  <Link href={`/dashboard/devis/${devis.id}`} className="block">
                     <p className="text-sm text-tk-text-secondary">
                       {devis.objet || "\u2014"}
                     </p>
@@ -537,7 +537,7 @@ export default function DevisListPage() {
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Link href={`/devis/${devis.id}`}>
+                    <Link href={`/dashboard/devis/${devis.id}`}>
                       <Button
                         variant="ghost"
                         size="icon"

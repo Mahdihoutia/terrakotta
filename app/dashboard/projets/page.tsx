@@ -438,7 +438,7 @@ export default function ProjetsPage() {
                   className="group border-tk-border hover:bg-tk-hover"
                 >
                   <TableCell>
-                    <Link href={`/projets/${projet.id}`} className="block">
+                    <Link href={`/dashboard/projets/${projet.id}`} className="block">
                       <p className="font-medium text-tk-text flex items-center gap-1.5">
                         <FolderKanban className="h-3.5 w-3.5 text-tk-text-faint" />
                         {projet.titre}
@@ -509,7 +509,7 @@ export default function ProjetsPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Link href={`/projets/${projet.id}`}>
+                      <Link href={`/dashboard/projets/${projet.id}`}>
                         <Button
                           variant="ghost"
                           size="icon"

@@ -223,7 +223,7 @@ export default function DevisDetailPage({ params }: Props) {
     try {
       const res = await fetch(`/api/devis/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Erreur lors de la suppression");
-      router.push("/devis");
+      router.push("/dashboard/devis");
     } catch {
       setError("Erreur lors de la suppression");
       setDeleting(false);
@@ -267,7 +267,7 @@ export default function DevisDetailPage({ params }: Props) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-4">
         <p className="text-red-400 text-sm">{error ?? "Devis introuvable"}</p>
-        <Link href="/devis">
+        <Link href="/dashboard/devis">
           <Button
             variant="outline"
             size="sm"
@@ -333,7 +333,7 @@ export default function DevisDetailPage({ params }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/devis">
+          <Link href="/dashboard/devis">
             <Button
               variant="ghost"
               size="icon"
@@ -732,14 +732,14 @@ export default function DevisDetailPage({ params }: Props) {
                       ? `${devis.client.prenom} ${devis.client.nom}`
                       : devis.client.nom
                   }
-                  href={`/contacts/${devis.clientId}`}
+                  href={`/dashboard/contacts/${devis.clientId}`}
                 />
                 {devis.projet && (
                   <InfoRow
                     icon={<FolderOpen className="h-4 w-4" />}
                     label="Projet"
                     value={devis.projet.titre}
-                    href={`/projets/${devis.projetId}`}
+                    href={`/dashboard/projets/${devis.projetId}`}
                   />
                 )}
                 <InfoRow
