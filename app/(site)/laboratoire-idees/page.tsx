@@ -48,7 +48,7 @@ const ARTICLES: Article[] = [
     category: "Énergie",
     readTime: "8 min",
     date: "28 mars 2026",
-    image: "https://images.unsplash.com/photo-1497366412874-3415097a27e7?w=900&q=80",
+    image: "https://images.unsplash.com/photo-1590274853856-f22d5ee3d228?w=900&q=80",
     icon: Sun,
     featured: true,
   },
@@ -60,7 +60,7 @@ const ARTICLES: Article[] = [
     category: "Climat",
     readTime: "10 min",
     date: "15 mars 2026",
-    image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=900&q=80",
+    image: "https://images.unsplash.com/photo-1416331108676-a22ccb276e35?w=900&q=80",
     icon: Wind,
     featured: true,
   },
@@ -83,7 +83,7 @@ const ARTICLES: Article[] = [
     category: "Matériaux",
     readTime: "12 min",
     date: "18 février 2026",
-    image: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=900&q=80",
+    image: "https://images.unsplash.com/photo-1611348586804-61bf6c080437?w=900&q=80",
     icon: Globe,
   },
   {
@@ -94,7 +94,7 @@ const ARTICLES: Article[] = [
     category: "Énergie",
     readTime: "9 min",
     date: "5 février 2026",
-    image: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=900&q=80",
+    image: "https://images.unsplash.com/photo-1628744448840-55bdb2497bd4?w=900&q=80",
     icon: Sun,
   },
   {
@@ -105,7 +105,7 @@ const ARTICLES: Article[] = [
     category: "Matériaux",
     readTime: "8 min",
     date: "22 janvier 2026",
-    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=900&q=80",
+    image: "https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd6?w=900&q=80",
     icon: Leaf,
   },
   {
@@ -127,7 +127,7 @@ const ARTICLES: Article[] = [
     category: "Urbanisme",
     readTime: "6 min",
     date: "18 décembre 2025",
-    image: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=900&q=80",
+    image: "https://images.unsplash.com/photo-1518005068251-37900150dfca?w=900&q=80",
     icon: TreePine,
   },
   {
@@ -138,7 +138,7 @@ const ARTICLES: Article[] = [
     category: "Énergie",
     readTime: "8 min",
     date: "3 décembre 2025",
-    image: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=900&q=80",
+    image: "https://images.unsplash.com/photo-1558449028-b53a39d100fc?w=900&q=80",
     icon: Sun,
   },
 ];

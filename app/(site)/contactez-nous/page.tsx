@@ -14,13 +14,13 @@ const COORDONNEES = [
   {
     icon: Phone,
     label: "Téléphone",
-    value: "04 XX XX XX XX",
-    href: "tel:+33400000000",
+    value: "01 XX XX XX XX",
+    href: "tel:+33100000000",
   },
   {
     icon: MapPin,
     label: "Adresse",
-    value: "Marseille, France",
+    value: "1115 Rue Saint-Dominique, 75007 Paris",
   },
   {
     icon: Clock,
@@ -31,7 +31,7 @@ const COORDONNEES = [
 
 const TYPES_PROJET = [
   "Audit énergétique",
-  "Maîtrise d'œuvre",
+  "Maîtrise d'œuvre & AMO",
   "Accompagnement aides",
   "Étude thermique",
   "Conseil patrimonial",

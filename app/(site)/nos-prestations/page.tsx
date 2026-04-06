@@ -37,15 +37,15 @@ const PRESTATIONS = [
   },
   {
     icon: HardHat,
-    title: "Maîtrise d'œuvre",
-    desc: "Pilotage complet des travaux de rénovation énergétique, de la conception à la réception. Nous coordonnons l'ensemble des intervenants, veillons au respect du cahier des charges et garantissons la qualité d'exécution.",
+    title: "Maîtrise d'œuvre & AMO",
+    desc: "Pilotage complet des travaux de rénovation énergétique, de la conception à la réception, et missions d'Assistant à Maîtrise d'Ouvrage (AMO). Nous coordonnons l'ensemble des intervenants, veillons au respect du cahier des charges et garantissons la qualité d'exécution.",
     details: [
       "Conception technique détaillée",
       "Consultation et sélection des entreprises",
       "Direction de l'exécution des travaux (DET)",
       "Assistance aux opérations de réception (AOR)",
     ],
-    image: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&q=80",
+    image: "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&q=80",
   },
   {
     icon: FileCheck,
@@ -69,7 +69,7 @@ const PRESTATIONS = [
       "RT existant — élément par élément ou globale",
       "Modélisation des consommations prévisionnelles",
     ],
-    image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&q=80",
+    image: "https://images.unsplash.com/photo-1558591710-4b4a1ae0f04d?w=800&q=80",
   },
   {
     icon: BarChart3,
@@ -81,7 +81,7 @@ const PRESTATIONS = [
       "Rapport de performance annuel",
       "Garantie de résultat énergétique (GRE)",
     ],
-    image: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=80",
+    image: "https://images.unsplash.com/photo-1523217582562-09d0def993a6?w=800&q=80",
   },
   {
     icon: FileText,

@@ -32,7 +32,7 @@ const PROJECTS = [
     year: "2024",
     result: "– 42% de consommation énergétique",
     scope: "Isolation thermique par l'extérieur, remplacement des menuiseries, rénovation du système de chauffage collectif, ventilation double flux.",
-    image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=900&q=80",
+    image: "https://images.unsplash.com/photo-1494526585095-c41746248156?w=900&q=80",
   },
   {
     title: "Groupe scolaire Mistral",
@@ -42,7 +42,7 @@ const PROJECTS = [
     year: "2023",
     result: "Passage de E à B sur le DPE",
     scope: "Audit énergétique, maîtrise d'œuvre complète, isolation toiture et murs, PAC air/eau, éclairage LED, GTC.",
-    image: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=900&q=80",
+    image: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=900&q=80",
   },
   {
     title: "Mas de la Garrigue",
@@ -52,7 +52,7 @@ const PROJECTS = [
     year: "2024",
     result: "– 55% de consommation",
     scope: "Rénovation globale performante : isolation bio-sourcée, menuiseries bois-alu, poêle à granulés, VMC hygroréglable B.",
-    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=900&q=80",
+    image: "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=900&q=80",
   },
   {
     title: "Immeuble Canebière",
@@ -62,7 +62,7 @@ const PROJECTS = [
     year: "2023",
     result: "Label BBC Rénovation",
     scope: "Rénovation globale BBC : ITE sous enduit, ventilation centralisée, solaire thermique collectif, pilotage intelligent.",
-    image: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=900&q=80",
+    image: "https://images.unsplash.com/photo-1487958449943-2429e8be8625?w=900&q=80",
   },
   {
     title: "Siège social Provençale",
@@ -82,7 +82,7 @@ const PROJECTS = [
     year: "2022",
     result: "– 48% sur la facture énergie",
     scope: "Diagnostic patrimonial, scénarios de rénovation, maîtrise d'œuvre travaux, commissionnement des équipements.",
-    image: "https://images.unsplash.com/photo-1497366412874-3415097a27e7?w=900&q=80",
+    image: "https://images.unsplash.com/photo-1565008447742-97f6f38c985c?w=900&q=80",
   },
 ];
 

@@ -39,8 +39,8 @@ const EXPERTISES = [
   },
   {
     icon: HardHat,
-    title: "Maîtrise d'œuvre",
-    desc: "Pilotage des travaux de rénovation de A à Z. Coordination des corps de métier, suivi qualité et respect des délais.",
+    title: "Maîtrise d'œuvre & AMO",
+    desc: "Pilotage des travaux de rénovation de A à Z et Assistant à Maîtrise d'Ouvrage (AMO). Coordination des corps de métier, suivi qualité et respect des délais.",
     num: "02",
   },
   {

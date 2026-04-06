@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Leaf } from "lucide-react";
 
 const NAV_LINKS = [
   { href: "/qui-sommes-nous", label: "Qui sommes-nous" },
@@ -13,14 +14,21 @@ const NAV_LINKS = [
 ];
 
 export default function Navbar() {
-  const [scrolled, setScrolled] = useState(false);
+  const pathname = usePathname();
+  const isHomepage = pathname === "/";
+  const [scrolled, setScrolled] = useState(!isHomepage);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
+    if (!isHomepage) {
+      setScrolled(true);
+      return;
+    }
     const onScroll = () => setScrolled(window.scrollY > 40);
+    onScroll(); // sync on mount
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  }, [isHomepage]);
 
   useEffect(() => {
     if (mobileOpen) {
@@ -48,10 +56,11 @@ export default function Navbar() {
         <nav className="mx-auto flex max-w-[1400px] items-center justify-between px-6 md:px-10 lg:px-16 py-5">
           {/* Logo / Wordmark */}
           <Link href="/" className="group flex items-center gap-3">
-            <div className="relative">
-              <div className="h-8 w-8 rounded-sm bg-[#8B4513] transition-transform duration-300 group-hover:rotate-6" />
-              <div className="absolute inset-0 h-8 w-8 rounded-sm border border-[#8B4513]/30 translate-x-1 translate-y-1 transition-transform duration-300 group-hover:translate-x-1.5 group-hover:translate-y-1.5" />
-            </div>
+            <Leaf
+              className={`h-7 w-7 -rotate-12 transition-all duration-300 group-hover:rotate-0 ${
+                scrolled ? "text-[#8B4513]" : "text-[#C4956A]"
+              }`}
+            />
             <span className={`font-display text-[1.35rem] font-semibold tracking-[0.02em] transition-colors duration-500 ${
               scrolled ? "text-[#2C1810]" : "text-white"
             }`}>
