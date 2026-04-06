@@ -133,8 +133,8 @@ export default function HomePage() {
         {/* Background Image */}
         <div className="absolute inset-0">
           <Image
-            src="https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=1920&q=85"
-            alt="Immeubles modernes d'une métropole au crépuscule"
+            src="https://images.unsplash.com/photo-1448630360428-65456885c650?w=1920&q=85"
+            alt="Immeuble moderne en contre-plongée vers le ciel"
             fill
             className="object-cover"
             priority
@@ -222,63 +222,6 @@ export default function HomePage() {
             </motion.div>
           </div>
         </div>
-      </section>
-
-      {/* ═══════════ ILS NOUS FONT CONFIANCE ═══════════ */}
-      <section className="py-14 md:py-16 bg-[#FAF8F5] border-b border-[#E8E0D4] overflow-hidden">
-        <div className="mx-auto max-w-[1400px] px-6 md:px-10 lg:px-16 mb-10">
-          <motion.p
-            initial={{ opacity: 0, y: 10 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="text-center text-[0.72rem] uppercase tracking-[0.25em] text-[#8B7B6E]"
-          >
-            Ils nous font confiance
-          </motion.p>
-        </div>
-        <div className="relative">
-          {/* Fade edges */}
-          <div className="absolute left-0 top-0 bottom-0 w-24 md:w-40 bg-gradient-to-r from-[#FAF8F5] to-transparent z-10" />
-          <div className="absolute right-0 top-0 bottom-0 w-24 md:w-40 bg-gradient-to-l from-[#FAF8F5] to-transparent z-10" />
-          {/* Scrolling track */}
-          <div className="flex animate-scroll-logos">
-            {[...Array(2)].map((_, setIndex) => (
-              <div key={setIndex} className="flex shrink-0 items-center gap-16 md:gap-24 px-8 md:px-12">
-                {[
-                  "BNP Paribas Real Estate",
-                  "Mairie de Paris",
-                  "Dalkia",
-                  "Bouygues Immobilier",
-                  "Nexity",
-                  "Île-de-France Énergies",
-                  "ADEME",
-                  "Eiffage Énergie",
-                ].map((name) => (
-                  <span
-                    key={`${setIndex}-${name}`}
-                    className="shrink-0 text-[1rem] md:text-[1.15rem] font-semibold tracking-[0.04em] text-[#C4B8A8] whitespace-nowrap select-none"
-                    style={{ fontFamily: "var(--font-body)" }}
-                  >
-                    {name}
-                  </span>
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
-        <style>{`
-          @keyframes scroll-logos {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
-          }
-          .animate-scroll-logos {
-            animation: scroll-logos 30s linear infinite;
-          }
-          .animate-scroll-logos:hover {
-            animation-play-state: paused;
-          }
-        `}</style>
       </section>
 
       {/* ═══════════ CHIFFRES CLÉS ═══════════ */}
@@ -403,6 +346,63 @@ export default function HomePage() {
             </Link>
           </motion.div>
         </div>
+      </section>
+
+      {/* ═══════════ ILS NOUS FONT CONFIANCE ═══════════ */}
+      <section className="py-14 md:py-16 bg-[#FAF8F5] border-y border-[#E8E0D4] overflow-hidden">
+        <div className="mx-auto max-w-[1400px] px-6 md:px-10 lg:px-16 mb-10">
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-center text-[0.72rem] uppercase tracking-[0.25em] text-[#8B7B6E]"
+          >
+            Ils nous font confiance
+          </motion.p>
+        </div>
+        <div className="relative">
+          {/* Fade edges */}
+          <div className="absolute left-0 top-0 bottom-0 w-24 md:w-40 bg-gradient-to-r from-[#FAF8F5] to-transparent z-10" />
+          <div className="absolute right-0 top-0 bottom-0 w-24 md:w-40 bg-gradient-to-l from-[#FAF8F5] to-transparent z-10" />
+          {/* Scrolling track */}
+          <div className="flex animate-scroll-logos">
+            {[...Array(2)].map((_, setIndex) => (
+              <div key={setIndex} className="flex shrink-0 items-center gap-16 md:gap-24 px-8 md:px-12">
+                {[
+                  "BNP Paribas Real Estate",
+                  "Mairie de Paris",
+                  "Dalkia",
+                  "Bouygues Immobilier",
+                  "Nexity",
+                  "Île-de-France Énergies",
+                  "ADEME",
+                  "Eiffage Énergie",
+                ].map((name) => (
+                  <span
+                    key={`${setIndex}-${name}`}
+                    className="shrink-0 text-[1rem] md:text-[1.15rem] font-semibold tracking-[0.04em] text-[#C4B8A8] whitespace-nowrap select-none"
+                    style={{ fontFamily: "var(--font-body)" }}
+                  >
+                    {name}
+                  </span>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+        <style>{`
+          @keyframes scroll-logos {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+          }
+          .animate-scroll-logos {
+            animation: scroll-logos 30s linear infinite;
+          }
+          .animate-scroll-logos:hover {
+            animation-play-state: paused;
+          }
+        `}</style>
       </section>
 
       {/* ═══════════ RÉFÉRENCES / RÉALISATIONS ═══════════ */}
