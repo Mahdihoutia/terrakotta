@@ -20,7 +20,7 @@ const COORDONNEES = [
   {
     icon: MapPin,
     label: "Adresse",
-    value: "1115 Rue Saint-Dominique, 75007 Paris",
+    value: "115 Rue Saint-Dominique, 75007 Paris",
   },
   {
     icon: Clock,

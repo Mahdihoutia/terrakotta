@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowUpRight, Mail, Phone, MapPin } from "lucide-react";
+import { ArrowUpRight, Mail, Phone, MapPin, Leaf } from "lucide-react";
 
 const FOOTER_LINKS = [
   { href: "/qui-sommes-nous", label: "Qui sommes-nous" },
@@ -46,7 +46,7 @@ export default function Footer() {
           {/* Brand */}
           <div className="md:col-span-5">
             <div className="flex items-center gap-3 mb-6">
-              <div className="h-7 w-7 rounded-sm bg-[#C4956A]" />
+              <Leaf className="h-7 w-7 -rotate-12 text-[#C4956A]" />
               <span className="font-display text-xl font-semibold tracking-[0.02em] text-[#F5F0EB]">
                 TERRAKOTTA
               </span>
@@ -94,7 +94,7 @@ export default function Footer() {
               <li className="flex items-start gap-3">
                 <MapPin size={16} className="mt-1 text-[#C4956A] shrink-0" />
                 <span className="text-[0.88rem]">
-                  1115 Rue Saint-Dominique, 75007 Paris
+                  115 Rue Saint-Dominique, 75007 Paris
                 </span>
               </li>
             </ul>
