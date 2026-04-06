@@ -133,8 +133,8 @@ export default function HomePage() {
         {/* Background Image */}
         <div className="absolute inset-0">
           <Image
-            src="https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=1920&q=85"
-            alt="Vue panoramique de Paris et son architecture élégante"
+            src="https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=1920&q=85"
+            alt="Immeubles modernes d'une métropole au crépuscule"
             fill
             className="object-cover"
             priority
