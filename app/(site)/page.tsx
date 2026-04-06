@@ -89,7 +89,7 @@ const REFERENCES = [
     location: "Paris 4e",
     result: "– 38% de consommation, respect du patrimoine",
     image:
-      "https://images.unsplash.com/photo-1486325212027-8a9f54f1290a?w=800&q=80",
+      "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&q=80",
     year: "2024",
   },
   {
@@ -133,8 +133,8 @@ export default function HomePage() {
         {/* Background Image */}
         <div className="absolute inset-0">
           <Image
-            src="https://images.unsplash.com/photo-1486325212027-8a9f54f1290a?w=1920&q=85"
-            alt="Grand immeuble parisien haussmannien"
+            src="https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=1920&q=85"
+            alt="Vue panoramique de Paris et son architecture élégante"
             fill
             className="object-cover"
             priority
