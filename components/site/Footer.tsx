@@ -6,6 +6,7 @@ const FOOTER_LINKS = [
   { href: "/nos-prestations", label: "Nos prestations" },
   { href: "/nos-references", label: "Nos références" },
   { href: "/laboratoire-idees", label: "Laboratoire d'idées" },
+  { href: "/contactez-nous", label: "Contactez-nous" },
 ];
 
 export default function Footer() {

@@ -70,8 +70,11 @@ export default function ContactezNousPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           nom: formData.get("nom"),
+          prenom: formData.get("prenom") || undefined,
           email: formData.get("email"),
           telephone: formData.get("telephone") || undefined,
+          raisonSociale: formData.get("raisonSociale") || undefined,
+          fonction: formData.get("fonction") || undefined,
           source: "SITE_WEB",
           statut: "NOUVEAU",
           notes,
@@ -158,7 +161,7 @@ export default function ContactezNousPage() {
                         htmlFor="nom"
                         className="block text-[0.75rem] uppercase tracking-[0.15em] text-[#6B5B50] mb-2"
                       >
-                        Nom complet *
+                        Nom *
                       </label>
                       <input
                         id="nom"
@@ -170,6 +173,26 @@ export default function ContactezNousPage() {
                         style={{ background: "white", borderColor: "#D4C4B0" }}
                       />
                     </div>
+                    <div>
+                      <label
+                        htmlFor="prenom"
+                        className="block text-[0.75rem] uppercase tracking-[0.15em] text-[#6B5B50] mb-2"
+                      >
+                        Prénom *
+                      </label>
+                      <input
+                        id="prenom"
+                        name="prenom"
+                        type="text"
+                        required
+                        className="w-full border border-[#D4C4B0] bg-white px-4 py-3.5 text-[0.9rem] text-[#2C1810] outline-none transition-colors focus:border-[#8B4513] placeholder:text-[#B0A090]"
+                        placeholder="Votre prénom"
+                        style={{ background: "white", borderColor: "#D4C4B0" }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label
                         htmlFor="email"
@@ -187,9 +210,6 @@ export default function ContactezNousPage() {
                         style={{ background: "white", borderColor: "#D4C4B0" }}
                       />
                     </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label
                         htmlFor="telephone"
@@ -206,6 +226,44 @@ export default function ContactezNousPage() {
                         style={{ background: "white", borderColor: "#D4C4B0" }}
                       />
                     </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label
+                        htmlFor="raisonSociale"
+                        className="block text-[0.75rem] uppercase tracking-[0.15em] text-[#6B5B50] mb-2"
+                      >
+                        Raison sociale
+                      </label>
+                      <input
+                        id="raisonSociale"
+                        name="raisonSociale"
+                        type="text"
+                        className="w-full border border-[#D4C4B0] bg-white px-4 py-3.5 text-[0.9rem] text-[#2C1810] outline-none transition-colors focus:border-[#8B4513] placeholder:text-[#B0A090]"
+                        placeholder="Nom de l'entreprise"
+                        style={{ background: "white", borderColor: "#D4C4B0" }}
+                      />
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="fonction"
+                        className="block text-[0.75rem] uppercase tracking-[0.15em] text-[#6B5B50] mb-2"
+                      >
+                        Fonction
+                      </label>
+                      <input
+                        id="fonction"
+                        name="fonction"
+                        type="text"
+                        className="w-full border border-[#D4C4B0] bg-white px-4 py-3.5 text-[0.9rem] text-[#2C1810] outline-none transition-colors focus:border-[#8B4513] placeholder:text-[#B0A090]"
+                        placeholder="Votre poste"
+                        style={{ background: "white", borderColor: "#D4C4B0" }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label
                         htmlFor="type"

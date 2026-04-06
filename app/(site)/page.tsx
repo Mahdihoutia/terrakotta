@@ -66,40 +66,40 @@ const CHIFFRES = [
 
 const REFERENCES = [
   {
-    title: "Résidence Les Oliviers",
-    type: "Copropriété — 48 logements",
-    location: "Aix-en-Provence",
-    result: "– 42% de consommation énergétique",
+    title: "Résidence Voltaire",
+    type: "Copropriété — 64 logements",
+    location: "Paris 11e",
+    result: "– 47% de consommation énergétique",
     image:
-      "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&q=80",
-    year: "2024",
+      "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&q=80",
+    year: "2025",
   },
   {
-    title: "Groupe scolaire Mistral",
+    title: "Lycée International de Saint-Germain",
     type: "Collectivité — Bâtiment tertiaire",
-    location: "Marseille",
+    location: "Saint-Germain-en-Laye",
     result: "Passage de E à B sur le DPE",
     image:
       "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=80",
-    year: "2023",
-  },
-  {
-    title: "Mas de la Garrigue",
-    type: "Particulier — Maison individuelle",
-    location: "Lubéron",
-    result: "– 55% de consommation, confort été/hiver",
-    image:
-      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80",
     year: "2024",
   },
   {
-    title: "Immeuble Haussmannien Canebière",
-    type: "Copropriété — 32 logements",
-    location: "Marseille",
-    result: "Rénovation globale BBC Rénovation",
+    title: "Hôtel particulier Marais",
+    type: "Particulier — Monument historique",
+    location: "Paris 4e",
+    result: "– 38% de consommation, respect du patrimoine",
     image:
-      "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&q=80",
-    year: "2023",
+      "https://images.unsplash.com/photo-1486325212027-8a9f54f1290a?w=800&q=80",
+    year: "2024",
+  },
+  {
+    title: "Tour Haussmann — Siège BNP Paribas RE",
+    type: "Tertiaire — 12 000 m²",
+    location: "La Défense",
+    result: "Conformité décret tertiaire – 40%",
+    image:
+      "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&q=80",
+    year: "2024",
   },
 ];
 
@@ -133,8 +133,8 @@ export default function HomePage() {
         {/* Background Image */}
         <div className="absolute inset-0">
           <Image
-            src="https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=1920&q=85"
-            alt="Bâtiment en cours de rénovation énergétique"
+            src="https://images.unsplash.com/photo-1486325212027-8a9f54f1290a?w=1920&q=85"
+            alt="Grand immeuble parisien haussmannien"
             fill
             className="object-cover"
             priority
@@ -222,6 +222,63 @@ export default function HomePage() {
             </motion.div>
           </div>
         </div>
+      </section>
+
+      {/* ═══════════ ILS NOUS FONT CONFIANCE ═══════════ */}
+      <section className="py-14 md:py-16 bg-[#FAF8F5] border-b border-[#E8E0D4] overflow-hidden">
+        <div className="mx-auto max-w-[1400px] px-6 md:px-10 lg:px-16 mb-10">
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-center text-[0.72rem] uppercase tracking-[0.25em] text-[#8B7B6E]"
+          >
+            Ils nous font confiance
+          </motion.p>
+        </div>
+        <div className="relative">
+          {/* Fade edges */}
+          <div className="absolute left-0 top-0 bottom-0 w-24 md:w-40 bg-gradient-to-r from-[#FAF8F5] to-transparent z-10" />
+          <div className="absolute right-0 top-0 bottom-0 w-24 md:w-40 bg-gradient-to-l from-[#FAF8F5] to-transparent z-10" />
+          {/* Scrolling track */}
+          <div className="flex animate-scroll-logos">
+            {[...Array(2)].map((_, setIndex) => (
+              <div key={setIndex} className="flex shrink-0 items-center gap-16 md:gap-24 px-8 md:px-12">
+                {[
+                  "BNP Paribas Real Estate",
+                  "Mairie de Paris",
+                  "Dalkia",
+                  "Bouygues Immobilier",
+                  "Nexity",
+                  "Île-de-France Énergies",
+                  "ADEME",
+                  "Eiffage Énergie",
+                ].map((name) => (
+                  <span
+                    key={`${setIndex}-${name}`}
+                    className="shrink-0 text-[1rem] md:text-[1.15rem] font-semibold tracking-[0.04em] text-[#C4B8A8] whitespace-nowrap select-none"
+                    style={{ fontFamily: "var(--font-body)" }}
+                  >
+                    {name}
+                  </span>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+        <style>{`
+          @keyframes scroll-logos {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+          }
+          .animate-scroll-logos {
+            animation: scroll-logos 30s linear infinite;
+          }
+          .animate-scroll-logos:hover {
+            animation-play-state: paused;
+          }
+        `}</style>
       </section>
 
       {/* ═══════════ CHIFFRES CLÉS ═══════════ */}
@@ -314,12 +371,15 @@ export default function HomePage() {
                 <p className="text-[0.88rem] text-[#6B5B50] leading-relaxed">
                   {item.desc}
                 </p>
-                <div className="mt-8 flex items-center gap-2 text-[#8B4513] opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500">
+                <Link
+                  href="/nos-prestations"
+                  className="mt-8 flex items-center gap-2 text-[#8B4513] opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500"
+                >
                   <span className="text-[0.78rem] font-semibold uppercase tracking-[0.12em]">
                     En savoir plus
                   </span>
                   <ArrowRight size={14} />
-                </div>
+                </Link>
               </motion.div>
             ))}
           </motion.div>
