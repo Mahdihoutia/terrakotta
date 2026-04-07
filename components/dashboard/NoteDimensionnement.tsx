@@ -1961,104 +1961,60 @@ async function generatePDF(
 ) {
   const { default: jsPDF } = await import("jspdf");
   const { default: autoTable } = await import("jspdf-autotable");
+  const {
+    drawCoverPage,
+    drawSectionHeader,
+    drawFooter,
+    drawPhotoAppendixHeader,
+    drawPhotoEntry,
+    getDataTableConfig,
+    needsPageBreak,
+    PDF_LAYOUT,
+    PDF_COLORS,
+  } = await import("@/lib/pdf-styles");
 
   const doc = new jsPDF("p", "mm", "a4");
   const pageWidth = doc.internal.pageSize.getWidth();
-  const margin = 20;
+  const margin = PDF_LAYOUT.margin;
   const contentWidth = pageWidth - margin * 2;
-  let y = 20;
 
   function checkPage(needed: number) {
-    if (y + needed > doc.internal.pageSize.getHeight() - 25) {
+    if (needsPageBreak(y, needed)) {
       doc.addPage();
-      y = 20;
+      y = PDF_LAYOUT.topMargin;
     }
   }
 
-  function addFooter(pageNum: number, totalPages: number) {
-    const footerY = doc.internal.pageSize.getHeight() - 10;
-    doc.setFontSize(8);
-    doc.setTextColor(130);
-    doc.text(`${fiche.id} — Note de dimensionnement`, margin, footerY);
-    doc.text(`${values.ref_projet || "Réf. non définie"} — Page ${pageNum}/${totalPages}`, pageWidth - margin, footerY, { align: "right" });
-    doc.text("TERRAKOTTA — Bureau d'étude en rénovation énergétique", pageWidth / 2, footerY, { align: "center" });
-  }
+  const reference = values.ref_projet || "Ref. non definie";
 
-  // ─── Page de garde ────────────────────────────────────────
-  doc.setFillColor(160, 82, 45);
-  doc.rect(0, 0, pageWidth, 55, "F");
+  // ─── Cover page ──────────────────────────────────────────
+  let y = drawCoverPage(
+    doc,
+    "Note de dimensionnement",
+    `Fiche CEE : ${fiche.id} — ${fiche.sousTitre}`,
+    [
+      ["Reference", reference],
+      ["Beneficiaire", values.client_nom || "—"],
+      ["Adresse du site", values.adresse || "—"],
+      ["Date de visite", values.date_visite || "—"],
+      ["Date de la note", values.date_note || "—"],
+      ["Redacteur", values.redacteur || "—"],
+    ],
+    reference,
+  );
 
-  doc.setTextColor(255);
-  doc.setFontSize(12);
-  doc.text("TERRAKOTTA", margin, 18);
-  doc.setFontSize(9);
-  doc.text("Bureau d'étude en rénovation énergétique", margin, 25);
+  // ─── Fiche description ────────────────────────────────────
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(8);
+  doc.setTextColor(...PDF_COLORS.bodyLight);
+  const descLines = doc.splitTextToSize(fiche.description, contentWidth);
+  doc.text(descLines, margin, y);
+  y += descLines.length * 3.5 + 8;
 
-  doc.setFontSize(22);
-  doc.setFont("helvetica", "bold");
-  doc.text("NOTE DE DIMENSIONNEMENT", margin, 42);
-
-  doc.setTextColor(50);
-  y = 70;
-
-  doc.setFontSize(14);
-  doc.setFont("helvetica", "bold");
-  doc.text(`Fiche CEE : ${fiche.id}`, margin, y);
-  y += 8;
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "normal");
-  const sousTitreLines = doc.splitTextToSize(fiche.sousTitre, contentWidth);
-  doc.text(sousTitreLines, margin, y);
-  y += sousTitreLines.length * 5 + 6;
-
-  doc.setDrawColor(160, 82, 45);
-  doc.setLineWidth(0.5);
-  doc.line(margin, y, pageWidth - margin, y);
-  y += 10;
-
-  // Info box
-  const infoData = [
-    ["Référence", values.ref_projet || "—"],
-    ["Bénéficiaire", values.client_nom || "—"],
-    ["Adresse du site", values.adresse || "—"],
-    ["Date de visite", values.date_visite || "—"],
-    ["Date de la note", values.date_note || "—"],
-    ["Rédacteur", values.redacteur || "—"],
-  ];
-  autoTable(doc, {
-    startY: y,
-    head: [["Information", "Valeur"]],
-    body: infoData,
-    margin: { left: margin, right: margin },
-    styles: { fontSize: 9, cellPadding: 3 },
-    headStyles: { fillColor: [160, 82, 45], textColor: 255, fontStyle: "bold" },
-    alternateRowStyles: { fillColor: [250, 245, 235] },
-    columnStyles: { 0: { fontStyle: "bold", cellWidth: 50 } },
-  });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  y = (doc as any).lastAutoTable.finalY + 15;
-
-  // ─── Sections du questionnaire ────────────────────────────
+  // ─── Sections ─────────────────────────────────────────────
   for (const section of sections) {
     checkPage(30);
-
-    doc.setFillColor(160, 82, 45);
-    doc.rect(margin, y, contentWidth, 8, "F");
-    doc.setTextColor(255);
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
-    doc.text(section.titre, margin + 3, y + 5.5);
-    doc.setTextColor(50);
-    y += 12;
-
-    if (section.description) {
-      doc.setFontSize(8);
-      doc.setFont("helvetica", "italic");
-      doc.setTextColor(100);
-      doc.text(section.description, margin, y);
-      doc.setTextColor(50);
-      y += 6;
-    }
+    y = drawSectionHeader(doc, section.titre, y, section.description);
 
     const tableData: string[][] = [];
     for (const field of section.fields) {
@@ -2067,69 +2023,19 @@ async function generatePDF(
       tableData.push([label, val]);
     }
 
-    autoTable(doc, {
-      startY: y,
-      body: tableData,
-      margin: { left: margin, right: margin },
-      styles: { fontSize: 9, cellPadding: 2.5, overflow: "linebreak" },
-      columnStyles: {
-        0: { fontStyle: "bold", cellWidth: 70, textColor: [80, 80, 80] },
-        1: { cellWidth: contentWidth - 70 },
-      },
-      alternateRowStyles: { fillColor: [250, 248, 242] },
-      didParseCell: (data) => {
-        if (data.column.index === 1 && data.cell.raw === "—") {
-          data.cell.styles.textColor = [180, 180, 180];
-          data.cell.styles.fontStyle = "italic";
-        }
-      },
-    });
+    autoTable(doc, getDataTableConfig(y, tableData, contentWidth));
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    y = (doc as any).lastAutoTable.finalY + 10;
+    y = (doc as any).lastAutoTable.finalY + PDF_LAYOUT.sectionGap;
   }
 
-  // ─── Annexe photos ────────────────────────────────────────
+  // ─── Photo appendix ──────────────────────────────────────
   if (photos.length > 0) {
     doc.addPage();
-    y = 20;
-
-    doc.setFillColor(160, 82, 45);
-    doc.rect(0, 0, pageWidth, 15, "F");
-    doc.setTextColor(255);
-    doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
-    doc.text("ANNEXE PHOTOGRAPHIQUE", margin, 10);
-    doc.setTextColor(50);
-    y = 25;
+    y = drawPhotoAppendixHeader(doc);
 
     for (let i = 0; i < photos.length; i++) {
-      checkPage(90);
-
-      const photo = photos[i];
-      try {
-        const imgData = photo.preview;
-        doc.addImage(imgData, "JPEG", margin, y, contentWidth, 70, undefined, "MEDIUM");
-        y += 73;
-      } catch {
-        doc.setFontSize(9);
-        doc.setTextColor(180);
-        doc.text(`[Photo ${i + 1} — impossible de charger l'image]`, margin, y + 35);
-        doc.setTextColor(50);
-        y += 73;
-      }
-
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "bold");
-      doc.text(`Photo ${i + 1} — ${photo.categorie}`, margin, y);
-      y += 4;
-      if (photo.legende) {
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(8);
-        const legendeLines = doc.splitTextToSize(photo.legende, contentWidth);
-        doc.text(legendeLines, margin, y);
-        y += legendeLines.length * 3.5;
-      }
-      y += 10;
+      checkPage(85);
+      y = drawPhotoEntry(doc, i, photos[i].preview, photos[i].categorie, photos[i].legende, y);
     }
   }
 
@@ -2137,7 +2043,7 @@ async function generatePDF(
   const totalPages = doc.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
-    addFooter(i, totalPages);
+    drawFooter(doc, `${fiche.id} — Note de dimensionnement`, reference, i, totalPages);
   }
 
   // ─── Download ─────────────────────────────────────────────

@@ -178,93 +178,52 @@ async function generatePDF(
 ) {
   const { default: jsPDF } = await import("jspdf");
   const { default: autoTable } = await import("jspdf-autotable");
+  const {
+    drawCoverPage,
+    drawSectionHeader,
+    drawFooter,
+    drawSignatureBlock,
+    getDevisTableConfig,
+    getTotalsTableConfig,
+    getDataTableConfig,
+    needsPageBreak,
+    PDF_LAYOUT,
+    PDF_COLORS,
+  } = await import("@/lib/pdf-styles");
 
   const doc = new jsPDF("p", "mm", "a4");
   const pageWidth = doc.internal.pageSize.getWidth();
-  const margin = 20;
+  const margin = PDF_LAYOUT.margin;
   const contentWidth = pageWidth - margin * 2;
-  let y = 20;
 
   function checkPage(needed: number) {
-    if (y + needed > doc.internal.pageSize.getHeight() - 25) {
+    if (needsPageBreak(y, needed)) {
       doc.addPage();
-      y = 20;
+      y = PDF_LAYOUT.topMargin;
     }
   }
 
-  function addFooter(pageNum: number, totalPages: number) {
-    const footerY = doc.internal.pageSize.getHeight() - 10;
-    doc.setFontSize(8);
-    doc.setTextColor(130);
-    doc.text("Devis", margin, footerY);
-    doc.text(
-      `${values.ref_devis || "Réf. non définie"} — Page ${pageNum}/${totalPages}`,
-      pageWidth - margin,
-      footerY,
-      { align: "right" }
-    );
-    doc.text("TERRAKOTTA — Bureau d'étude en rénovation énergétique", pageWidth / 2, footerY, { align: "center" });
-  }
+  const reference = values.ref_devis || "Ref. non definie";
 
-  // ─── Page de garde ────────────────────────────────────────
-  doc.setFillColor(160, 82, 45);
-  doc.rect(0, 0, pageWidth, 55, "F");
+  // ─── Cover page ──────────────────────────────────────────
+  let y = drawCoverPage(
+    doc,
+    "Devis",
+    values.objet || "Travaux de renovation energetique",
+    [
+      ["Reference", reference],
+      ["Client", values.client_nom || "—"],
+      ["Adresse chantier", values.adresse_chantier || values.client_adresse || "—"],
+      ["Date d'emission", values.date_emission || "—"],
+      ["Date de validite", values.date_validite || "—"],
+      ["Delai d'execution", values.delai_execution || "—"],
+    ],
+    reference,
+  );
 
-  doc.setTextColor(255);
-  doc.setFontSize(12);
-  doc.text("TERRAKOTTA", margin, 18);
-  doc.setFontSize(9);
-  doc.text("Bureau d'étude en rénovation énergétique", margin, 25);
-
-  doc.setFontSize(22);
-  doc.setFont("helvetica", "bold");
-  doc.text("DEVIS", margin, 42);
-
-  doc.setTextColor(50);
-  y = 70;
-
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "normal");
-  doc.text(values.objet || "Travaux de rénovation énergétique", margin, y);
-  y += 12;
-
-  doc.setDrawColor(160, 82, 45);
-  doc.setLineWidth(0.5);
-  doc.line(margin, y, pageWidth - margin, y);
-  y += 10;
-
-  // Info box
-  const infoData = [
-    ["Référence", values.ref_devis || "—"],
-    ["Client", values.client_nom || "—"],
-    ["Adresse chantier", values.adresse_chantier || values.client_adresse || "—"],
-    ["Date d'émission", values.date_emission || "—"],
-    ["Date de validité", values.date_validite || "—"],
-    ["Délai d'exécution", values.delai_execution || "—"],
-  ];
-  autoTable(doc, {
-    startY: y,
-    head: [["Information", "Valeur"]],
-    body: infoData,
-    margin: { left: margin, right: margin },
-    styles: { fontSize: 9, cellPadding: 3 },
-    headStyles: { fillColor: [160, 82, 45], textColor: 255, fontStyle: "bold" },
-    alternateRowStyles: { fillColor: [250, 245, 235] },
-    columnStyles: { 0: { fontStyle: "bold", cellWidth: 50 } },
-  });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  y = (doc as any).lastAutoTable.finalY + 15;
-
-  // ─── Tableau des lignes de devis ──────────────────────────
+  // ─── Ligne items table ────────────────────────────────────
   checkPage(40);
-  doc.setFillColor(160, 82, 45);
-  doc.rect(margin, y, contentWidth, 8, "F");
-  doc.setTextColor(255);
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "bold");
-  doc.text("Désignation des travaux", margin + 3, y + 5.5);
-  doc.setTextColor(50);
-  y += 12;
+  y = drawSectionHeader(doc, "Designation des travaux", y);
 
   const lignesData = lignes.map((l) => {
     const qty = parseFloat(l.quantite) || 0;
@@ -274,12 +233,12 @@ async function generatePDF(
       l.designation || "—",
       l.unite || "—",
       qty.toFixed(2),
-      `${prix.toFixed(2)} €`,
-      `${totalHT.toFixed(2)} €`,
+      `${prix.toFixed(2)} \u20AC`,
+      `${totalHT.toFixed(2)} \u20AC`,
     ];
   });
 
-  // Totals
+  // Totals calculation
   const totalHT = lignes.reduce((sum, l) => {
     return sum + (parseFloat(l.quantite) || 0) * (parseFloat(l.prixUnitaire) || 0);
   }, 0);
@@ -290,104 +249,55 @@ async function generatePDF(
   const totalTVA = totalHT * (tvaRate / 100);
   const totalTTC = totalHT + totalTVA;
 
-  autoTable(doc, {
-    startY: y,
-    head: [["Désignation", "Unité", "Quantité", "P.U. HT", "Total HT"]],
-    body: lignesData,
-    margin: { left: margin, right: margin },
-    styles: { fontSize: 9, cellPadding: 3 },
-    headStyles: { fillColor: [160, 82, 45], textColor: 255, fontStyle: "bold" },
-    alternateRowStyles: { fillColor: [250, 245, 235] },
-    columnStyles: {
-      0: { cellWidth: 70 },
-      1: { cellWidth: 20, halign: "center" },
-      2: { cellWidth: 20, halign: "right" },
-      3: { cellWidth: 30, halign: "right" },
-      4: { cellWidth: 30, halign: "right" },
-    },
-  });
+  autoTable(doc, getDevisTableConfig(
+    y,
+    [["Designation", "Unite", "Quantite", "P.U. HT", "Total HT"]],
+    lignesData,
+  ));
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  y = (doc as any).lastAutoTable.finalY + 5;
+  y = (doc as any).lastAutoTable.finalY + 6;
 
-  // Totaux
-  autoTable(doc, {
-    startY: y,
-    body: [
-      ["Total HT", `${totalHT.toFixed(2)} €`],
-      [`TVA (${tvaRate}%)`, `${totalTVA.toFixed(2)} €`],
-      ["Total TTC", `${totalTTC.toFixed(2)} €`],
+  // Totals box
+  autoTable(doc, getTotalsTableConfig(
+    y,
+    [
+      ["Total HT", `${totalHT.toFixed(2)} \u20AC`],
+      [`TVA (${tvaRate}%)`, `${totalTVA.toFixed(2)} \u20AC`],
+      ["Total TTC", `${totalTTC.toFixed(2)} \u20AC`],
     ],
-    margin: { left: margin + contentWidth - 80, right: margin },
-    styles: { fontSize: 10, cellPadding: 3 },
-    columnStyles: {
-      0: { fontStyle: "bold", cellWidth: 40 },
-      1: { halign: "right", cellWidth: 40 },
-    },
-    didParseCell: (data) => {
-      if (data.row.index === 2) {
-        data.cell.styles.fillColor = [160, 82, 45];
-        data.cell.styles.textColor = [255, 255, 255];
-        data.cell.styles.fontStyle = "bold";
-      }
-    },
-  });
+    contentWidth,
+    true,
+  ));
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  y = (doc as any).lastAutoTable.finalY + 10;
+  y = (doc as any).lastAutoTable.finalY + PDF_LAYOUT.sectionGap;
 
-  // Aides
+  // ─── Aides section ────────────────────────────────────────
   const aidesData: string[][] = [];
   if (values.maprimereno && values.maprimereno !== "Non applicable") {
-    aidesData.push(["MaPrimeRénov'", `${values.maprimereno}${values.maprimereno_montant ? ` — ${values.maprimereno_montant} €` : ""}`]);
+    aidesData.push(["MaPrimeRenov'", `${values.maprimereno}${values.maprimereno_montant ? ` — ${values.maprimereno_montant} \u20AC` : ""}`]);
   }
   if (values.cee_montant && parseFloat(values.cee_montant) > 0) {
-    aidesData.push(["Prime CEE", `${values.cee_montant} €`]);
+    aidesData.push(["Prime CEE", `${values.cee_montant} \u20AC`]);
   }
   if (values.autres_aides) {
     aidesData.push(["Autres aides", values.autres_aides]);
   }
   if (values.reste_a_charge && parseFloat(values.reste_a_charge) > 0) {
-    aidesData.push(["Reste à charge estimé", `${values.reste_a_charge} €`]);
+    aidesData.push(["Reste a charge estime", `${values.reste_a_charge} \u20AC`]);
   }
 
   if (aidesData.length > 0) {
     checkPage(30);
-    doc.setFillColor(160, 82, 45);
-    doc.rect(margin, y, contentWidth, 8, "F");
-    doc.setTextColor(255);
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
-    doc.text("Aides financières mobilisables", margin + 3, y + 5.5);
-    doc.setTextColor(50);
-    y += 12;
-
-    autoTable(doc, {
-      startY: y,
-      body: aidesData,
-      margin: { left: margin, right: margin },
-      styles: { fontSize: 9, cellPadding: 2.5 },
-      columnStyles: {
-        0: { fontStyle: "bold", cellWidth: 60 },
-        1: { cellWidth: contentWidth - 60 },
-      },
-      alternateRowStyles: { fillColor: [250, 248, 242] },
-    });
+    y = drawSectionHeader(doc, "Aides financieres mobilisables", y);
+    autoTable(doc, getDataTableConfig(y, aidesData, contentWidth));
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    y = (doc as any).lastAutoTable.finalY + 10;
+    y = (doc as any).lastAutoTable.finalY + PDF_LAYOUT.sectionGap;
   }
 
   // ─── Remaining sections (conditions, etc.) ────────────────
-  // Sections 3 (already used for info box) and 4,5
   for (const section of sections.slice(3)) {
     checkPage(30);
-
-    doc.setFillColor(160, 82, 45);
-    doc.rect(margin, y, contentWidth, 8, "F");
-    doc.setTextColor(255);
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
-    doc.text(section.titre, margin + 3, y + 5.5);
-    doc.setTextColor(50);
-    y += 12;
+    y = drawSectionHeader(doc, section.titre, y);
 
     const tableData: string[][] = [];
     for (const field of section.fields) {
@@ -403,39 +313,34 @@ async function generatePDF(
         startY: y,
         body: tableData,
         margin: { left: margin, right: margin },
-        styles: { fontSize: 9, cellPadding: 2.5, overflow: "linebreak" },
-        columnStyles: {
-          0: { fontStyle: "bold", cellWidth: 70, textColor: [80, 80, 80] },
-          1: { cellWidth: contentWidth - 70 },
+        styles: {
+          fontSize: 9,
+          cellPadding: { top: 3, bottom: 3, left: 4, right: 4 },
+          overflow: "linebreak",
+          textColor: PDF_COLORS.body,
+          lineColor: PDF_COLORS.border,
+          lineWidth: 0.2,
         },
-        alternateRowStyles: { fillColor: [250, 248, 242] },
+        columnStyles: {
+          0: { fontStyle: "bold", cellWidth: 65, textColor: PDF_COLORS.heading },
+          1: { cellWidth: contentWidth - 65 },
+        },
+        alternateRowStyles: { fillColor: PDF_COLORS.background },
       });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      y = (doc as any).lastAutoTable.finalY + 10;
+      y = (doc as any).lastAutoTable.finalY + PDF_LAYOUT.sectionGap;
     }
   }
 
   // ─── Signature ────────────────────────────────────────────
   checkPage(50);
-  y += 5;
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "normal");
-  doc.text("Bon pour accord — Date et signature du client :", margin, y);
-  y += 5;
-  doc.text('Mention manuscrite : "Lu et approuvé, bon pour accord"', margin, y);
-  y += 20;
-  doc.setDrawColor(180);
-  doc.setLineWidth(0.3);
-  doc.line(margin, y, margin + 70, y);
-  doc.text("Signature", margin, y + 5);
-  doc.line(pageWidth - margin - 70, y, pageWidth - margin, y);
-  doc.text("Date", pageWidth - margin - 70, y + 5);
+  drawSignatureBlock(doc, y);
 
   // ─── Footers ──────────────────────────────────────────────
   const totalPages = doc.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
-    addFooter(i, totalPages);
+    drawFooter(doc, "Devis", reference, i, totalPages);
   }
 
   const filename = `Devis_${values.ref_devis || "DRAFT"}_${new Date().toISOString().slice(0, 10)}.pdf`;

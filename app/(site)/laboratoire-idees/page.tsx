@@ -4,145 +4,15 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
-import { Clock, ArrowRight, Leaf, Droplets, Sun, TreePine, Wind, Globe } from "lucide-react";
+import { Clock, ArrowRight, Leaf } from "lucide-react";
+import {
+  ARTICLES,
+  CATEGORIES,
+  CATEGORY_COLORS,
+  type Category,
+} from "@/lib/articles";
 
-/* ─────────── Types ─────────── */
-type Category = "Tous" | "Climat" | "Biodiversité" | "Énergie" | "Urbanisme" | "Matériaux";
-
-interface Article {
-  slug: string;
-  title: string;
-  excerpt: string;
-  category: Category;
-  readTime: string;
-  date: string;
-  image: string;
-  icon: React.ComponentType<{ size?: number; className?: string; strokeWidth?: number }>;
-  featured?: boolean;
-}
-
-/* ─────────── Data ─────────── */
-const CATEGORIES: Category[] = [
-  "Tous",
-  "Climat",
-  "Biodiversité",
-  "Énergie",
-  "Urbanisme",
-  "Matériaux",
-];
-
-const CATEGORY_COLORS: Record<string, string> = {
-  Climat: "bg-[#8B4513]",
-  Biodiversité: "bg-[#5B7A3A]",
-  Énergie: "bg-[#C4956A]",
-  Urbanisme: "bg-[#6B5B50]",
-  Matériaux: "bg-[#A0876E]",
-};
-
-const ARTICLES: Article[] = [
-  {
-    slug: "passoires-thermiques-2025",
-    title: "Passoires thermiques : ce qui change en 2025 pour les propriétaires",
-    excerpt:
-      "Depuis le 1er janvier 2025, les logements classés G au DPE sont interdits à la location. Décryptage des obligations, des aides disponibles et des stratégies de rénovation pour les propriétaires bailleurs concernés par cette échéance réglementaire.",
-    category: "Énergie",
-    readTime: "8 min",
-    date: "28 mars 2026",
-    image: "https://images.unsplash.com/photo-1590274853856-f22d5ee3d228?w=900&q=80",
-    icon: Sun,
-    featured: true,
-  },
-  {
-    slug: "ilots-chaleur-urbains-solutions",
-    title: "Îlots de chaleur urbains : quand la ville surchauffe, le bâtiment peut répondre",
-    excerpt:
-      "Les épisodes caniculaires se multiplient et les centres-villes enregistrent jusqu'à +8 °C par rapport aux zones rurales. Toitures végétalisées, façades bio-climatiques, matériaux à forte inertie : panorama des solutions architecturales pour rafraîchir nos villes.",
-    category: "Climat",
-    readTime: "10 min",
-    date: "15 mars 2026",
-    image: "https://images.unsplash.com/photo-1416331108676-a22ccb276e35?w=900&q=80",
-    icon: Wind,
-    featured: true,
-  },
-  {
-    slug: "biodiversite-urbaine-batiment",
-    title: "Biodiversité et bâtiment : comment la rénovation peut devenir un levier écologique",
-    excerpt:
-      "Nichoirs intégrés, corridors écologiques en toiture, façades refuges pour les pollinisateurs… La rénovation énergétique peut aller au-delà de la performance thermique et contribuer activement au retour de la biodiversité en milieu urbain.",
-    category: "Biodiversité",
-    readTime: "7 min",
-    date: "2 mars 2026",
-    image: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=900&q=80",
-    icon: TreePine,
-  },
-  {
-    slug: "re2020-bilan-carbone-construction",
-    title: "RE 2020 : le bilan carbone au cœur de la construction neuve",
-    excerpt:
-      "La RE 2020 introduit pour la première fois l'analyse du cycle de vie (ACV) comme critère réglementaire. Poids carbone des matériaux, énergie grise, stockage biogénique : comprendre les nouveaux indicateurs qui redessinent la façon de construire.",
-    category: "Matériaux",
-    readTime: "12 min",
-    date: "18 février 2026",
-    image: "https://images.unsplash.com/photo-1611348586804-61bf6c080437?w=900&q=80",
-    icon: Globe,
-  },
-  {
-    slug: "renovation-globale-copropriete",
-    title: "Rénovation globale en copropriété : retour d'expérience sur 48 logements à Aix",
-    excerpt:
-      "De l'audit initial à la livraison, récit d'une rénovation ambitieuse : isolation par l'extérieur, chaufferie bois, ventilation double flux et production solaire. Résultats mesurés après un an d'exploitation : –42 % sur la facture énergétique collective.",
-    category: "Énergie",
-    readTime: "9 min",
-    date: "5 février 2026",
-    image: "https://images.unsplash.com/photo-1628744448840-55bdb2497bd4?w=900&q=80",
-    icon: Sun,
-  },
-  {
-    slug: "materiaux-biosources-renovation",
-    title: "Fibre de bois, chanvre, liège : les matériaux biosourcés en rénovation",
-    excerpt:
-      "Longtemps cantonnés à la construction neuve, les isolants biosourcés gagnent le marché de la rénovation. Performance thermique, régulation hygrométrique, bilan carbone : comparatif technique face aux isolants conventionnels.",
-    category: "Matériaux",
-    readTime: "8 min",
-    date: "22 janvier 2026",
-    image: "https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd6?w=900&q=80",
-    icon: Leaf,
-  },
-  {
-    slug: "eau-pluviale-batiment-resilient",
-    title: "Gestion des eaux pluviales : vers un bâtiment résilient face aux inondations",
-    excerpt:
-      "Imperméabilisation des sols, ruissellement urbain, épisodes cévenols de plus en plus fréquents : la gestion de l'eau devient un enjeu majeur de la conception et de la rénovation. Noues, jardins de pluie, toitures rétention — les solutions existent.",
-    category: "Climat",
-    readTime: "7 min",
-    date: "10 janvier 2026",
-    image: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=900&q=80",
-    icon: Droplets,
-  },
-  {
-    slug: "ville-permeabilite-nature",
-    title: "Désimperméabiliser la ville : quand le béton laisse place à la nature",
-    excerpt:
-      "Les collectivités françaises s'engagent dans la désimperméabilisation des sols urbains. Cours d'école, parkings, pieds d'immeubles : chaque mètre carré reconquis par le vivant contribue à la résilience climatique du territoire.",
-    category: "Urbanisme",
-    readTime: "6 min",
-    date: "18 décembre 2025",
-    image: "https://images.unsplash.com/photo-1518005068251-37900150dfca?w=900&q=80",
-    icon: TreePine,
-  },
-  {
-    slug: "confort-ete-renovation",
-    title: "Confort d'été : la face cachée de la rénovation énergétique",
-    excerpt:
-      "Isoler un bâtiment pour l'hiver sans penser à l'été, c'est risquer la surchauffe. Protections solaires, inertie thermique, ventilation nocturne, brasseurs d'air : stratégies pour un confort quatre saisons sans climatisation.",
-    category: "Énergie",
-    readTime: "8 min",
-    date: "3 décembre 2025",
-    image: "https://images.unsplash.com/photo-1558449028-b53a39d100fc?w=900&q=80",
-    icon: Sun,
-  },
-];
-
+/* ─────────── Animation ─────────── */
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
   visible: (i: number) => ({
@@ -202,29 +72,31 @@ export default function LaboratoireIdeesPage() {
                 transition={{ delay: i * 0.15, duration: 0.7 }}
                 className="group relative overflow-hidden bg-white border border-[#E8E0D4] hover:border-[#C4956A]/40 transition-colors duration-500"
               >
-                <div className="relative aspect-[16/10] overflow-hidden">
-                  <Image
-                    src={article.image}
-                    alt={article.title}
-                    fill
-                    className="object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-                  <div className="absolute top-5 left-5">
-                    <span
-                      className={`inline-block px-3 py-1.5 text-[0.65rem] uppercase tracking-[0.15em] text-white ${
-                        CATEGORY_COLORS[article.category] || "bg-[#6B5B50]"
-                      }`}
-                    >
-                      {article.category}
-                    </span>
+                <Link href={`/laboratoire-idees/${article.slug}`} className="block">
+                  <div className="relative aspect-[16/10] overflow-hidden">
+                    <Image
+                      src={article.image}
+                      alt={article.title}
+                      fill
+                      className="object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                    <div className="absolute top-5 left-5">
+                      <span
+                        className={`inline-block px-3 py-1.5 text-[0.65rem] uppercase tracking-[0.15em] text-white ${
+                          CATEGORY_COLORS[article.category] || "bg-[#6B5B50]"
+                        }`}
+                      >
+                        {article.category}
+                      </span>
+                    </div>
+                    <div className="absolute bottom-5 left-5 right-5">
+                      <h2 className="font-display text-2xl md:text-3xl font-light text-white leading-snug">
+                        {article.title}
+                      </h2>
+                    </div>
                   </div>
-                  <div className="absolute bottom-5 left-5 right-5">
-                    <h2 className="font-display text-2xl md:text-3xl font-light text-white leading-snug">
-                      {article.title}
-                    </h2>
-                  </div>
-                </div>
+                </Link>
                 <div className="p-6 md:p-8">
                   <p className="text-[0.88rem] text-[#6B5B50] leading-relaxed mb-6">
                     {article.excerpt}
@@ -318,23 +190,25 @@ export default function LaboratoireIdeesPage() {
                     className="group flex flex-col border border-[#E8E0D4] bg-white hover:border-[#C4956A]/40 transition-colors duration-500"
                   >
                     {/* Image */}
-                    <div className="relative aspect-[16/10] overflow-hidden">
-                      <Image
-                        src={article.image}
-                        alt={article.title}
-                        fill
-                        className="object-cover transition-transform duration-700 group-hover:scale-105"
-                      />
-                      <div className="absolute top-4 left-4">
-                        <span
-                          className={`inline-block px-3 py-1.5 text-[0.6rem] uppercase tracking-[0.15em] text-white ${
-                            CATEGORY_COLORS[article.category] || "bg-[#6B5B50]"
-                          }`}
-                        >
-                          {article.category}
-                        </span>
+                    <Link href={`/laboratoire-idees/${article.slug}`} className="block">
+                      <div className="relative aspect-[16/10] overflow-hidden">
+                        <Image
+                          src={article.image}
+                          alt={article.title}
+                          fill
+                          className="object-cover transition-transform duration-700 group-hover:scale-105"
+                        />
+                        <div className="absolute top-4 left-4">
+                          <span
+                            className={`inline-block px-3 py-1.5 text-[0.6rem] uppercase tracking-[0.15em] text-white ${
+                              CATEGORY_COLORS[article.category] || "bg-[#6B5B50]"
+                            }`}
+                          >
+                            {article.category}
+                          </span>
+                        </div>
                       </div>
-                    </div>
+                    </Link>
 
                     {/* Content */}
                     <div className="flex flex-col flex-1 p-6 md:p-7">
@@ -348,12 +222,17 @@ export default function LaboratoireIdeesPage() {
                       </div>
 
                       <h3 className="font-display text-xl md:text-[1.35rem] font-normal text-[#2C1810] leading-snug mb-3">
-                        {article.title}
+                        <Link
+                          href={`/laboratoire-idees/${article.slug}`}
+                          className="hover:text-[#8B4513] transition-colors"
+                        >
+                          {article.title}
+                        </Link>
                       </h3>
 
                       <p className="text-[0.85rem] text-[#6B5B50] leading-relaxed mb-6 flex-1">
                         {article.excerpt.length > 160
-                          ? article.excerpt.slice(0, 160) + "…"
+                          ? article.excerpt.slice(0, 160) + "\u2026"
                           : article.excerpt}
                       </p>
 

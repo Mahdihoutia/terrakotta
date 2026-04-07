@@ -15,7 +15,9 @@ import {
   Leaf,
   FolderKanban,
   Receipt,
+  LogOut,
 } from "lucide-react";
+import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { useSearch } from "./SearchProvider";
 
@@ -129,6 +131,17 @@ export default function Sidebar() {
             </Link>
           );
         })}
+
+        {/* Déconnexion */}
+        <button
+          onClick={() => signOut({ callbackUrl: "/auth/login" })}
+          className="flex h-10 items-center gap-3 rounded-xl px-[11px] transition-all duration-200 text-tk-text-muted dark:text-tk-sidebar-muted hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600 dark:hover:text-red-400"
+        >
+          <LogOut className="h-[18px] w-[18px] shrink-0" />
+          <span className="whitespace-nowrap text-sm font-medium opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-300 delay-75">
+            Déconnexion
+          </span>
+        </button>
 
         {/* Avatar */}
         <div className="mt-2 flex items-center gap-3 px-[5px]">
