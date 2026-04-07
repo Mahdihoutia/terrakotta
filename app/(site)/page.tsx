@@ -368,24 +368,25 @@ export default function HomePage() {
           {/* Scrolling track */}
           <div className="flex animate-scroll-logos">
             {[...Array(2)].map((_, setIndex) => (
-              <div key={setIndex} className="flex shrink-0 items-center gap-16 md:gap-24 px-8 md:px-12">
+              <div key={setIndex} className="flex shrink-0 items-center gap-14 md:gap-20 px-8 md:px-12">
                 {[
-                  "BNP Paribas Real Estate",
-                  "Mairie de Paris",
-                  "Dalkia",
-                  "Bouygues Immobilier",
-                  "Nexity",
-                  "Île-de-France Énergies",
-                  "ADEME",
-                  "Eiffage Énergie",
-                ].map((name) => (
-                  <span
-                    key={`${setIndex}-${name}`}
-                    className="shrink-0 text-[1rem] md:text-[1.15rem] font-semibold tracking-[0.04em] text-[#C4B8A8] whitespace-nowrap select-none"
-                    style={{ fontFamily: "var(--font-body)" }}
-                  >
-                    {name}
-                  </span>
+                  { src: "/brand/partners/bnp-paribas-re.svg", alt: "BNP Paribas Real Estate", w: 180 },
+                  { src: "/brand/partners/mairie-paris.svg", alt: "Mairie de Paris", w: 150 },
+                  { src: "/brand/partners/dalkia.svg", alt: "Dalkia", w: 120 },
+                  { src: "/brand/partners/bouygues-immobilier.svg", alt: "Bouygues Immobilier", w: 180 },
+                  { src: "/brand/partners/nexity.svg", alt: "Nexity", w: 120 },
+                  { src: "/brand/partners/idf-energies.svg", alt: "Île-de-France Énergies", w: 200 },
+                  { src: "/brand/partners/ademe.svg", alt: "ADEME", w: 120 },
+                  { src: "/brand/partners/eiffage-energie.svg", alt: "Eiffage Énergie", w: 170 },
+                ].map((logo) => (
+                  <img
+                    key={`${setIndex}-${logo.alt}`}
+                    src={logo.src}
+                    alt={logo.alt}
+                    className="shrink-0 h-10 md:h-12 w-auto select-none opacity-40 hover:opacity-60 transition-opacity duration-300"
+                    style={{ width: logo.w, color: "#8B7B6E" }}
+                    draggable={false}
+                  />
                 ))}
               </div>
             ))}
