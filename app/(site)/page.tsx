@@ -11,7 +11,7 @@ import {
   HardHat,
   Shield,
   ChevronRight,
-  Quote,
+  Zap,
 } from "lucide-react";
 
 /* ─────────── Animation Variants ─────────── */
@@ -61,7 +61,7 @@ const CHIFFRES = [
   { value: "150+", label: "Projets réalisés" },
   { value: "40%", label: "Économies d'énergie moyennes" },
   { value: "12", label: "Années d'expertise" },
-  { value: "98%", label: "Clients satisfaits" },
+  { value: "+25 TWh", label: "De réduction énergétique" },
 ];
 
 const REFERENCES = [
@@ -103,26 +103,8 @@ const REFERENCES = [
   },
 ];
 
-const TESTIMONIALS = [
-  {
-    quote:
-      "Terrakotta a su transformer notre copropriété vieillissante en un bâtiment performant. Le suivi a été irréprochable du diagnostic jusqu'à la réception des travaux.",
-    author: "Marc Dufresne",
-    role: "Syndic, Résidence Les Oliviers",
-  },
-  {
-    quote:
-      "Grâce à leur expertise sur les aides financières, notre reste à charge a été divisé par trois. Un accompagnement précieux et transparent.",
-    author: "Sophie Laurent",
-    role: "Propriétaire, Mas de la Garrigue",
-  },
-  {
-    quote:
-      "Professionnalisme, rigueur technique et vraie capacité d'écoute. Terrakotta est devenu notre partenaire de référence pour tous nos projets de rénovation.",
-    author: "Jean-Pierre Morel",
-    role: "Directeur technique, Mairie de Marseille",
-  },
-];
+/** Video background URL — HD construction / renovation footage */
+const VIDEO_BG_URL = "https://assets.mixkit.co/videos/9686/9686-720.mp4";
 
 /* ─────────── Page Component ─────────── */
 export default function HomePage() {
@@ -406,6 +388,61 @@ export default function HomePage() {
         `}</style>
       </section>
 
+      {/* ═══════════ VIDEO SLOGAN ═══════════ */}
+      <section className="relative h-[80vh] md:h-[90vh] flex items-center justify-center overflow-hidden">
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover"
+          poster="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1920&q=80"
+        >
+          <source src={VIDEO_BG_URL} type="video/mp4" />
+        </video>
+        <div className="absolute inset-0 bg-[#1a0f08]/70" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#1a0f08]/40 via-transparent to-[#1a0f08]/30" />
+        <div className="relative z-10 mx-auto max-w-[1400px] px-6 md:px-10 lg:px-16 text-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <div className="inline-flex items-center gap-2 mb-8 border border-[#C4956A]/40 rounded-full px-5 py-2">
+              <Zap size={14} className="text-[#C4956A]" />
+              <span className="text-[0.72rem] uppercase tracking-[0.25em] text-[#C4956A]">
+                Notre engagement
+              </span>
+            </div>
+            <h2 className="font-display text-5xl md:text-7xl lg:text-[6rem] xl:text-[7rem] font-light text-white leading-[1] mb-8">
+              Chaque bâtiment
+              <br />
+              <span className="italic text-[#C4956A]">mérite sa</span>
+              <br />
+              <span className="italic text-[#C4956A]">révolution</span>
+              <span className="text-white">.</span>
+            </h2>
+            <p className="text-[1.05rem] md:text-[1.2rem] text-[#D4C4B0] max-w-2xl mx-auto leading-relaxed mb-12">
+              La transition énergétique ne se décrète pas. Elle se construit,
+              mur après mur, chantier après chantier. Nous sommes ceux qui
+              transforment l&apos;urgence en action.
+            </p>
+            <Link
+              href="/contactez-nous"
+              className="group inline-flex items-center gap-3 bg-[#C4956A] px-10 py-5 text-[0.82rem] font-semibold uppercase tracking-[0.14em] text-[#2C1810] transition-all duration-300 hover:bg-[#D4A87A]"
+            >
+              Lancez votre projet
+              <ArrowRight
+                size={16}
+                className="transition-transform duration-300 group-hover:translate-x-1"
+              />
+            </Link>
+          </motion.div>
+        </div>
+        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#F5F0EB] to-transparent" />
+      </section>
+
       {/* ═══════════ RÉFÉRENCES / RÉALISATIONS ═══════════ */}
       <section className="py-24 md:py-36 bg-[#F5F0EB]">
         <div className="mx-auto max-w-[1400px] px-6 md:px-10 lg:px-16">
@@ -530,60 +567,6 @@ export default function HomePage() {
                 </p>
               </div>
             </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ═══════════ TESTIMONIALS ═══════════ */}
-      <section className="py-24 md:py-36 bg-[#FAF8F5]">
-        <div className="mx-auto max-w-[1400px] px-6 md:px-10 lg:px-16">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.7 }}
-            className="text-center mb-20"
-          >
-            <p className="text-[0.72rem] uppercase tracking-[0.25em] text-[#8B4513] mb-4">
-              Témoignages
-            </p>
-            <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-light text-[#2C1810] leading-[1.1]">
-              La confiance de nos <span className="italic text-[#8B4513]">clients</span>
-            </h2>
-          </motion.div>
-
-          <motion.div
-            variants={stagger}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6"
-          >
-            {TESTIMONIALS.map((t, i) => (
-              <motion.div
-                key={t.author}
-                variants={fadeUp}
-                custom={i}
-                className="relative border border-[#E8E0D4] p-8 md:p-10 bg-white hover:border-[#C4956A]/40 transition-colors duration-500"
-              >
-                <Quote
-                  size={32}
-                  className="text-[#E8E0D4] mb-6"
-                  strokeWidth={1}
-                />
-                <blockquote className="font-display text-[1.15rem] md:text-[1.25rem] font-light text-[#2C1810] leading-relaxed mb-8 italic">
-                  &ldquo;{t.quote}&rdquo;
-                </blockquote>
-                <div className="border-t border-[#E8E0D4] pt-6">
-                  <p className="text-[0.88rem] font-semibold text-[#2C1810]">
-                    {t.author}
-                  </p>
-                  <p className="text-[0.78rem] text-[#8B7B6E] mt-1">
-                    {t.role}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
           </motion.div>
         </div>
       </section>

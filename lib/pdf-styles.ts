@@ -129,8 +129,9 @@ export function drawCoverPage(
   doc.line(margin, y, margin + 30, y);
   y += 8;
 
-  // Info table - clean, minimal style
+  // Info table - clean, minimal style — skip empty values
   for (const [label, value] of infoRows) {
+    if (!value || value === "—") continue;
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.setTextColor(...PDF_COLORS.bodyLight);
@@ -138,7 +139,7 @@ export function drawCoverPage(
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
     doc.setTextColor(...PDF_COLORS.heading);
-    doc.text(value || "—", margin + 55, y);
+    doc.text(value, margin + 55, y);
     y += 6;
   }
 
@@ -224,12 +225,7 @@ export function getDataTableConfig(
       1: { cellWidth: contentWidth - 65 },
     },
     alternateRowStyles: { fillColor: PDF_COLORS.background },
-    didParseCell: (data) => {
-      if (data.column.index === 1 && data.cell.raw === "—") {
-        data.cell.styles.textColor = PDF_COLORS.placeholder;
-        data.cell.styles.fontStyle = "italic";
-      }
-    },
+    didParseCell: undefined,
   };
 }
 

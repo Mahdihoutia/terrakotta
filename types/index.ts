@@ -80,16 +80,54 @@ export interface Lead {
   dateMiseAJour: string
 }
 
+export type AgentType = "PROSPECTION" | "COMMUNICATION"
+
 export interface AIAgent {
   id: string
   nom: string
-  description: string
-  type: "PROSPECTION" | "QUALIFICATION" | "SUIVI" | "REPORTING"
+  description: string | null
+  type: AgentType
   statut: AgentStatus
-  derniereExecution?: string
+  email: string | null
+  configuration: ProspectionConfig | CommunicationConfig
+  createdAt: string
+  updatedAt: string
+  _count?: { logs: number }
+  derniereExecution?: string | null
   tauxReussite?: number
-  actionsRealisees: number
-  configuration: Record<string, unknown>
+  actionsAujourdhui?: number
+}
+
+export interface AgentLog {
+  id: string
+  agentId: string
+  action: string
+  details: Record<string, unknown>
+  succes: boolean
+  createdAt: string
+}
+
+export interface ProspectionConfig {
+  sources: ("web" | "annuaires" | "reseaux_sociaux" | "permis_construire")[]
+  keywords: string[]
+  regions: string[]
+  autoCreateLead: boolean
+  maxLeadsParJour: number
+}
+
+export interface CommunicationConfig {
+  emailFrom: string
+  templates: EmailTemplate[]
+  relanceApresJours: number
+  maxEmailsParJour: number
+}
+
+export interface EmailTemplate {
+  id: string
+  nom: string
+  objet: string
+  corps: string
+  type: "premier_contact" | "relance" | "qualification" | "proposition"
 }
 
 export interface KpiData {

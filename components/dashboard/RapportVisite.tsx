@@ -375,16 +375,17 @@ async function generatePDF(
 
   // ─── Sections ─────────────────────────────────────────────
   for (const section of sections) {
-    checkPage(30);
-    y = drawSectionHeader(doc, section.titre, y, section.description);
-
     const tableData: string[][] = [];
     for (const field of section.fields) {
-      const val = values[field.id] || "—";
+      const val = values[field.id];
+      if (!val || !val.trim()) continue;
       const label = field.unit ? `${field.label} (${field.unit})` : field.label;
       tableData.push([label, val]);
     }
+    if (tableData.length === 0) continue;
 
+    checkPage(30);
+    y = drawSectionHeader(doc, section.titre, y, section.description);
     autoTable(doc, getDataTableConfig(y, tableData, contentWidth));
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     y = (doc as any).lastAutoTable.finalY + PDF_LAYOUT.sectionGap;

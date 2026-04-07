@@ -203,6 +203,35 @@ model Document {
   @@map("documents")
 }
 
+// ─── AI Agent ──────────────────────────────────────────────────
+
+model AIAgent {
+  id            String       @id @default(cuid())
+  nom           String
+  description   String?
+  type          AgentType
+  statut        AgentStatut  @default(INACTIF)
+  configuration Json         @default("{}")
+  email         String?      // Email dédié pour l'agent communication
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+  logs          AgentLog[]
+
+  @@map("ai_agents")
+}
+
+model AgentLog {
+  id        String        @id @default(cuid())
+  agentId   String        @map("agent_id")
+  agent     AIAgent       @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  action    String        // ex: "lead_created", "email_sent", "search_completed"
+  details   Json          @default("{}")
+  succes    Boolean       @default(true)
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  @@map("agent_logs")
+}
+
 // ─── Enums ──────────────────────────────────────────────────────
 
 enum ClientType {
@@ -284,4 +313,16 @@ enum AideStatut {
   ACCORDE
   REFUSE
   VERSE
+}
+
+enum AgentType {
+  PROSPECTION
+  COMMUNICATION
+}
+
+enum AgentStatut {
+  ACTIF
+  EN_PAUSE
+  ERREUR
+  INACTIF
 }
