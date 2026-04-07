@@ -28,6 +28,7 @@ import {
   CheckCircle2,
   XCircle,
   FileText,
+  Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { DevisDetail, DevisStatut, LigneDevis } from "@/types";
@@ -82,6 +83,128 @@ function formatDate(dateStr: string | null): string {
   }).format(new Date(dateStr));
 }
 
+// ─── PDF Generation ─────────────────────────────────────────────
+
+async function generateDevisPDF(devis: DevisDetail) {
+  const { default: jsPDF } = await import("jspdf");
+  const { default: autoTable } = await import("jspdf-autotable");
+  const {
+    drawCoverPage,
+    drawSectionHeader,
+    drawFooter,
+    drawSignatureBlock,
+    getDevisTableConfig,
+    getTotalsTableConfig,
+    getDataTableConfig,
+    needsPageBreak,
+    PDF_LAYOUT,
+    PDF_COLORS,
+  } = await import("@/lib/pdf-styles");
+
+  const doc = new jsPDF("p", "mm", "a4");
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = PDF_LAYOUT.margin;
+  const contentWidth = pageWidth - margin * 2;
+
+  let y: number;
+
+  function checkPage(needed: number) {
+    if (needsPageBreak(y, needed)) {
+      doc.addPage();
+      y = PDF_LAYOUT.topMargin;
+    }
+  }
+
+  const clientName = devis.client.prenom
+    ? `${devis.client.prenom} ${devis.client.nom}`
+    : devis.client.nom;
+
+  // ─── Cover page ──────────────────────────────────────────
+  const infoRows: [string, string][] = [
+    ["Reference", devis.numero],
+    ["Client", clientName],
+    ["Objet", devis.objet || ""],
+    ["Date d'emission", formatDate(devis.dateEmis)],
+    ["Date de validite", formatDate(devis.dateValide)],
+  ];
+  if (devis.projet) {
+    infoRows.push(["Projet", devis.projet.titre]);
+  }
+
+  y = drawCoverPage(doc, "Devis", devis.objet || "Devis", infoRows, devis.numero);
+
+  // ─── Client info ─────────────────────────────────────────
+  checkPage(30);
+  y = drawSectionHeader(doc, "Informations client", y);
+
+  const clientData: string[][] = [];
+  clientData.push(["Nom", clientName]);
+  if (devis.client.email) clientData.push(["Email", devis.client.email]);
+  if (devis.client.telephone) clientData.push(["Telephone", devis.client.telephone]);
+
+  if (clientData.length > 0) {
+    autoTable(doc, getDataTableConfig(y, clientData, contentWidth));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    y = (doc as any).lastAutoTable.finalY + PDF_LAYOUT.sectionGap;
+  }
+
+  // ─── Ligne items table ────────────────────────────────────
+  checkPage(40);
+  y = drawSectionHeader(doc, "Designation des travaux", y);
+
+  const lignesData = devis.lignes.map((l) => {
+    const totalHT = l.quantite * l.prixUnitHT;
+    return [
+      l.designation || "",
+      l.unite || "",
+      l.quantite.toFixed(2),
+      `${l.prixUnitHT.toFixed(2)} \u20AC`,
+      `${totalHT.toFixed(2)} \u20AC`,
+    ];
+  });
+
+  autoTable(doc, getDevisTableConfig(
+    y,
+    [["Designation", "Unite", "Quantite", "P.U. HT", "Total HT"]],
+    lignesData,
+  ));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  y = (doc as any).lastAutoTable.finalY + 6;
+
+  // Totals
+  const totalHT = devis.montantHT;
+  const tvaRate = devis.tauxTVA;
+  const totalTVA = totalHT * (tvaRate / 100);
+  const totalTTC = devis.montantTTC;
+
+  autoTable(doc, getTotalsTableConfig(
+    y,
+    [
+      ["Total HT", `${totalHT.toFixed(2)} \u20AC`],
+      [`TVA (${tvaRate}%)`, `${totalTVA.toFixed(2)} \u20AC`],
+      ["Total TTC", `${totalTTC.toFixed(2)} \u20AC`],
+    ],
+    contentWidth,
+    true,
+  ));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  y = (doc as any).lastAutoTable.finalY + PDF_LAYOUT.sectionGap;
+
+  // ─── Signature ────────────────────────────────────────────
+  checkPage(50);
+  drawSignatureBlock(doc, y);
+
+  // ─── Footers ──────────────────────────────────────────────
+  const totalPages = doc.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    drawFooter(doc, "Devis", devis.numero, i, totalPages);
+  }
+
+  const filename = `Devis_${devis.numero}_${new Date().toISOString().slice(0, 10)}.pdf`;
+  doc.save(filename);
+}
+
 interface Props {
   params: Promise<{ id: string }>;
 }
@@ -100,6 +223,7 @@ export default function DevisDetailPage({ params }: Props) {
   const [deleting, setDeleting] = useState(false);
   const [updatingStatut, setUpdatingStatut] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [generatingPDF, setGeneratingPDF] = useState(false);
 
   // Edit form state
   const [formObjet, setFormObjet] = useState("");
@@ -255,6 +379,16 @@ export default function DevisDetailPage({ params }: Props) {
     setEditing(false);
   }
 
+  async function handleDownloadPDF() {
+    if (!devis) return;
+    setGeneratingPDF(true);
+    try {
+      await generateDevisPDF(devis);
+    } finally {
+      setGeneratingPDF(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24">
@@ -389,6 +523,20 @@ export default function DevisDetailPage({ params }: Props) {
             </>
           ) : (
             <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDownloadPDF}
+                disabled={generatingPDF}
+                className="border-tk-border bg-tk-surface text-tk-text-secondary hover:bg-tk-hover"
+              >
+                {generatingPDF ? (
+                  <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Download className="mr-2 h-3.5 w-3.5" />
+                )}
+                Télécharger PDF
+              </Button>
               <Button
                 variant="outline"
                 size="sm"

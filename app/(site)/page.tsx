@@ -80,7 +80,7 @@ const REFERENCES = [
     location: "Saint-Germain-en-Laye",
     result: "Passage de E à B sur le DPE",
     image:
-      "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=80",
+      "https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=800&q=80",
     year: "2024",
   },
   {
@@ -93,12 +93,12 @@ const REFERENCES = [
     year: "2024",
   },
   {
-    title: "Tour Haussmann — Siège BNP Paribas RE",
+    title: "Ancien siège BNP Paribas RE",
     type: "Tertiaire — 12 000 m²",
     location: "La Défense",
     result: "Conformité décret tertiaire – 40%",
     image:
-      "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&q=80",
+      "https://images.unsplash.com/photo-1554469384-e58fac16e23a?w=800&q=80",
     year: "2024",
   },
 ];
@@ -390,12 +390,19 @@ export default function HomePage() {
 
       {/* ═══════════ VIDEO SLOGAN ═══════════ */}
       <section className="relative h-[80vh] md:h-[90vh] flex items-center justify-center overflow-hidden">
+        {/* Video background — poster as fallback for mobile */}
+        <div
+          className="absolute inset-0 bg-cover bg-center md:hidden"
+          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1920&q=80')" }}
+        />
+        {/* eslint-disable-next-line react/no-unknown-property */}
         <video
           autoPlay
           muted
           loop
           playsInline
-          className="absolute inset-0 w-full h-full object-cover"
+          preload="auto"
+          className="absolute inset-0 w-full h-full object-cover hidden md:block"
           poster="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1920&q=80"
         >
           <source src={VIDEO_BG_URL} type="video/mp4" />
