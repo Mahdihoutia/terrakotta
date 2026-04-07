@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import Image from "next/image";
 import { MapPin, TrendingDown, Calendar } from "lucide-react";
 
@@ -14,13 +14,14 @@ const fadeUp = {
   }),
 };
 
-type ProjectType = "Tous" | "Résidentiel" | "Tertiaire" | "Collectivité";
+type ProjectType = "Tous" | "Résidentiel" | "Tertiaire" | "Collectivité" | "Industrie";
 
 const FILTERS: ProjectType[] = [
   "Tous",
   "Résidentiel",
   "Tertiaire",
   "Collectivité",
+  "Industrie",
 ];
 
 const PROJECTS = [
@@ -32,7 +33,7 @@ const PROJECTS = [
     year: "2024",
     result: "– 42% de consommation énergétique",
     scope: "Isolation thermique par l'extérieur, remplacement des menuiseries, rénovation du système de chauffage collectif, ventilation double flux.",
-    image: "https://images.unsplash.com/photo-1494526585095-c41746248156?w=900&q=80",
+    image: "https://images.unsplash.com/photo-1772544541450-b0648648507f?w=900&q=80",
   },
   {
     title: "Groupe scolaire Mistral",
@@ -42,47 +43,100 @@ const PROJECTS = [
     year: "2023",
     result: "Passage de E à B sur le DPE",
     scope: "Audit énergétique, maîtrise d'œuvre complète, isolation toiture et murs, PAC air/eau, éclairage LED, GTC.",
-    image: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=900&q=80",
+    image: "https://images.unsplash.com/photo-1741638511380-0ba689024c59?w=900&q=80",
   },
   {
-    title: "Mas de la Garrigue",
-    type: "Résidentiel" as const,
-    category: "Maison individuelle",
-    location: "Lubéron",
-    year: "2024",
-    result: "– 55% de consommation",
-    scope: "Rénovation globale performante : isolation bio-sourcée, menuiseries bois-alu, poêle à granulés, VMC hygroréglable B.",
-    image: "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=900&q=80",
-  },
-  {
-    title: "Immeuble Canebière",
-    type: "Résidentiel" as const,
-    category: "Copropriété — 32 logements",
-    location: "Marseille",
-    year: "2023",
-    result: "Label BBC Rénovation",
-    scope: "Rénovation globale BBC : ITE sous enduit, ventilation centralisée, solaire thermique collectif, pilotage intelligent.",
-    image: "https://images.unsplash.com/photo-1487958449943-2429e8be8625?w=900&q=80",
-  },
-  {
-    title: "Siège social Provençale",
+    title: "Tour Ariane — La Défense",
     type: "Tertiaire" as const,
-    category: "Bureaux — 2 400 m²",
-    location: "Aix-en-Provence",
-    year: "2023",
-    result: "Conformité décret tertiaire – 40%",
-    scope: "Audit tertiaire, plan d'actions, remplacement CTA, relamping LED, optimisation GTC, suivi de performance.",
-    image: "https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=900&q=80",
+    category: "Bureaux — 5 800 m²",
+    location: "Île-de-France",
+    year: "2024",
+    result: "Conformité décret tertiaire – 45%",
+    scope: "Audit énergétique tertiaire, remplacement CTA double flux, relamping LED, optimisation GTC, régulation terminale, suivi OPERAT.",
+    image: "https://images.unsplash.com/photo-1448630360428-65456885c650?w=900&q=80",
+  },
+  // ─── Résidentiel IDF (+150 logements) ──────────────────────
+  {
+    title: "Les Jardins d'Arcueil",
+    type: "Résidentiel" as const,
+    category: "Copropriété — 210 logements",
+    location: "Arcueil, Île-de-France",
+    year: "2024",
+    result: "– 52% de consommation énergétique",
+    scope: "ITE sur 8 bâtiments, remplacement menuiseries aluminium, modernisation chaufferie gaz collective, calorifugeage réseau, VMC hygroréglable B.",
+    image: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=900&q=80",
   },
   {
-    title: "Médiathèque Saint-Charles",
-    type: "Collectivité" as const,
-    category: "Équipement culturel",
-    location: "Marseille",
-    year: "2022",
-    result: "– 48% sur la facture énergie",
-    scope: "Diagnostic patrimonial, scénarios de rénovation, maîtrise d'œuvre travaux, commissionnement des équipements.",
-    image: "https://images.unsplash.com/photo-1565008447742-97f6f38c985c?w=900&q=80",
+    title: "Résidence Olympe de Gouges",
+    type: "Résidentiel" as const,
+    category: "Copropriété — 186 logements",
+    location: "Vitry-sur-Seine, Île-de-France",
+    year: "2023",
+    result: "Passage de F à C sur le DPE",
+    scope: "Isolation extérieure colorée, remplacement fenêtres triple vitrage, installation PAC air/eau collective, toiture végétalisée, pilotage GTB.",
+    image: "https://images.unsplash.com/photo-1574362848149-11496d93a7c7?w=900&q=80",
+  },
+  {
+    title: "Grand ensemble Romain Rolland",
+    type: "Résidentiel" as const,
+    category: "Rénovation globale — 154 logements",
+    location: "Champigny-sur-Marne, Île-de-France",
+    year: "2023",
+    result: "Label BBC Rénovation — DPE A",
+    scope: "Rénovation globale performante : ITE biosourcée, menuiseries bois-alu, PAC géothermique, VMC double flux, panneaux solaires hybrides, pilotage intelligent.",
+    image: "https://images.unsplash.com/photo-1460317442991-0ec209397118?w=900&q=80",
+  },
+  // ─── Tertiaire IDF (+5 000 m²) ───────────────────────────
+  {
+    title: "Campus Carrefour — Massy",
+    type: "Tertiaire" as const,
+    category: "Bureaux — 12 000 m²",
+    location: "Massy, Île-de-France",
+    year: "2024",
+    result: "Conformité décret tertiaire – 48%",
+    scope: "Audit énergétique tertiaire, remplacement CTA et groupes froids, relamping LED intelligent, façade double peau, optimisation GTC, reporting OPERAT.",
+    image: "https://images.unsplash.com/photo-1554469384-e58fac16e23a?w=900&q=80",
+  },
+  {
+    title: "Siège Natixis — Charenton",
+    type: "Tertiaire" as const,
+    category: "Bureaux végétalisés — 8 500 m²",
+    location: "Charenton-le-Pont, Île-de-France",
+    year: "2023",
+    result: "– 42% consommation, certification HQE Excellent",
+    scope: "Rénovation BBC tertiaire, toiture et façades végétalisées, PAC réversible, free-cooling, gestion dynamique de l'éclairage et des stores, suivi IoT.",
+    image: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=900&q=80",
+  },
+  // ─── Industrie ────────────────────────────────────────────
+  {
+    title: "Centrale frigorifique Auchan Logistique",
+    type: "Industrie" as const,
+    category: "Plateforme logistique — groupes froids",
+    location: "Lille, Hauts-de-France",
+    year: "2023",
+    result: "– 38% de consommation frigorifique",
+    scope: "Audit des groupes froids, remplacement compresseurs haute efficacité, passage au R-454C, récupération de chaleur sur condenseurs, pilotage centralisé.",
+    image: "https://images.unsplash.com/photo-1757573538081-c469f75cdd7a?w=900&q=80",
+  },
+  {
+    title: "Récupération de chaleur — Usine Roquette",
+    type: "Industrie" as const,
+    category: "Agroalimentaire — récupération de chaleur",
+    location: "Lestrem, Hauts-de-France",
+    year: "2024",
+    result: "850 MWh/an de chaleur récupérée",
+    scope: "Étude de faisabilité, dimensionnement échangeurs thermiques, raccordement réseau de chaleur interne, instrumentation et suivi de performance énergétique.",
+    image: "https://images.unsplash.com/photo-1650551182991-b07558247564?w=900&q=80",
+  },
+  {
+    title: "Décarbonation chaufferie — Saint-Gobain Pont-à-Mousson",
+    type: "Industrie" as const,
+    category: "Sidérurgie — conversion biomasse",
+    location: "Pont-à-Mousson, Grand Est",
+    year: "2024",
+    result: "– 60% d'émissions CO₂ sur site",
+    scope: "Audit process industriel, étude de conversion fioul vers biomasse, dimensionnement chaudière bois 8 MW, réseau vapeur, traitement fumées et monitoring continu.",
+    image: "https://images.unsplash.com/photo-1513828583688-c52646db42da?w=900&q=80",
   },
 ];
 
@@ -146,24 +200,19 @@ export default function NosReferencesPage() {
       {/* Projects Grid */}
       <section className="pb-24 md:pb-36">
         <div className="mx-auto max-w-[1400px] px-6 md:px-10 lg:px-16">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={filter}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="grid grid-cols-1 md:grid-cols-2 gap-6"
-            >
-              {filtered.map((project, i) => (
-                <motion.article
-                  key={project.title}
-                  variants={fadeUp}
-                  custom={i}
-                  initial="hidden"
-                  animate="visible"
-                  className="group border border-[#E8E0D4] bg-white hover:border-[#C4956A]/40 transition-colors duration-500"
-                >
+          <div
+            key={filter}
+            className="grid grid-cols-1 md:grid-cols-2 gap-6"
+          >
+            {filtered.map((project, i) => (
+              <motion.article
+                key={`${filter}-${project.title}`}
+                variants={fadeUp}
+                custom={i}
+                initial="hidden"
+                animate="visible"
+                className="group border border-[#E8E0D4] bg-white hover:border-[#C4956A]/40 transition-colors duration-500"
+              >
                   {/* Image */}
                   <div className="relative aspect-[16/10] overflow-hidden">
                     <Image
@@ -211,8 +260,7 @@ export default function NosReferencesPage() {
                   </div>
                 </motion.article>
               ))}
-            </motion.div>
-          </AnimatePresence>
+          </div>
         </div>
       </section>
     </>
