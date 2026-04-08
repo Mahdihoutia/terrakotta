@@ -33,7 +33,7 @@ const PRESTATIONS = [
       "Simulation thermique dynamique (STD)",
       "Préconisations chiffrées et hiérarchisées",
     ],
-    image: "https://images.unsplash.com/photo-1497366412874-3415097a27e7?w=800&q=80",
+    image: "https://images.unsplash.com/photo-1744627049721-73c27008ad28?w=800&q=80",
   },
   {
     icon: HardHat,

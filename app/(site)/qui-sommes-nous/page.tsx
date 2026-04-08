@@ -89,8 +89,8 @@ export default function QuiSommesNousPage() {
               className="lg:col-span-7 relative aspect-[4/3] overflow-hidden"
             >
               <Image
-                src="https://images.unsplash.com/photo-1531482615713-2afd69097998?w=1200&q=80"
-                alt="Architectes et maîtres d'œuvre en brainstorming"
+                src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=1200&q=80"
+                alt="Architectes et maîtres d'œuvre collaborant sur un projet"
                 fill
                 className="object-cover"
               />
