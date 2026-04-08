@@ -189,7 +189,7 @@
   --tk-text-faint: #666666;
   --tk-border: #444444;
   --tk-border-hover: #555555;
-  --tk-input: #333333;
+  --tk-input: #3d3d3d;
   --tk-sidebar-bg: #222222;
   --tk-sidebar-text: #d4d4d4;
   --tk-sidebar-muted: #666666;
@@ -243,20 +243,14 @@
     border-color: var(--tk-border-hover) !important;
   }
 
-  /* Inputs */
-  input, select, textarea {
-    background: var(--tk-input) !important;
-    border-color: var(--tk-border) !important;
-    color: var(--tk-text);
-  }
-
+  /* Inputs — focus & placeholder only; background set per component */
   input:focus, select:focus, textarea:focus {
-    border-color: var(--tk-primary) !important;
+    border-color: var(--tk-primary);
     box-shadow: 0 0 0 2px var(--tk-primary-light);
   }
 
   input::placeholder, textarea::placeholder {
-    color: var(--tk-text-faint) !important;
+    color: var(--tk-text-faint);
   }
 
   /* Select option styling for light mode */
