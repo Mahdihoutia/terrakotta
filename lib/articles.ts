@@ -55,7 +55,7 @@ export const ARTICLES: Article[] = [
     readTime: "12 min",
     date: "18 février 2026",
     image:
-      "https://images.unsplash.com/photo-1611348586804-61bf6c080437?w=900&q=80",
+      "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=900&q=80",
     icon: Globe,
     featured: true,
     content: `## Au-delà de la performance énergétique
