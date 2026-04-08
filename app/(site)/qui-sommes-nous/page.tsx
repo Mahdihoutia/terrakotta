@@ -89,8 +89,8 @@ export default function QuiSommesNousPage() {
               className="lg:col-span-7 relative aspect-[4/3] overflow-hidden"
             >
               <Image
-                src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1200&q=80"
-                alt="Équipe Terrakotta en réunion de travail"
+                src="https://images.unsplash.com/photo-1531482615713-2afd69097998?w=1200&q=80"
+                alt="Architectes et maîtres d'œuvre en brainstorming"
                 fill
                 className="object-cover"
               />
