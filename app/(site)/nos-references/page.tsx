@@ -53,7 +53,7 @@ const PROJECTS = [
     year: "2024",
     result: "Conformité décret tertiaire – 45%",
     scope: "Audit énergétique tertiaire, remplacement CTA double flux, relamping LED, optimisation GTC, régulation terminale, suivi OPERAT.",
-    image: "https://images.unsplash.com/photo-1448630360428-65456885c650?w=900&q=80",
+    image: "/images/tour-ariane.jpg",
   },
   // ─── Résidentiel IDF (+150 logements) ──────────────────────
   {
