@@ -15,8 +15,18 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Terrakotta — Dashboard",
-  description: "Dashboard de pilotage Terrakotta — Bureau d'étude en rénovation énergétique",
+  title: {
+    default: "Terrakotta — Bureau d'étude en rénovation énergétique",
+    template: "%s | Terrakotta",
+  },
+  description:
+    "Terrakotta, bureau d'étude spécialisé en rénovation énergétique. Audit énergétique, maîtrise d'œuvre, accompagnement CEE et MaPrimeRénov' pour particuliers, professionnels et collectivités.",
+  metadataBase: new URL("https://terrakotta.fr"),
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large" },
+  },
 };
 
 export default function RootLayout({

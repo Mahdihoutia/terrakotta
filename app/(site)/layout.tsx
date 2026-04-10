@@ -1,5 +1,6 @@
 import { Cormorant_Garamond, Manrope } from "next/font/google";
 import type { Metadata } from "next";
+import Script from "next/script";
 import Navbar from "@/components/site/Navbar";
 import Footer from "@/components/site/Footer";
 
@@ -16,13 +17,89 @@ const manrope = Manrope({
   display: "swap",
 });
 
+const SITE_URL = "https://terrakotta.fr";
+const SITE_NAME = "Terrakotta";
+const DEFAULT_DESCRIPTION =
+  "Terrakotta, bureau d'étude spécialisé en rénovation énergétique. Audit énergétique, maîtrise d'œuvre, accompagnement CEE et MaPrimeRénov' pour particuliers, professionnels et collectivités.";
+
 export const metadata: Metadata = {
   title: {
-    default: "Terrakotta — Bureau d'étude en rénovation énergétique",
-    template: "%s | Terrakotta",
+    default: `${SITE_NAME} — Bureau d'étude en rénovation énergétique`,
+    template: `%s | ${SITE_NAME}`,
   },
-  description:
-    "Bureau d'étude spécialisé en rénovation énergétique. Audit, maîtrise d'œuvre et accompagnement CEE/MaPrimeRénov' pour particuliers, professionnels et collectivités.",
+  description: DEFAULT_DESCRIPTION,
+  keywords: [
+    "bureau d'étude rénovation énergétique",
+    "audit énergétique",
+    "maîtrise d'œuvre",
+    "CEE certificats économies énergie",
+    "MaPrimeRénov",
+    "isolation thermique",
+    "bilan thermique",
+    "rénovation bâtiment",
+    "DPE",
+    "performance énergétique",
+  ],
+  authors: [{ name: SITE_NAME, url: SITE_URL }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
+  openGraph: {
+    type: "website",
+    locale: "fr_FR",
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    title: `${SITE_NAME} — Bureau d'étude en rénovation énergétique`,
+    description: DEFAULT_DESCRIPTION,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${SITE_NAME} — Bureau d'étude en rénovation énergétique`,
+    description: DEFAULT_DESCRIPTION,
+    creator: "@terrakotta",
+  },
+  alternates: {
+    canonical: SITE_URL,
+  },
+};
+
+// ─── JSON-LD Organisation ──────────────────────────────────────────────
+const organizationSchema = {
+  "@context": "https://schema.org",
+  "@type": "ProfessionalService",
+  "@id": `${SITE_URL}/#organisation`,
+  name: SITE_NAME,
+  url: SITE_URL,
+  description: DEFAULT_DESCRIPTION,
+  telephone: "+33600000000",
+  email: "contact@terrakotta.fr",
+  address: {
+    "@type": "PostalAddress",
+    addressCountry: "FR",
+  },
+  areaServed: {
+    "@type": "Country",
+    name: "France",
+  },
+  serviceType: [
+    "Audit énergétique",
+    "Maîtrise d'œuvre",
+    "Accompagnement CEE",
+    "Accompagnement MaPrimeRénov'",
+    "Bilan thermique",
+    "Rénovation énergétique",
+  ],
+  knowsAbout: [
+    "Rénovation énergétique",
+    "Performance énergétique des bâtiments",
+    "Certificats d'économies d'énergie",
+    "Isolation thermique",
+  ],
+  hasCredential: [
+    {
+      "@type": "EducationalOccupationalCredential",
+      name: "Qualibat RGE",
+    },
+  ],
 };
 
 export default function SiteLayout({
@@ -41,6 +118,14 @@ export default function SiteLayout({
         .font-display { font-family: var(--font-display), Georgia, serif; }
         .font-body { font-family: var(--font-body), system-ui, sans-serif; }
       `}</style>
+
+      {/* JSON-LD — Organisation */}
+      <Script
+        id="schema-organisation"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+      />
+
       <Navbar />
       <main>{children}</main>
       <Footer />
