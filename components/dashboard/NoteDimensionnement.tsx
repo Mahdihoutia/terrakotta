@@ -1957,7 +1957,7 @@ async function generatePDF(
   fiche: FicheConfig,
   sections: QuestionSection[],
   values: FormValues,
-  photos: PhotoItem[],
+  sectionPhotos: Record<number, PhotoItem[]>,
 ) {
   const { default: jsPDF } = await import("jspdf");
   const { default: autoTable } = await import("jspdf-autotable");
@@ -1965,7 +1965,6 @@ async function generatePDF(
     drawCoverPage,
     drawSectionHeader,
     drawFooter,
-    drawPhotoAppendixHeader,
     drawPhotoEntry,
     getDataTableConfig,
     needsPageBreak,
@@ -2012,7 +2011,8 @@ async function generatePDF(
   y += descLines.length * 3.5 + 8;
 
   // ─── Sections ─────────────────────────────────────────────
-  for (const section of sections) {
+  for (let sIdx = 0; sIdx < sections.length; sIdx++) {
+    const section = sections[sIdx];
     const tableData: string[][] = [];
     for (const field of section.fields) {
       const val = values[field.id];
@@ -2020,24 +2020,27 @@ async function generatePDF(
       const label = field.unit ? `${field.label} (${field.unit})` : field.label;
       tableData.push([label, val]);
     }
-    if (tableData.length === 0) continue;
+    if (tableData.length === 0 && !(sectionPhotos[sIdx]?.length > 0)) continue;
 
     checkPage(30);
     y = drawSectionHeader(doc, section.titre, y, section.description);
-    autoTable(doc, getDataTableConfig(y, tableData, contentWidth));
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    y = (doc as any).lastAutoTable.finalY + PDF_LAYOUT.sectionGap;
-  }
 
-  // ─── Photo appendix ──────────────────────────────────────
-  if (photos.length > 0) {
-    doc.addPage();
-    y = drawPhotoAppendixHeader(doc);
-
-    for (let i = 0; i < photos.length; i++) {
-      checkPage(85);
-      y = drawPhotoEntry(doc, i, photos[i].preview, photos[i].categorie, photos[i].legende, y);
+    if (tableData.length > 0) {
+      autoTable(doc, getDataTableConfig(y, tableData, contentWidth));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      y = (doc as any).lastAutoTable.finalY + 6;
     }
+
+    // Photos de cette section
+    const photos = sectionPhotos[sIdx] || [];
+    if (photos.length > 0) {
+      for (let i = 0; i < photos.length; i++) {
+        checkPage(85);
+        y = drawPhotoEntry(doc, i, photos[i].preview, photos[i].categorie, photos[i].legende, y);
+      }
+    }
+
+    y += PDF_LAYOUT.sectionGap - 6;
   }
 
   // ─── Footers ──────────────────────────────────────────────
@@ -2074,8 +2077,7 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
   const [docId, setDocId] = useState<string | null>(existingDoc?.id ?? null);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [photos, setPhotos] = useState<PhotoItem[]>([]);
-  const [showPhotos, setShowPhotos] = useState(false);
+  const [sectionPhotos, setSectionPhotos] = useState<Record<number, PhotoItem[]>>({});
   const [generating, setGenerating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -2142,35 +2144,48 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
   const handleAddPhotos = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-
+    const sectionIdx = activeSection;
     Array.from(files).forEach((file) => {
       const reader = new FileReader();
       reader.onload = () => {
-        const newPhoto: PhotoItem = {
-          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-          file,
-          preview: reader.result as string,
-          legende: "",
-          categorie: "Autre",
-        };
-        setPhotos((prev) => [...prev, newPhoto]);
+        setSectionPhotos((prev) => ({
+          ...prev,
+          [sectionIdx]: [
+            ...(prev[sectionIdx] || []),
+            {
+              id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+              file,
+              preview: reader.result as string,
+              legende: "",
+              categorie: "Autre",
+            },
+          ],
+        }));
       };
       reader.readAsDataURL(file);
     });
-
     e.target.value = "";
-  }, []);
+  }, [activeSection]);
 
-  function removePhoto(id: string) {
-    setPhotos((prev) => prev.filter((p) => p.id !== id));
+  function removePhoto(sectionIdx: number, id: string) {
+    setSectionPhotos((prev) => ({
+      ...prev,
+      [sectionIdx]: (prev[sectionIdx] || []).filter((p) => p.id !== id),
+    }));
   }
 
-  function updatePhotoLegende(id: string, legende: string) {
-    setPhotos((prev) => prev.map((p) => p.id === id ? { ...p, legende } : p));
+  function updatePhotoLegende(sectionIdx: number, id: string, legende: string) {
+    setSectionPhotos((prev) => ({
+      ...prev,
+      [sectionIdx]: (prev[sectionIdx] || []).map((p) => p.id === id ? { ...p, legende } : p),
+    }));
   }
 
-  function updatePhotoCategorie(id: string, categorie: string) {
-    setPhotos((prev) => prev.map((p) => p.id === id ? { ...p, categorie } : p));
+  function updatePhotoCategorie(sectionIdx: number, id: string, categorie: string) {
+    setSectionPhotos((prev) => ({
+      ...prev,
+      [sectionIdx]: (prev[sectionIdx] || []).map((p) => p.id === id ? { ...p, categorie } : p),
+    }));
   }
 
   async function handleGeneratePDF() {
@@ -2179,7 +2194,7 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
     try {
       const fiche = FICHES.find((f) => f.id === selectedFiche)!;
       const sections = QUESTIONNAIRES[selectedFiche];
-      await generatePDF(fiche, sections, values, photos);
+      await generatePDF(fiche, sections, values, sectionPhotos);
       // Mark as TERMINE after PDF generation
       if (docId) {
         await fetch(`/api/documents/${docId}`, {
@@ -2235,8 +2250,7 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
                   setSelectedFiche(fiche.id);
                   setActiveSection(0);
                   setValues({});
-                  setPhotos([]);
-                  setShowPhotos(false);
+                  setSectionPhotos({});
                 }}
               >
                 <CardContent className="p-6 space-y-3">
@@ -2272,7 +2286,8 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
   const fiche = FICHES.find((f) => f.id === selectedFiche)!;
   const sections = QUESTIONNAIRES[selectedFiche];
   const photoCategories = PHOTO_CATEGORIES[selectedFiche];
-  const currentSection = showPhotos ? null : sections[activeSection];
+  const currentSection = sections[activeSection];
+  const totalPhotos = Object.values(sectionPhotos).reduce((sum, arr) => sum + arr.length, 0);
 
   // Calcul de la complétion
   const allRequired = sections.flatMap((s) => s.fields.filter((f) => f.required));
@@ -2288,7 +2303,7 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => { setSelectedFiche(null); setShowPhotos(false); }}>
+          <Button variant="ghost" size="sm" onClick={() => setSelectedFiche(null)}>
             <ArrowLeft className="mr-1 h-4 w-4" />
             Retour
           </Button>
@@ -2301,7 +2316,7 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
             </div>
             <p className="text-sm text-muted-foreground mt-0.5">
               {completionPct}% complété — {filledRequired.length}/{allRequired.length} champs obligatoires
-              {photos.length > 0 && ` — ${photos.length} photo${photos.length > 1 ? "s" : ""}`}
+              {totalPhotos > 0 && ` — ${totalPhotos} photo${totalPhotos > 1 ? "s" : ""}`}
             </p>
           </div>
         </div>
@@ -2338,14 +2353,15 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
             const sectionFields = section.fields.filter((f) => f.required);
             const sectionFilled = sectionFields.filter((f) => values[f.id]?.trim());
             const sectionComplete = sectionFields.length > 0 && sectionFilled.length === sectionFields.length;
+            const sectionPhotoCount = (sectionPhotos[i] || []).length;
 
             return (
               <button
                 key={i}
-                onClick={() => { setActiveSection(i); setShowPhotos(false); }}
+                onClick={() => setActiveSection(i)}
                 className={cn(
                   "flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm transition-colors",
-                  !showPhotos && activeSection === i
+                  activeSection === i
                     ? "bg-primary/10 text-primary font-medium"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
@@ -2360,119 +2376,19 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
                   </span>
                 )}
                 <span className="truncate">{section.titre}</span>
+                {sectionPhotoCount > 0 && (
+                  <Badge variant="outline" className="ml-auto text-[10px] gap-1">
+                    <Camera className="h-3 w-3" />{sectionPhotoCount}
+                  </Badge>
+                )}
               </button>
             );
           })}
-
-          {/* Bouton Photos */}
-          <button
-            onClick={() => setShowPhotos(true)}
-            className={cn(
-              "flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm transition-colors mt-2 border-t pt-3",
-              showPhotos
-                ? "bg-primary/10 text-primary font-medium"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-            )}
-          >
-            <Camera className="h-4 w-4 shrink-0" />
-            <span className="truncate">Photos du dossier</span>
-            {photos.length > 0 && (
-              <Badge variant="outline" className="ml-auto text-[10px]">
-                {photos.length}
-              </Badge>
-            )}
-          </button>
         </div>
 
         {/* Contenu */}
         <AnimatePresence mode="wait">
-          {showPhotos ? (
-            <motion.div
-              key="photos"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-            >
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Camera className="h-4 w-4" />
-                    Photos du dossier
-                  </CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    Ajoutez des photos de l&apos;installation existante, du matériel projeté, des plaques signalétiques, etc.
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Upload button */}
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-muted-foreground/25 bg-muted/30 p-8 cursor-pointer transition-colors hover:border-primary/40 hover:bg-primary/5"
-                  >
-                    <ImagePlus className="h-8 w-8 text-muted-foreground/50" />
-                    <div className="text-center">
-                      <p className="text-sm font-medium">Ajouter des photos</p>
-                      <p className="text-xs text-muted-foreground">JPG, PNG — Cliquez ou glissez-déposez</p>
-                    </div>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      className="hidden"
-                      onChange={handleAddPhotos}
-                    />
-                  </div>
-
-                  {/* Photo grid */}
-                  {photos.length > 0 && (
-                    <div className="space-y-4">
-                      {photos.map((photo, i) => (
-                        <div key={photo.id} className="flex gap-4 rounded-lg border p-3">
-                          <div className="relative w-32 h-24 shrink-0 rounded-md overflow-hidden bg-muted">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={photo.preview}
-                              alt={photo.legende || `Photo ${i + 1}`}
-                              className="w-full h-full object-cover"
-                            />
-                            <button
-                              onClick={() => removePhoto(photo.id)}
-                              className="absolute top-1 right-1 rounded-full bg-destructive p-1 text-white shadow-sm"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          </div>
-                          <div className="flex-1 space-y-2">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-medium text-muted-foreground">Photo {i + 1}</span>
-                            </div>
-                            <select
-                              value={photo.categorie}
-                              onChange={(e) => updatePhotoCategorie(photo.id, e.target.value)}
-                              className="w-full rounded-md border bg-background px-2 py-1.5 text-xs focus:border-primary focus:outline-none"
-                            >
-                              {photoCategories.map((cat) => (
-                                <option key={cat} value={cat}>{cat}</option>
-                              ))}
-                            </select>
-                            <input
-                              type="text"
-                              value={photo.legende}
-                              onChange={(e) => updatePhotoLegende(photo.id, e.target.value)}
-                              placeholder="Légende de la photo..."
-                              className="w-full rounded-md border bg-background px-2 py-1.5 text-xs focus:border-primary focus:outline-none"
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </motion.div>
-          ) : currentSection ? (
+          {currentSection ? (
             <motion.div
               key={activeSection}
               initial={{ opacity: 0, y: 10 }}
@@ -2538,6 +2454,65 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
                         )}
                       </div>
                     ))}
+                  </div>
+
+                  {/* Photos de cette étape */}
+                  <div className="border-t pt-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-medium flex items-center gap-2">
+                        <Camera className="h-4 w-4" />
+                        Photos — {currentSection.titre}
+                      </h4>
+                      {(sectionPhotos[activeSection] || []).length > 0 && (
+                        <Badge variant="outline" className="text-[10px]">{(sectionPhotos[activeSection] || []).length} photo{(sectionPhotos[activeSection] || []).length > 1 ? "s" : ""}</Badge>
+                      )}
+                    </div>
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/30 p-5 cursor-pointer transition-colors hover:border-primary/40 hover:bg-primary/5"
+                    >
+                      <ImagePlus className="h-6 w-6 text-muted-foreground/50" />
+                      <div className="text-center">
+                        <p className="text-xs font-medium">Ajouter des photos</p>
+                        <p className="text-[10px] text-muted-foreground">JPG, PNG — Cliquez ou glissez-déposez</p>
+                      </div>
+                      <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleAddPhotos} />
+                    </div>
+
+                    {(sectionPhotos[activeSection] || []).length > 0 && (
+                      <div className="space-y-3">
+                        {(sectionPhotos[activeSection] || []).map((photo, i) => (
+                          <div key={photo.id} className="flex gap-3 rounded-lg border p-2.5">
+                            <div className="relative w-28 h-20 shrink-0 rounded-md overflow-hidden bg-muted">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={photo.preview} alt={photo.legende || `Photo ${i + 1}`} className="w-full h-full object-cover" />
+                              <button onClick={() => removePhoto(activeSection, photo.id)} className="absolute top-1 right-1 rounded-full bg-destructive p-1 text-white shadow-sm">
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                            <div className="flex-1 space-y-1.5">
+                              <span className="text-xs font-medium text-muted-foreground">Photo {i + 1}</span>
+                              <select
+                                value={photo.categorie}
+                                onChange={(e) => updatePhotoCategorie(activeSection, photo.id, e.target.value)}
+                                className="w-full rounded-md border bg-background px-2 py-1 text-xs focus:border-primary focus:outline-none"
+                              >
+                                {photoCategories.map((cat) => (
+                                  <option key={cat} value={cat}>{cat}</option>
+                                ))}
+                              </select>
+                              <input
+                                type="text"
+                                value={photo.legende}
+                                onChange={(e) => updatePhotoLegende(activeSection, photo.id, e.target.value)}
+                                placeholder="Légende de la photo..."
+                                className="w-full rounded-md border bg-background px-2 py-1 text-xs focus:border-primary focus:outline-none"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* Navigation entre sections */}

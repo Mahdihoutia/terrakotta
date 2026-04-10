@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,9 @@ import {
   Plus,
   Trash2,
   Loader2,
+  Camera,
+  X,
+  ImagePlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -24,6 +27,14 @@ interface FormValues {
   [key: string]: string;
 }
 
+interface PhotoItem {
+  id: string;
+  file: File;
+  preview: string;
+  legende: string;
+  categorie: string;
+}
+
 interface LigneDevis {
   id: string;
   designation: string;
@@ -32,6 +43,17 @@ interface LigneDevis {
   prixUnitaire: string;
   tva: string;
 }
+
+// ─── Catégories de photos ───────────────────────────────────────
+
+const PHOTO_CATEGORIES = [
+  "Site / Chantier",
+  "État existant",
+  "Équipements à remplacer",
+  "Matériaux proposés",
+  "Plans / Croquis",
+  "Autre",
+];
 
 interface QuestionField {
   id: string;
@@ -175,6 +197,7 @@ async function generatePDF(
   sections: QuestionSection[],
   values: FormValues,
   lignes: LigneDevis[],
+  sectionPhotos: Record<number, PhotoItem[]>,
 ) {
   const { default: jsPDF } = await import("jspdf");
   const { default: autoTable } = await import("jspdf-autotable");
@@ -183,6 +206,7 @@ async function generatePDF(
     drawSectionHeader,
     drawFooter,
     drawSignatureBlock,
+    drawPhotoEntry,
     getDevisTableConfig,
     getTotalsTableConfig,
     getDataTableConfig,
@@ -294,11 +318,21 @@ async function generatePDF(
     y = (doc as any).lastAutoTable.finalY + PDF_LAYOUT.sectionGap;
   }
 
-  // ─── Remaining sections (conditions, etc.) ────────────────
-  for (const section of sections.slice(3)) {
-    checkPage(30);
-    y = drawSectionHeader(doc, section.titre, y);
+  // ─── Photos des premières sections (entreprise, client, devis) ─
+  for (let sIdx = 0; sIdx < 3; sIdx++) {
+    const photos = sectionPhotos[sIdx] || [];
+    if (photos.length > 0) {
+      for (let i = 0; i < photos.length; i++) {
+        checkPage(85);
+        y = drawPhotoEntry(doc, i, photos[i].preview, photos[i].categorie, photos[i].legende, y);
+      }
+      y += PDF_LAYOUT.sectionGap;
+    }
+  }
 
+  // ─── Remaining sections (conditions, aides) with photos ───
+  for (let sIdx = 3; sIdx < sections.length; sIdx++) {
+    const section = sections[sIdx];
     const tableData: string[][] = [];
     for (const field of section.fields) {
       const val = values[field.id] || "—";
@@ -307,6 +341,11 @@ async function generatePDF(
         tableData.push([label, val]);
       }
     }
+
+    if (tableData.length === 0 && !(sectionPhotos[sIdx]?.length > 0)) continue;
+
+    checkPage(30);
+    y = drawSectionHeader(doc, section.titre, y);
 
     if (tableData.length > 0) {
       autoTable(doc, {
@@ -328,8 +367,19 @@ async function generatePDF(
         alternateRowStyles: { fillColor: PDF_COLORS.background },
       });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      y = (doc as any).lastAutoTable.finalY + PDF_LAYOUT.sectionGap;
+      y = (doc as any).lastAutoTable.finalY + 6;
     }
+
+    // Photos de cette section
+    const photos = sectionPhotos[sIdx] || [];
+    if (photos.length > 0) {
+      for (let i = 0; i < photos.length; i++) {
+        checkPage(85);
+        y = drawPhotoEntry(doc, i, photos[i].preview, photos[i].categorie, photos[i].legende, y);
+      }
+    }
+
+    y += PDF_LAYOUT.sectionGap - 6;
   }
 
   // ─── Signature ────────────────────────────────────────────
@@ -378,6 +428,8 @@ export default function DevisDocument({ onBack, onSaved, existingDoc }: Props) {
   const [saving, setSaving] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [showLignes, setShowLignes] = useState(false);
+  const [sectionPhotos, setSectionPhotos] = useState<Record<number, PhotoItem[]>>({});
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   function createLigne(): LigneDevis {
     return {
@@ -407,6 +459,32 @@ export default function DevisDocument({ onBack, onSaved, existingDoc }: Props) {
     setLignes((prev) => prev.map((l) => (l.id === id ? { ...l, [field]: value } : l)));
     setSaved(false);
   }
+
+  const handleAddPhotos = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    const sectionIdx = activeSection;
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setSectionPhotos((prev) => ({
+          ...prev,
+          [sectionIdx]: [
+            ...(prev[sectionIdx] || []),
+            {
+              id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+              file,
+              preview: reader.result as string,
+              legende: "",
+              categorie: PHOTO_CATEGORIES[0],
+            },
+          ],
+        }));
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = "";
+  }, [activeSection]);
 
   // ─── Totals ─────────────────────────────────────────────────
   const totalHT = lignes.reduce((sum, l) => {
@@ -476,7 +554,7 @@ export default function DevisDocument({ onBack, onSaved, existingDoc }: Props) {
   async function handleGeneratePDF() {
     setGenerating(true);
     try {
-      await generatePDF(SECTIONS, values, lignes);
+      await generatePDF(SECTIONS, values, lignes, sectionPhotos);
       if (docId) {
         await fetch(`/api/documents/${docId}`, {
           method: "PATCH",
@@ -493,6 +571,7 @@ export default function DevisDocument({ onBack, onSaved, existingDoc }: Props) {
   }
 
   const currentSection = showLignes ? null : SECTIONS[activeSection];
+  const totalPhotos = Object.values(sectionPhotos).reduce((sum, arr) => sum + arr.length, 0);
 
   const filledFieldsCount = SECTIONS.reduce((count, section) => {
     return count + section.fields.filter((f) => values[f.id]?.trim()).length;
@@ -522,7 +601,7 @@ export default function DevisDocument({ onBack, onSaved, existingDoc }: Props) {
               {existingDoc ? "Modifier le devis" : "Nouveau devis"}
             </h2>
             <p className="text-xs text-muted-foreground">
-              {filledFieldsCount}/{totalFieldsCount} champs remplis · {progress}%
+              {filledFieldsCount}/{totalFieldsCount} champs remplis · {progress}%{totalPhotos > 0 && ` · ${totalPhotos} photo${totalPhotos > 1 ? "s" : ""}`}
             </p>
           </div>
         </div>
@@ -559,6 +638,7 @@ export default function DevisDocument({ onBack, onSaved, existingDoc }: Props) {
             const sectionTotal = section.fields.length;
             const isComplete = sectionFilled === sectionTotal;
             const isActive = !showLignes && activeSection === idx;
+            const sectionPhotoCount = (sectionPhotos[idx] || []).length;
 
             return (
               <button
@@ -579,7 +659,13 @@ export default function DevisDocument({ onBack, onSaved, existingDoc }: Props) {
                   <div className="h-3.5 w-3.5 rounded-full border border-muted-foreground/30 shrink-0" />
                 )}
                 <span className="truncate">{section.titre}</span>
-                <ChevronRight className="ml-auto h-3.5 w-3.5 shrink-0 opacity-50" />
+                {sectionPhotoCount > 0 ? (
+                  <Badge variant="outline" className="ml-auto text-[10px] gap-1">
+                    <Camera className="h-3 w-3" />{sectionPhotoCount}
+                  </Badge>
+                ) : (
+                  <ChevronRight className="ml-auto h-3.5 w-3.5 shrink-0 opacity-50" />
+                )}
               </button>
             );
           })}
@@ -782,6 +868,63 @@ export default function DevisDocument({ onBack, onSaved, existingDoc }: Props) {
                           )}
                         </div>
                       ))}
+                    </div>
+
+                    {/* Photos de cette étape */}
+                    <div className="border-t pt-4 mt-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-medium flex items-center gap-2">
+                          <Camera className="h-4 w-4" />
+                          Photos — {currentSection.titre}
+                        </h4>
+                        {(sectionPhotos[activeSection] || []).length > 0 && (
+                          <Badge variant="outline" className="text-[10px]">{(sectionPhotos[activeSection] || []).length} photo{(sectionPhotos[activeSection] || []).length > 1 ? "s" : ""}</Badge>
+                        )}
+                      </div>
+                      <div
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/30 p-5 cursor-pointer transition-colors hover:border-primary/40 hover:bg-primary/5"
+                      >
+                        <ImagePlus className="h-6 w-6 text-muted-foreground/50" />
+                        <div className="text-center">
+                          <p className="text-xs font-medium">Ajouter des photos</p>
+                          <p className="text-[10px] text-muted-foreground">JPG, PNG — Cliquez ou glissez-déposez</p>
+                        </div>
+                        <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleAddPhotos} />
+                      </div>
+
+                      {(sectionPhotos[activeSection] || []).length > 0 && (
+                        <div className="space-y-3">
+                          {(sectionPhotos[activeSection] || []).map((photo, i) => (
+                            <div key={photo.id} className="flex gap-3 rounded-lg border p-2.5">
+                              <div className="relative w-28 h-20 shrink-0 rounded-md overflow-hidden bg-muted">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={photo.preview} alt={photo.legende || `Photo ${i + 1}`} className="w-full h-full object-cover" />
+                                <button onClick={() => setSectionPhotos((prev) => ({ ...prev, [activeSection]: (prev[activeSection] || []).filter((p) => p.id !== photo.id) }))} className="absolute top-1 right-1 rounded-full bg-destructive p-1 text-white shadow-sm">
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </div>
+                              <div className="flex-1 space-y-1.5">
+                                <span className="text-xs font-medium text-muted-foreground">Photo {i + 1}</span>
+                                <select
+                                  value={photo.categorie}
+                                  onChange={(e) => setSectionPhotos((prev) => ({ ...prev, [activeSection]: (prev[activeSection] || []).map((p) => p.id === photo.id ? { ...p, categorie: e.target.value } : p) }))}
+                                  className="w-full rounded-md border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                                >
+                                  {PHOTO_CATEGORIES.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
+                                </select>
+                                <input
+                                  type="text"
+                                  value={photo.legende}
+                                  onChange={(e) => setSectionPhotos((prev) => ({ ...prev, [activeSection]: (prev[activeSection] || []).map((p) => p.id === photo.id ? { ...p, legende: e.target.value } : p) }))}
+                                  placeholder="Légende de la photo..."
+                                  className="w-full rounded-md border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
