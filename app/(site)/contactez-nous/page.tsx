@@ -14,8 +14,8 @@ const COORDONNEES = [
   {
     icon: Phone,
     label: "Téléphone",
-    value: "01 XX XX XX XX",
-    href: "tel:+33100000000",
+    value: "+33 1 84 16 11 78",
+    href: "tel:+33184161178",
   },
   {
     icon: MapPin,
