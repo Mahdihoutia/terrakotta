@@ -79,7 +79,7 @@ const organizationSchema = {
   name: SITE_NAME,
   url: SITE_URL,
   description: DEFAULT_DESCRIPTION,
-  telephone: "+33600000000",
+  telephone: "+33184161178",
   email: "contact@terrakotta.fr",
   address: {
     "@type": "PostalAddress",
