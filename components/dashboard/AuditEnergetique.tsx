@@ -306,13 +306,35 @@ async function generatePDF(sections: QuestionSection[], values: FormValues, sect
 export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props) {
   const [activeSection, setActiveSection] = useState(0);
   const [values, setValues] = useState<FormValues>(() => {
-    if (existingDoc?.donnees) { try { return JSON.parse(existingDoc.donnees); } catch { return {}; } }
+    if (existingDoc?.donnees) {
+      try {
+        const parsed = JSON.parse(existingDoc.donnees);
+        delete parsed._sectionPhotos;
+        return parsed;
+      } catch { return {}; }
+    }
     return {};
   });
   const [docId, setDocId] = useState<string | null>(existingDoc?.id ?? null);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [sectionPhotos, setSectionPhotos] = useState<Record<number, PhotoItem[]>>({});
+  const [sectionPhotos, setSectionPhotos] = useState<Record<number, PhotoItem[]>>(() => {
+    if (existingDoc?.donnees) {
+      try {
+        const parsed = JSON.parse(existingDoc.donnees);
+        if (parsed._sectionPhotos) {
+          const restored: Record<number, PhotoItem[]> = {};
+          for (const [key, photos] of Object.entries(parsed._sectionPhotos)) {
+            restored[Number(key)] = (photos as Array<{ id: string; preview: string; legende: string; categorie: string }>).map((p) => ({
+              id: p.id, file: new File([], "restored"), preview: p.preview, legende: p.legende, categorie: p.categorie,
+            }));
+          }
+          return restored;
+        }
+      } catch { /* ignore */ }
+    }
+    return {};
+  });
   const [generating, setGenerating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -323,7 +345,13 @@ export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props
     try {
       const titre = values.ref_audit ? `Audit énergétique — ${values.client_nom || "Sans client"}` : "Audit énergétique (brouillon)";
       const reference = values.ref_audit || `AU-${Date.now().toString(36).toUpperCase()}`;
-      const donnees = JSON.stringify(values);
+      const photosToSave: Record<number, Array<{ id: string; preview: string; legende: string; categorie: string }>> = {};
+      for (const [key, photos] of Object.entries(sectionPhotos)) {
+        if (photos.length > 0) {
+          photosToSave[Number(key)] = photos.map((p) => ({ id: p.id, preview: p.preview, legende: p.legende, categorie: p.categorie }));
+        }
+      }
+      const donnees = JSON.stringify({ ...values, _sectionPhotos: Object.keys(photosToSave).length > 0 ? photosToSave : undefined });
       if (docId) {
         const res = await fetch(`/api/documents/${docId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ titre, clientNom: values.client_nom || null, donnees, statut: "EN_COURS" }) });
         if (res.ok) { setSaved(true); setTimeout(() => setSaved(false), 2000); onSaved?.(); }

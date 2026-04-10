@@ -422,14 +422,39 @@ export default function RapportVisite({ onBack, onSaved, existingDoc }: Props) {
   const [activeSection, setActiveSection] = useState(0);
   const [values, setValues] = useState<FormValues>(() => {
     if (existingDoc?.donnees) {
-      try { return JSON.parse(existingDoc.donnees); } catch { return {}; }
+      try {
+        const parsed = JSON.parse(existingDoc.donnees);
+        // Remove internal keys
+        delete parsed._sectionPhotos;
+        return parsed;
+      } catch { return {}; }
     }
     return {};
   });
   const [docId, setDocId] = useState<string | null>(existingDoc?.id ?? null);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [sectionPhotos, setSectionPhotos] = useState<Record<number, PhotoItem[]>>({});
+  const [sectionPhotos, setSectionPhotos] = useState<Record<number, PhotoItem[]>>(() => {
+    if (existingDoc?.donnees) {
+      try {
+        const parsed = JSON.parse(existingDoc.donnees);
+        if (parsed._sectionPhotos) {
+          const restored: Record<number, PhotoItem[]> = {};
+          for (const [key, photos] of Object.entries(parsed._sectionPhotos)) {
+            restored[Number(key)] = (photos as Array<{ id: string; preview: string; legende: string; categorie: string }>).map((p) => ({
+              id: p.id,
+              file: new File([], "restored"),
+              preview: p.preview,
+              legende: p.legende,
+              categorie: p.categorie,
+            }));
+          }
+          return restored;
+        }
+      } catch { /* ignore */ }
+    }
+    return {};
+  });
   const [generating, setGenerating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -445,7 +470,14 @@ export default function RapportVisite({ onBack, onSaved, existingDoc }: Props) {
         ? `Visite technique — ${values.client_nom || "Sans client"}`
         : "Rapport de visite (brouillon)";
       const reference = values.ref_rapport || `RV-${Date.now().toString(36).toUpperCase()}`;
-      const donnees = JSON.stringify(values);
+      // Serialize photos (sans File object) dans donnees
+      const photosToSave: Record<number, Array<{ id: string; preview: string; legende: string; categorie: string }>> = {};
+      for (const [key, photos] of Object.entries(sectionPhotos)) {
+        if (photos.length > 0) {
+          photosToSave[Number(key)] = photos.map((p) => ({ id: p.id, preview: p.preview, legende: p.legende, categorie: p.categorie }));
+        }
+      }
+      const donnees = JSON.stringify({ ...values, _sectionPhotos: Object.keys(photosToSave).length > 0 ? photosToSave : undefined });
 
       if (docId) {
         // Update existing

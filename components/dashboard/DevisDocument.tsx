@@ -405,10 +405,8 @@ export default function DevisDocument({ onBack, onSaved, existingDoc }: Props) {
     if (existingDoc?.donnees) {
       try {
         const parsed = JSON.parse(existingDoc.donnees);
-        // Separate lignes from form values
-        if (parsed._lignes) {
-          delete parsed._lignes;
-        }
+        delete parsed._lignes;
+        delete parsed._sectionPhotos;
         return parsed;
       } catch { return {}; }
     }
@@ -428,7 +426,23 @@ export default function DevisDocument({ onBack, onSaved, existingDoc }: Props) {
   const [saving, setSaving] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [showLignes, setShowLignes] = useState(false);
-  const [sectionPhotos, setSectionPhotos] = useState<Record<number, PhotoItem[]>>({});
+  const [sectionPhotos, setSectionPhotos] = useState<Record<number, PhotoItem[]>>(() => {
+    if (existingDoc?.donnees) {
+      try {
+        const parsed = JSON.parse(existingDoc.donnees);
+        if (parsed._sectionPhotos) {
+          const restored: Record<number, PhotoItem[]> = {};
+          for (const [key, photos] of Object.entries(parsed._sectionPhotos)) {
+            restored[Number(key)] = (photos as Array<{ id: string; preview: string; legende: string; categorie: string }>).map((p) => ({
+              id: p.id, file: new File([], "restored"), preview: p.preview, legende: p.legende, categorie: p.categorie,
+            }));
+          }
+          return restored;
+        }
+      } catch { /* ignore */ }
+    }
+    return {};
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function createLigne(): LigneDevis {
@@ -505,7 +519,13 @@ export default function DevisDocument({ onBack, onSaved, existingDoc }: Props) {
         ? `Devis — ${values.client_nom || "Sans client"}`
         : "Devis (brouillon)";
       const reference = values.ref_devis || `DV-${Date.now().toString(36).toUpperCase()}`;
-      const donnees = JSON.stringify({ ...values, _lignes: lignes });
+      const photosToSave: Record<number, Array<{ id: string; preview: string; legende: string; categorie: string }>> = {};
+      for (const [key, photos] of Object.entries(sectionPhotos)) {
+        if (photos.length > 0) {
+          photosToSave[Number(key)] = photos.map((p) => ({ id: p.id, preview: p.preview, legende: p.legende, categorie: p.categorie }));
+        }
+      }
+      const donnees = JSON.stringify({ ...values, _lignes: lignes, _sectionPhotos: Object.keys(photosToSave).length > 0 ? photosToSave : undefined });
 
       if (docId) {
         const res = await fetch(`/api/documents/${docId}`, {
