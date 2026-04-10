@@ -16,6 +16,7 @@ export const metadata: Metadata = {
     description:
       "Un projet de rénovation énergétique ? Contactez Terrakotta pour un audit, un accompagnement CEE ou une mission de maîtrise d'œuvre. Réponse rapide.",
     url: "https://terrakotta.fr/contactez-nous",
+    images: [{ url: "https://terrakotta.fr/og-image.jpg", width: 1200, height: 630, alt: "Terrakotta" }],
     type: "website",
   },
   alternates: {

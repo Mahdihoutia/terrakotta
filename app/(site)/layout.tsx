@@ -50,12 +50,21 @@ export const metadata: Metadata = {
     siteName: SITE_NAME,
     title: `${SITE_NAME} — Bureau d'étude en rénovation énergétique`,
     description: DEFAULT_DESCRIPTION,
+    images: [
+      {
+        url: `${SITE_URL}/og-image.jpg`,
+        width: 1200,
+        height: 630,
+        alt: "Terrakotta — Bureau d'étude en rénovation énergétique",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: `${SITE_NAME} — Bureau d'étude en rénovation énergétique`,
     description: DEFAULT_DESCRIPTION,
     creator: "@terrakotta",
+    images: [`${SITE_URL}/og-image.jpg`],
   },
   alternates: {
     canonical: SITE_URL,

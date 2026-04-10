@@ -18,6 +18,7 @@ export const metadata: Metadata = {
     description:
       "Guides, conseils et actualités rénovation énergétique par les experts Terrakotta. CEE, MaPrimeRénov', isolation, chauffage : tout ce qu'il faut savoir.",
     url: "https://terrakotta.fr/laboratoire-idees",
+    images: [{ url: "https://terrakotta.fr/og-image.jpg", width: 1200, height: 630, alt: "Terrakotta" }],
     type: "website",
   },
   alternates: {

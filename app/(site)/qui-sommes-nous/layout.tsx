@@ -18,6 +18,7 @@ export const metadata: Metadata = {
     description:
       "Découvrez Terrakotta : un bureau d'étude indépendant, qualifié RGE, engagé pour la performance énergétique des bâtiments résidentiels et tertiaires.",
     url: "https://terrakotta.fr/qui-sommes-nous",
+    images: [{ url: "https://terrakotta.fr/og-image.jpg", width: 1200, height: 630, alt: "Terrakotta" }],
     type: "website",
   },
   alternates: {

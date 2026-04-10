@@ -18,6 +18,7 @@ export const metadata: Metadata = {
     description:
       "Découvrez les projets de rénovation énergétique réalisés par Terrakotta : résidentiel, tertiaire, collectivités. Résultats et économies d'énergie chiffrés.",
     url: "https://terrakotta.fr/nos-references",
+    images: [{ url: "https://terrakotta.fr/og-image.jpg", width: 1200, height: 630, alt: "Terrakotta" }],
     type: "website",
   },
   alternates: {

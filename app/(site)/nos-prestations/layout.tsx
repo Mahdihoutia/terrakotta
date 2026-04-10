@@ -18,6 +18,7 @@ export const metadata: Metadata = {
     description:
       "Audit énergétique, maîtrise d'œuvre, CEE, MaPrimeRénov' : l'expertise complète de Terrakotta pour votre projet de rénovation énergétique.",
     url: "https://terrakotta.fr/nos-prestations",
+    images: [{ url: "https://terrakotta.fr/og-image.jpg", width: 1200, height: 630, alt: "Terrakotta" }],
     type: "website",
   },
   alternates: {
