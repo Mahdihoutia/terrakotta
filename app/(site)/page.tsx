@@ -103,8 +103,8 @@ const REFERENCES = [
   },
 ];
 
-/** Video background URL — Blue hydrogen / energy particles */
-const VIDEO_BG_URL = "https://assets.mixkit.co/videos/8221/8221-720.mp4";
+/** Video background URL — Engineers inspecting electrical control panel */
+const VIDEO_BG_URL = "https://assets.mixkit.co/videos/23695/23695-720.mp4";
 
 /* ─────────── Page Component ─────────── */
 export default function HomePage() {
