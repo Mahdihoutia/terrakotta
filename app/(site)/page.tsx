@@ -112,15 +112,19 @@ export default function HomePage() {
     <>
       {/* ═══════════ HERO ═══════════ */}
       <section className="relative min-h-screen flex items-end overflow-hidden">
-        {/* Background Image */}
+        {/* Background Video */}
         <div className="absolute inset-0">
-          <Image
-            src="https://images.unsplash.com/photo-1695445301510-459fb368d8af?w=1920&q=85&auto=format&fit=crop"
-            alt="Rangée de climatiseurs sur un toit — rénovation énergétique"
-            fill
-            className="object-cover brightness-75"
-            priority
-          />
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            className="absolute inset-0 w-full h-full object-cover brightness-75"
+            poster="https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=1920&q=80"
+          >
+            <source src={VIDEO_BG_URL} type="video/mp4" />
+          </video>
           {/* Overlay principal — très léger */}
           <div className="absolute inset-0 bg-[#05101F]/20" />
           {/* Gradient bas → haut pour lisibilité du texte */}
@@ -394,19 +398,13 @@ export default function HomePage() {
 
       {/* ═══════════ VIDEO SLOGAN ═══════════ */}
       <section className="relative h-[80vh] md:h-[90vh] flex items-center justify-center overflow-hidden">
-        {/* Vidéo — visible sur tous les devices (autoplay muted + playsInline fonctionne sur mobile) */}
-        {/* eslint-disable-next-line react/no-unknown-property */}
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="auto"
-          className="absolute inset-0 w-full h-full object-cover"
-          poster="https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=1920&q=80"
-        >
-          <source src={VIDEO_BG_URL} type="video/mp4" />
-        </video>
+        {/* Background Image */}
+        <Image
+          src="https://images.unsplash.com/photo-1695445301510-459fb368d8af?w=1920&q=85&auto=format&fit=crop"
+          alt="Rangée de climatiseurs sur un toit — rénovation énergétique"
+          fill
+          className="object-cover"
+        />
         {/* Overlay — adapté mobile/desktop */}
         <div className="absolute inset-0 bg-[#030D1F]/55 md:bg-[#030D1F]/50" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0A1628]/70 via-transparent to-transparent" />
