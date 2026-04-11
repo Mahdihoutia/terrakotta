@@ -1963,6 +1963,7 @@ async function generatePDF(
   const { default: autoTable } = await import("jspdf-autotable");
   const {
     drawCoverPage,
+    drawSommaire,
     drawSectionHeader,
     drawFooter,
     drawPhotoEntry,
@@ -1986,21 +1987,30 @@ async function generatePDF(
 
   const reference = values.ref_projet || "Ref. non definie";
 
-  // ─── Cover page ──────────────────────────────────────────
-  let y = drawCoverPage(
+  // ─── Page 1 : Cover ──────────────────────────────────────
+  drawCoverPage(
     doc,
     "Note de dimensionnement",
     `Fiche CEE : ${fiche.id} — ${fiche.sousTitre}`,
     [
-      ["Reference", reference],
-      ["Beneficiaire", values.client_nom || "—"],
-      ["Adresse du site", values.adresse || "—"],
-      ["Date de visite", values.date_visite || "—"],
-      ["Date de la note", values.date_note || "—"],
-      ["Redacteur", values.redacteur || "—"],
+      ["Reference",     reference],
+      ["Beneficiaire",  values.client_nom  || "—"],
+      ["Adresse",       values.adresse     || "—"],
+      ["Date visite",   values.date_visite || "—"],
+      ["Date de note",  values.date_note   || "—"],
+      ["Redacteur",     values.redacteur   || "—"],
     ],
     reference,
   );
+
+  // ─── Page 2 : Sommaire (filled after content) ────────────
+  doc.addPage();
+  const tocPageNum = doc.getNumberOfPages();
+  const tocEntries: { title: string; page: number }[] = [];
+
+  // ─── Page 3+ : Content ───────────────────────────────────
+  doc.addPage();
+  let y: number = PDF_LAYOUT.topMargin;
 
   // ─── Fiche description ────────────────────────────────────
   doc.setFont("helvetica", "italic");
@@ -2023,6 +2033,7 @@ async function generatePDF(
     if (tableData.length === 0 && !(sectionPhotos[sIdx]?.length > 0)) continue;
 
     checkPage(30);
+    tocEntries.push({ title: section.titre, page: doc.getNumberOfPages() - 1 });
     y = drawSectionHeader(doc, section.titre, y, section.description);
 
     if (tableData.length > 0) {
@@ -2043,11 +2054,16 @@ async function generatePDF(
     y += PDF_LAYOUT.sectionGap - 6;
   }
 
-  // ─── Footers ──────────────────────────────────────────────
+  // ─── Fill sommaire page ───────────────────────────────────
+  doc.setPage(tocPageNum);
+  drawSommaire(doc, tocEntries, `${fiche.id} — Note de dimensionnement`, reference);
+
+  // ─── Footers (skip page 1 = dark cover) ──────────────────
   const totalPages = doc.getNumberOfPages();
-  for (let i = 1; i <= totalPages; i++) {
+  const contentPages = totalPages - 1;
+  for (let i = 2; i <= totalPages; i++) {
     doc.setPage(i);
-    drawFooter(doc, `${fiche.id} — Note de dimensionnement`, reference, i, totalPages);
+    drawFooter(doc, `${fiche.id} — Note de dimensionnement`, reference, i - 1, contentPages);
   }
 
   // ─── Download ─────────────────────────────────────────────

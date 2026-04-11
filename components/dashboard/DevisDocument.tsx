@@ -203,6 +203,7 @@ async function generatePDF(
   const { default: autoTable } = await import("jspdf-autotable");
   const {
     drawCoverPage,
+    drawSommaire,
     drawSectionHeader,
     drawFooter,
     drawSignatureBlock,
@@ -229,24 +230,34 @@ async function generatePDF(
 
   const reference = values.ref_devis || "Ref. non definie";
 
-  // ─── Cover page ──────────────────────────────────────────
-  let y = drawCoverPage(
+  // ─── Page 1 : Cover ──────────────────────────────────────
+  drawCoverPage(
     doc,
     "Devis",
     values.objet || "Travaux de renovation energetique",
     [
-      ["Reference", reference],
-      ["Client", values.client_nom || "—"],
-      ["Adresse chantier", values.adresse_chantier || values.client_adresse || "—"],
-      ["Date d'emission", values.date_emission || "—"],
-      ["Date de validite", values.date_validite || "—"],
-      ["Delai d'execution", values.delai_execution || "—"],
+      ["Reference",       reference],
+      ["Client",          values.client_nom      || "—"],
+      ["Adresse chantier",values.adresse_chantier || values.client_adresse || "—"],
+      ["Date d'emission", values.date_emission    || "—"],
+      ["Date validite",   values.date_validite    || "—"],
+      ["Delai execution", values.delai_execution  || "—"],
     ],
     reference,
   );
 
+  // ─── Page 2 : Sommaire (filled after content) ────────────
+  doc.addPage();
+  const tocPageNum = doc.getNumberOfPages();
+  const tocEntries: { title: string; page: number }[] = [];
+
+  // ─── Page 3+ : Content ───────────────────────────────────
+  doc.addPage();
+  let y: number = PDF_LAYOUT.topMargin;
+
   // ─── Ligne items table ────────────────────────────────────
   checkPage(40);
+  tocEntries.push({ title: "Designation des travaux", page: doc.getNumberOfPages() - 1 });
   y = drawSectionHeader(doc, "Designation des travaux", y);
 
   const lignesData = lignes.map((l) => {
@@ -312,6 +323,7 @@ async function generatePDF(
 
   if (aidesData.length > 0) {
     checkPage(30);
+    tocEntries.push({ title: "Aides financieres mobilisables", page: doc.getNumberOfPages() - 1 });
     y = drawSectionHeader(doc, "Aides financieres mobilisables", y);
     autoTable(doc, getDataTableConfig(y, aidesData, contentWidth));
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -345,6 +357,7 @@ async function generatePDF(
     if (tableData.length === 0 && !(sectionPhotos[sIdx]?.length > 0)) continue;
 
     checkPage(30);
+    tocEntries.push({ title: section.titre, page: doc.getNumberOfPages() - 1 });
     y = drawSectionHeader(doc, section.titre, y);
 
     if (tableData.length > 0) {
@@ -386,11 +399,16 @@ async function generatePDF(
   checkPage(50);
   drawSignatureBlock(doc, y);
 
-  // ─── Footers ──────────────────────────────────────────────
+  // ─── Fill sommaire page ───────────────────────────────────
+  doc.setPage(tocPageNum);
+  drawSommaire(doc, tocEntries, "Devis", reference);
+
+  // ─── Footers (skip page 1 = dark cover) ──────────────────
   const totalPages = doc.getNumberOfPages();
-  for (let i = 1; i <= totalPages; i++) {
+  const contentPages = totalPages - 1;
+  for (let i = 2; i <= totalPages; i++) {
     doc.setPage(i);
-    drawFooter(doc, "Devis", reference, i, totalPages);
+    drawFooter(doc, "Devis", reference, i - 1, contentPages);
   }
 
   const filename = `Devis_${values.ref_devis || "DRAFT"}_${new Date().toISOString().slice(0, 10)}.pdf`;

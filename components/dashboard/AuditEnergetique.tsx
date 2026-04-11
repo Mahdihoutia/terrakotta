@@ -227,6 +227,7 @@ async function generatePDF(sections: QuestionSection[], values: FormValues, sect
   const { default: autoTable } = await import("jspdf-autotable");
   const {
     drawCoverPage,
+    drawSommaire,
     drawSectionHeader,
     drawFooter,
     drawPhotoEntry,
@@ -246,21 +247,30 @@ async function generatePDF(sections: QuestionSection[], values: FormValues, sect
 
   const reference = values.ref_audit || "Ref. non definie";
 
-  // ─── Cover page ──────────────────────────────────────────
-  let y = drawCoverPage(
+  // ─── Page 1 : Cover ──────────────────────────────────────
+  drawCoverPage(
     doc,
     "Audit energetique",
     "Diagnostic complet et scenarios de renovation",
     [
-      ["Reference", reference],
-      ["Beneficiaire", values.client_nom || "—"],
-      ["Adresse", values.adresse || "—"],
-      ["Date de visite", values.date_visite || "—"],
-      ["Auditeur", values.redacteur || "—"],
-      ["DPE actuel", values.dpe_actuel || "—"],
+      ["Reference",    reference],
+      ["Beneficiaire", values.client_nom  || "—"],
+      ["Adresse",      values.adresse     || "—"],
+      ["Date visite",  values.date_visite || "—"],
+      ["Auditeur",     values.redacteur   || "—"],
+      ["DPE actuel",   values.dpe_actuel  || "—"],
     ],
     reference,
   );
+
+  // ─── Page 2 : Sommaire (filled after content) ────────────
+  doc.addPage();
+  const tocPageNum = doc.getNumberOfPages();
+
+  // ─── Page 3+ : Content ───────────────────────────────────
+  doc.addPage();
+  let y: number = PDF_LAYOUT.topMargin;
+  const tocEntries: { title: string; page: number }[] = [];
 
   // ─── Sections ─────────────────────────────────────────────
   for (let sIdx = 0; sIdx < sections.length; sIdx++) {
@@ -275,6 +285,7 @@ async function generatePDF(sections: QuestionSection[], values: FormValues, sect
     if (tableData.length === 0 && !(sectionPhotos[sIdx]?.length > 0)) continue;
 
     checkPage(30);
+    tocEntries.push({ title: section.titre, page: doc.getNumberOfPages() - 1 });
     y = drawSectionHeader(doc, section.titre, y, section.description);
 
     if (tableData.length > 0) {
@@ -295,9 +306,17 @@ async function generatePDF(sections: QuestionSection[], values: FormValues, sect
     y += PDF_LAYOUT.sectionGap - 6;
   }
 
-  // ─── Footers ──────────────────────────────────────────────
+  // ─── Fill sommaire page ───────────────────────────────────
+  doc.setPage(tocPageNum);
+  drawSommaire(doc, tocEntries, "Audit energetique", reference);
+
+  // ─── Footers (skip page 1 = dark cover) ──────────────────
   const totalPages = doc.getNumberOfPages();
-  for (let i = 1; i <= totalPages; i++) { doc.setPage(i); drawFooter(doc, "Audit energetique", reference, i, totalPages); }
+  const contentPages = totalPages - 1;
+  for (let i = 2; i <= totalPages; i++) {
+    doc.setPage(i);
+    drawFooter(doc, "Audit energetique", reference, i - 1, contentPages);
+  }
   doc.save(`Audit_Energetique_${values.ref_audit || "DRAFT"}_${new Date().toISOString().slice(0, 10)}.pdf`);
 }
 

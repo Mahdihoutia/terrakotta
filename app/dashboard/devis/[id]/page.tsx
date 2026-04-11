@@ -90,6 +90,7 @@ async function generateDevisPDF(devis: DevisDetail) {
   const { default: autoTable } = await import("jspdf-autotable");
   const {
     drawCoverPage,
+    drawSommaire,
     drawSectionHeader,
     drawFooter,
     drawSignatureBlock,
@@ -106,8 +107,6 @@ async function generateDevisPDF(devis: DevisDetail) {
   const margin = PDF_LAYOUT.margin;
   const contentWidth = pageWidth - margin * 2;
 
-  let y: number;
-
   function checkPage(needed: number) {
     if (needsPageBreak(y, needed)) {
       doc.addPage();
@@ -119,22 +118,32 @@ async function generateDevisPDF(devis: DevisDetail) {
     ? `${devis.client.prenom} ${devis.client.nom}`
     : devis.client.nom;
 
-  // ─── Cover page ──────────────────────────────────────────
+  // ─── Page 1 : Cover ──────────────────────────────────────
   const infoRows: [string, string][] = [
-    ["Reference", devis.numero],
-    ["Client", clientName],
-    ["Objet", devis.objet || ""],
+    ["Reference",       devis.numero],
+    ["Client",          clientName],
+    ["Objet",           devis.objet || ""],
     ["Date d'emission", formatDate(devis.dateEmis)],
-    ["Date de validite", formatDate(devis.dateValide)],
+    ["Date validite",   formatDate(devis.dateValide)],
   ];
   if (devis.projet) {
     infoRows.push(["Projet", devis.projet.titre]);
   }
 
-  y = drawCoverPage(doc, "Devis", devis.objet || "Devis", infoRows, devis.numero);
+  drawCoverPage(doc, "Devis", devis.objet || "Devis", infoRows, devis.numero);
+
+  // ─── Page 2 : Sommaire (filled after content) ────────────
+  doc.addPage();
+  const tocPageNum = doc.getNumberOfPages();
+  const tocEntries: { title: string; page: number }[] = [];
+
+  // ─── Page 3+ : Content ───────────────────────────────────
+  doc.addPage();
+  let y: number = PDF_LAYOUT.topMargin;
 
   // ─── Client info ─────────────────────────────────────────
   checkPage(30);
+  tocEntries.push({ title: "Informations client", page: doc.getNumberOfPages() - 1 });
   y = drawSectionHeader(doc, "Informations client", y);
 
   const clientData: string[][] = [];
@@ -150,6 +159,7 @@ async function generateDevisPDF(devis: DevisDetail) {
 
   // ─── Ligne items table ────────────────────────────────────
   checkPage(40);
+  tocEntries.push({ title: "Designation des travaux", page: doc.getNumberOfPages() - 1 });
   y = drawSectionHeader(doc, "Designation des travaux", y);
 
   const lignesData = devis.lignes.map((l) => {
@@ -194,11 +204,16 @@ async function generateDevisPDF(devis: DevisDetail) {
   checkPage(50);
   drawSignatureBlock(doc, y);
 
-  // ─── Footers ──────────────────────────────────────────────
+  // ─── Fill sommaire page ───────────────────────────────────
+  doc.setPage(tocPageNum);
+  drawSommaire(doc, tocEntries, "Devis", devis.numero);
+
+  // ─── Footers (skip page 1 = dark cover) ──────────────────
   const totalPages = doc.getNumberOfPages();
-  for (let i = 1; i <= totalPages; i++) {
+  const contentPages = totalPages - 1;
+  for (let i = 2; i <= totalPages; i++) {
     doc.setPage(i);
-    drawFooter(doc, "Devis", devis.numero, i, totalPages);
+    drawFooter(doc, "Devis", devis.numero, i - 1, contentPages);
   }
 
   const filename = `Devis_${devis.numero}_${new Date().toISOString().slice(0, 10)}.pdf`;

@@ -334,6 +334,7 @@ async function generatePDF(
   const { default: autoTable } = await import("jspdf-autotable");
   const {
     drawCoverPage,
+    drawSommaire,
     drawSectionHeader,
     drawFooter,
     drawPhotoEntry,
@@ -356,21 +357,30 @@ async function generatePDF(
 
   const reference = values.ref_rapport || "Ref. non definie";
 
-  // ─── Cover page ──────────────────────────────────────────
-  let y = drawCoverPage(
+  // ─── Page 1 : Cover ──────────────────────────────────────
+  drawCoverPage(
     doc,
     "Rapport de visite technique",
     "Constat de l'existant et preconisations de travaux",
     [
-      ["Reference", reference],
-      ["Beneficiaire", values.client_nom || "—"],
-      ["Adresse du bien", values.adresse || "—"],
-      ["Date de visite", values.date_visite || "—"],
-      ["Redacteur", values.redacteur || "—"],
-      ["Telephone", values.client_telephone || "—"],
+      ["Reference",    reference],
+      ["Beneficiaire", values.client_nom       || "—"],
+      ["Adresse",      values.adresse          || "—"],
+      ["Date visite",  values.date_visite      || "—"],
+      ["Redacteur",    values.redacteur        || "—"],
+      ["Telephone",    values.client_telephone || "—"],
     ],
     reference,
   );
+
+  // ─── Page 2 : Sommaire (filled after content) ────────────
+  doc.addPage();
+  const tocPageNum = doc.getNumberOfPages();
+
+  // ─── Page 3+ : Content ───────────────────────────────────
+  doc.addPage();
+  let y: number = PDF_LAYOUT.topMargin;
+  const tocEntries: { title: string; page: number }[] = [];
 
   // ─── Sections ─────────────────────────────────────────────
   for (let sIdx = 0; sIdx < sections.length; sIdx++) {
@@ -385,6 +395,7 @@ async function generatePDF(
     if (tableData.length === 0 && !(sectionPhotos[sIdx]?.length > 0)) continue;
 
     checkPage(30);
+    tocEntries.push({ title: section.titre, page: doc.getNumberOfPages() - 1 });
     y = drawSectionHeader(doc, section.titre, y, section.description);
 
     if (tableData.length > 0) {
@@ -405,11 +416,16 @@ async function generatePDF(
     y += PDF_LAYOUT.sectionGap - 6;
   }
 
-  // ─── Footers ──────────────────────────────────────────────
+  // ─── Fill sommaire page ───────────────────────────────────
+  doc.setPage(tocPageNum);
+  drawSommaire(doc, tocEntries, "Rapport de visite technique", reference);
+
+  // ─── Footers (skip page 1 = dark cover) ──────────────────
   const totalPages = doc.getNumberOfPages();
-  for (let i = 1; i <= totalPages; i++) {
+  const contentPages = totalPages - 1;
+  for (let i = 2; i <= totalPages; i++) {
     doc.setPage(i);
-    drawFooter(doc, "Rapport de visite technique", reference, i, totalPages);
+    drawFooter(doc, "Rapport de visite technique", reference, i - 1, contentPages);
   }
 
   const filename = `Rapport_Visite_${values.ref_rapport || "DRAFT"}_${new Date().toISOString().slice(0, 10)}.pdf`;
