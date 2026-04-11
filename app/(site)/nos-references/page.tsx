@@ -128,7 +128,7 @@ const PROJECTS: Project[] = [
     year: "2023",
     result: "– 38% de consommation frigorifique",
     scope: "Audit des groupes froids, remplacement compresseurs haute efficacité, passage au R-454C, récupération de chaleur sur condenseurs, pilotage centralisé.",
-    video: "https://v.ftcdn.net/02/79/48/71/700_F_279487101_2qqCK1a4jtSuGo2Kup4H10qhzKmzSUqK_ST.mp4",
+    video: "https://assets.mixkit.co/videos/4380/4380-720.mp4",
   },
   {
     title: "Récupération de chaleur — Usine Roquette",
