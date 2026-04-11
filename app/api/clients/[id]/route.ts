@@ -13,6 +13,9 @@ function serializeClient(c: {
   email: string | null;
   telephone: string | null;
   adresse: string | null;
+  ville: string | null;
+  codePostal: string | null;
+  departement: string | null;
   raisonSociale: string | null;
   siret: string | null;
   fonction: string | null;
@@ -33,6 +36,9 @@ function serializeClient(c: {
     email: c.email,
     telephone: c.telephone,
     adresse: c.adresse,
+    ville: c.ville,
+    codePostal: c.codePostal,
+    departement: c.departement,
     raisonSociale: c.raisonSociale,
     siret: c.siret,
     fonction: c.fonction,
@@ -74,6 +80,9 @@ const updateClientSchema = z.object({
   email: z.string().email().nullable().optional().or(z.literal("")),
   telephone: z.string().nullable().optional(),
   adresse: z.string().nullable().optional(),
+  ville: z.string().nullable().optional(),
+  codePostal: z.string().nullable().optional(),
+  departement: z.string().nullable().optional(),
   raisonSociale: z.string().nullable().optional(),
   siret: z.string().nullable().optional(),
   fonction: z.string().nullable().optional(),

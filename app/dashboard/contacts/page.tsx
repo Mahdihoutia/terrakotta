@@ -25,6 +25,7 @@ import {
   X,
   Loader2,
   Trash2,
+  MapPin,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useContacts } from "@/lib/hooks/use-contacts";
@@ -66,6 +67,9 @@ const EMPTY_FORM = {
   email: "",
   telephone: "",
   adresse: "",
+  ville: "",
+  codePostal: "",
+  departement: "",
   raisonSociale: "",
   siret: "",
   fonction: "",
@@ -98,6 +102,7 @@ export default function ContactsPage() {
       c.telephone?.toLowerCase().includes(q) ||
       c.raisonSociale?.toLowerCase().includes(q) ||
       c.adresse?.toLowerCase().includes(q) ||
+      c.ville?.toLowerCase().includes(q) ||
       c.fonction?.toLowerCase().includes(q);
     return matchType && matchStatut && matchSearch;
   });
@@ -111,6 +116,9 @@ export default function ContactsPage() {
       email: form.email || null,
       telephone: form.telephone || null,
       adresse: form.adresse || null,
+      ville: form.ville || null,
+      codePostal: form.codePostal || null,
+      departement: form.departement || null,
       raisonSociale: form.raisonSociale || null,
       siret: form.siret || null,
       fonction: form.fonction || null,
@@ -252,10 +260,25 @@ export default function ContactsPage() {
                   <input type="number" value={form.budgetEstime} onChange={(e) => setForm({ ...form, budgetEstime: e.target.value })}
                     placeholder="Ex: 25000" className="w-full rounded-lg border border-tk-border bg-tk-surface px-3 py-2 text-sm text-tk-text" />
                 </div>
-                <div className="space-y-1.5 sm:col-span-2 lg:col-span-2">
+                <div className="space-y-1.5 sm:col-span-2 lg:col-span-3">
                   <label className="text-xs font-medium text-tk-text-muted">Adresse</label>
                   <input type="text" value={form.adresse} onChange={(e) => setForm({ ...form, adresse: e.target.value })}
-                    placeholder="Adresse complète" className="w-full rounded-lg border border-tk-border bg-tk-surface px-3 py-2 text-sm text-tk-text" />
+                    placeholder="123 rue de la Paix" className="w-full rounded-lg border border-tk-border bg-tk-surface px-3 py-2 text-sm text-tk-text" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-tk-text-muted">Ville</label>
+                  <input type="text" value={form.ville} onChange={(e) => setForm({ ...form, ville: e.target.value })}
+                    placeholder="Paris" className="w-full rounded-lg border border-tk-border bg-tk-surface px-3 py-2 text-sm text-tk-text" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-tk-text-muted">Code postal</label>
+                  <input type="text" value={form.codePostal} onChange={(e) => setForm({ ...form, codePostal: e.target.value })}
+                    placeholder="75001" className="w-full rounded-lg border border-tk-border bg-tk-surface px-3 py-2 text-sm text-tk-text" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-tk-text-muted">Département</label>
+                  <input type="text" value={form.departement} onChange={(e) => setForm({ ...form, departement: e.target.value })}
+                    placeholder="75" className="w-full rounded-lg border border-tk-border bg-tk-surface px-3 py-2 text-sm text-tk-text" />
                 </div>
                 <div className="space-y-1.5 sm:col-span-2 lg:col-span-3">
                   <label className="text-xs font-medium text-tk-text-muted">Notes</label>
@@ -347,6 +370,7 @@ export default function ContactsPage() {
               <TableHead>Contact</TableHead>
               <TableHead>Coordonnées</TableHead>
               <TableHead>Type</TableHead>
+              <TableHead>Adresse</TableHead>
               <TableHead>Source</TableHead>
               <TableHead>Budget</TableHead>
               <TableHead>Statut</TableHead>
@@ -383,6 +407,18 @@ export default function ContactsPage() {
                   <Badge className={cn("text-xs", TYPE_STYLES[contact.type])}>
                     {TYPE_LABELS[contact.type]}
                   </Badge>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1 text-xs text-tk-text-muted">
+                    <MapPin className="h-3 w-3 shrink-0" />
+                    <span className="truncate max-w-[180px]">
+                      {contact.adresse
+                        ? `${contact.adresse}${contact.ville ? `, ${contact.ville}` : ""}${contact.codePostal ? ` ${contact.codePostal}` : ""}`
+                        : contact.ville
+                          ? `${contact.ville}${contact.departement ? ` (${contact.departement})` : ""}`
+                          : "—"}
+                    </span>
+                  </div>
                 </TableCell>
                 <TableCell className="text-sm text-tk-text-muted">
                   {SOURCE_LABELS[contact.source]}

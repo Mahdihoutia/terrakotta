@@ -10,6 +10,9 @@ export interface Contact {
   email: string | null;
   telephone: string | null;
   adresse: string | null;
+  ville: string | null;
+  codePostal: string | null;
+  departement: string | null;
   raisonSociale: string | null;
   siret: string | null;
   fonction: string | null;

@@ -32,6 +32,9 @@ model Client {
   email         String?
   telephone     String?
   adresse       String?
+  ville         String?
+  codePostal    String?     @map("code_postal")
+  departement   String?
   raisonSociale String?     @map("raison_sociale")
   siret         String?
   fonction      String?

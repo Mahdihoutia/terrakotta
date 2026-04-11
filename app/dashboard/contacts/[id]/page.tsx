@@ -34,6 +34,9 @@ interface ContactDetail {
   email: string | null;
   telephone: string | null;
   adresse: string | null;
+  ville: string | null;
+  codePostal: string | null;
+  departement: string | null;
   raisonSociale: string | null;
   siret: string | null;
   fonction: string | null;
@@ -98,6 +101,9 @@ export default function ContactDetailPage({ params }: Props) {
     email: "",
     telephone: "",
     adresse: "",
+    ville: "",
+    codePostal: "",
+    departement: "",
     raisonSociale: "",
     siret: "",
     fonction: "",
@@ -129,6 +135,9 @@ export default function ContactDetailPage({ params }: Props) {
       email: data.email ?? "",
       telephone: data.telephone ?? "",
       adresse: data.adresse ?? "",
+      ville: data.ville ?? "",
+      codePostal: data.codePostal ?? "",
+      departement: data.departement ?? "",
       raisonSociale: data.raisonSociale ?? "",
       siret: data.siret ?? "",
       fonction: data.fonction ?? "",
@@ -153,6 +162,9 @@ export default function ContactDetailPage({ params }: Props) {
           email: form.email || null,
           telephone: form.telephone || null,
           adresse: form.adresse || null,
+          ville: form.ville || null,
+          codePostal: form.codePostal || null,
+          departement: form.departement || null,
           raisonSociale: form.raisonSociale || null,
           siret: form.siret || null,
           fonction: form.fonction || null,
@@ -369,10 +381,25 @@ export default function ContactDetailPage({ params }: Props) {
               <input type="number" value={form.budgetEstime} onChange={(e) => setForm({ ...form, budgetEstime: e.target.value })}
                 placeholder="Ex: 25000" className={inputClass} />
             </div>
-            <div className="sm:col-span-2">
+            <div className="sm:col-span-2 lg:col-span-3">
               <label className={labelClass}>Adresse</label>
               <input type="text" value={form.adresse} onChange={(e) => setForm({ ...form, adresse: e.target.value })}
-                placeholder="Adresse complète" className={inputClass} />
+                placeholder="123 rue de la Paix" className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>Ville</label>
+              <input type="text" value={form.ville} onChange={(e) => setForm({ ...form, ville: e.target.value })}
+                placeholder="Paris" className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>Code postal</label>
+              <input type="text" value={form.codePostal} onChange={(e) => setForm({ ...form, codePostal: e.target.value })}
+                placeholder="75001" className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>Département</label>
+              <input type="text" value={form.departement} onChange={(e) => setForm({ ...form, departement: e.target.value })}
+                placeholder="75" className={inputClass} />
             </div>
             <div className="sm:col-span-2 lg:col-span-3">
               <label className={labelClass}>Notes</label>
@@ -393,11 +420,28 @@ export default function ContactDetailPage({ params }: Props) {
                 <InfoRow icon={<User className="h-4 w-4" />} label="Prénom" value={contact.prenom ?? "\u2014"} />
                 <InfoRow icon={<Mail className="h-4 w-4" />} label="Email" value={contact.email ?? "\u2014"} />
                 <InfoRow icon={<Phone className="h-4 w-4" />} label="Téléphone" value={contact.telephone ?? "\u2014"} />
-                <div className="sm:col-span-2">
-                  <InfoRow icon={<MapPin className="h-4 w-4" />} label="Adresse" value={contact.adresse ?? "\u2014"} />
-                </div>
               </div>
             </div>
+
+            {/* Adresse */}
+            {(contact.adresse || contact.ville || contact.codePostal || contact.departement) && (
+              <div className="rounded-2xl border bg-card p-6">
+                <h2 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                  Adresse
+                </h2>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {contact.adresse && (
+                    <div className="sm:col-span-2">
+                      <InfoRow icon={<MapPin className="h-4 w-4" />} label="Adresse" value={contact.adresse} />
+                    </div>
+                  )}
+                  <InfoRow icon={<Building2 className="h-4 w-4" />} label="Ville" value={contact.ville ?? "\u2014"} />
+                  <InfoRow icon={<Building2 className="h-4 w-4" />} label="Code postal" value={contact.codePostal ?? "\u2014"} />
+                  <InfoRow icon={<MapPin className="h-4 w-4" />} label="Département" value={contact.departement ?? "\u2014"} />
+                </div>
+              </div>
+            )}
 
             <div className="rounded-2xl border bg-card p-6">
               <h2 className="text-sm font-semibold text-foreground mb-4">Raison Sociale</h2>
