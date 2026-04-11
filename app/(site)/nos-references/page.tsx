@@ -16,6 +16,18 @@ const fadeUp = {
 
 type ProjectType = "Tous" | "Résidentiel" | "Tertiaire" | "Collectivité" | "Industrie";
 
+interface Project {
+  title: string;
+  type: ProjectType;
+  category: string;
+  location: string;
+  year: string;
+  result: string;
+  scope: string;
+  image?: string;
+  video?: string;
+}
+
 const FILTERS: ProjectType[] = [
   "Tous",
   "Résidentiel",
@@ -24,7 +36,7 @@ const FILTERS: ProjectType[] = [
   "Industrie",
 ];
 
-const PROJECTS = [
+const PROJECTS: Project[] = [
   {
     title: "Résidence Les Oliviers",
     type: "Résidentiel" as const,
@@ -116,7 +128,7 @@ const PROJECTS = [
     year: "2023",
     result: "– 38% de consommation frigorifique",
     scope: "Audit des groupes froids, remplacement compresseurs haute efficacité, passage au R-454C, récupération de chaleur sur condenseurs, pilotage centralisé.",
-    image: "https://images.unsplash.com/photo-1757573538081-c469f75cdd7a?w=900&q=80",
+    video: "https://v.ftcdn.net/02/79/48/71/700_F_279487101_2qqCK1a4jtSuGo2Kup4H10qhzKmzSUqK_ST.mp4",
   },
   {
     title: "Récupération de chaleur — Usine Roquette",
@@ -213,14 +225,27 @@ export default function NosReferencesPage() {
                 animate="visible"
                 className="group border border-[#DBEAFE] bg-white hover:border-[#60A5FA]/40 transition-colors duration-500"
               >
-                  {/* Image */}
+                  {/* Media — image or video */}
                   <div className="relative aspect-[16/10] overflow-hidden">
-                    <Image
-                      src={project.image}
-                      alt={project.title}
-                      fill
-                      className="object-cover transition-transform duration-700 group-hover:scale-105"
-                    />
+                    {project.video ? (
+                      <video
+                        autoPlay
+                        muted
+                        loop
+                        playsInline
+                        preload="auto"
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      >
+                        <source src={project.video} type="video/mp4" />
+                      </video>
+                    ) : (
+                      <Image
+                        src={project.image!}
+                        alt={project.title}
+                        fill
+                        className="object-cover transition-transform duration-700 group-hover:scale-105"
+                      />
+                    )}
                     <div className="absolute top-4 left-4">
                       <span className="inline-block bg-[#0D1B35]/80 backdrop-blur-sm px-3 py-1.5 text-[0.65rem] uppercase tracking-[0.15em] text-[#F5FAFF]">
                         {project.type}
