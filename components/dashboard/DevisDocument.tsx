@@ -203,7 +203,6 @@ async function generatePDF(
   const { default: autoTable } = await import("jspdf-autotable");
   const {
     drawCoverPage,
-    drawSommaire,
     drawSectionHeader,
     drawFooter,
     drawSignatureBlock,
@@ -246,18 +245,12 @@ async function generatePDF(
     reference,
   );
 
-  // ─── Page 2 : Sommaire (filled after content) ────────────
-  doc.addPage();
-  const tocPageNum = doc.getNumberOfPages();
-  const tocEntries: { title: string; page: number }[] = [];
-
-  // ─── Page 3+ : Content ───────────────────────────────────
+  // ─── Page 2+ : Content ───────────────────────────────────
   doc.addPage();
   let y: number = PDF_LAYOUT.topMargin;
 
   // ─── Ligne items table ────────────────────────────────────
   checkPage(40);
-  tocEntries.push({ title: "Designation des travaux", page: doc.getNumberOfPages() - 1 });
   y = drawSectionHeader(doc, "Designation des travaux", y);
 
   const lignesData = lignes.map((l) => {
@@ -323,7 +316,6 @@ async function generatePDF(
 
   if (aidesData.length > 0) {
     checkPage(30);
-    tocEntries.push({ title: "Aides financieres mobilisables", page: doc.getNumberOfPages() - 1 });
     y = drawSectionHeader(doc, "Aides financieres mobilisables", y);
     autoTable(doc, getDataTableConfig(y, aidesData, contentWidth));
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -357,7 +349,6 @@ async function generatePDF(
     if (tableData.length === 0 && !(sectionPhotos[sIdx]?.length > 0)) continue;
 
     checkPage(30);
-    tocEntries.push({ title: section.titre, page: doc.getNumberOfPages() - 1 });
     y = drawSectionHeader(doc, section.titre, y);
 
     if (tableData.length > 0) {
@@ -398,10 +389,6 @@ async function generatePDF(
   // ─── Signature ────────────────────────────────────────────
   checkPage(50);
   drawSignatureBlock(doc, y);
-
-  // ─── Fill sommaire page ───────────────────────────────────
-  doc.setPage(tocPageNum);
-  drawSommaire(doc, tocEntries, "Devis", reference);
 
   // ─── Footers (skip page 1 = dark cover) ──────────────────
   const totalPages = doc.getNumberOfPages();
