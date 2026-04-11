@@ -113,13 +113,6 @@ export function drawCoverPage(
   doc.setFillColor(...PDF_COLORS.navy);
   doc.rect(0, 0, pw, ph, "F");
 
-  // ── Grid overlay ────────────────────────────────────────────
-  doc.setDrawColor(...PDF_COLORS.navyLight);
-  doc.setLineWidth(0.25);
-  const G = 14;
-  for (let gx = 0; gx <= pw; gx += G) doc.line(gx, 0, gx, ph);
-  for (let gy = 0; gy <= ph; gy += G) doc.line(0, gy, pw, gy);
-
   // ── Lightning bolt (large, centered upper area) ──────────────
   const bW = 24, bH = 39, bCx = pw / 2, bCy = 62;
   // soft glow: slightly larger bolt in mid-blue
