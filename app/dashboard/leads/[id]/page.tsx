@@ -30,6 +30,9 @@ const SOURCE_LABELS: Record<LeadSource, string> = {
   RECOMMANDATION: "Recommandation",
   RESEAU: "Réseau",
   DEMARCHAGE: "Démarchage",
+  PAGES_JAUNES: "Pages Jaunes",
+  SOCIETE_COM: "societe.com",
+  WEB_SCRAPING: "Web / API",
   AUTRE: "Autre",
 };
 
@@ -483,6 +486,9 @@ export default function LeadDetailPage({ params }: Props) {
                 <option value="RECOMMANDATION">Recommandation</option>
                 <option value="RESEAU">Réseau</option>
                 <option value="DEMARCHAGE">Démarchage</option>
+                <option value="PAGES_JAUNES">Pages Jaunes</option>
+                <option value="SOCIETE_COM">societe.com</option>
+                <option value="WEB_SCRAPING">Web / API</option>
                 <option value="AUTRE">Autre</option>
               </select>
             </div>

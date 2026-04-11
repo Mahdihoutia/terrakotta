@@ -51,22 +51,31 @@ model Client {
 // ─── Lead (prospects) ───────────────────────────────────────────
 
 model Lead {
-  id            String     @id @default(cuid())
-  nom           String
-  prenom        String?
-  email         String
-  telephone     String?
-  raisonSociale String?    @map("raison_sociale")
-  siret         String?
-  fonction      String?
-  type          ClientType @default(PARTICULIER)
-  source        LeadSource @default(SITE_WEB)
-  statut        LeadStatus @default(NOUVEAU)
-  notes         String?
-  budgetEstime  Decimal?   @map("budget_estime")
-  dateCreation  DateTime   @default(now()) @map("date_creation")
-  dateMiseAJour DateTime   @updatedAt @map("date_mise_a_jour")
-  evenements    Evenement[]
+  id              String     @id @default(cuid())
+  nom             String
+  prenom          String?
+  email           String
+  telephone       String?
+  raisonSociale   String?    @map("raison_sociale")
+  siret           String?
+  fonction        String?
+  type            ClientType @default(PARTICULIER)
+  source          LeadSource @default(SITE_WEB)
+  statut          LeadStatus @default(NOUVEAU)
+  notes           String?
+  budgetEstime    Decimal?   @map("budget_estime")
+  // Prospection fields
+  score           Int?       @default(0) // 0-5 étoiles
+  roleCible       String?    @map("role_cible") // Gestionnaire Technique, Maire, etc.
+  adresse         String?
+  ville           String?
+  codePostal      String?    @map("code_postal")
+  departement     String?
+  surfaceBatiment Int?       @map("surface_batiment") // en m²
+  sourceUrl       String?    @map("source_url") // URL de la source scraping
+  dateCreation    DateTime   @default(now()) @map("date_creation")
+  dateMiseAJour   DateTime   @updatedAt @map("date_mise_a_jour")
+  evenements      Evenement[]
 
   @@map("leads")
 }
@@ -254,6 +263,9 @@ enum LeadSource {
   RECOMMANDATION
   RESEAU
   DEMARCHAGE
+  PAGES_JAUNES
+  SOCIETE_COM
+  WEB_SCRAPING
   AUTRE
 }
 

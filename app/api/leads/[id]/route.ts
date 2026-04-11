@@ -18,6 +18,7 @@ export async function GET(_request: Request, context: RouteContext) {
   return NextResponse.json({
     ...lead,
     budgetEstime: lead.budgetEstime ? Number(lead.budgetEstime) : null,
+    score: lead.score ?? 0,
     dateCreation: lead.dateCreation.toISOString().split("T")[0],
     dateMiseAJour: lead.dateMiseAJour.toISOString().split("T")[0],
   });
@@ -32,10 +33,18 @@ const updateLeadSchema = z.object({
   siret: z.string().nullable().optional(),
   fonction: z.string().nullable().optional(),
   type: z.enum(["PARTICULIER", "PROFESSIONNEL", "COLLECTIVITE"]).optional(),
-  source: z.enum(["SITE_WEB", "RECOMMANDATION", "RESEAU", "DEMARCHAGE", "AUTRE"]).optional(),
+  source: z.enum(["SITE_WEB", "RECOMMANDATION", "RESEAU", "DEMARCHAGE", "PAGES_JAUNES", "SOCIETE_COM", "WEB_SCRAPING", "AUTRE"]).optional(),
   statut: z.enum(["NOUVEAU", "CONTACTE", "QUALIFIE", "PROPOSITION", "GAGNE", "PERDU"]).optional(),
   budgetEstime: z.number().nullable().optional(),
   notes: z.string().nullable().optional(),
+  score: z.number().min(0).max(5).nullable().optional(),
+  roleCible: z.string().nullable().optional(),
+  adresse: z.string().nullable().optional(),
+  ville: z.string().nullable().optional(),
+  codePostal: z.string().nullable().optional(),
+  departement: z.string().nullable().optional(),
+  surfaceBatiment: z.number().nullable().optional(),
+  sourceUrl: z.string().nullable().optional(),
 });
 
 /** PATCH /api/leads/[id] — Mettre à jour un lead */
@@ -60,6 +69,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     return NextResponse.json({
       ...lead,
       budgetEstime: lead.budgetEstime ? Number(lead.budgetEstime) : null,
+      score: lead.score ?? 0,
       dateCreation: lead.dateCreation.toISOString().split("T")[0],
       dateMiseAJour: lead.dateMiseAJour.toISOString().split("T")[0],
     });

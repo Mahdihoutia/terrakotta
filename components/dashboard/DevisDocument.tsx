@@ -98,7 +98,7 @@ const SECTIONS: QuestionSection[] = [
     titre: "1. Coordonnées de l'entreprise",
     description: "Informations du bureau d'étude émetteur du devis",
     fields: [
-      { id: "entreprise_nom", label: "Raison sociale", type: "text", placeholder: "TERRAKOTTA", required: true },
+      { id: "entreprise_nom", label: "Raison sociale", type: "text", placeholder: "KILOWATER", required: true },
       { id: "entreprise_siret", label: "SIRET", type: "text", placeholder: "XXX XXX XXX XXXXX" },
       { id: "entreprise_adresse", label: "Adresse", type: "text", placeholder: "Adresse complète", colSpan: 2 },
       { id: "entreprise_telephone", label: "Téléphone", type: "text", placeholder: "06 XX XX XX XX" },

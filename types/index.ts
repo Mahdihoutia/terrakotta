@@ -1,6 +1,6 @@
 export type LeadStatus = "NOUVEAU" | "CONTACTE" | "QUALIFIE" | "PROPOSITION" | "GAGNE" | "PERDU"
 
-export type LeadSource = "SITE_WEB" | "RECOMMANDATION" | "RESEAU" | "DEMARCHAGE" | "AUTRE"
+export type LeadSource = "SITE_WEB" | "RECOMMANDATION" | "RESEAU" | "DEMARCHAGE" | "PAGES_JAUNES" | "SOCIETE_COM" | "WEB_SCRAPING" | "AUTRE"
 
 export type ClientType = "PARTICULIER" | "PROFESSIONNEL" | "COLLECTIVITE"
 
@@ -76,6 +76,14 @@ export interface Lead {
   statut: LeadStatus
   notes?: string
   budgetEstime?: number
+  score?: number // 0-5 étoiles
+  roleCible?: string
+  adresse?: string
+  ville?: string
+  codePostal?: string
+  departement?: string
+  surfaceBatiment?: number // en m²
+  sourceUrl?: string
   dateCreation: string
   dateMiseAJour: string
 }

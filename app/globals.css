@@ -73,7 +73,7 @@
 }
 
 :root {
-  /* ═══ Terrakotta — Light Mode ═══ */
+  /* ═══ Kilowater — Light Mode ═══ */
   /* Fond crème chaud, texte bleu nuit, accent bleu primaire */
   --background: #FAF8F5;
   --foreground: #0d1b35;
@@ -106,7 +106,7 @@
   --glass-hover: #e8e2d9;
   --glow: rgba(37, 99, 235, 0.06);
 
-  /* Sidebar — bleu nuit Terrakotta */
+  /* Sidebar — bleu nuit Kilowater */
   --sidebar: #0d1b35;
   --sidebar-foreground: #FAF8F5;
   --sidebar-primary: #2563eb;
@@ -138,7 +138,7 @@
 }
 
 .dark {
-  /* ═══ Terrakotta — Dark Mode ═══ */
+  /* ═══ Kilowater — Dark Mode ═══ */
   /* Fond bleu très foncé, texte clair, accent bleu clair */
   --background: #0d1b35;
   --foreground: #F5FAFF;
@@ -201,25 +201,80 @@
   --tk-hover: #1e3a5f;
 }
 
-/* Fade-in animation (remplace Framer Motion, incompatible React 19) */
+/* ── Fade-in animation (CSS, React 19 compatible) ─────────────── */
 @keyframes fade-in {
-  from { opacity: 0; transform: translateY(16px); }
+  from { opacity: 0; transform: translateY(14px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 .animate-fade-in {
-  animation: fade-in 0.35s ease-out;
+  animation: fade-in 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Glass card utility */
+/* ── Glass card (legacy) ───────────────────────────────────────── */
 .glass {
   background: var(--tk-surface);
   border: 1px solid var(--tk-border);
   border-radius: 1rem;
 }
-
 .glass-hover:hover {
   background: var(--tk-hover);
   border-color: var(--tk-border-hover);
+}
+
+/* ── Premium card — dashboard surfaces ────────────────────────── */
+.card-premium {
+  position: relative;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #e8e2da;
+  border-radius: 1rem;
+  box-shadow:
+    0 1px 2px rgba(13, 27, 53, 0.04),
+    0 4px 16px rgba(13, 27, 53, 0.05);
+  transition: box-shadow 0.25s ease, border-color 0.25s ease, transform 0.2s ease;
+}
+.card-premium:hover {
+  border-color: #c9bfb4;
+  box-shadow:
+    0 2px 6px rgba(13, 27, 53, 0.07),
+    0 10px 28px rgba(13, 27, 53, 0.07);
+  transform: translateY(-1px);
+}
+
+/* ── Sidebar nav items (always dark background) ────────────────── */
+.sk-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  height: 2.5rem;
+  border-radius: 0.75rem;
+  padding: 0 0.75rem;
+  color: rgba(168, 184, 208, 0.72);
+  transition: background 0.18s ease, color 0.18s ease;
+  position: relative;
+}
+.sk-item:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(248, 250, 255, 0.92);
+}
+.sk-item-active {
+  background: rgba(59, 130, 246, 0.18);
+  color: #ffffff;
+}
+.sk-item-active::before {
+  content: '';
+  position: absolute;
+  left: -0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 1.25rem;
+  background: #3B82F6;
+  border-radius: 0 2px 2px 0;
+}
+.sk-item-danger:hover {
+  background: rgba(239, 68, 68, 0.12);
+  color: rgba(252, 165, 165, 0.9);
 }
 
 /* Glow effects */

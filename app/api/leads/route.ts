@@ -17,6 +17,7 @@ export async function GET(request: Request) {
     const serialized = leads.map((lead) => ({
       ...lead,
       budgetEstime: lead.budgetEstime ? Number(lead.budgetEstime) : null,
+      score: lead.score ?? 0,
       dateCreation: lead.dateCreation.toISOString().split("T")[0],
       dateMiseAJour: lead.dateMiseAJour.toISOString().split("T")[0],
     }));
@@ -40,10 +41,18 @@ const createLeadSchema = z.object({
   siret: z.string().optional(),
   fonction: z.string().optional(),
   type: z.enum(["PARTICULIER", "PROFESSIONNEL", "COLLECTIVITE"]).default("PARTICULIER"),
-  source: z.enum(["SITE_WEB", "RECOMMANDATION", "RESEAU", "DEMARCHAGE", "AUTRE"]).default("SITE_WEB"),
+  source: z.enum(["SITE_WEB", "RECOMMANDATION", "RESEAU", "DEMARCHAGE", "PAGES_JAUNES", "SOCIETE_COM", "WEB_SCRAPING", "AUTRE"]).default("SITE_WEB"),
   statut: z.enum(["NOUVEAU", "CONTACTE", "QUALIFIE", "PROPOSITION", "GAGNE", "PERDU"]).default("NOUVEAU"),
   budgetEstime: z.number().optional(),
   notes: z.string().optional(),
+  score: z.number().min(0).max(5).optional(),
+  roleCible: z.string().optional(),
+  adresse: z.string().optional(),
+  ville: z.string().optional(),
+  codePostal: z.string().optional(),
+  departement: z.string().optional(),
+  surfaceBatiment: z.number().optional(),
+  sourceUrl: z.string().optional(),
 });
 
 /** POST /api/leads — Créer un nouveau lead */
@@ -73,6 +82,14 @@ export async function POST(request: Request) {
       statut: data.statut,
       budgetEstime: data.budgetEstime ?? null,
       notes: data.notes ?? null,
+      score: data.score ?? 0,
+      roleCible: data.roleCible ?? null,
+      adresse: data.adresse ?? null,
+      ville: data.ville ?? null,
+      codePostal: data.codePostal ?? null,
+      departement: data.departement ?? null,
+      surfaceBatiment: data.surfaceBatiment ?? null,
+      sourceUrl: data.sourceUrl ?? null,
     },
   });
 
@@ -80,6 +97,7 @@ export async function POST(request: Request) {
     {
       ...lead,
       budgetEstime: lead.budgetEstime ? Number(lead.budgetEstime) : null,
+      score: lead.score ?? 0,
       dateCreation: lead.dateCreation.toISOString().split("T")[0],
       dateMiseAJour: lead.dateMiseAJour.toISOString().split("T")[0],
     },

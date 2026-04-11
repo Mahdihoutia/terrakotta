@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, CalendarDays, Sun, Moon } from "lucide-react";
+import { Bell, Sun, Moon, Zap } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 
 function formatDateFr(): string {
@@ -13,46 +13,130 @@ function formatDateFr(): string {
   });
 }
 
+function getGreeting(): string {
+  const h = new Date().getHours();
+  if (h < 12) return "Bonjour";
+  if (h < 18) return "Bon après-midi";
+  return "Bonsoir";
+}
+
 export default function TopBar() {
-  const today = formatDateFr();
+  const today    = formatDateFr();
+  const greeting = getGreeting();
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <header className="flex h-14 items-center justify-between border-b border-tk-border px-8">
-      <div />
+    <header
+      className="relative flex h-[60px] shrink-0 items-center justify-between px-8"
+      style={{
+        background: "#FAF8F5",
+        borderBottom: "1px solid #E8E2DA",
+      }}
+    >
+      {/* ── Accent line top ─────────────────────────────────── */}
+      <div
+        className="absolute inset-x-0 top-0 h-[2px]"
+        style={{
+          background: "linear-gradient(90deg, #3B82F6 0%, rgba(59,130,246,0.15) 60%, transparent 100%)",
+        }}
+      />
 
-      <div className="flex items-center gap-2">
+      {/* ── Left — greeting ─────────────────────────────────── */}
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5">
+          <Zap
+            className="h-[14px] w-[14px] rotate-12"
+            style={{ fill: "#3B82F6", color: "#3B82F6" }}
+          />
+          <span
+            className="text-[0.78rem] font-semibold tracking-[0.08em] text-[#0D1B35]"
+            style={{ fontFamily: "var(--font-display), Georgia, serif" }}
+          >
+            KILOWATER
+          </span>
+        </div>
+        <div
+          className="h-4 w-px"
+          style={{ background: "#E8E2DA" }}
+        />
+        <span className="text-sm text-[#6b5b50]">
+          {greeting}, <span className="font-semibold text-[#0D1B35]">Mahdi</span>
+        </span>
+      </div>
+
+      {/* ── Right — controls ────────────────────────────────── */}
+      <div className="flex items-center gap-1.5">
+
+        {/* Date */}
         <Link
           href="/dashboard/calendrier"
-          className="flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm text-tk-text-muted transition-colors hover:bg-tk-hover hover:text-tk-text-secondary"
+          className="flex items-center gap-2 rounded-lg px-3 py-1.5 transition-all"
+          style={{ color: "#6b5b50" }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLElement).style.background = "#EDE9E2";
+            (e.currentTarget as HTMLElement).style.color = "#0D1B35";
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLElement).style.background = "transparent";
+            (e.currentTarget as HTMLElement).style.color = "#6b5b50";
+          }}
         >
-          <CalendarDays className="h-4 w-4 text-tk-primary" />
-          <span className="capitalize hidden sm:inline">{today}</span>
+          <span className="capitalize text-[0.8rem] hidden sm:inline">{today}</span>
         </Link>
 
+        {/* Theme toggle */}
         <button
           onClick={toggleTheme}
-          className="flex h-9 items-center gap-1.5 rounded-full border border-tk-border bg-tk-surface px-3 transition-all hover:border-tk-border-hover hover:bg-tk-hover"
           title={theme === "light" ? "Mode sombre" : "Mode clair"}
+          className="flex h-8 items-center gap-1.5 rounded-lg border px-3 text-[0.78rem] font-medium transition-all"
+          style={{
+            borderColor: "#E8E2DA",
+            background: "#FFFFFF",
+            color: "#6b5b50",
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLElement).style.borderColor = "#c9bfb4";
+            (e.currentTarget as HTMLElement).style.color = "#0D1B35";
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLElement).style.borderColor = "#E8E2DA";
+            (e.currentTarget as HTMLElement).style.color = "#6b5b50";
+          }}
         >
           {theme === "light" ? (
             <>
-              <Moon className="h-4 w-4 text-tk-primary" />
-              <span className="text-xs font-medium text-tk-text-secondary hidden sm:inline">Sombre</span>
+              <Moon className="h-3.5 w-3.5" style={{ color: "#3B82F6" }} />
+              <span className="hidden sm:inline">Sombre</span>
             </>
           ) : (
             <>
-              <Sun className="h-4 w-4 text-tk-primary" />
-              <span className="text-xs font-medium text-tk-text-secondary hidden sm:inline">Clair</span>
+              <Sun className="h-3.5 w-3.5" style={{ color: "#3B82F6" }} />
+              <span className="hidden sm:inline">Clair</span>
             </>
           )}
         </button>
 
-        <button className="relative flex h-9 w-9 items-center justify-center rounded-xl transition-colors hover:bg-tk-hover">
-          <Bell className="h-[18px] w-[18px] text-tk-text-muted" />
-          <span className="absolute right-1.5 top-1.5 flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-tk-primary opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-tk-primary" />
+        {/* Notifications */}
+        <button
+          className="relative flex h-8 w-8 items-center justify-center rounded-lg border transition-all"
+          style={{ borderColor: "#E8E2DA", background: "#FFFFFF" }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLElement).style.borderColor = "#c9bfb4";
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLElement).style.borderColor = "#E8E2DA";
+          }}
+        >
+          <Bell className="h-[15px] w-[15px]" style={{ color: "#6b5b50" }} />
+          <span className="absolute right-1.5 top-1.5 flex h-[7px] w-[7px]">
+            <span
+              className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75"
+              style={{ background: "#3B82F6" }}
+            />
+            <span
+              className="relative inline-flex h-[7px] w-[7px] rounded-full"
+              style={{ background: "#3B82F6" }}
+            />
           </span>
         </button>
       </div>

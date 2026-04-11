@@ -40,83 +40,90 @@ export async function POST(_request: Request, context: RouteContext) {
 }
 
 async function executeProspection(agentId: string, config: Record<string, unknown>) {
-  const sources = (config.sources as string[]) || [];
-  const keywords = (config.keywords as string[]) || [];
-  const regions = (config.regions as string[]) || [];
+  const sources = (config.sources as string[]) || ["PAGES_JAUNES", "SOCIETE_COM", "WEB_SCRAPING"];
   const maxLeads = (config.maxLeadsParJour as number) || 20;
+  const regions = (config.regions as string[]) || [];
 
   // Log le début de la recherche
   const searchLog = await prisma.agentLog.create({
     data: {
       agentId,
       action: "search_started",
-      details: { sources, keywords, regions, maxLeads },
+      details: { sources, regions, maxLeads },
       succes: true,
     },
   });
 
-  // Simulation de résultats de prospection
-  // En production, ceci appellerait des APIs de scraping, Google, LinkedIn, etc.
-  const mockResults = generateMockProspects(keywords, regions, Math.min(maxLeads, 5));
+  // Call the real prospection API internally
+  try {
+    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+    const res = await fetch(`${baseUrl}/api/prospection`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sources: sources.filter((s: string) =>
+          ["PAGES_JAUNES", "SOCIETE_COM", "WEB_SCRAPING"].includes(s),
+        ),
+        departements: regions.length > 0 ? regions : undefined,
+        maxResults: maxLeads,
+        surfaceMin: (config.surfaceMin as number) || 1000,
+      }),
+    });
 
-  const createdLeads = [];
-  for (const prospect of mockResults) {
-    try {
-      const lead = await prisma.lead.create({
-        data: {
-          nom: prospect.nom,
-          prenom: prospect.prenom,
-          email: prospect.email,
-          telephone: prospect.telephone,
-          raisonSociale: prospect.raisonSociale,
-          type: prospect.type as "PARTICULIER" | "PROFESSIONNEL" | "COLLECTIVITE",
-          source: "DEMARCHAGE",
-          statut: "NOUVEAU",
-          notes: `[Agent Prospection] Source: ${prospect.source} | ${prospect.notes}`,
-        },
-      });
-      createdLeads.push(lead);
+    const data = await res.json();
 
-      await prisma.agentLog.create({
-        data: {
-          agentId,
-          action: "lead_created",
-          details: { leadId: lead.id, nom: lead.nom, source: prospect.source },
-          succes: true,
-        },
-      });
-    } catch (error) {
-      await prisma.agentLog.create({
-        data: {
-          agentId,
-          action: "lead_creation_failed",
-          details: { prospect: prospect.nom, error: error instanceof Error ? error.message : "Unknown" },
-          succes: false,
-        },
-      });
+    // Log each created lead
+    if (data.leads) {
+      for (const lead of data.leads as Array<{ id: string; nom: string; source: string }>) {
+        await prisma.agentLog.create({
+          data: {
+            agentId,
+            action: "lead_created",
+            details: { leadId: lead.id, nom: lead.nom, source: lead.source },
+            succes: true,
+          },
+        });
+      }
     }
-  }
 
-  // Log de fin
-  await prisma.agentLog.update({
-    where: { id: searchLog.id },
-    data: {
-      details: {
-        sources,
-        keywords,
-        regions,
-        resultsFound: mockResults.length,
-        leadsCreated: createdLeads.length,
+    // Update the search log with results
+    await prisma.agentLog.update({
+      where: { id: searchLog.id },
+      data: {
+        details: {
+          sources,
+          regions,
+          resultsFound: data.found ?? 0,
+          leadsCreated: data.saved ?? 0,
+          duplicates: data.duplicates ?? 0,
+        },
       },
-    },
-  });
+    });
 
-  return NextResponse.json({
-    success: true,
-    message: `Prospection terminée : ${createdLeads.length} leads créés`,
-    leadsCreated: createdLeads.length,
-    searchSources: sources,
-  });
+    return NextResponse.json({
+      success: true,
+      message: `Prospection terminée : ${data.saved ?? 0} leads créés (${data.duplicates ?? 0} doublons)`,
+      leadsCreated: data.saved ?? 0,
+      searchSources: sources,
+    });
+  } catch (error) {
+    await prisma.agentLog.update({
+      where: { id: searchLog.id },
+      data: {
+        succes: false,
+        details: {
+          sources,
+          error: error instanceof Error ? error.message : "Unknown",
+        },
+      },
+    });
+
+    return NextResponse.json({
+      success: false,
+      message: "Erreur lors de la prospection",
+      error: error instanceof Error ? error.message : "Unknown",
+    }, { status: 500 });
+  }
 }
 
 async function executeCommunication(agentId: string, config: Record<string, unknown>) {
@@ -216,27 +223,3 @@ async function executeCommunication(agentId: string, config: Record<string, unkn
   });
 }
 
-// ─── Mock data pour la prospection (remplacer par de vrais appels API) ───
-
-function generateMockProspects(
-  keywords: string[],
-  regions: string[],
-  count: number,
-) {
-  const sources = ["annuaire-entreprises.fr", "LinkedIn", "permis-construire.gouv", "Google Maps", "Pages Jaunes"];
-  const types = ["PARTICULIER", "PROFESSIONNEL", "COLLECTIVITE"];
-  const noms = ["Dupont", "Martin", "Bernard", "Petit", "Robert", "Richard", "Durand", "Moreau", "Laurent", "Simon"];
-  const prenoms = ["Jean", "Marie", "Pierre", "Sophie", "Thomas", "Julie", "Nicolas", "Emma", "Lucas", "Léa"];
-  const region = regions[0] || "Île-de-France";
-
-  return Array.from({ length: count }, (_, i) => ({
-    nom: noms[i % noms.length],
-    prenom: prenoms[i % prenoms.length],
-    email: `${prenoms[i % prenoms.length].toLowerCase()}.${noms[i % noms.length].toLowerCase()}@email.fr`,
-    telephone: `06 ${String(Math.floor(Math.random() * 100)).padStart(2, "0")} ${String(Math.floor(Math.random() * 100)).padStart(2, "0")} ${String(Math.floor(Math.random() * 100)).padStart(2, "0")} ${String(Math.floor(Math.random() * 100)).padStart(2, "0")}`,
-    raisonSociale: i % 3 === 1 ? `Entreprise ${noms[i % noms.length]}` : undefined,
-    type: types[i % types.length],
-    source: sources[i % sources.length],
-    notes: `Trouvé via ${sources[i % sources.length]} · Mots-clés: ${keywords.slice(0, 2).join(", ")} · Région: ${region}`,
-  }));
-}
