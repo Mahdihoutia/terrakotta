@@ -12,7 +12,7 @@ import {
   CalendarDays,
   Settings,
   Search,
-  Leaf,
+  Zap,
   FolderKanban,
   Receipt,
   LogOut,
@@ -57,10 +57,16 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="mb-6 flex items-center gap-3 px-3">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center">
-          <Leaf className="h-7 w-7 -rotate-12 text-tk-primary" />
+          <Zap
+            className="h-7 w-7 rotate-12"
+            style={{ fill: "#3B82F6", color: "#3B82F6" }}
+          />
         </div>
-        <span className="whitespace-nowrap text-lg font-extrabold tracking-wide text-tk-text dark:text-tk-sidebar-text opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-300 delay-75">
-          TERRAKOTTA
+        <span
+          className="whitespace-nowrap text-[1.1rem] font-bold tracking-[0.1em] text-white opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-300 delay-75"
+          style={{ fontFamily: "var(--font-display), Georgia, serif" }}
+        >
+          KILOWATER
         </span>
       </div>
 

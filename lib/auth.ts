@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import type { AuthOptions } from "next-auth";
 
 /**
- * NextAuth.js v4 configuration for Kilowater dashboard.
+ * NextAuth.js v4 configuration for Terrakotta dashboard.
  *
  * Mono-user authentication: admin credentials are stored in environment
  * variables (ADMIN_EMAIL + ADMIN_PASSWORD_HASH) rather than in the database.
