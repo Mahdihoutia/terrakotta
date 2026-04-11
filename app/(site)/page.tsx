@@ -118,7 +118,7 @@ export default function HomePage() {
             src="https://images.unsplash.com/photo-1695445301510-459fb368d8af?w=1920&q=85&auto=format&fit=crop"
             alt="Rangée de climatiseurs sur un toit — rénovation énergétique"
             fill
-            className="object-cover"
+            className="object-cover brightness-75"
             priority
           />
           {/* Overlay principal — très léger */}
@@ -394,12 +394,7 @@ export default function HomePage() {
 
       {/* ═══════════ VIDEO SLOGAN ═══════════ */}
       <section className="relative h-[80vh] md:h-[90vh] flex items-center justify-center overflow-hidden">
-        {/* Fallback image — visible toujours en fond (mobile + poster vidéo) */}
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?w=1920&q=80')" }}
-        />
-        {/* Vidéo par-dessus sur desktop */}
+        {/* Vidéo — visible sur tous les devices (autoplay muted + playsInline fonctionne sur mobile) */}
         {/* eslint-disable-next-line react/no-unknown-property */}
         <video
           autoPlay
@@ -407,8 +402,8 @@ export default function HomePage() {
           loop
           playsInline
           preload="auto"
-          className="absolute inset-0 w-full h-full object-cover hidden md:block"
-          poster="https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?w=1920&q=80"
+          className="absolute inset-0 w-full h-full object-cover"
+          poster="https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=1920&q=80"
         >
           <source src={VIDEO_BG_URL} type="video/mp4" />
         </video>
