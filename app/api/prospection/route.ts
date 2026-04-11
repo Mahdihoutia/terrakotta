@@ -473,12 +473,12 @@ async function scrapeWeb(
 ): Promise<ScrapedLead[]> {
   const leads: ScrapedLead[] = [];
 
-  // Search for mairies and collectivités
+  // Short, focused queries for the API
   const queries = [
-    { q: "mairie renovation energetique ile de france", role: "Maire", type: "COLLECTIVITE" as const },
-    { q: "syndic copropriete paris renovation batiment", role: "Gestionnaire de copropriété", type: "PROFESSIONNEL" as const },
-    { q: "gestionnaire technique patrimoine immobilier ile de france", role: "Gestionnaire Technique", type: "PROFESSIONNEL" as const },
-    { q: "property manager ile de france batiment tertiaire", role: "Property Manager", type: "PROFESSIONNEL" as const },
+    { q: "syndic copropriete", role: "Syndic de copropriété", type: "PROFESSIONNEL" as const },
+    { q: "gestion immobiliere", role: "Property Manager", type: "PROFESSIONNEL" as const },
+    { q: "gestionnaire technique batiment", role: "Gestionnaire Technique", type: "PROFESSIONNEL" as const },
+    { q: "administration biens immobiliers", role: "Property Manager", type: "PROFESSIONNEL" as const },
   ];
 
   for (const sq of queries) {
@@ -502,8 +502,10 @@ async function scrapeWeb(
           siege?: {
             adresse?: string;
             commune?: string;
+            libelle_commune?: string;
             code_postal?: string;
             departement?: string;
+            siret?: string;
           };
           nombre_etablissements?: number;
           dirigeants?: Array<{
@@ -534,14 +536,14 @@ async function scrapeWeb(
           prenom: dirigeant?.prenoms || undefined,
           email: `contact@${emailSlug}.fr`,
           raisonSociale: entreprise.nom_complet,
-          siret: entreprise.siren ? `${entreprise.siren}00000` : undefined,
+          siret: entreprise.siege?.siret || (entreprise.siren ? `${entreprise.siren}00000` : undefined),
           fonction: dirigeant?.qualite || undefined,
           roleCible: sq.role,
           type: sq.type,
           source: "WEB_SCRAPING",
           sourceUrl: "https://annuaire-entreprises.data.gouv.fr",
           adresse: entreprise.siege?.adresse || undefined,
-          ville: entreprise.siege?.commune || undefined,
+          ville: entreprise.siege?.libelle_commune || undefined,
           codePostal: entreprise.siege?.code_postal || undefined,
           departement: entreprise.siege?.departement || depts[0],
           surfaceBatiment: surfaceMin + Math.floor(Math.random() * 4000),

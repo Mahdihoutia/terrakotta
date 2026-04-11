@@ -69,22 +69,16 @@ export default function KpiCard({
       className="animate-fade-in"
       style={{ animationDelay: `${index * 70}ms`, animationFillMode: "both" }}
     >
-      <div className="card-premium group p-5">
+      <div className="glass group p-5 relative overflow-hidden transition-all duration-200 hover:border-tk-border-hover hover:shadow-lg hover:-translate-y-px">
         {/* Top row */}
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <p
-              className="text-[0.65rem] font-semibold uppercase tracking-[0.16em]"
-              style={{ color: "#9a8a7c" }}
-            >
+            <p className="text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-tk-text-faint">
               {label}
             </p>
             <p
-              className="text-[2rem] font-bold leading-none tracking-tight"
-              style={{
-                color: "#0D1B35",
-                fontFamily: "var(--font-body), system-ui, sans-serif",
-              }}
+              className="text-[2rem] font-bold leading-none tracking-tight text-tk-text"
+              style={{ fontFamily: "var(--font-body), system-ui, sans-serif" }}
             >
               {value}
             </p>
@@ -109,8 +103,8 @@ export default function KpiCard({
               className={cn(
                 "inline-flex items-center gap-0.5 rounded-full px-2 py-[3px] text-[0.68rem] font-semibold",
                 isPositive
-                  ? "bg-[#EFF6FF] text-[#1D4ED8]"
-                  : "bg-[#FEF2F2] text-[#DC2626]"
+                  ? "bg-blue-500/10 text-blue-500"
+                  : "bg-red-500/10 text-red-500"
               )}
             >
               {isPositive
@@ -119,7 +113,7 @@ export default function KpiCard({
               {isPositive ? "+" : ""}{change}%
             </span>
             {changeLabel && (
-              <span className="text-[0.72rem]" style={{ color: "#9a8a7c" }}>
+              <span className="text-[0.72rem] text-tk-text-faint">
                 {changeLabel}
               </span>
             )}
