@@ -201,6 +201,10 @@ export default function LeadDetailPage({ params }: Props) {
         statut: lead.statut,
         budgetEstime: lead.budgetEstime != null ? String(lead.budgetEstime) : "",
         notes: lead.notes ?? "",
+        adresse: lead.adresse ?? "",
+        ville: lead.ville ?? "",
+        codePostal: lead.codePostal ?? "",
+        departement: lead.departement ?? "",
       });
     }
     setEditing(false);
