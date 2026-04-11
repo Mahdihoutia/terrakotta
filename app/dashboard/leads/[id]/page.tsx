@@ -616,24 +616,20 @@ export default function LeadDetailPage({ params }: Props) {
             </div>
 
             {/* Adresse */}
-            {(lead.adresse || lead.ville || lead.codePostal || lead.departement) && (
-              <div className="glass rounded-2xl p-6">
-                <h2 className="text-sm font-semibold text-tk-text mb-4 flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-tk-text-faint" />
-                  Adresse
-                </h2>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {lead.adresse && (
-                    <div className="sm:col-span-2">
-                      <InfoRow icon={<MapPin className="h-4 w-4" />} label="Adresse" value={lead.adresse} />
-                    </div>
-                  )}
-                  <InfoRow icon={<Building2 className="h-4 w-4" />} label="Ville" value={lead.ville ?? "\u2014"} />
-                  <InfoRow icon={<Building2 className="h-4 w-4" />} label="Code postal" value={lead.codePostal ?? "\u2014"} />
-                  <InfoRow icon={<MapPin className="h-4 w-4" />} label="Département" value={lead.departement ?? "\u2014"} />
+            <div className="glass rounded-2xl p-6">
+              <h2 className="text-sm font-semibold text-tk-text mb-4 flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-tk-text-faint" />
+                Adresse
+              </h2>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <InfoRow icon={<MapPin className="h-4 w-4" />} label="Adresse" value={lead.adresse ?? "\u2014"} />
                 </div>
+                <InfoRow icon={<Building2 className="h-4 w-4" />} label="Ville" value={lead.ville ?? "\u2014"} />
+                <InfoRow icon={<Building2 className="h-4 w-4" />} label="Code postal" value={lead.codePostal ?? "\u2014"} />
+                <InfoRow icon={<MapPin className="h-4 w-4" />} label="Département" value={lead.departement ?? "\u2014"} />
               </div>
-            )}
+            </div>
 
             {/* Notes */}
             <div className="glass rounded-2xl p-6">

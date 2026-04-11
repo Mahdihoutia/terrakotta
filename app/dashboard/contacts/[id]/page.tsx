@@ -424,24 +424,20 @@ export default function ContactDetailPage({ params }: Props) {
             </div>
 
             {/* Adresse */}
-            {(contact.adresse || contact.ville || contact.codePostal || contact.departement) && (
-              <div className="rounded-2xl border bg-card p-6">
-                <h2 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  Adresse
-                </h2>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {contact.adresse && (
-                    <div className="sm:col-span-2">
-                      <InfoRow icon={<MapPin className="h-4 w-4" />} label="Adresse" value={contact.adresse} />
-                    </div>
-                  )}
-                  <InfoRow icon={<Building2 className="h-4 w-4" />} label="Ville" value={contact.ville ?? "\u2014"} />
-                  <InfoRow icon={<Building2 className="h-4 w-4" />} label="Code postal" value={contact.codePostal ?? "\u2014"} />
-                  <InfoRow icon={<MapPin className="h-4 w-4" />} label="Département" value={contact.departement ?? "\u2014"} />
+            <div className="rounded-2xl border bg-card p-6">
+              <h2 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-muted-foreground" />
+                Adresse
+              </h2>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <InfoRow icon={<MapPin className="h-4 w-4" />} label="Adresse" value={contact.adresse ?? "\u2014"} />
                 </div>
+                <InfoRow icon={<Building2 className="h-4 w-4" />} label="Ville" value={contact.ville ?? "\u2014"} />
+                <InfoRow icon={<Building2 className="h-4 w-4" />} label="Code postal" value={contact.codePostal ?? "\u2014"} />
+                <InfoRow icon={<MapPin className="h-4 w-4" />} label="Département" value={contact.departement ?? "\u2014"} />
               </div>
-            )}
+            </div>
 
             <div className="rounded-2xl border bg-card p-6">
               <h2 className="text-sm font-semibold text-foreground mb-4">Raison Sociale</h2>
