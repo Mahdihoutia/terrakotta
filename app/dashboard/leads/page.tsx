@@ -25,6 +25,7 @@ import {
   Trash2,
   Loader2,
   UserCheck,
+  MapPin,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLeads } from "@/lib/hooks/use-leads";
@@ -387,6 +388,7 @@ export default function LeadsPage() {
               <TableHead>Nom</TableHead>
               <TableHead>Contact</TableHead>
               <TableHead>Type</TableHead>
+              <TableHead>Adresse</TableHead>
               <TableHead>Source</TableHead>
               <TableHead>Budget estimé</TableHead>
               <TableHead>Statut</TableHead>
@@ -426,6 +428,18 @@ export default function LeadsPage() {
                   <span className="rounded-full bg-tk-hover px-2 py-0.5 text-[10px] text-tk-text-muted">
                     {lead.type.charAt(0) + lead.type.slice(1).toLowerCase()}
                   </span>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1 text-xs text-tk-text-muted">
+                    <MapPin className="h-3 w-3 shrink-0" />
+                    <span className="truncate max-w-[180px]">
+                      {lead.adresse
+                        ? `${lead.adresse}${lead.ville ? `, ${lead.ville}` : ""}${lead.codePostal ? ` ${lead.codePostal}` : ""}`
+                        : lead.ville
+                          ? `${lead.ville}${lead.departement ? ` (${lead.departement})` : ""}`
+                          : "—"}
+                    </span>
+                  </div>
                 </TableCell>
                 <TableCell className="text-sm text-tk-text-muted">
                   {SOURCE_LABELS[lead.source]}

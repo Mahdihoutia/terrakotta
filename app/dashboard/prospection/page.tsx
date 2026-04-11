@@ -551,9 +551,14 @@ export default function ProspectionPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1 text-xs text-tk-text-muted">
-                      <MapPin className="h-3 w-3" />
-                      {lead.ville || lead.departement || "—"}
-                      {lead.departement && ` (${lead.departement})`}
+                      <MapPin className="h-3 w-3 shrink-0" />
+                      <span className="truncate max-w-[200px]">
+                        {lead.adresse
+                          ? `${lead.adresse}${lead.ville ? `, ${lead.ville}` : ""}${lead.codePostal ? ` ${lead.codePostal}` : ""}`
+                          : lead.ville
+                            ? `${lead.ville}${lead.departement ? ` (${lead.departement})` : ""}`
+                            : lead.departement || "—"}
+                      </span>
                     </div>
                   </TableCell>
                   <TableCell>

@@ -20,6 +20,7 @@ import {
   StickyNote,
   User,
   UserCheck,
+  MapPin,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Lead, LeadStatus, LeadSource, ClientType } from "@/types";
@@ -86,6 +87,10 @@ export default function LeadDetailPage({ params }: Props) {
     statut: "NOUVEAU" as LeadStatus,
     budgetEstime: "",
     notes: "",
+    adresse: "",
+    ville: "",
+    codePostal: "",
+    departement: "",
   });
 
   useEffect(() => {
@@ -109,6 +114,10 @@ export default function LeadDetailPage({ params }: Props) {
           statut: data.statut,
           budgetEstime: data.budgetEstime != null ? String(data.budgetEstime) : "",
           notes: data.notes ?? "",
+          adresse: data.adresse ?? "",
+          ville: data.ville ?? "",
+          codePostal: data.codePostal ?? "",
+          departement: data.departement ?? "",
         });
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Erreur"))
@@ -135,6 +144,10 @@ export default function LeadDetailPage({ params }: Props) {
           statut: form.statut,
           budgetEstime: form.budgetEstime ? Number(form.budgetEstime) : null,
           notes: form.notes || null,
+          adresse: form.adresse || null,
+          ville: form.ville || null,
+          codePostal: form.codePostal || null,
+          departement: form.departement || null,
         }),
       });
       if (!res.ok) throw new Error("Erreur lors de la sauvegarde");
@@ -468,6 +481,46 @@ export default function LeadDetailPage({ params }: Props) {
                 className={inputClass}
               />
             </div>
+            <div className="sm:col-span-2 lg:col-span-3">
+              <label className={labelClass}>Adresse</label>
+              <input
+                type="text"
+                value={form.adresse}
+                onChange={(e) => setForm({ ...form, adresse: e.target.value })}
+                placeholder="123 rue de la Paix"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Ville</label>
+              <input
+                type="text"
+                value={form.ville}
+                onChange={(e) => setForm({ ...form, ville: e.target.value })}
+                placeholder="Paris"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Code postal</label>
+              <input
+                type="text"
+                value={form.codePostal}
+                onChange={(e) => setForm({ ...form, codePostal: e.target.value })}
+                placeholder="75001"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Département</label>
+              <input
+                type="text"
+                value={form.departement}
+                onChange={(e) => setForm({ ...form, departement: e.target.value })}
+                placeholder="75"
+                className={inputClass}
+              />
+            </div>
             <div>
               <label className={labelClass}>Type</label>
               <select
@@ -494,6 +547,11 @@ export default function LeadDetailPage({ params }: Props) {
                 <option value="PAGES_JAUNES">Pages Jaunes</option>
                 <option value="SOCIETE_COM">societe.com</option>
                 <option value="WEB_SCRAPING">Web / API</option>
+                <option value="SIRENE">SIRENE (INSEE)</option>
+                <option value="BODACC">BODACC</option>
+                <option value="DPE_ADEME">DPE ADEME</option>
+                <option value="BOAMP">Marchés Publics</option>
+                <option value="PERMIS_CONSTRUIRE">Permis Construire</option>
                 <option value="AUTRE">Autre</option>
               </select>
             </div>
@@ -552,6 +610,26 @@ export default function LeadDetailPage({ params }: Props) {
                 <InfoRow icon={<User className="h-4 w-4" />} label="Fonction" value={lead.fonction ?? "\u2014"} />
               </div>
             </div>
+
+            {/* Adresse */}
+            {(lead.adresse || lead.ville || lead.codePostal || lead.departement) && (
+              <div className="glass rounded-2xl p-6">
+                <h2 className="text-sm font-semibold text-tk-text mb-4 flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-tk-text-faint" />
+                  Adresse
+                </h2>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {lead.adresse && (
+                    <div className="sm:col-span-2">
+                      <InfoRow icon={<MapPin className="h-4 w-4" />} label="Adresse" value={lead.adresse} />
+                    </div>
+                  )}
+                  <InfoRow icon={<Building2 className="h-4 w-4" />} label="Ville" value={lead.ville ?? "\u2014"} />
+                  <InfoRow icon={<Building2 className="h-4 w-4" />} label="Code postal" value={lead.codePostal ?? "\u2014"} />
+                  <InfoRow icon={<MapPin className="h-4 w-4" />} label="Département" value={lead.departement ?? "\u2014"} />
+                </div>
+              </div>
+            )}
 
             {/* Notes */}
             <div className="glass rounded-2xl p-6">
