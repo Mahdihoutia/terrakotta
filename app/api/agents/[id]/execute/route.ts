@@ -40,7 +40,7 @@ export async function POST(_request: Request, context: RouteContext) {
 }
 
 async function executeProspection(agentId: string, config: Record<string, unknown>) {
-  const sources = (config.sources as string[]) || ["PAGES_JAUNES", "SOCIETE_COM", "WEB_SCRAPING"];
+  const sources = (config.sources as string[]) || ["PAGES_JAUNES", "SOCIETE_COM", "WEB_SCRAPING", "SIRENE", "BODACC", "DPE_ADEME", "BOAMP", "PERMIS_CONSTRUIRE"];
   const maxLeads = (config.maxLeadsParJour as number) || 20;
   const regions = (config.regions as string[]) || [];
 
@@ -62,7 +62,7 @@ async function executeProspection(agentId: string, config: Record<string, unknow
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         sources: sources.filter((s: string) =>
-          ["PAGES_JAUNES", "SOCIETE_COM", "WEB_SCRAPING"].includes(s),
+          ["PAGES_JAUNES", "SOCIETE_COM", "WEB_SCRAPING", "SIRENE", "BODACC", "DPE_ADEME", "BOAMP", "PERMIS_CONSTRUIRE"].includes(s),
         ),
         departements: regions.length > 0 ? regions : undefined,
         maxResults: maxLeads,

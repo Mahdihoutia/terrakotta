@@ -33,6 +33,11 @@ const SOURCE_LABELS: Record<LeadSource, string> = {
   PAGES_JAUNES: "Pages Jaunes",
   SOCIETE_COM: "societe.com",
   WEB_SCRAPING: "Web / API",
+  SIRENE: "SIRENE (INSEE)",
+  BODACC: "BODACC",
+  DPE_ADEME: "DPE ADEME",
+  BOAMP: "Marchés Publics",
+  PERMIS_CONSTRUIRE: "Permis Construire",
   AUTRE: "Autre",
 };
 

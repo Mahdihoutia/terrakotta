@@ -22,6 +22,8 @@ import {
   ChevronUp,
   Rocket,
   RefreshCw,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AIAgent, AgentLog, AgentStatus, AgentType } from "@/types";
@@ -192,6 +194,8 @@ interface AgentCardProps {
 function AgentCard({ agent, onRefresh }: AgentCardProps) {
   const [executing, setExecuting] = useState(false);
   const [toggling, setToggling] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [showLogs, setShowLogs] = useState(false);
   const [logs, setLogs] = useState<AgentLog[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
@@ -247,6 +251,17 @@ function AgentCard({ agent, onRefresh }: AgentCardProps) {
     }
   }
 
+  async function handleDelete() {
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/agents/${agent.id}`, { method: "DELETE" });
+      if (res.ok) onRefresh();
+    } finally {
+      setDeleting(false);
+      setConfirmDelete(false);
+    }
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -268,13 +283,66 @@ function AgentCard({ agent, onRefresh }: AgentCardProps) {
                 </Badge>
               </div>
             </div>
-            <Badge className={cn("gap-1", config.className)}>
-              <span className={cn("h-1.5 w-1.5 rounded-full", config.dotClass)} />
-              {config.label}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge className={cn("gap-1", config.className)}>
+                <span className={cn("h-1.5 w-1.5 rounded-full", config.dotClass)} />
+                {config.label}
+              </Badge>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-muted-foreground hover:text-red-500 hover:bg-red-50"
+                onClick={() => setConfirmDelete(true)}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
+          <AnimatePresence>
+            {confirmDelete && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="rounded-lg border border-red-200 bg-red-50 p-3"
+              >
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-red-800">
+                      Supprimer cet agent ?
+                    </p>
+                    <p className="text-xs text-red-600 mt-0.5">
+                      L&apos;agent et tout son historique seront supprimés définitivement.
+                    </p>
+                    <div className="flex gap-2 mt-2">
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={handleDelete}
+                        disabled={deleting}
+                        className="h-7 text-xs"
+                      >
+                        {deleting ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Trash2 className="mr-1 h-3 w-3" />}
+                        Supprimer
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setConfirmDelete(false)}
+                        className="h-7 text-xs"
+                      >
+                        Annuler
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {agent.description && (
             <p className="text-sm text-muted-foreground">{agent.description}</p>
           )}

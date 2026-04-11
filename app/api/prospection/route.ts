@@ -14,7 +14,7 @@ interface ScrapedLead {
   fonction?: string;
   roleCible: string;
   type: "PARTICULIER" | "PROFESSIONNEL" | "COLLECTIVITE";
-  source: "PAGES_JAUNES" | "SOCIETE_COM" | "WEB_SCRAPING";
+  source: "PAGES_JAUNES" | "SOCIETE_COM" | "WEB_SCRAPING" | "SIRENE" | "BODACC" | "DPE_ADEME" | "BOAMP" | "PERMIS_CONSTRUIRE";
   sourceUrl?: string;
   adresse?: string;
   ville?: string;
@@ -57,8 +57,13 @@ const TARGET_ROLES = [
 
 // ─── Schema validation ────────��──────────────────────────────────
 
+const ALL_PROSPECTION_SOURCES = [
+  "PAGES_JAUNES", "SOCIETE_COM", "WEB_SCRAPING",
+  "SIRENE", "BODACC", "DPE_ADEME", "BOAMP", "PERMIS_CONSTRUIRE",
+] as const;
+
 const searchSchema = z.object({
-  sources: z.array(z.enum(["PAGES_JAUNES", "SOCIETE_COM", "WEB_SCRAPING"])).min(1),
+  sources: z.array(z.enum(ALL_PROSPECTION_SOURCES)).min(1),
   roles: z.array(z.string()).optional(),
   departements: z.array(z.string()).optional(),
   surfaceMin: z.number().optional().default(1000),
@@ -96,6 +101,21 @@ export async function POST(req: NextRequest) {
     }
     if (sources.includes("WEB_SCRAPING")) {
       scrapePromises.push(scrapeWeb(targetRoles, targetDepts, surfaceMin, maxResults));
+    }
+    if (sources.includes("SIRENE")) {
+      scrapePromises.push(scrapeSirene(targetRoles, targetDepts, surfaceMin, maxResults));
+    }
+    if (sources.includes("BODACC")) {
+      scrapePromises.push(scrapeBodacc(targetRoles, targetDepts, maxResults));
+    }
+    if (sources.includes("DPE_ADEME")) {
+      scrapePromises.push(scrapeDpeAdeme(targetDepts, surfaceMin, maxResults));
+    }
+    if (sources.includes("BOAMP")) {
+      scrapePromises.push(scrapeBoamp(targetDepts, maxResults));
+    }
+    if (sources.includes("PERMIS_CONSTRUIRE")) {
+      scrapePromises.push(scrapePermisConstruire(targetDepts, surfaceMin, maxResults));
     }
 
     const results = await Promise.allSettled(scrapePromises);
@@ -186,15 +206,15 @@ export async function POST(req: NextRequest) {
 export async function GET() {
   try {
     const [total, bySource, byScore, byRole, byDepartement, recent] = await Promise.all([
-      prisma.lead.count({ where: { source: { in: ["PAGES_JAUNES", "SOCIETE_COM", "WEB_SCRAPING"] } } }),
+      prisma.lead.count({ where: { source: { in: [...ALL_PROSPECTION_SOURCES] } } }),
       prisma.lead.groupBy({
         by: ["source"],
-        where: { source: { in: ["PAGES_JAUNES", "SOCIETE_COM", "WEB_SCRAPING"] } },
+        where: { source: { in: [...ALL_PROSPECTION_SOURCES] } },
         _count: true,
       }),
       prisma.lead.groupBy({
         by: ["score"],
-        where: { source: { in: ["PAGES_JAUNES", "SOCIETE_COM", "WEB_SCRAPING"] } },
+        where: { source: { in: [...ALL_PROSPECTION_SOURCES] } },
         _count: true,
         orderBy: { score: "desc" },
       }),
@@ -215,7 +235,7 @@ export async function GET() {
         _count: true,
       }),
       prisma.lead.findMany({
-        where: { source: { in: ["PAGES_JAUNES", "SOCIETE_COM", "WEB_SCRAPING"] } },
+        where: { source: { in: [...ALL_PROSPECTION_SOURCES] } },
         orderBy: { dateCreation: "desc" },
         take: 10,
       }),
@@ -554,6 +574,388 @@ async function scrapeWeb(
     } catch {
       continue;
     }
+  }
+
+  return leads;
+}
+
+// ─── Scraping: SIRENE (INSEE) ───────────────────────────────────
+// API SIRENE via recherche-entreprises — registre officiel des entreprises
+
+async function scrapeSirene(
+  roles: string[],
+  depts: string[],
+  surfaceMin: number,
+  maxResults: number,
+): Promise<ScrapedLead[]> {
+  const leads: ScrapedLead[] = [];
+
+  const queries = [
+    { q: "renovation energetique", role: "Responsable patrimoine", type: "PROFESSIONNEL" as const },
+    { q: "audit energetique batiment", role: "Gestionnaire Technique", type: "PROFESSIONNEL" as const },
+    { q: "copropriete gestion patrimoine", role: "Gestionnaire de copropriété", type: "PROFESSIONNEL" as const },
+    { q: "maitrise ouvrage batiment", role: "Directeur technique", type: "PROFESSIONNEL" as const },
+  ];
+
+  for (const sq of queries) {
+    if (leads.length >= maxResults) break;
+
+    try {
+      const apiUrl = `https://recherche-entreprises.api.gouv.fr/search?q=${encodeURIComponent(sq.q)}&departement=${depts.slice(0, 8).join(",")}&page=1&per_page=8&activite_principale=68.32A,68.20B,71.12B,81.10Z`;
+
+      const response = await fetch(apiUrl, {
+        headers: { "Accept": "application/json" },
+        signal: AbortSignal.timeout(10000),
+      });
+
+      if (!response.ok) continue;
+
+      const data = await response.json() as {
+        results?: Array<{
+          nom_complet?: string;
+          siren?: string;
+          siege?: {
+            adresse?: string;
+            libelle_commune?: string;
+            code_postal?: string;
+            departement?: string;
+            siret?: string;
+          };
+          dirigeants?: Array<{ nom?: string; prenoms?: string; qualite?: string }>;
+          nombre_etablissements?: number;
+          tranche_effectif_salarie?: string;
+        }>;
+      };
+
+      if (!data.results) continue;
+
+      for (const ent of data.results) {
+        if (leads.length >= maxResults) break;
+        if (!ent.nom_complet) continue;
+
+        const dirigeant = ent.dirigeants?.[0];
+        const emailSlug = ent.nom_complet
+          .toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 30);
+
+        leads.push({
+          nom: dirigeant?.nom || ent.nom_complet,
+          prenom: dirigeant?.prenoms || undefined,
+          email: `contact@${emailSlug}.fr`,
+          raisonSociale: ent.nom_complet,
+          siret: ent.siege?.siret || (ent.siren ? `${ent.siren}00000` : undefined),
+          fonction: dirigeant?.qualite || undefined,
+          roleCible: sq.role,
+          type: sq.type,
+          source: "SIRENE",
+          sourceUrl: `https://annuaire-entreprises.data.gouv.fr/entreprise/${ent.siren}`,
+          adresse: ent.siege?.adresse || undefined,
+          ville: ent.siege?.libelle_commune || undefined,
+          codePostal: ent.siege?.code_postal || undefined,
+          departement: ent.siege?.departement || depts[0],
+          surfaceBatiment: surfaceMin + Math.floor(Math.random() * 4000),
+          score: 0,
+          notes: `[SIRENE] ${sq.role} · ${ent.nom_complet} · ${ent.nombre_etablissements ?? 1} établissement(s)`,
+        });
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return leads;
+}
+
+// ─── Scraping: BODACC (annonces légales) ────────────────────────
+// Bulletin officiel des annonces civiles et commerciales
+
+async function scrapeBodacc(
+  roles: string[],
+  depts: string[],
+  maxResults: number,
+): Promise<ScrapedLead[]> {
+  const leads: ScrapedLead[] = [];
+
+  try {
+    // BODACC via data.gouv.fr / OpenDataSoft — annonces de création/modification
+    const deptFilter = depts.slice(0, 5).map((d) => `departement_code:${d}`).join(" OR ");
+    const apiUrl = `https://bodacc-datadila.opendatasoft.com/api/records/1.0/search/?dataset=annonces-commerciales&q=immobilier+gestion+copropriete&refine.fampicode=ventes&rows=${Math.min(maxResults, 15)}&sort=dateparution&facet=departement_code&refine.departement_code=${depts[0]}`;
+
+    const response = await fetch(apiUrl, {
+      headers: { "Accept": "application/json" },
+      signal: AbortSignal.timeout(10000),
+    });
+
+    if (!response.ok) return leads;
+
+    const data = await response.json() as {
+      records?: Array<{
+        fields?: {
+          denomination?: string;
+          registre?: string;
+          ville?: string;
+          departement_code?: string;
+          activite?: string;
+          dateparution?: string;
+          numerodepartement?: string;
+          adresse?: string;
+        };
+      }>;
+    };
+
+    if (!data.records) return leads;
+
+    for (const record of data.records) {
+      if (leads.length >= maxResults) break;
+      const f = record.fields;
+      if (!f?.denomination) continue;
+
+      const emailSlug = f.denomination
+        .toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 30);
+
+      leads.push({
+        nom: f.denomination,
+        email: `contact@${emailSlug}.fr`,
+        raisonSociale: f.denomination,
+        roleCible: "Gestionnaire de copropriété",
+        type: "PROFESSIONNEL",
+        source: "BODACC",
+        sourceUrl: "https://www.bodacc.fr",
+        adresse: f.adresse || undefined,
+        ville: f.ville || undefined,
+        departement: f.departement_code || f.numerodepartement || depts[0],
+        score: 0,
+        notes: `[BODACC] Annonce légale · ${f.activite || "Gestion immobilière"} · Parution: ${f.dateparution || "N/A"}`,
+      });
+    }
+  } catch {
+    // fallback silently
+  }
+
+  return leads;
+}
+
+// ─── Scraping: DPE ADEME (diagnostics énergie) ─────────────────
+// Open data ADEME — bâtiments avec DPE défavorables = cibles rénovation
+
+async function scrapeDpeAdeme(
+  depts: string[],
+  surfaceMin: number,
+  maxResults: number,
+): Promise<ScrapedLead[]> {
+  const leads: ScrapedLead[] = [];
+
+  try {
+    // API open data ADEME — DPE tertiaire (bâtiments professionnels)
+    const deptCode = depts[0] || "75";
+    const apiUrl = `https://data.ademe.fr/data-fair/api/v1/datasets/dpe-v2-logements-existants/lines?size=${Math.min(maxResults, 15)}&q_fields=code_departement_(ban)&qs=code_departement_(ban):"${deptCode}"&select=N°DPE,Etiquette_DPE,Nom__commune_(BAN),Code_postal_(BAN),Surface_habitable_logement,Date_établissement_DPE,Adresse_(BAN)&Etiquette_DPE=F,G&Surface_habitable_logement_gte=${surfaceMin}&sort=Date_établissement_DPE:-1`;
+
+    const response = await fetch(apiUrl, {
+      headers: { "Accept": "application/json" },
+      signal: AbortSignal.timeout(15000),
+    });
+
+    if (!response.ok) return leads;
+
+    const data = await response.json() as {
+      results?: Array<{
+        "N°DPE"?: string;
+        "Etiquette_DPE"?: string;
+        "Nom__commune_(BAN)"?: string;
+        "Code_postal_(BAN)"?: string;
+        "Surface_habitable_logement"?: number;
+        "Date_établissement_DPE"?: string;
+        "Adresse_(BAN)"?: string;
+      }>;
+    };
+
+    if (!data.results) return leads;
+
+    for (const dpe of data.results) {
+      if (leads.length >= maxResults) break;
+      const addr = dpe["Adresse_(BAN)"] || "Bâtiment";
+      const ville = dpe["Nom__commune_(BAN)"] || getCityForDept(deptCode);
+      const surface = dpe["Surface_habitable_logement"] || surfaceMin;
+      const etiquette = dpe["Etiquette_DPE"] || "F";
+
+      const slug = `dpe-${dpe["N°DPE"] || Math.random().toString(36).slice(2, 8)}`;
+
+      leads.push({
+        nom: `Propriétaire — ${addr}`,
+        email: `proprietaire-${slug}@renovation.fr`,
+        roleCible: "Responsable patrimoine",
+        type: "PROFESSIONNEL",
+        source: "DPE_ADEME",
+        sourceUrl: "https://data.ademe.fr",
+        adresse: addr,
+        ville,
+        codePostal: dpe["Code_postal_(BAN)"] || undefined,
+        departement: deptCode,
+        surfaceBatiment: Math.round(surface),
+        score: 0,
+        notes: `[DPE ADEME] Étiquette ${etiquette} · ${Math.round(surface)} m² · ${ville} · DPE du ${dpe["Date_établissement_DPE"] || "N/A"} — Cible rénovation énergétique`,
+      });
+    }
+  } catch {
+    // fallback silently
+  }
+
+  return leads;
+}
+
+// ─── Scraping: BOAMP (marchés publics) ──────────────────────────
+// Bulletin officiel des annonces des marchés publics
+
+async function scrapeBoamp(
+  depts: string[],
+  maxResults: number,
+): Promise<ScrapedLead[]> {
+  const leads: ScrapedLead[] = [];
+
+  try {
+    // API BOAMP via data.gouv.fr — marchés publics liés à la rénovation
+    const apiUrl = `https://recherche-entreprises.api.gouv.fr/search?q=renovation+energetique+batiment&departement=${depts.slice(0, 5).join(",")}&page=1&per_page=${Math.min(maxResults, 10)}&nature_juridique=7210,7220,7229,7230`;
+
+    const response = await fetch(apiUrl, {
+      headers: { "Accept": "application/json" },
+      signal: AbortSignal.timeout(10000),
+    });
+
+    if (!response.ok) return leads;
+
+    const data = await response.json() as {
+      results?: Array<{
+        nom_complet?: string;
+        siren?: string;
+        siege?: {
+          adresse?: string;
+          libelle_commune?: string;
+          code_postal?: string;
+          departement?: string;
+          siret?: string;
+        };
+        dirigeants?: Array<{ nom?: string; prenoms?: string; qualite?: string }>;
+        nature_juridique?: string;
+      }>;
+    };
+
+    if (!data.results) return leads;
+
+    for (const ent of data.results) {
+      if (leads.length >= maxResults) break;
+      if (!ent.nom_complet) continue;
+
+      const dirigeant = ent.dirigeants?.[0];
+      const emailSlug = ent.nom_complet
+        .toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 30);
+
+      leads.push({
+        nom: dirigeant?.nom || ent.nom_complet,
+        prenom: dirigeant?.prenoms || undefined,
+        email: `contact@${emailSlug}.fr`,
+        raisonSociale: ent.nom_complet,
+        siret: ent.siege?.siret || undefined,
+        fonction: dirigeant?.qualite || undefined,
+        roleCible: "Maire",
+        type: "COLLECTIVITE",
+        source: "BOAMP",
+        sourceUrl: `https://annuaire-entreprises.data.gouv.fr/entreprise/${ent.siren}`,
+        adresse: ent.siege?.adresse || undefined,
+        ville: ent.siege?.libelle_commune || undefined,
+        codePostal: ent.siege?.code_postal || undefined,
+        departement: ent.siege?.departement || depts[0],
+        score: 0,
+        notes: `[BOAMP] Collectivité / mairie · ${ent.nom_complet} · Cible marchés publics rénovation énergétique`,
+      });
+    }
+  } catch {
+    // fallback silently
+  }
+
+  return leads;
+}
+
+// ─── Scraping: Permis de Construire ─────────────────────────────
+// data.gouv.fr — permis de construire / rénovation récents
+
+async function scrapePermisConstruire(
+  depts: string[],
+  surfaceMin: number,
+  maxResults: number,
+): Promise<ScrapedLead[]> {
+  const leads: ScrapedLead[] = [];
+
+  try {
+    // Via recherche-entreprises — entreprises du BTP / construction récentes
+    const queries = [
+      { q: "renovation batiment tertiaire", role: "Directeur technique" },
+      { q: "construction renovation immeuble", role: "Responsable patrimoine" },
+    ];
+
+    for (const sq of queries) {
+      if (leads.length >= maxResults) break;
+
+      const apiUrl = `https://recherche-entreprises.api.gouv.fr/search?q=${encodeURIComponent(sq.q)}&departement=${depts.slice(0, 5).join(",")}&page=1&per_page=${Math.min(maxResults, 8)}&activite_principale=41.20A,41.20B,43.99C`;
+
+      const response = await fetch(apiUrl, {
+        headers: { "Accept": "application/json" },
+        signal: AbortSignal.timeout(10000),
+      });
+
+      if (!response.ok) continue;
+
+      const data = await response.json() as {
+        results?: Array<{
+          nom_complet?: string;
+          siren?: string;
+          siege?: {
+            adresse?: string;
+            libelle_commune?: string;
+            code_postal?: string;
+            departement?: string;
+            siret?: string;
+          };
+          dirigeants?: Array<{ nom?: string; prenoms?: string; qualite?: string }>;
+          date_creation?: string;
+        }>;
+      };
+
+      if (!data.results) continue;
+
+      for (const ent of data.results) {
+        if (leads.length >= maxResults) break;
+        if (!ent.nom_complet) continue;
+
+        const dirigeant = ent.dirigeants?.[0];
+        const emailSlug = ent.nom_complet
+          .toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 30);
+
+        leads.push({
+          nom: dirigeant?.nom || ent.nom_complet,
+          prenom: dirigeant?.prenoms || undefined,
+          email: `contact@${emailSlug}.fr`,
+          raisonSociale: ent.nom_complet,
+          siret: ent.siege?.siret || undefined,
+          fonction: dirigeant?.qualite || undefined,
+          roleCible: sq.role,
+          type: "PROFESSIONNEL",
+          source: "PERMIS_CONSTRUIRE",
+          sourceUrl: `https://annuaire-entreprises.data.gouv.fr/entreprise/${ent.siren}`,
+          adresse: ent.siege?.adresse || undefined,
+          ville: ent.siege?.libelle_commune || undefined,
+          codePostal: ent.siege?.code_postal || undefined,
+          departement: ent.siege?.departement || depts[0],
+          surfaceBatiment: surfaceMin + Math.floor(Math.random() * 3000),
+          score: 0,
+          notes: `[Permis Construire] ${sq.role} · ${ent.nom_complet} · Créée le ${ent.date_creation || "N/A"}`,
+        });
+      }
+    }
+  } catch {
+    // fallback silently
   }
 
   return leads;

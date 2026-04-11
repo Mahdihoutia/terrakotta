@@ -23,6 +23,11 @@ const SOURCE_LABELS: Record<string, { label: string; icon: typeof Globe; color: 
   PAGES_JAUNES: { label: "Pages Jaunes", icon: BookOpen, color: "text-yellow-600 bg-yellow-100" },
   SOCIETE_COM: { label: "societe.com", icon: Building2, color: "text-blue-600 bg-blue-100" },
   WEB_SCRAPING: { label: "Web / API", icon: Globe, color: "text-emerald-600 bg-emerald-100" },
+  SIRENE: { label: "SIRENE (INSEE)", icon: Building2, color: "text-indigo-600 bg-indigo-100" },
+  BODACC: { label: "BODACC", icon: BookOpen, color: "text-orange-600 bg-orange-100" },
+  DPE_ADEME: { label: "DPE ADEME", icon: Target, color: "text-red-600 bg-red-100" },
+  BOAMP: { label: "Marchés Publics", icon: Building2, color: "text-teal-600 bg-teal-100" },
+  PERMIS_CONSTRUIRE: { label: "Permis Construire", icon: Building2, color: "text-violet-600 bg-violet-100" },
 };
 
 const ROLE_OPTIONS = [
@@ -95,7 +100,7 @@ export default function ProspectionPage() {
 
   // Search config
   const [showConfig, setShowConfig] = useState(false);
-  const [selectedSources, setSelectedSources] = useState<LeadSource[]>(["PAGES_JAUNES", "SOCIETE_COM", "WEB_SCRAPING"]);
+  const [selectedSources, setSelectedSources] = useState<LeadSource[]>(["PAGES_JAUNES", "SOCIETE_COM", "WEB_SCRAPING", "SIRENE", "BODACC", "DPE_ADEME", "BOAMP", "PERMIS_CONSTRUIRE"]);
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [selectedDepts, setSelectedDepts] = useState<string[]>([]);
   const [surfaceMin, setSurfaceMin] = useState(1000);
@@ -123,8 +128,9 @@ export default function ProspectionPage() {
       if (leadsRes.ok) {
         const leadsData: Lead[] = await leadsRes.json();
         // Only show prospection leads
+        const prospectionSources = ["PAGES_JAUNES", "SOCIETE_COM", "WEB_SCRAPING", "SIRENE", "BODACC", "DPE_ADEME", "BOAMP", "PERMIS_CONSTRUIRE"];
         const prospectionLeads = leadsData.filter(
-          (l) => l.source === "PAGES_JAUNES" || l.source === "SOCIETE_COM" || l.source === "WEB_SCRAPING",
+          (l) => prospectionSources.includes(l.source),
         );
         setLeads(prospectionLeads);
       }
@@ -452,7 +458,7 @@ export default function ProspectionPage() {
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4 shrink-0 text-tk-text-faint" />
           <div className="flex gap-1">
-            {["TOUS", "PAGES_JAUNES", "SOCIETE_COM", "WEB_SCRAPING"].map((s) => (
+            {["TOUS", ...Object.keys(SOURCE_LABELS)].map((s) => (
               <Button
                 key={s}
                 variant={filterSource === s ? "default" : "outline"}
