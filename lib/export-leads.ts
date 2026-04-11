@@ -62,7 +62,7 @@ function formatRows(leads: Lead[]) {
   });
 }
 
-export async function exportToExcel(leads: Lead[], filename = "leads-terrakotta") {
+export async function exportToExcel(leads: Lead[], filename = "leads-kilowater") {
   const XLSX = await import("xlsx");
   const rows = formatRows(leads);
   const cols = getActiveColumns(leads);
@@ -87,14 +87,14 @@ const PDF_COLUMNS: { label: string; getValue: (l: Lead) => string | undefined }[
   { label: "Date", getValue: (l) => l.dateCreation },
 ];
 
-export async function exportToPdf(leads: Lead[], filename = "leads-terrakotta") {
+export async function exportToPdf(leads: Lead[], filename = "leads-kilowater") {
   const { default: jsPDF } = await import("jspdf");
   const autoTable = (await import("jspdf-autotable")).default;
 
   const doc = new jsPDF({ orientation: "landscape" });
 
   doc.setFontSize(18);
-  doc.text("Terrakotta — Leads", 14, 20);
+  doc.text("Kilowater — Leads", 14, 20);
   doc.setFontSize(10);
   doc.setTextColor(120);
   doc.text(`Exporté le ${new Date().toLocaleDateString("fr-FR")} — ${leads.length} leads`, 14, 28);

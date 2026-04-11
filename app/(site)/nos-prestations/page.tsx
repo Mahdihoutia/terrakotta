@@ -109,15 +109,15 @@ export default function NosPrestationsPage() {
             transition={{ duration: 0.7 }}
             className="max-w-3xl"
           >
-            <p className="text-[0.72rem] uppercase tracking-[0.25em] text-[#8B4513] mb-4">
+            <p className="text-[0.72rem] uppercase tracking-[0.25em] text-[#2563EB] mb-4">
               Nos prestations
             </p>
-            <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-light text-[#2C1810] leading-[1.05] mb-8">
+            <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-light text-[#0D1B35] leading-[1.05] mb-8">
               Une expertise
               <br />
-              <span className="italic text-[#8B4513]">à 360°</span>
+              <span className="italic text-[#2563EB]">à 360°</span>
             </h1>
-            <p className="text-[1rem] text-[#6B5B50] leading-relaxed max-w-xl">
+            <p className="text-[1rem] text-[#4A6285] leading-relaxed max-w-xl">
               De l&apos;audit initial au suivi post-travaux, nous couvrons
               l&apos;ensemble du cycle de vie d&apos;un projet de rénovation
               énergétique avec rigueur et engagement.
@@ -138,7 +138,7 @@ export default function NosPrestationsPage() {
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true, margin: "-80px" }}
-                className={`grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 py-16 md:py-24 border-t border-[#E8E0D4] ${
+                className={`grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 py-16 md:py-24 border-t border-[#DBEAFE] ${
                   i === PRESTATIONS.length - 1 ? "border-b" : ""
                 }`}
               >
@@ -167,15 +167,15 @@ export default function NosPrestationsPage() {
                   }`}
                 >
                   <div className="flex items-center gap-4 mb-6">
-                    <div className="w-12 h-12 rounded-full border border-[#D4C4B0] flex items-center justify-center">
-                      <p.icon size={22} className="text-[#8B4513]" strokeWidth={1.5} />
+                    <div className="w-12 h-12 rounded-full border border-[#BFDBFE] flex items-center justify-center">
+                      <p.icon size={22} className="text-[#2563EB]" strokeWidth={1.5} />
                     </div>
-                    <h2 className="font-display text-3xl md:text-4xl font-normal text-[#2C1810]">
+                    <h2 className="font-display text-3xl md:text-4xl font-normal text-[#0D1B35]">
                       {p.title}
                     </h2>
                   </div>
 
-                  <p className="text-[0.92rem] text-[#6B5B50] leading-[1.8] mb-8">
+                  <p className="text-[0.92rem] text-[#4A6285] leading-[1.8] mb-8">
                     {p.desc}
                   </p>
 
@@ -183,9 +183,9 @@ export default function NosPrestationsPage() {
                     {p.details.map((d) => (
                       <li
                         key={d}
-                        className="flex items-center gap-3 text-[0.85rem] text-[#2C1810]"
+                        className="flex items-center gap-3 text-[0.85rem] text-[#0D1B35]"
                       >
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#8B4513] shrink-0" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#2563EB] shrink-0" />
                         {d}
                       </li>
                     ))}
@@ -193,7 +193,7 @@ export default function NosPrestationsPage() {
 
                   <Link
                     href="/contactez-nous"
-                    className="group inline-flex items-center gap-2 text-[0.8rem] font-semibold uppercase tracking-[0.12em] text-[#8B4513] hover:text-[#6B3A1F] transition-colors w-fit"
+                    className="group inline-flex items-center gap-2 text-[0.8rem] font-semibold uppercase tracking-[0.12em] text-[#2563EB] hover:text-[#1E40AF] transition-colors w-fit"
                   >
                     Demander un devis
                     <ArrowRight
@@ -209,7 +209,7 @@ export default function NosPrestationsPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-24 md:py-32 bg-[#F5F0EB]">
+      <section className="py-24 md:py-32 bg-[#F5FAFF]">
         <div className="mx-auto max-w-[1400px] px-6 md:px-10 lg:px-16 text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -217,21 +217,21 @@ export default function NosPrestationsPage() {
             viewport={{ once: true }}
             transition={{ duration: 0.7 }}
           >
-            <p className="text-[0.72rem] uppercase tracking-[0.25em] text-[#8B4513] mb-4">
+            <p className="text-[0.72rem] uppercase tracking-[0.25em] text-[#2563EB] mb-4">
               Votre projet
             </p>
-            <h2 className="font-display text-4xl md:text-5xl font-light text-[#2C1810] leading-[1.1] mb-6">
+            <h2 className="font-display text-4xl md:text-5xl font-light text-[#0D1B35] leading-[1.1] mb-6">
               Chaque bâtiment mérite
               <br />
-              <span className="italic text-[#8B4513]">une solution sur mesure</span>
+              <span className="italic text-[#2563EB]">une solution sur mesure</span>
             </h2>
-            <p className="text-[0.95rem] text-[#6B5B50] leading-relaxed max-w-md mx-auto mb-10">
+            <p className="text-[0.95rem] text-[#4A6285] leading-relaxed max-w-md mx-auto mb-10">
               Décrivez-nous votre projet et nous vous proposerons un
               accompagnement adapté à vos objectifs et votre budget.
             </p>
             <Link
               href="/contactez-nous"
-              className="group inline-flex items-center gap-3 bg-[#8B4513] px-10 py-4 text-[0.8rem] font-semibold uppercase tracking-[0.14em] text-white transition-all duration-300 hover:bg-[#6B3A1F]"
+              className="group inline-flex items-center gap-3 bg-[#2563EB] px-10 py-4 text-[0.8rem] font-semibold uppercase tracking-[0.14em] text-white transition-all duration-300 hover:bg-[#1E40AF]"
             >
               Contactez-nous
               <ArrowRight

@@ -159,15 +159,15 @@ export default function NosReferencesPage() {
             transition={{ duration: 0.7 }}
             className="max-w-3xl mb-14"
           >
-            <p className="text-[0.72rem] uppercase tracking-[0.25em] text-[#8B4513] mb-4">
+            <p className="text-[0.72rem] uppercase tracking-[0.25em] text-[#2563EB] mb-4">
               Nos références
             </p>
-            <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-light text-[#2C1810] leading-[1.05] mb-8">
+            <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-light text-[#0D1B35] leading-[1.05] mb-8">
               Des réalisations
               <br />
-              <span className="italic text-[#8B4513]">concrètes</span>
+              <span className="italic text-[#2563EB]">concrètes</span>
             </h1>
-            <p className="text-[1rem] text-[#6B5B50] leading-relaxed max-w-xl">
+            <p className="text-[1rem] text-[#4A6285] leading-relaxed max-w-xl">
               Chaque projet raconte une transformation. Découvrez comment nous
               avons accompagné nos clients vers un bâti plus performant.
             </p>
@@ -186,8 +186,8 @@ export default function NosReferencesPage() {
                 onClick={() => setFilter(f)}
                 className={`px-5 py-2.5 text-[0.78rem] font-medium uppercase tracking-[0.12em] border transition-all duration-300 ${
                   filter === f
-                    ? "bg-[#8B4513] border-[#8B4513] text-white"
-                    : "bg-transparent border-[#D4C4B0] text-[#6B5B50] hover:border-[#8B4513] hover:text-[#8B4513]"
+                    ? "bg-[#2563EB] border-[#2563EB] text-white"
+                    : "bg-transparent border-[#BFDBFE] text-[#4A6285] hover:border-[#2563EB] hover:text-[#2563EB]"
                 }`}
               >
                 {f}
@@ -211,7 +211,7 @@ export default function NosReferencesPage() {
                 custom={i}
                 initial="hidden"
                 animate="visible"
-                className="group border border-[#E8E0D4] bg-white hover:border-[#C4956A]/40 transition-colors duration-500"
+                className="group border border-[#DBEAFE] bg-white hover:border-[#60A5FA]/40 transition-colors duration-500"
               >
                   {/* Image */}
                   <div className="relative aspect-[16/10] overflow-hidden">
@@ -222,7 +222,7 @@ export default function NosReferencesPage() {
                       className="object-cover transition-transform duration-700 group-hover:scale-105"
                     />
                     <div className="absolute top-4 left-4">
-                      <span className="inline-block bg-[#2C1810]/80 backdrop-blur-sm px-3 py-1.5 text-[0.65rem] uppercase tracking-[0.15em] text-[#F5F0EB]">
+                      <span className="inline-block bg-[#0D1B35]/80 backdrop-blur-sm px-3 py-1.5 text-[0.65rem] uppercase tracking-[0.15em] text-[#F5FAFF]">
                         {project.type}
                       </span>
                     </div>
@@ -230,7 +230,7 @@ export default function NosReferencesPage() {
 
                   {/* Content */}
                   <div className="p-8 md:p-10">
-                    <div className="flex items-center gap-4 mb-4 text-[0.75rem] text-[#8B7B6E]">
+                    <div className="flex items-center gap-4 mb-4 text-[0.75rem] text-[#94A3B8]">
                       <span className="flex items-center gap-1.5">
                         <MapPin size={13} />
                         {project.location}
@@ -241,19 +241,19 @@ export default function NosReferencesPage() {
                       </span>
                     </div>
 
-                    <h3 className="font-display text-2xl md:text-3xl font-normal text-[#2C1810] mb-2">
+                    <h3 className="font-display text-2xl md:text-3xl font-normal text-[#0D1B35] mb-2">
                       {project.title}
                     </h3>
-                    <p className="text-[0.82rem] text-[#8B7B6E] mb-4">
+                    <p className="text-[0.82rem] text-[#94A3B8] mb-4">
                       {project.category}
                     </p>
-                    <p className="text-[0.88rem] text-[#6B5B50] leading-relaxed mb-6">
+                    <p className="text-[0.88rem] text-[#4A6285] leading-relaxed mb-6">
                       {project.scope}
                     </p>
 
-                    <div className="flex items-center gap-2 pt-4 border-t border-[#E8E0D4]">
-                      <TrendingDown size={16} className="text-[#8B4513]" />
-                      <span className="text-[0.85rem] font-semibold text-[#8B4513]">
+                    <div className="flex items-center gap-2 pt-4 border-t border-[#DBEAFE]">
+                      <TrendingDown size={16} className="text-[#2563EB]" />
+                      <span className="text-[0.85rem] font-semibold text-[#2563EB]">
                         {project.result}
                       </span>
                     </div>

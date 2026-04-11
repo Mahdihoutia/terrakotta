@@ -1,6 +1,6 @@
 import { MetadataRoute } from "next";
 
-const BASE_URL = "https://terrakotta.fr";
+const BASE_URL = "https://kilowater.fr";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();

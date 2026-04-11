@@ -8,8 +8,8 @@ const COORDONNEES = [
   {
     icon: Mail,
     label: "Email",
-    value: "contact@terrakotta.fr",
-    href: "mailto:contact@terrakotta.fr",
+    value: "contact@kilowater.fr",
+    href: "mailto:contact@kilowater.fr",
   },
   {
     icon: Phone,
@@ -104,15 +104,15 @@ export default function ContactezNousPage() {
             transition={{ duration: 0.7 }}
             className="max-w-3xl"
           >
-            <p className="text-[0.72rem] uppercase tracking-[0.25em] text-[#8B4513] mb-4">
+            <p className="text-[0.72rem] uppercase tracking-[0.25em] text-[#2563EB] mb-4">
               Contact
             </p>
-            <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-light text-[#2C1810] leading-[1.05] mb-8">
+            <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-light text-[#0D1B35] leading-[1.05] mb-8">
               Parlons de votre
               <br />
-              <span className="italic text-[#8B4513]">projet</span>
+              <span className="italic text-[#2563EB]">projet</span>
             </h1>
-            <p className="text-[1rem] text-[#6B5B50] leading-relaxed max-w-xl">
+            <p className="text-[1rem] text-[#4A6285] leading-relaxed max-w-xl">
               Que vous soyez particulier, professionnel ou collectivité,
               décrivez-nous votre besoin. Nous vous répondons sous 48h.
             </p>
@@ -135,15 +135,15 @@ export default function ContactezNousPage() {
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="border border-[#E8E0D4] bg-white p-12 md:p-16 text-center"
+                  className="border border-[#DBEAFE] bg-white p-12 md:p-16 text-center"
                 >
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#8B4513]/10 mb-6">
-                    <CheckCircle size={32} className="text-[#8B4513]" />
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#2563EB]/10 mb-6">
+                    <CheckCircle size={32} className="text-[#2563EB]" />
                   </div>
-                  <h2 className="font-display text-3xl font-light text-[#2C1810] mb-4">
+                  <h2 className="font-display text-3xl font-light text-[#0D1B35] mb-4">
                     Message envoyé
                   </h2>
-                  <p className="text-[0.95rem] text-[#6B5B50] leading-relaxed max-w-md mx-auto">
+                  <p className="text-[0.95rem] text-[#4A6285] leading-relaxed max-w-md mx-auto">
                     Merci pour votre message. Nous vous répondrons dans les
                     plus brefs délais, généralement sous 48h ouvrées.
                   </p>
@@ -159,7 +159,7 @@ export default function ContactezNousPage() {
                     <div>
                       <label
                         htmlFor="nom"
-                        className="block text-[0.75rem] uppercase tracking-[0.15em] text-[#6B5B50] mb-2"
+                        className="block text-[0.75rem] uppercase tracking-[0.15em] text-[#4A6285] mb-2"
                       >
                         Nom *
                       </label>
@@ -168,15 +168,15 @@ export default function ContactezNousPage() {
                         name="nom"
                         type="text"
                         required
-                        className="w-full border border-[#D4C4B0] bg-white px-4 py-3.5 text-[0.9rem] text-[#2C1810] outline-none transition-colors focus:border-[#8B4513] placeholder:text-[#B0A090]"
+                        className="w-full border border-[#BFDBFE] bg-white px-4 py-3.5 text-[0.9rem] text-[#0D1B35] outline-none transition-colors focus:border-[#2563EB] placeholder:text-[#BAD0E8]"
                         placeholder="Votre nom"
-                        style={{ background: "white", borderColor: "#D4C4B0" }}
+                        style={{ background: "white", borderColor: "#BFDBFE" }}
                       />
                     </div>
                     <div>
                       <label
                         htmlFor="prenom"
-                        className="block text-[0.75rem] uppercase tracking-[0.15em] text-[#6B5B50] mb-2"
+                        className="block text-[0.75rem] uppercase tracking-[0.15em] text-[#4A6285] mb-2"
                       >
                         Prénom *
                       </label>
@@ -185,9 +185,9 @@ export default function ContactezNousPage() {
                         name="prenom"
                         type="text"
                         required
-                        className="w-full border border-[#D4C4B0] bg-white px-4 py-3.5 text-[0.9rem] text-[#2C1810] outline-none transition-colors focus:border-[#8B4513] placeholder:text-[#B0A090]"
+                        className="w-full border border-[#BFDBFE] bg-white px-4 py-3.5 text-[0.9rem] text-[#0D1B35] outline-none transition-colors focus:border-[#2563EB] placeholder:text-[#BAD0E8]"
                         placeholder="Votre prénom"
-                        style={{ background: "white", borderColor: "#D4C4B0" }}
+                        style={{ background: "white", borderColor: "#BFDBFE" }}
                       />
                     </div>
                   </div>
@@ -196,7 +196,7 @@ export default function ContactezNousPage() {
                     <div>
                       <label
                         htmlFor="email"
-                        className="block text-[0.75rem] uppercase tracking-[0.15em] text-[#6B5B50] mb-2"
+                        className="block text-[0.75rem] uppercase tracking-[0.15em] text-[#4A6285] mb-2"
                       >
                         Email *
                       </label>
@@ -205,15 +205,15 @@ export default function ContactezNousPage() {
                         name="email"
                         type="email"
                         required
-                        className="w-full border border-[#D4C4B0] bg-white px-4 py-3.5 text-[0.9rem] text-[#2C1810] outline-none transition-colors focus:border-[#8B4513] placeholder:text-[#B0A090]"
+                        className="w-full border border-[#BFDBFE] bg-white px-4 py-3.5 text-[0.9rem] text-[#0D1B35] outline-none transition-colors focus:border-[#2563EB] placeholder:text-[#BAD0E8]"
                         placeholder="votre@email.fr"
-                        style={{ background: "white", borderColor: "#D4C4B0" }}
+                        style={{ background: "white", borderColor: "#BFDBFE" }}
                       />
                     </div>
                     <div>
                       <label
                         htmlFor="telephone"
-                        className="block text-[0.75rem] uppercase tracking-[0.15em] text-[#6B5B50] mb-2"
+                        className="block text-[0.75rem] uppercase tracking-[0.15em] text-[#4A6285] mb-2"
                       >
                         Téléphone
                       </label>
@@ -221,9 +221,9 @@ export default function ContactezNousPage() {
                         id="telephone"
                         name="telephone"
                         type="tel"
-                        className="w-full border border-[#D4C4B0] bg-white px-4 py-3.5 text-[0.9rem] text-[#2C1810] outline-none transition-colors focus:border-[#8B4513] placeholder:text-[#B0A090]"
+                        className="w-full border border-[#BFDBFE] bg-white px-4 py-3.5 text-[0.9rem] text-[#0D1B35] outline-none transition-colors focus:border-[#2563EB] placeholder:text-[#BAD0E8]"
                         placeholder="06 XX XX XX XX"
-                        style={{ background: "white", borderColor: "#D4C4B0" }}
+                        style={{ background: "white", borderColor: "#BFDBFE" }}
                       />
                     </div>
                   </div>
@@ -232,7 +232,7 @@ export default function ContactezNousPage() {
                     <div>
                       <label
                         htmlFor="raisonSociale"
-                        className="block text-[0.75rem] uppercase tracking-[0.15em] text-[#6B5B50] mb-2"
+                        className="block text-[0.75rem] uppercase tracking-[0.15em] text-[#4A6285] mb-2"
                       >
                         Raison sociale
                       </label>
@@ -240,15 +240,15 @@ export default function ContactezNousPage() {
                         id="raisonSociale"
                         name="raisonSociale"
                         type="text"
-                        className="w-full border border-[#D4C4B0] bg-white px-4 py-3.5 text-[0.9rem] text-[#2C1810] outline-none transition-colors focus:border-[#8B4513] placeholder:text-[#B0A090]"
+                        className="w-full border border-[#BFDBFE] bg-white px-4 py-3.5 text-[0.9rem] text-[#0D1B35] outline-none transition-colors focus:border-[#2563EB] placeholder:text-[#BAD0E8]"
                         placeholder="Nom de l'entreprise"
-                        style={{ background: "white", borderColor: "#D4C4B0" }}
+                        style={{ background: "white", borderColor: "#BFDBFE" }}
                       />
                     </div>
                     <div>
                       <label
                         htmlFor="fonction"
-                        className="block text-[0.75rem] uppercase tracking-[0.15em] text-[#6B5B50] mb-2"
+                        className="block text-[0.75rem] uppercase tracking-[0.15em] text-[#4A6285] mb-2"
                       >
                         Fonction
                       </label>
@@ -256,9 +256,9 @@ export default function ContactezNousPage() {
                         id="fonction"
                         name="fonction"
                         type="text"
-                        className="w-full border border-[#D4C4B0] bg-white px-4 py-3.5 text-[0.9rem] text-[#2C1810] outline-none transition-colors focus:border-[#8B4513] placeholder:text-[#B0A090]"
+                        className="w-full border border-[#BFDBFE] bg-white px-4 py-3.5 text-[0.9rem] text-[#0D1B35] outline-none transition-colors focus:border-[#2563EB] placeholder:text-[#BAD0E8]"
                         placeholder="Votre poste"
-                        style={{ background: "white", borderColor: "#D4C4B0" }}
+                        style={{ background: "white", borderColor: "#BFDBFE" }}
                       />
                     </div>
                   </div>
@@ -267,15 +267,15 @@ export default function ContactezNousPage() {
                     <div>
                       <label
                         htmlFor="type"
-                        className="block text-[0.75rem] uppercase tracking-[0.15em] text-[#6B5B50] mb-2"
+                        className="block text-[0.75rem] uppercase tracking-[0.15em] text-[#4A6285] mb-2"
                       >
                         Type de projet
                       </label>
                       <select
                         id="type"
                         name="type"
-                        className="w-full border border-[#D4C4B0] bg-white px-4 py-3.5 text-[0.9rem] text-[#2C1810] outline-none transition-colors focus:border-[#8B4513] appearance-none"
-                        style={{ background: "white", borderColor: "#D4C4B0" }}
+                        className="w-full border border-[#BFDBFE] bg-white px-4 py-3.5 text-[0.9rem] text-[#0D1B35] outline-none transition-colors focus:border-[#2563EB] appearance-none"
+                        style={{ background: "white", borderColor: "#BFDBFE" }}
                         defaultValue=""
                       >
                         <option value="" disabled>
@@ -293,7 +293,7 @@ export default function ContactezNousPage() {
                   <div>
                     <label
                       htmlFor="message"
-                      className="block text-[0.75rem] uppercase tracking-[0.15em] text-[#6B5B50] mb-2"
+                      className="block text-[0.75rem] uppercase tracking-[0.15em] text-[#4A6285] mb-2"
                     >
                       Votre message *
                     </label>
@@ -302,9 +302,9 @@ export default function ContactezNousPage() {
                       name="message"
                       required
                       rows={6}
-                      className="w-full border border-[#D4C4B0] bg-white px-4 py-3.5 text-[0.9rem] text-[#2C1810] outline-none transition-colors focus:border-[#8B4513] placeholder:text-[#B0A090] resize-none"
+                      className="w-full border border-[#BFDBFE] bg-white px-4 py-3.5 text-[0.9rem] text-[#0D1B35] outline-none transition-colors focus:border-[#2563EB] placeholder:text-[#BAD0E8] resize-none"
                       placeholder="Décrivez votre projet, le type de bâtiment, vos objectifs..."
-                      style={{ background: "white", borderColor: "#D4C4B0" }}
+                      style={{ background: "white", borderColor: "#BFDBFE" }}
                     />
                   </div>
 
@@ -317,7 +317,7 @@ export default function ContactezNousPage() {
                   <button
                     type="submit"
                     disabled={sending}
-                    className="group inline-flex items-center gap-3 bg-[#8B4513] px-10 py-4 text-[0.8rem] font-semibold uppercase tracking-[0.14em] text-white transition-all duration-300 hover:bg-[#6B3A1F] disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="group inline-flex items-center gap-3 bg-[#2563EB] px-10 py-4 text-[0.8rem] font-semibold uppercase tracking-[0.14em] text-white transition-all duration-300 hover:bg-[#1E40AF] disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {sending ? "Envoi en cours…" : "Envoyer le message"}
                     {!sending && (
@@ -338,29 +338,29 @@ export default function ContactezNousPage() {
               transition={{ duration: 0.7, delay: 0.4 }}
               className="lg:col-span-4 lg:col-start-9"
             >
-              <div className="border border-[#E8E0D4] bg-[#F5F0EB] p-8 md:p-10">
-                <h2 className="font-display text-2xl font-normal text-[#2C1810] mb-8">
+              <div className="border border-[#DBEAFE] bg-[#F5FAFF] p-8 md:p-10">
+                <h2 className="font-display text-2xl font-normal text-[#0D1B35] mb-8">
                   Nos coordonnées
                 </h2>
                 <ul className="space-y-6">
                   {COORDONNEES.map((c) => (
                     <li key={c.label} className="flex items-start gap-4">
-                      <div className="w-10 h-10 rounded-full border border-[#D4C4B0] flex items-center justify-center shrink-0 mt-0.5">
-                        <c.icon size={18} className="text-[#8B4513]" strokeWidth={1.5} />
+                      <div className="w-10 h-10 rounded-full border border-[#BFDBFE] flex items-center justify-center shrink-0 mt-0.5">
+                        <c.icon size={18} className="text-[#2563EB]" strokeWidth={1.5} />
                       </div>
                       <div>
-                        <p className="text-[0.72rem] uppercase tracking-[0.15em] text-[#8B7B6E] mb-1">
+                        <p className="text-[0.72rem] uppercase tracking-[0.15em] text-[#94A3B8] mb-1">
                           {c.label}
                         </p>
                         {c.href ? (
                           <a
                             href={c.href}
-                            className="text-[0.9rem] text-[#2C1810] hover:text-[#8B4513] transition-colors"
+                            className="text-[0.9rem] text-[#0D1B35] hover:text-[#2563EB] transition-colors"
                           >
                             {c.value}
                           </a>
                         ) : (
-                          <p className="text-[0.9rem] text-[#2C1810]">
+                          <p className="text-[0.9rem] text-[#0D1B35]">
                             {c.value}
                           </p>
                         )}
@@ -371,8 +371,8 @@ export default function ContactezNousPage() {
               </div>
 
               {/* Note */}
-              <div className="mt-8 border-l-2 border-[#8B4513] pl-6">
-                <p className="text-[0.85rem] text-[#6B5B50] leading-relaxed italic">
+              <div className="mt-8 border-l-2 border-[#2563EB] pl-6">
+                <p className="text-[0.85rem] text-[#4A6285] leading-relaxed italic">
                   Nous nous engageons à vous répondre sous 48 heures ouvrées.
                   Pour les demandes urgentes, n&apos;hésitez pas à nous
                   appeler directement.

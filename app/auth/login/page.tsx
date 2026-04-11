@@ -62,7 +62,7 @@ function LoginForm() {
             </svg>
           </div>
           <h1 className="text-2xl font-semibold text-[#2C1810]">
-            Terrakotta
+            Kilowater
           </h1>
           <p className="mt-1 text-sm text-[#6b5b50]">
             Connectez-vous au tableau de bord
@@ -87,7 +87,7 @@ function LoginForm() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@terrakotta.fr"
+                placeholder="admin@kilowater.fr"
                 className="w-full rounded-lg border border-[#d9d0c4] bg-[#FAF8F5] px-3.5 py-2.5 text-sm text-[#2C1810] placeholder:text-[#9a8a7c] focus:border-[#8B4513] focus:outline-none focus:ring-2 focus:ring-[#8B4513]/20 transition-colors"
               />
             </div>
@@ -133,7 +133,7 @@ function LoginForm() {
         {/* Footer */}
         <p className="mt-6 text-center text-xs text-[#9a8a7c]">
           Espace r&eacute;serv&eacute; &agrave; l&rsquo;administrateur
-          Terrakotta
+          Kilowater
         </p>
       </div>
     </div>

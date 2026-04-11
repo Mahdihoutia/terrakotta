@@ -1,4 +1,4 @@
-// Terrakotta — Schéma Prisma pour Supabase (PostgreSQL)
+// Kilowater — Schéma Prisma pour Supabase (PostgreSQL)
 
 generator client {
   provider = "prisma-client-js"

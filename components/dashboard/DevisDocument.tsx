@@ -102,7 +102,7 @@ const SECTIONS: QuestionSection[] = [
       { id: "entreprise_siret", label: "SIRET", type: "text", placeholder: "XXX XXX XXX XXXXX" },
       { id: "entreprise_adresse", label: "Adresse", type: "text", placeholder: "Adresse complète", colSpan: 2 },
       { id: "entreprise_telephone", label: "Téléphone", type: "text", placeholder: "06 XX XX XX XX" },
-      { id: "entreprise_email", label: "Email", type: "text", placeholder: "contact@terrakotta.fr" },
+      { id: "entreprise_email", label: "Email", type: "text", placeholder: "contact@kilowater.fr" },
       { id: "entreprise_rge", label: "Qualification RGE", type: "text", placeholder: "N° de qualification" },
     ],
   },

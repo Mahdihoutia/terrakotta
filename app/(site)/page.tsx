@@ -103,8 +103,8 @@ const REFERENCES = [
   },
 ];
 
-/** Video background URL — HD construction / renovation footage */
-const VIDEO_BG_URL = "https://assets.mixkit.co/videos/9686/9686-720.mp4";
+/** Video background URL — Blue hydrogen / energy particles */
+const VIDEO_BG_URL = "https://assets.mixkit.co/videos/8221/8221-720.mp4";
 
 /* ─────────── Page Component ─────────── */
 export default function HomePage() {
@@ -115,14 +115,18 @@ export default function HomePage() {
         {/* Background Image */}
         <div className="absolute inset-0">
           <Image
-            src="https://images.unsplash.com/photo-1448630360428-65456885c650?w=1920&q=85"
-            alt="Immeuble moderne en contre-plongée vers le ciel"
+            src="https://images.unsplash.com/photo-1695445301510-459fb368d8af?w=1920&q=85&auto=format&fit=crop"
+            alt="Rangée de climatiseurs sur un toit — rénovation énergétique"
             fill
-            className="object-cover"
+            className="object-cover brightness-75"
             priority
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#1a0f08]/90 via-[#1a0f08]/40 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#1a0f08]/30 to-transparent" />
+          {/* Overlay principal — assombrit toute l'image */}
+          <div className="absolute inset-0 bg-[#05101F]/60" />
+          {/* Gradient bas → haut pour le texte */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#05101F]/95 via-[#05101F]/30 to-transparent" />
+          {/* Touche bleue subtile */}
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0A1F4E]/40 to-transparent" />
         </div>
 
         {/* Hero Content */}
@@ -133,7 +137,7 @@ export default function HomePage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.2 }}
-                className="text-[0.72rem] uppercase tracking-[0.3em] text-[#C4956A] mb-6"
+                className="text-[0.72rem] uppercase tracking-[0.3em] text-[#60A5FA] mb-6"
               >
                 Bureau d&apos;étude en rénovation énergétique
               </motion.p>
@@ -145,18 +149,18 @@ export default function HomePage() {
                 className="font-display text-5xl md:text-7xl lg:text-[5.5rem] font-light text-white leading-[1.05] mb-8"
               >
                 Rénover
-                <span className="italic text-[#C4956A]"> l&apos;existant</span>,
+                <span className="italic text-[#60A5FA]"> l&apos;existant</span>,
                 <br />
                 construire
                 <br />
-                <span className="italic text-[#C4956A]">l&apos;avenir</span>
+                <span className="italic text-[#60A5FA]">l&apos;avenir</span>
               </motion.h1>
 
               <motion.p
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.6 }}
-                className="text-[1.05rem] text-[#D4C4B0] max-w-lg leading-relaxed mb-10"
+                className="text-[1.05rem] text-[#BFDBFE] max-w-lg leading-relaxed mb-10"
               >
                 Nous transformons le bâti existant en espaces performants,
                 confortables et durables. De l&apos;audit à la livraison,
@@ -171,7 +175,7 @@ export default function HomePage() {
               >
                 <Link
                   href="/contactez-nous"
-                  className="group inline-flex items-center gap-3 bg-[#8B4513] px-8 py-4 text-[0.8rem] font-semibold uppercase tracking-[0.14em] text-white transition-all duration-300 hover:bg-[#A0522D]"
+                  className="group inline-flex items-center gap-3 bg-[#2563EB] px-8 py-4 text-[0.8rem] font-semibold uppercase tracking-[0.14em] text-white transition-all duration-300 hover:bg-[#A0522D]"
                 >
                   Démarrer un projet
                   <ArrowRight
@@ -195,11 +199,11 @@ export default function HomePage() {
               transition={{ delay: 1.2, duration: 0.6 }}
               className="hidden lg:flex lg:col-span-4 justify-end items-end"
             >
-              <div className="flex flex-col items-center gap-3 text-[#C4956A]">
+              <div className="flex flex-col items-center gap-3 text-[#60A5FA]">
                 <span className="text-[0.65rem] uppercase tracking-[0.25em] [writing-mode:vertical-lr]">
                   Défiler
                 </span>
-                <div className="w-px h-16 bg-gradient-to-b from-[#C4956A] to-transparent" />
+                <div className="w-px h-16 bg-gradient-to-b from-[#60A5FA] to-transparent" />
               </div>
             </motion.div>
           </div>
@@ -207,7 +211,7 @@ export default function HomePage() {
       </section>
 
       {/* ═══════════ CHIFFRES CLÉS ═══════════ */}
-      <section className="bg-[#2C1810] py-16 md:py-20">
+      <section className="bg-[#0D1B35] py-16 md:py-20">
         <div className="mx-auto max-w-[1400px] px-6 md:px-10 lg:px-16">
           <motion.div
             variants={stagger}
@@ -223,10 +227,10 @@ export default function HomePage() {
                 custom={i}
                 className="text-center"
               >
-                <p className="font-display text-4xl md:text-5xl font-light text-[#C4956A] mb-2">
+                <p className="font-display text-4xl md:text-5xl font-light text-[#60A5FA] mb-2">
                   {item.value}
                 </p>
-                <p className="text-[0.78rem] uppercase tracking-[0.15em] text-[#A0876E]">
+                <p className="text-[0.78rem] uppercase tracking-[0.15em] text-[#7BAAC8]">
                   {item.label}
                 </p>
               </motion.div>
@@ -247,17 +251,17 @@ export default function HomePage() {
             className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-20"
           >
             <div className="lg:col-span-5">
-              <p className="text-[0.72rem] uppercase tracking-[0.25em] text-[#8B4513] mb-4">
+              <p className="text-[0.72rem] uppercase tracking-[0.25em] text-[#2563EB] mb-4">
                 Nos expertises
               </p>
-              <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-light text-[#2C1810] leading-[1.1]">
+              <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-light text-[#0D1B35] leading-[1.1]">
                 Un savoir-faire
                 <br />
-                <span className="italic text-[#8B4513]">complet</span>
+                <span className="italic text-[#2563EB]">complet</span>
               </h2>
             </div>
             <div className="lg:col-span-5 lg:col-start-8 flex items-end">
-              <p className="text-[0.95rem] text-[#6B5B50] leading-relaxed">
+              <p className="text-[0.95rem] text-[#4A6285] leading-relaxed">
                 De l&apos;audit initial à la réception des travaux, nous mobilisons
                 une expertise transversale pour garantir la réussite de chaque
                 projet de rénovation énergétique.
@@ -271,34 +275,34 @@ export default function HomePage() {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-50px" }}
-            className="grid grid-cols-1 md:grid-cols-2 gap-px bg-[#E8E0D4]"
+            className="grid grid-cols-1 md:grid-cols-2 gap-px bg-[#DBEAFE]"
           >
             {EXPERTISES.map((item, i) => (
               <motion.div
                 key={item.num}
                 variants={fadeUp}
                 custom={i}
-                className="group bg-[#FAF8F5] p-10 md:p-14 transition-colors duration-500 hover:bg-[#F5F0EB]"
+                className="group bg-[#F8FBFF] p-10 md:p-14 transition-colors duration-500 hover:bg-[#F5FAFF]"
               >
                 <div className="flex items-start justify-between mb-8">
-                  <span className="font-display text-6xl font-light text-[#E8E0D4] group-hover:text-[#D4C4B0] transition-colors duration-500">
+                  <span className="font-display text-6xl font-light text-[#DBEAFE] group-hover:text-[#BFDBFE] transition-colors duration-500">
                     {item.num}
                   </span>
                   <item.icon
                     size={28}
-                    className="text-[#8B4513] opacity-60 group-hover:opacity-100 transition-opacity duration-500"
+                    className="text-[#2563EB] opacity-60 group-hover:opacity-100 transition-opacity duration-500"
                     strokeWidth={1.5}
                   />
                 </div>
-                <h3 className="font-display text-2xl md:text-3xl font-normal text-[#2C1810] mb-4">
+                <h3 className="font-display text-2xl md:text-3xl font-normal text-[#0D1B35] mb-4">
                   {item.title}
                 </h3>
-                <p className="text-[0.88rem] text-[#6B5B50] leading-relaxed">
+                <p className="text-[0.88rem] text-[#4A6285] leading-relaxed">
                   {item.desc}
                 </p>
                 <Link
                   href="/nos-prestations"
-                  className="mt-8 flex items-center gap-2 text-[#8B4513] opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500"
+                  className="mt-8 flex items-center gap-2 text-[#2563EB] opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500"
                 >
                   <span className="text-[0.78rem] font-semibold uppercase tracking-[0.12em]">
                     En savoir plus
@@ -318,7 +322,7 @@ export default function HomePage() {
           >
             <Link
               href="/nos-prestations"
-              className="group inline-flex items-center gap-3 border border-[#8B4513] px-8 py-4 text-[0.8rem] font-semibold uppercase tracking-[0.14em] text-[#8B4513] transition-all duration-300 hover:bg-[#8B4513] hover:text-white"
+              className="group inline-flex items-center gap-3 border border-[#2563EB] px-8 py-4 text-[0.8rem] font-semibold uppercase tracking-[0.14em] text-[#2563EB] transition-all duration-300 hover:bg-[#2563EB] hover:text-white"
             >
               Toutes nos prestations
               <ChevronRight
@@ -331,22 +335,22 @@ export default function HomePage() {
       </section>
 
       {/* ═══════════ ILS NOUS FONT CONFIANCE ═══════════ */}
-      <section className="py-14 md:py-16 bg-[#FAF8F5] border-y border-[#E8E0D4] overflow-hidden">
+      <section className="py-14 md:py-16 bg-[#F8FBFF] border-y border-[#DBEAFE] overflow-hidden">
         <div className="mx-auto max-w-[1400px] px-6 md:px-10 lg:px-16 mb-10">
           <motion.p
             initial={{ opacity: 0, y: 10 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
-            className="text-center text-[0.72rem] uppercase tracking-[0.25em] text-[#8B7B6E]"
+            className="text-center text-[0.72rem] uppercase tracking-[0.25em] text-[#94A3B8]"
           >
             Ils nous font confiance
           </motion.p>
         </div>
         <div className="relative">
           {/* Fade edges */}
-          <div className="absolute left-0 top-0 bottom-0 w-24 md:w-40 bg-gradient-to-r from-[#FAF8F5] to-transparent z-10" />
-          <div className="absolute right-0 top-0 bottom-0 w-24 md:w-40 bg-gradient-to-l from-[#FAF8F5] to-transparent z-10" />
+          <div className="absolute left-0 top-0 bottom-0 w-24 md:w-40 bg-gradient-to-r from-[#F8FBFF] to-transparent z-10" />
+          <div className="absolute right-0 top-0 bottom-0 w-24 md:w-40 bg-gradient-to-l from-[#F8FBFF] to-transparent z-10" />
           {/* Scrolling track */}
           <div className="flex animate-scroll-logos">
             {[...Array(2)].map((_, setIndex) => (
@@ -366,7 +370,7 @@ export default function HomePage() {
                     src={logo.src}
                     alt={logo.alt}
                     className="shrink-0 h-10 md:h-12 w-auto select-none opacity-40 hover:opacity-60 transition-opacity duration-300"
-                    style={{ width: logo.w, color: "#8B7B6E" }}
+                    style={{ width: logo.w, color: "#94A3B8" }}
                     draggable={false}
                   />
                 ))}
@@ -393,7 +397,7 @@ export default function HomePage() {
         {/* Video background — poster as fallback for mobile */}
         <div
           className="absolute inset-0 bg-cover bg-center md:hidden"
-          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1920&q=80')" }}
+          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=1920&q=80')" }}
         />
         {/* eslint-disable-next-line react/no-unknown-property */}
         <video
@@ -402,13 +406,14 @@ export default function HomePage() {
           loop
           playsInline
           preload="auto"
-          className="absolute inset-0 w-full h-full object-cover hidden md:block"
-          poster="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1920&q=80"
+          className="absolute inset-0 w-full h-full object-cover hidden md:block [filter:saturate(1.4)_brightness(0.85)_hue-rotate(5deg)]"
+          poster="https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=1920&q=80"
         >
           <source src={VIDEO_BG_URL} type="video/mp4" />
         </video>
-        <div className="absolute inset-0 bg-[#1a0f08]/70" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#1a0f08]/40 via-transparent to-[#1a0f08]/30" />
+        {/* Blue hydrogen overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#030D1F]/80 via-[#0A1F4E]/65 to-[#071535]/75" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0A1628]/50 via-transparent to-transparent" />
         <div className="relative z-10 mx-auto max-w-[1400px] px-6 md:px-10 lg:px-16 text-center">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -416,28 +421,28 @@ export default function HomePage() {
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
           >
-            <div className="inline-flex items-center gap-2 mb-8 border border-[#C4956A]/40 rounded-full px-5 py-2">
-              <Zap size={14} className="text-[#C4956A]" />
-              <span className="text-[0.72rem] uppercase tracking-[0.25em] text-[#C4956A]">
+            <div className="inline-flex items-center gap-2 mb-8 border border-[#60A5FA]/40 rounded-full px-5 py-2">
+              <Zap size={14} className="text-[#60A5FA]" />
+              <span className="text-[0.72rem] uppercase tracking-[0.25em] text-[#60A5FA]">
                 Notre engagement
               </span>
             </div>
             <h2 className="font-display text-5xl md:text-7xl lg:text-[6rem] xl:text-[7rem] font-light text-white leading-[1] mb-8">
               Chaque bâtiment
               <br />
-              <span className="italic text-[#C4956A]">mérite sa</span>
+              <span className="italic text-[#60A5FA]">mérite sa</span>
               <br />
-              <span className="italic text-[#C4956A]">révolution</span>
+              <span className="italic text-[#60A5FA]">révolution</span>
               <span className="text-white">.</span>
             </h2>
-            <p className="text-[1.05rem] md:text-[1.2rem] text-[#D4C4B0] max-w-2xl mx-auto leading-relaxed mb-12">
+            <p className="text-[1.05rem] md:text-[1.2rem] text-[#BFDBFE] max-w-2xl mx-auto leading-relaxed mb-12">
               La transition énergétique ne se décrète pas. Elle se construit,
               mur après mur, chantier après chantier. Nous sommes ceux qui
               transforment l&apos;urgence en action.
             </p>
             <Link
               href="/contactez-nous"
-              className="group inline-flex items-center gap-3 bg-[#C4956A] px-10 py-5 text-[0.82rem] font-semibold uppercase tracking-[0.14em] text-[#2C1810] transition-all duration-300 hover:bg-[#D4A87A]"
+              className="group inline-flex items-center gap-3 bg-[#60A5FA] px-10 py-5 text-[0.82rem] font-semibold uppercase tracking-[0.14em] text-[#0D1B35] transition-all duration-300 hover:bg-[#93C5FD]"
             >
               Lancez votre projet
               <ArrowRight
@@ -447,11 +452,11 @@ export default function HomePage() {
             </Link>
           </motion.div>
         </div>
-        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#F5F0EB] to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#F5FAFF] to-transparent" />
       </section>
 
       {/* ═══════════ RÉFÉRENCES / RÉALISATIONS ═══════════ */}
-      <section className="py-24 md:py-36 bg-[#F5F0EB]">
+      <section className="py-24 md:py-36 bg-[#F5FAFF]">
         <div className="mx-auto max-w-[1400px] px-6 md:px-10 lg:px-16">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -461,17 +466,17 @@ export default function HomePage() {
             className="flex flex-col md:flex-row items-start md:items-end justify-between gap-6 mb-16"
           >
             <div>
-              <p className="text-[0.72rem] uppercase tracking-[0.25em] text-[#8B4513] mb-4">
+              <p className="text-[0.72rem] uppercase tracking-[0.25em] text-[#2563EB] mb-4">
                 Nos références
               </p>
-              <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-light text-[#2C1810] leading-[1.1]">
+              <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-light text-[#0D1B35] leading-[1.1]">
                 Des projets
-                <span className="italic text-[#8B4513]"> qui parlent</span>
+                <span className="italic text-[#2563EB]"> qui parlent</span>
               </h2>
             </div>
             <Link
               href="/nos-references"
-              className="group inline-flex items-center gap-2 text-[0.82rem] font-semibold uppercase tracking-[0.14em] text-[#8B4513] hover:text-[#6B3A1F] transition-colors"
+              className="group inline-flex items-center gap-2 text-[0.82rem] font-semibold uppercase tracking-[0.14em] text-[#2563EB] hover:text-[#1E40AF] transition-colors"
             >
               Voir toutes les références
               <ArrowUpRight
@@ -501,18 +506,18 @@ export default function HomePage() {
                 fill
                 className="object-cover transition-transform duration-700 group-hover:scale-105"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#1a0f08]/80 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0A1628]/80 via-transparent to-transparent" />
               <div className="absolute bottom-0 left-0 right-0 p-8 md:p-10">
-                <span className="inline-block mb-3 text-[0.68rem] uppercase tracking-[0.2em] text-[#C4956A]">
+                <span className="inline-block mb-3 text-[0.68rem] uppercase tracking-[0.2em] text-[#60A5FA]">
                   {REFERENCES[0].type} — {REFERENCES[0].year}
                 </span>
                 <h3 className="font-display text-3xl md:text-4xl font-light text-white mb-2">
                   {REFERENCES[0].title}
                 </h3>
-                <p className="text-[0.88rem] text-[#D4C4B0] mb-1">
+                <p className="text-[0.88rem] text-[#BFDBFE] mb-1">
                   {REFERENCES[0].location}
                 </p>
-                <p className="text-[0.82rem] font-semibold text-[#C4956A]">
+                <p className="text-[0.82rem] font-semibold text-[#60A5FA]">
                   {REFERENCES[0].result}
                 </p>
               </div>
@@ -533,15 +538,15 @@ export default function HomePage() {
                     fill
                     className="object-cover transition-transform duration-700 group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#1a0f08]/80 via-[#1a0f08]/20 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0A1628]/80 via-[#0A1628]/20 to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8">
-                    <span className="inline-block mb-2 text-[0.65rem] uppercase tracking-[0.2em] text-[#C4956A]">
+                    <span className="inline-block mb-2 text-[0.65rem] uppercase tracking-[0.2em] text-[#60A5FA]">
                       {ref.type} — {ref.year}
                     </span>
                     <h3 className="font-display text-xl md:text-2xl font-light text-white mb-1">
                       {ref.title}
                     </h3>
-                    <p className="text-[0.78rem] text-[#D4C4B0]">
+                    <p className="text-[0.78rem] text-[#BFDBFE]">
                       {ref.location} · {ref.result}
                     </p>
                   </div>
@@ -561,15 +566,15 @@ export default function HomePage() {
                 fill
                 className="object-cover transition-transform duration-700 group-hover:scale-105"
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-[#1a0f08]/80 via-[#1a0f08]/30 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-[#0A1628]/80 via-[#0A1628]/30 to-transparent" />
               <div className="absolute bottom-0 left-0 p-8 md:p-12 max-w-xl">
-                <span className="inline-block mb-3 text-[0.68rem] uppercase tracking-[0.2em] text-[#C4956A]">
+                <span className="inline-block mb-3 text-[0.68rem] uppercase tracking-[0.2em] text-[#60A5FA]">
                   {REFERENCES[3].type} — {REFERENCES[3].year}
                 </span>
                 <h3 className="font-display text-2xl md:text-4xl font-light text-white mb-2">
                   {REFERENCES[3].title}
                 </h3>
-                <p className="text-[0.88rem] text-[#D4C4B0]">
+                <p className="text-[0.88rem] text-[#BFDBFE]">
                   {REFERENCES[3].location} · {REFERENCES[3].result}
                 </p>
               </div>
@@ -587,7 +592,7 @@ export default function HomePage() {
             fill
             className="object-cover"
           />
-          <div className="absolute inset-0 bg-[#2C1810]/85" />
+          <div className="absolute inset-0 bg-[#0D1B35]/85" />
         </div>
 
         <div className="relative z-10 mx-auto max-w-[1400px] px-6 md:px-10 lg:px-16">
@@ -599,24 +604,24 @@ export default function HomePage() {
             className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center"
           >
             <div className="lg:col-span-6">
-              <p className="text-[0.72rem] uppercase tracking-[0.25em] text-[#C4956A] mb-4">
+              <p className="text-[0.72rem] uppercase tracking-[0.25em] text-[#60A5FA] mb-4">
                 Notre approche
               </p>
-              <h2 className="font-display text-4xl md:text-5xl font-light text-[#F5F0EB] leading-[1.1] mb-6">
+              <h2 className="font-display text-4xl md:text-5xl font-light text-[#F5FAFF] leading-[1.1] mb-6">
                 Rigueur technique,
                 <br />
-                <span className="italic text-[#C4956A]">vision humaine</span>
+                <span className="italic text-[#60A5FA]">vision humaine</span>
               </h2>
-              <p className="text-[0.95rem] text-[#D4C4B0] leading-relaxed max-w-md mb-8">
+              <p className="text-[0.95rem] text-[#BFDBFE] leading-relaxed max-w-md mb-8">
                 Chaque bâtiment a son histoire. Notre rôle est de comprendre ses
                 contraintes, révéler son potentiel et concevoir une rénovation
                 qui allie performance, confort et pérennité.
               </p>
               <Link
                 href="/qui-sommes-nous"
-                className="group inline-flex items-center gap-3 border border-[#C4956A] px-8 py-4 text-[0.8rem] font-semibold uppercase tracking-[0.14em] text-[#F5F0EB] transition-all duration-300 hover:bg-[#C4956A] hover:text-[#2C1810]"
+                className="group inline-flex items-center gap-3 border border-[#60A5FA] px-8 py-4 text-[0.8rem] font-semibold uppercase tracking-[0.14em] text-[#F5FAFF] transition-all duration-300 hover:bg-[#60A5FA] hover:text-[#0D1B35]"
               >
-                Découvrir Terrakotta
+                Découvrir Kilowater
                 <ArrowRight
                   size={14}
                   className="transition-transform group-hover:translate-x-1"
@@ -650,14 +655,14 @@ export default function HomePage() {
                   transition={{ delay: i * 0.15, duration: 0.6 }}
                   className="flex gap-6"
                 >
-                  <span className="font-display text-3xl font-light text-[#C4956A]/50 shrink-0">
+                  <span className="font-display text-3xl font-light text-[#60A5FA]/50 shrink-0">
                     {item.step}
                   </span>
                   <div>
-                    <h3 className="font-display text-xl text-[#F5F0EB] mb-2">
+                    <h3 className="font-display text-xl text-[#F5FAFF] mb-2">
                       {item.title}
                     </h3>
-                    <p className="text-[0.85rem] text-[#A0876E] leading-relaxed">
+                    <p className="text-[0.85rem] text-[#7BAAC8] leading-relaxed">
                       {item.text}
                     </p>
                   </div>

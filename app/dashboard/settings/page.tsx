@@ -28,7 +28,7 @@ export default function SettingsPage() {
                 <label className="text-sm font-medium">Nom</label>
                 <input
                   type="text"
-                  defaultValue="Terrakotta"
+                  defaultValue="Kilowater"
                   className="w-full rounded-md border bg-background px-3 py-2 text-sm"
                 />
               </div>
@@ -44,7 +44,7 @@ export default function SettingsPage() {
                 <label className="text-sm font-medium">Email</label>
                 <input
                   type="email"
-                  defaultValue="contact@terrakotta.fr"
+                  defaultValue="contact@kilowater.fr"
                   className="w-full rounded-md border bg-background px-3 py-2 text-sm"
                 />
               </div>

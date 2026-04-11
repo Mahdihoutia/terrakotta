@@ -3,7 +3,7 @@
   "autoPort": true,
   "configurations": [
     {
-      "name": "terrakotta-dev",
+      "name": "kilowater-dev",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 3000

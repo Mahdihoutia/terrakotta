@@ -17,10 +17,10 @@ const manrope = Manrope({
   display: "swap",
 });
 
-const SITE_URL = "https://terrakotta.fr";
-const SITE_NAME = "Terrakotta";
+const SITE_URL = "https://kilowater.fr";
+const SITE_NAME = "Kilowater";
 const DEFAULT_DESCRIPTION =
-  "Terrakotta, bureau d'étude spécialisé en rénovation énergétique. Audit énergétique, maîtrise d'œuvre, accompagnement CEE et MaPrimeRénov' pour particuliers, professionnels et collectivités.";
+  "Kilowater, bureau d'étude spécialisé en rénovation énergétique. Audit énergétique, maîtrise d'œuvre, accompagnement CEE et MaPrimeRénov' pour particuliers, professionnels et collectivités.";
 
 export const metadata: Metadata = {
   title: {
@@ -55,7 +55,7 @@ export const metadata: Metadata = {
         url: `${SITE_URL}/og-image.jpg`,
         width: 1200,
         height: 630,
-        alt: "Terrakotta — Bureau d'étude en rénovation énergétique",
+        alt: "Kilowater — Bureau d'étude en rénovation énergétique",
       },
     ],
   },
@@ -63,7 +63,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: `${SITE_NAME} — Bureau d'étude en rénovation énergétique`,
     description: DEFAULT_DESCRIPTION,
-    creator: "@terrakotta",
+    creator: "@kilowater",
     images: [`${SITE_URL}/og-image.jpg`],
   },
   alternates: {
@@ -80,7 +80,7 @@ const organizationSchema = {
   url: SITE_URL,
   description: DEFAULT_DESCRIPTION,
   telephone: "+33184161178",
-  email: "contact@terrakotta.fr",
+  email: "contact@kilowater.fr",
   address: {
     "@type": "PostalAddress",
     addressCountry: "FR",

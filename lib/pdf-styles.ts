@@ -1,5 +1,5 @@
 /**
- * Shared PDF styling utilities for Terrakotta document templates.
+ * Shared PDF styling utilities for Kilowater document templates.
  * Provides a consistent, premium look across all generated documents.
  *
  * Design tokens:
@@ -42,7 +42,7 @@ export const COMPANY = {
   name: "TERRAKOTTA",
   tagline: "Bureau d'etude en renovation energetique",
   address: "115 Rue Saint-Dominique, 75007 Paris",
-  email: "contact@terrakotta.fr",
+  email: "contact@kilowater.fr",
   phone: "01 XX XX XX XX",
 } as const;
 

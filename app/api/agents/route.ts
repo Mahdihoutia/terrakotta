@@ -97,7 +97,7 @@ function getDefaultConfig(type: "PROSPECTION" | "COMMUNICATION") {
     };
   }
   return {
-    emailFrom: "agent@terrakotta.fr",
+    emailFrom: "agent@kilowater.fr",
     templates: [],
     relanceApresJours: 3,
     maxEmailsParJour: 50,

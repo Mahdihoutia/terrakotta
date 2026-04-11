@@ -16,12 +16,12 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Terrakotta — Bureau d'étude en rénovation énergétique",
-    template: "%s | Terrakotta",
+    default: "Kilowater — Bureau d'étude en rénovation énergétique",
+    template: "%s | Kilowater",
   },
   description:
-    "Terrakotta, bureau d'étude spécialisé en rénovation énergétique. Audit énergétique, maîtrise d'œuvre, accompagnement CEE et MaPrimeRénov' pour particuliers, professionnels et collectivités.",
-  metadataBase: new URL("https://terrakotta.fr"),
+    "Kilowater, bureau d'étude spécialisé en rénovation énergétique. Audit énergétique, maîtrise d'œuvre, accompagnement CEE et MaPrimeRénov' pour particuliers, professionnels et collectivités.",
+  metadataBase: new URL("https://kilowater.fr"),
   robots: {
     index: true,
     follow: true,

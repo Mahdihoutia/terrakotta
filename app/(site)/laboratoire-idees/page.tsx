@@ -42,15 +42,15 @@ export default function LaboratoireIdeesPage() {
             transition={{ duration: 0.7 }}
             className="max-w-3xl mb-6"
           >
-            <p className="text-[0.72rem] uppercase tracking-[0.25em] text-[#8B4513] mb-4">
+            <p className="text-[0.72rem] uppercase tracking-[0.25em] text-[#2563EB] mb-4">
               Laboratoire d&apos;idées
             </p>
-            <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-light text-[#2C1810] leading-[1.05] mb-8">
+            <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-light text-[#0D1B35] leading-[1.05] mb-8">
               Penser le bâti
               <br />
-              <span className="italic text-[#8B4513]">autrement</span>
+              <span className="italic text-[#2563EB]">autrement</span>
             </h1>
-            <p className="text-[1rem] text-[#6B5B50] leading-relaxed max-w-xl">
+            <p className="text-[1rem] text-[#4A6285] leading-relaxed max-w-xl">
               Réflexions, décryptages et retours d&apos;expérience sur la
               rénovation énergétique, le climat, la biodiversité et les
               matériaux de demain. Un espace pour explorer les idées qui
@@ -70,7 +70,7 @@ export default function LaboratoireIdeesPage() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.15, duration: 0.7 }}
-                className="group relative overflow-hidden bg-white border border-[#E8E0D4] hover:border-[#C4956A]/40 transition-colors duration-500"
+                className="group relative overflow-hidden bg-white border border-[#DBEAFE] hover:border-[#60A5FA]/40 transition-colors duration-500"
               >
                 <Link href={`/laboratoire-idees/${article.slug}`} className="block">
                   <div className="relative aspect-[16/10] overflow-hidden">
@@ -84,7 +84,7 @@ export default function LaboratoireIdeesPage() {
                     <div className="absolute top-5 left-5">
                       <span
                         className={`inline-block px-3 py-1.5 text-[0.65rem] uppercase tracking-[0.15em] text-white ${
-                          CATEGORY_COLORS[article.category] || "bg-[#6B5B50]"
+                          CATEGORY_COLORS[article.category] || "bg-[#4A6285]"
                         }`}
                       >
                         {article.category}
@@ -98,11 +98,11 @@ export default function LaboratoireIdeesPage() {
                   </div>
                 </Link>
                 <div className="p-6 md:p-8">
-                  <p className="text-[0.88rem] text-[#6B5B50] leading-relaxed mb-6">
+                  <p className="text-[0.88rem] text-[#4A6285] leading-relaxed mb-6">
                     {article.excerpt}
                   </p>
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4 text-[0.75rem] text-[#8B7B6E]">
+                    <div className="flex items-center gap-4 text-[0.75rem] text-[#94A3B8]">
                       <span>{article.date}</span>
                       <span className="flex items-center gap-1.5">
                         <Clock size={13} />
@@ -111,7 +111,7 @@ export default function LaboratoireIdeesPage() {
                     </div>
                     <Link
                       href={`/laboratoire-idees/${article.slug}`}
-                      className="group/link inline-flex items-center gap-2 text-[0.78rem] font-semibold uppercase tracking-[0.12em] text-[#8B4513] hover:text-[#6B3A1F] transition-colors"
+                      className="group/link inline-flex items-center gap-2 text-[0.78rem] font-semibold uppercase tracking-[0.12em] text-[#2563EB] hover:text-[#1E40AF] transition-colors"
                     >
                       Lire
                       <ArrowRight
@@ -131,11 +131,11 @@ export default function LaboratoireIdeesPage() {
       <section className="pb-16 md:pb-20">
         <div className="mx-auto max-w-[1400px] px-6 md:px-10 lg:px-16">
           <div className="flex items-center gap-6">
-            <div className="h-px flex-1 bg-[#E8E0D4]" />
-            <p className="text-[0.72rem] uppercase tracking-[0.25em] text-[#8B4513] shrink-0">
+            <div className="h-px flex-1 bg-[#DBEAFE]" />
+            <p className="text-[0.72rem] uppercase tracking-[0.25em] text-[#2563EB] shrink-0">
               Tous les articles
             </p>
-            <div className="h-px flex-1 bg-[#E8E0D4]" />
+            <div className="h-px flex-1 bg-[#DBEAFE]" />
           </div>
         </div>
       </section>
@@ -155,8 +155,8 @@ export default function LaboratoireIdeesPage() {
                 onClick={() => setFilter(cat)}
                 className={`px-5 py-2.5 text-[0.75rem] font-medium uppercase tracking-[0.12em] border transition-all duration-300 ${
                   filter === cat
-                    ? "bg-[#8B4513] border-[#8B4513] text-white"
-                    : "bg-transparent border-[#D4C4B0] text-[#6B5B50] hover:border-[#8B4513] hover:text-[#8B4513]"
+                    ? "bg-[#2563EB] border-[#2563EB] text-white"
+                    : "bg-transparent border-[#BFDBFE] text-[#4A6285] hover:border-[#2563EB] hover:text-[#2563EB]"
                 }`}
               >
                 {cat}
@@ -187,7 +187,7 @@ export default function LaboratoireIdeesPage() {
                     custom={i}
                     initial="hidden"
                     animate="visible"
-                    className="group flex flex-col border border-[#E8E0D4] bg-white hover:border-[#C4956A]/40 transition-colors duration-500"
+                    className="group flex flex-col border border-[#DBEAFE] bg-white hover:border-[#60A5FA]/40 transition-colors duration-500"
                   >
                     {/* Image */}
                     <Link href={`/laboratoire-idees/${article.slug}`} className="block">
@@ -201,7 +201,7 @@ export default function LaboratoireIdeesPage() {
                         <div className="absolute top-4 left-4">
                           <span
                             className={`inline-block px-3 py-1.5 text-[0.6rem] uppercase tracking-[0.15em] text-white ${
-                              CATEGORY_COLORS[article.category] || "bg-[#6B5B50]"
+                              CATEGORY_COLORS[article.category] || "bg-[#4A6285]"
                             }`}
                           >
                             {article.category}
@@ -212,39 +212,39 @@ export default function LaboratoireIdeesPage() {
 
                     {/* Content */}
                     <div className="flex flex-col flex-1 p-6 md:p-7">
-                      <div className="flex items-center gap-3 mb-4 text-[0.72rem] text-[#8B7B6E]">
+                      <div className="flex items-center gap-3 mb-4 text-[0.72rem] text-[#94A3B8]">
                         <span>{article.date}</span>
-                        <span className="w-1 h-1 rounded-full bg-[#D4C4B0]" />
+                        <span className="w-1 h-1 rounded-full bg-[#BFDBFE]" />
                         <span className="flex items-center gap-1.5">
                           <Clock size={12} />
                           {article.readTime}
                         </span>
                       </div>
 
-                      <h3 className="font-display text-xl md:text-[1.35rem] font-normal text-[#2C1810] leading-snug mb-3">
+                      <h3 className="font-display text-xl md:text-[1.35rem] font-normal text-[#0D1B35] leading-snug mb-3">
                         <Link
                           href={`/laboratoire-idees/${article.slug}`}
-                          className="hover:text-[#8B4513] transition-colors"
+                          className="hover:text-[#2563EB] transition-colors"
                         >
                           {article.title}
                         </Link>
                       </h3>
 
-                      <p className="text-[0.85rem] text-[#6B5B50] leading-relaxed mb-6 flex-1">
+                      <p className="text-[0.85rem] text-[#4A6285] leading-relaxed mb-6 flex-1">
                         {article.excerpt.length > 160
                           ? article.excerpt.slice(0, 160) + "\u2026"
                           : article.excerpt}
                       </p>
 
-                      <div className="flex items-center justify-between pt-4 border-t border-[#E8E0D4]">
+                      <div className="flex items-center justify-between pt-4 border-t border-[#DBEAFE]">
                         <Icon
                           size={18}
-                          className="text-[#C4956A]"
+                          className="text-[#60A5FA]"
                           strokeWidth={1.5}
                         />
                         <Link
                           href={`/laboratoire-idees/${article.slug}`}
-                          className="group/link inline-flex items-center gap-2 text-[0.75rem] font-semibold uppercase tracking-[0.12em] text-[#8B4513] hover:text-[#6B3A1F] transition-colors"
+                          className="group/link inline-flex items-center gap-2 text-[0.75rem] font-semibold uppercase tracking-[0.12em] text-[#2563EB] hover:text-[#1E40AF] transition-colors"
                         >
                           Lire l&apos;article
                           <ArrowRight
@@ -266,10 +266,10 @@ export default function LaboratoireIdeesPage() {
               animate={{ opacity: 1 }}
               className="text-center py-20"
             >
-              <p className="font-display text-2xl text-[#D4C4B0] italic mb-2">
+              <p className="font-display text-2xl text-[#BFDBFE] italic mb-2">
                 Aucun article dans cette catégorie
               </p>
-              <p className="text-[0.85rem] text-[#8B7B6E]">
+              <p className="text-[0.85rem] text-[#94A3B8]">
                 De nouveaux contenus seront publiés prochainement.
               </p>
             </motion.div>
@@ -278,7 +278,7 @@ export default function LaboratoireIdeesPage() {
       </section>
 
       {/* ═══════════ NEWSLETTER CTA ═══════════ */}
-      <section className="py-20 md:py-28 bg-[#F5F0EB]">
+      <section className="py-20 md:py-28 bg-[#F5FAFF]">
         <div className="mx-auto max-w-[1400px] px-6 md:px-10 lg:px-16">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -287,13 +287,13 @@ export default function LaboratoireIdeesPage() {
             transition={{ duration: 0.7 }}
             className="max-w-2xl mx-auto text-center"
           >
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full border border-[#D4C4B0] mb-6">
-              <Leaf size={24} className="text-[#8B4513]" strokeWidth={1.5} />
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full border border-[#BFDBFE] mb-6">
+              <Leaf size={24} className="text-[#2563EB]" strokeWidth={1.5} />
             </div>
-            <h2 className="font-display text-3xl md:text-4xl font-light text-[#2C1810] leading-[1.2] mb-4">
-              Restons en <span className="italic text-[#8B4513]">veille</span>
+            <h2 className="font-display text-3xl md:text-4xl font-light text-[#0D1B35] leading-[1.2] mb-4">
+              Restons en <span className="italic text-[#2563EB]">veille</span>
             </h2>
-            <p className="text-[0.92rem] text-[#6B5B50] leading-relaxed mb-8">
+            <p className="text-[0.92rem] text-[#4A6285] leading-relaxed mb-8">
               Recevez nos analyses et décryptages sur la transition énergétique
               du bâtiment, directement dans votre boîte mail. Pas de spam,
               uniquement du contenu utile.
@@ -305,12 +305,12 @@ export default function LaboratoireIdeesPage() {
               <input
                 type="email"
                 placeholder="votre@email.fr"
-                className="flex-1 border border-[#D4C4B0] bg-white px-4 py-3.5 text-[0.88rem] text-[#2C1810] outline-none focus:border-[#8B4513] placeholder:text-[#B0A090]"
-                style={{ background: "white", borderColor: "#D4C4B0" }}
+                className="flex-1 border border-[#BFDBFE] bg-white px-4 py-3.5 text-[0.88rem] text-[#0D1B35] outline-none focus:border-[#2563EB] placeholder:text-[#BAD0E8]"
+                style={{ background: "white", borderColor: "#BFDBFE" }}
               />
               <button
                 type="submit"
-                className="bg-[#8B4513] px-6 py-3.5 text-[0.78rem] font-semibold uppercase tracking-[0.12em] text-white transition-colors hover:bg-[#6B3A1F] shrink-0"
+                className="bg-[#2563EB] px-6 py-3.5 text-[0.78rem] font-semibold uppercase tracking-[0.12em] text-white transition-colors hover:bg-[#1E40AF] shrink-0"
               >
                 S&apos;abonner
               </button>

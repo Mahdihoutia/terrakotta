@@ -57,19 +57,19 @@ export default function QuiSommesNousPage() {
             className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-end"
           >
             <div className="lg:col-span-7">
-              <p className="text-[0.72rem] uppercase tracking-[0.25em] text-[#8B4513] mb-4">
+              <p className="text-[0.72rem] uppercase tracking-[0.25em] text-[#2563EB] mb-4">
                 Qui sommes-nous
               </p>
-              <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-light text-[#2C1810] leading-[1.05]">
+              <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-light text-[#0D1B35] leading-[1.05]">
                 Un bureau d&apos;étude
                 <br />
-                <span className="italic text-[#8B4513]">engagé</span>
+                <span className="italic text-[#2563EB]">engagé</span>
               </h1>
             </div>
             <div className="lg:col-span-4 lg:col-start-9">
-              <p className="text-[0.95rem] text-[#6B5B50] leading-relaxed">
+              <p className="text-[0.95rem] text-[#4A6285] leading-relaxed">
                 Fondé par des ingénieurs passionnés par la performance du bâti,
-                Terrakotta accompagne la transition énergétique du parc immobilier
+                Kilowater accompagne la transition énergétique du parc immobilier
                 français avec exigence et humanité.
               </p>
             </div>
@@ -90,12 +90,12 @@ export default function QuiSommesNousPage() {
             >
               <Image
                 src="https://images.unsplash.com/photo-1527525443983-6e60c75fff46?w=1200&q=80"
-                alt="Équipe Terrakotta — collaboration et esprit d'équipe"
+                alt="Équipe Kilowater — collaboration et esprit d'équipe"
                 fill
                 className="object-cover"
               />
               {/* Decorative overlay corner */}
-              <div className="absolute top-0 right-0 w-24 h-24 border-t-2 border-r-2 border-[#C4956A]/40 m-6" />
+              <div className="absolute top-0 right-0 w-24 h-24 border-t-2 border-r-2 border-[#60A5FA]/40 m-6" />
             </motion.div>
 
             <motion.div
@@ -105,20 +105,20 @@ export default function QuiSommesNousPage() {
               transition={{ duration: 0.7, delay: 0.2 }}
               className="lg:col-span-5 flex flex-col justify-center"
             >
-              <div className="border-l-2 border-[#8B4513] pl-8 mb-10">
-                <h2 className="font-display text-3xl md:text-4xl font-light text-[#2C1810] mb-6 leading-snug">
+              <div className="border-l-2 border-[#2563EB] pl-8 mb-10">
+                <h2 className="font-display text-3xl md:text-4xl font-light text-[#0D1B35] mb-6 leading-snug">
                   La rénovation énergétique est un acte
-                  <span className="italic text-[#8B4513]"> technique</span>,
+                  <span className="italic text-[#2563EB]"> technique</span>,
                   mais surtout un acte de
-                  <span className="italic text-[#8B4513]"> responsabilité</span>.
+                  <span className="italic text-[#2563EB]"> responsabilité</span>.
                 </h2>
               </div>
-              <p className="text-[0.92rem] text-[#6B5B50] leading-[1.8] mb-6">
+              <p className="text-[0.92rem] text-[#4A6285] leading-[1.8] mb-6">
                 Depuis notre création, nous avons accompagné plus de 150 projets
                 de rénovation — des maisons individuelles aux copropriétés, des
                 bâtiments tertiaires aux équipements publics.
               </p>
-              <p className="text-[0.92rem] text-[#6B5B50] leading-[1.8]">
+              <p className="text-[0.92rem] text-[#4A6285] leading-[1.8]">
                 Notre approche repose sur un diagnostic rigoureux, une conception
                 technico-économique optimisée et un suivi de chantier sans faille.
                 Chaque bâtiment mérite une solution sur mesure.
@@ -129,7 +129,7 @@ export default function QuiSommesNousPage() {
       </section>
 
       {/* Valeurs */}
-      <section className="py-24 md:py-36 bg-[#F5F0EB]">
+      <section className="py-24 md:py-36 bg-[#F5FAFF]">
         <div className="mx-auto max-w-[1400px] px-6 md:px-10 lg:px-16">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -138,15 +138,15 @@ export default function QuiSommesNousPage() {
             transition={{ duration: 0.7 }}
             className="text-center mb-20"
           >
-            <p className="text-[0.72rem] uppercase tracking-[0.25em] text-[#8B4513] mb-4">
+            <p className="text-[0.72rem] uppercase tracking-[0.25em] text-[#2563EB] mb-4">
               Nos valeurs
             </p>
-            <h2 className="font-display text-4xl md:text-5xl font-light text-[#2C1810] leading-[1.1]">
-              Ce qui nous <span className="italic text-[#8B4513]">guide</span>
+            <h2 className="font-display text-4xl md:text-5xl font-light text-[#0D1B35] leading-[1.1]">
+              Ce qui nous <span className="italic text-[#2563EB]">guide</span>
             </h2>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-px bg-[#E8E0D4]">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-px bg-[#DBEAFE]">
             {VALEURS.map((v, i) => (
               <motion.div
                 key={v.title}
@@ -155,15 +155,15 @@ export default function QuiSommesNousPage() {
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true }}
-                className="bg-[#F5F0EB] p-8 md:p-10 text-center hover:bg-white transition-colors duration-500"
+                className="bg-[#F5FAFF] p-8 md:p-10 text-center hover:bg-white transition-colors duration-500"
               >
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-full border border-[#D4C4B0] mb-6">
-                  <v.icon size={24} className="text-[#8B4513]" strokeWidth={1.5} />
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-full border border-[#BFDBFE] mb-6">
+                  <v.icon size={24} className="text-[#2563EB]" strokeWidth={1.5} />
                 </div>
-                <h3 className="font-display text-xl font-normal text-[#2C1810] mb-3">
+                <h3 className="font-display text-xl font-normal text-[#0D1B35] mb-3">
                   {v.title}
                 </h3>
-                <p className="text-[0.85rem] text-[#6B5B50] leading-relaxed">
+                <p className="text-[0.85rem] text-[#4A6285] leading-relaxed">
                   {v.desc}
                 </p>
               </motion.div>
@@ -183,15 +183,15 @@ export default function QuiSommesNousPage() {
               transition={{ duration: 0.7 }}
               className="lg:col-span-5"
             >
-              <p className="text-[0.72rem] uppercase tracking-[0.25em] text-[#8B4513] mb-4">
+              <p className="text-[0.72rem] uppercase tracking-[0.25em] text-[#2563EB] mb-4">
                 Qualifications
               </p>
-              <h2 className="font-display text-4xl md:text-5xl font-light text-[#2C1810] leading-[1.1] mb-6">
+              <h2 className="font-display text-4xl md:text-5xl font-light text-[#0D1B35] leading-[1.1] mb-6">
                 Des compétences
                 <br />
-                <span className="italic text-[#8B4513]">certifiées</span>
+                <span className="italic text-[#2563EB]">certifiées</span>
               </h2>
-              <p className="text-[0.92rem] text-[#6B5B50] leading-relaxed">
+              <p className="text-[0.92rem] text-[#4A6285] leading-relaxed">
                 Nos qualifications garantissent à nos clients un niveau
                 d&apos;expertise reconnu par les organismes officiels et
                 indispensable pour l&apos;obtention des aides financières.
@@ -209,14 +209,14 @@ export default function QuiSommesNousPage() {
                 {CERTIFICATIONS.map((cert) => (
                   <li
                     key={cert}
-                    className="flex items-start gap-4 border-b border-[#E8E0D4] pb-5"
+                    className="flex items-start gap-4 border-b border-[#DBEAFE] pb-5"
                   >
                     <CheckCircle
                       size={20}
-                      className="text-[#8B4513] mt-0.5 shrink-0"
+                      className="text-[#2563EB] mt-0.5 shrink-0"
                       strokeWidth={1.5}
                     />
-                    <span className="text-[0.92rem] text-[#2C1810]">{cert}</span>
+                    <span className="text-[0.92rem] text-[#0D1B35]">{cert}</span>
                   </li>
                 ))}
               </ul>

@@ -120,7 +120,7 @@ async function executeProspection(agentId: string, config: Record<string, unknow
 }
 
 async function executeCommunication(agentId: string, config: Record<string, unknown>) {
-  const emailFrom = (config.emailFrom as string) || "agent@terrakotta.fr";
+  const emailFrom = (config.emailFrom as string) || "agent@kilowater.fr";
   const maxEmails = (config.maxEmailsParJour as number) || 50;
   const relanceJours = (config.relanceApresJours as number) || 3;
 
@@ -150,7 +150,7 @@ async function executeCommunication(agentId: string, config: Record<string, unkn
       const emailResult = {
         to: lead.email,
         from: emailFrom,
-        subject: `Terrakotta — Votre projet de rénovation énergétique`,
+        subject: `Kilowater — Votre projet de rénovation énergétique`,
         status: "sent" as const,
       };
 

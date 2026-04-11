@@ -14,7 +14,7 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    sitemap: "https://terrakotta.fr/sitemap.xml",
-    host: "https://terrakotta.fr",
+    sitemap: "https://kilowater.fr/sitemap.xml",
+    host: "https://kilowater.fr",
   };
 }
