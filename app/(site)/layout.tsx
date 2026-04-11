@@ -52,7 +52,7 @@ export const metadata: Metadata = {
     description: DEFAULT_DESCRIPTION,
     images: [
       {
-        url: `${SITE_URL}/og-image.jpg`,
+        url: `${SITE_URL}/opengraph-image`,
         width: 1200,
         height: 630,
         alt: "Kilowater — Bureau d'étude en rénovation énergétique",
@@ -64,7 +64,7 @@ export const metadata: Metadata = {
     title: `${SITE_NAME} — Bureau d'étude en rénovation énergétique`,
     description: DEFAULT_DESCRIPTION,
     creator: "@kilowater",
-    images: [`${SITE_URL}/og-image.jpg`],
+    images: [`${SITE_URL}/opengraph-image`],
   },
   alternates: {
     canonical: SITE_URL,

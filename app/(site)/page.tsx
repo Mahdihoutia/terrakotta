@@ -121,12 +121,12 @@ export default function HomePage() {
             className="object-cover brightness-75"
             priority
           />
-          {/* Overlay principal — léger */}
-          <div className="absolute inset-0 bg-[#05101F]/35" />
+          {/* Overlay principal — très léger */}
+          <div className="absolute inset-0 bg-[#05101F]/20" />
           {/* Gradient bas → haut pour lisibilité du texte */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#05101F]/80 via-[#05101F]/15 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#05101F]/75 via-[#05101F]/10 to-transparent" />
           {/* Touche bleue subtile */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0A1F4E]/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0A1F4E]/15 to-transparent" />
         </div>
 
         {/* Hero Content */}
