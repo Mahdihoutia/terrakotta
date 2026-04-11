@@ -1,6 +1,5 @@
 import { ImageResponse } from "next/og";
 
-export const runtime = "edge";
 export const alt = "Kilowater — Bureau d'étude en rénovation énergétique";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
@@ -23,6 +22,8 @@ export default async function OGImage() {
         <img
           src="https://images.unsplash.com/photo-1695445301510-459fb368d8af?w=1200&q=80&auto=format&fit=crop"
           alt=""
+          width={1200}
+          height={630}
           style={{
             position: "absolute",
             top: 0,
@@ -30,7 +31,7 @@ export default async function OGImage() {
             width: "100%",
             height: "100%",
             objectFit: "cover",
-            opacity: 0.55,
+            opacity: 0.5,
           }}
         />
 
@@ -40,7 +41,7 @@ export default async function OGImage() {
             position: "absolute",
             inset: 0,
             background:
-              "linear-gradient(to top, rgba(5,16,31,0.92) 0%, rgba(5,16,31,0.45) 55%, rgba(5,16,31,0.2) 100%)",
+              "linear-gradient(to top, rgba(5,16,31,0.95) 0%, rgba(5,16,31,0.5) 50%, rgba(5,16,31,0.2) 100%)",
             display: "flex",
           }}
         />
@@ -51,21 +52,54 @@ export default async function OGImage() {
             position: "absolute",
             inset: 0,
             background:
-              "linear-gradient(to right, rgba(10,31,78,0.4) 0%, transparent 60%)",
+              "linear-gradient(to right, rgba(10,31,78,0.45) 0%, transparent 65%)",
             display: "flex",
           }}
         />
 
-        {/* Content */}
+        {/* Top-right badge */}
         <div
           style={{
             position: "absolute",
-            bottom: 72,
+            top: 48,
+            right: 72,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            border: "1px solid rgba(96,165,250,0.45)",
+            borderRadius: 9999,
+            padding: "8px 20px",
+          }}
+        >
+          <div
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: "50%",
+              backgroundColor: "#60A5FA",
+              display: "flex",
+            }}
+          />
+          <span
+            style={{
+              color: "#93C5FD",
+              fontSize: 13,
+              letterSpacing: "0.15em",
+            }}
+          >
+            kilowater.fr
+          </span>
+        </div>
+
+        {/* Bottom content */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: 68,
             left: 80,
             right: 80,
             display: "flex",
             flexDirection: "column",
-            gap: 0,
           }}
         >
           {/* Logo */}
@@ -73,28 +107,15 @@ export default async function OGImage() {
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 14,
-              marginBottom: 32,
+              gap: 12,
+              marginBottom: 28,
             }}
           >
-            <div
-              style={{
-                width: 36,
-                height: 36,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#2563EB",
-                fontSize: 28,
-                fontWeight: 900,
-              }}
-            >
-              ⚡
-            </div>
+            <span style={{ fontSize: 30 }}>⚡</span>
             <span
               style={{
                 color: "white",
-                fontSize: 26,
+                fontSize: 24,
                 fontWeight: 700,
                 letterSpacing: "0.1em",
               }}
@@ -108,79 +129,41 @@ export default async function OGImage() {
             style={{
               color: "#60A5FA",
               fontSize: 13,
-              fontWeight: 500,
-              letterSpacing: "0.22em",
+              letterSpacing: "0.2em",
               textTransform: "uppercase",
-              marginBottom: 20,
+              marginBottom: 18,
+              display: "flex",
             }}
           >
             Bureau d&apos;étude en rénovation énergétique
           </div>
 
-          {/* Title */}
+          {/* Title line 1 */}
           <div
             style={{
+              color: "white",
+              fontSize: 62,
+              fontWeight: 300,
+              lineHeight: 1.08,
               display: "flex",
-              flexDirection: "column",
-              gap: 4,
             }}
           >
-            <div
-              style={{
-                color: "white",
-                fontSize: 64,
-                fontWeight: 300,
-                lineHeight: 1.05,
-              }}
-            >
-              Rénover l&apos;existant,
-            </div>
-            <div
-              style={{
-                color: "#93C5FD",
-                fontSize: 64,
-                fontWeight: 300,
-                fontStyle: "italic",
-                lineHeight: 1.05,
-              }}
-            >
-              construire l&apos;avenir.
-            </div>
+            Rénover l&apos;existant,
           </div>
-        </div>
 
-        {/* Top-right badge */}
-        <div
-          style={{
-            position: "absolute",
-            top: 48,
-            right: 80,
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            border: "1px solid rgba(96,165,250,0.4)",
-            borderRadius: 9999,
-            padding: "8px 20px",
-          }}
-        >
+          {/* Title line 2 */}
           <div
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: "50%",
-              backgroundColor: "#60A5FA",
-            }}
-          />
-          <span
             style={{
               color: "#93C5FD",
-              fontSize: 12,
-              letterSpacing: "0.15em",
-              textTransform: "uppercase",
+              fontSize: 62,
+              fontWeight: 300,
+              fontStyle: "italic",
+              lineHeight: 1.08,
+              display: "flex",
             }}
           >
-            kilowater.fr
-          </span>
+            construire l&apos;avenir.
+          </div>
         </div>
       </div>
     ),

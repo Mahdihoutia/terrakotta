@@ -118,7 +118,7 @@ export default function HomePage() {
             src="https://images.unsplash.com/photo-1695445301510-459fb368d8af?w=1920&q=85&auto=format&fit=crop"
             alt="Rangée de climatiseurs sur un toit — rénovation énergétique"
             fill
-            className="object-cover brightness-75"
+            className="object-cover"
             priority
           />
           {/* Overlay principal — très léger */}
@@ -394,11 +394,12 @@ export default function HomePage() {
 
       {/* ═══════════ VIDEO SLOGAN ═══════════ */}
       <section className="relative h-[80vh] md:h-[90vh] flex items-center justify-center overflow-hidden">
-        {/* Video background — poster as fallback for mobile */}
+        {/* Fallback image — visible toujours en fond (mobile + poster vidéo) */}
         <div
-          className="absolute inset-0 bg-cover bg-center md:hidden"
-          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=1920&q=80')" }}
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?w=1920&q=80')" }}
         />
+        {/* Vidéo par-dessus sur desktop */}
         {/* eslint-disable-next-line react/no-unknown-property */}
         <video
           autoPlay
@@ -406,14 +407,14 @@ export default function HomePage() {
           loop
           playsInline
           preload="auto"
-          className="absolute inset-0 w-full h-full object-cover hidden md:block [filter:saturate(1.4)_brightness(0.85)_hue-rotate(5deg)]"
-          poster="https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=1920&q=80"
+          className="absolute inset-0 w-full h-full object-cover hidden md:block"
+          poster="https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?w=1920&q=80"
         >
           <source src={VIDEO_BG_URL} type="video/mp4" />
         </video>
-        {/* Blue hydrogen overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#030D1F]/80 via-[#0A1F4E]/65 to-[#071535]/75" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0A1628]/50 via-transparent to-transparent" />
+        {/* Overlay — adapté mobile/desktop */}
+        <div className="absolute inset-0 bg-[#030D1F]/55 md:bg-[#030D1F]/50" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0A1628]/70 via-transparent to-transparent" />
         <div className="relative z-10 mx-auto max-w-[1400px] px-6 md:px-10 lg:px-16 text-center">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
