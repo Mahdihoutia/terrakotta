@@ -595,7 +595,8 @@ const QUESTIONNAIRE_163: QuestionSection[] = [
         required: true,
       },
       { id: "surface_chauffee", label: "Surface chauffée", type: "number", placeholder: "Ex: 1200", unit: "m²", required: true },
-      { id: "volume_chauffe", label: "Volume chauffé", type: "number", placeholder: "Ex: 3600", unit: "m³", help: "Surface × hauteur sous plafond moyenne" },
+      { id: "volume_chauffe", label: "Volume chauffé", type: "number", placeholder: "Ex: 3600", unit: "m³", help: "Surface × hauteur sous plafond moyenne — calculé auto si vide" },
+      { id: "hauteur_sous_plafond", label: "Hauteur sous plafond moyenne", type: "number", placeholder: "Ex: 3", unit: "m" },
       { id: "annee_construction", label: "Année de construction", type: "number", placeholder: "Ex: 1990", required: true },
       { id: "nb_niveaux", label: "Nombre de niveaux", type: "number", placeholder: "Ex: 3" },
       {
@@ -626,6 +627,10 @@ const QUESTIONNAIRE_163: QuestionSection[] = [
         type: "select",
         options: ["Simple vitrage", "Double vitrage ancien (avant 2000)", "Double vitrage performant", "Triple vitrage", "Mixte"],
       },
+      { id: "surface_murs_ext", label: "Surface murs extérieurs", type: "number", placeholder: "Calculé auto si vide", unit: "m²", help: "Surface totale de façades (avec vitrages)" },
+      { id: "taux_vitrage", label: "Taux de vitrage des façades", type: "number", placeholder: "Ex: 25", unit: "%", help: "Part vitrée des murs extérieurs (défaut: 25%)" },
+      { id: "surface_toiture", label: "Surface de toiture", type: "number", placeholder: "Calculé auto si vide", unit: "m²", help: "= Surface chauffée / nb niveaux si vide" },
+      { id: "taux_renouvellement_air", label: "Taux de renouvellement d'air", type: "number", placeholder: "Ex: 0.7", unit: "vol/h", help: "0.6 = VMC hygroréglable · 0.7 = VMC simple flux · 1.0 = ventilation naturelle" },
       {
         id: "description_batiment",
         label: "Description complémentaire du bâtiment",
@@ -1927,6 +1932,316 @@ const QUESTIONNAIRE_116: QuestionSection[] = [
   },
 ];
 
+// ─── Constantes de calcul ───────────────────────────────────────
+
+// DJU (base 18°C) et T° base par zone climatique
+const ZONE_CLIMATIQUE_DATA: Record<string, { dju: number; tBase: number; bins: Array<{ tExt: number; heures: number }> }> = {
+  "H1a — Nord":      { dju: 2800, tBase: -7,  bins: [{ tExt: -7, heures: 200 }, { tExt: -2, heures: 600 }, { tExt: 3, heures: 1200 }, { tExt: 8, heures: 1800 }, { tExt: 13, heures: 1500 }, { tExt: 18, heures: 1200 }, { tExt: 23, heures: 700 }, { tExt: 28, heures: 300 }, { tExt: 33, heures: 60 }] },
+  "H1b — Nord-Est":  { dju: 2700, tBase: -9,  bins: [{ tExt: -9, heures: 150 }, { tExt: -4, heures: 500 }, { tExt: 1, heures: 1100 }, { tExt: 6, heures: 1700 }, { tExt: 11, heures: 1600 }, { tExt: 16, heures: 1300 }, { tExt: 21, heures: 900 }, { tExt: 26, heures: 400 }, { tExt: 31, heures: 100 }] },
+  "H1c — Est":       { dju: 2600, tBase: -10, bins: [{ tExt: -10, heures: 120 }, { tExt: -5, heures: 450 }, { tExt: 0, heures: 1000 }, { tExt: 5, heures: 1600 }, { tExt: 10, heures: 1600 }, { tExt: 15, heures: 1400 }, { tExt: 20, heures: 1000 }, { tExt: 25, heures: 450 }, { tExt: 30, heures: 100 }] },
+  "H2a — Nord-Ouest": { dju: 2400, tBase: -4, bins: [{ tExt: -4, heures: 150 }, { tExt: 1, heures: 700 }, { tExt: 6, heures: 1400 }, { tExt: 11, heures: 1800 }, { tExt: 16, heures: 1600 }, { tExt: 21, heures: 1200 }, { tExt: 26, heures: 550 }, { tExt: 31, heures: 100 }] },
+  "H2b — Ouest":     { dju: 2200, tBase: -2,  bins: [{ tExt: -2, heures: 100 }, { tExt: 3, heures: 600 }, { tExt: 8, heures: 1300 }, { tExt: 13, heures: 1800 }, { tExt: 18, heures: 1700 }, { tExt: 23, heures: 1200 }, { tExt: 28, heures: 500 }, { tExt: 33, heures: 100 }] },
+  "H2c — Sud-Ouest": { dju: 2000, tBase: -3,  bins: [{ tExt: -3, heures: 80 }, { tExt: 2, heures: 500 }, { tExt: 7, heures: 1200 }, { tExt: 12, heures: 1700 }, { tExt: 17, heures: 1700 }, { tExt: 22, heures: 1300 }, { tExt: 27, heures: 600 }, { tExt: 32, heures: 150 }] },
+  "H2d — Centre":    { dju: 2300, tBase: -5,  bins: [{ tExt: -5, heures: 120 }, { tExt: 0, heures: 600 }, { tExt: 5, heures: 1300 }, { tExt: 10, heures: 1700 }, { tExt: 15, heures: 1600 }, { tExt: 20, heures: 1200 }, { tExt: 25, heures: 600 }, { tExt: 30, heures: 150 }] },
+  "H3 — Méditerranée": { dju: 1400, tBase: 0, bins: [{ tExt: 0, heures: 50 }, { tExt: 5, heures: 400 }, { tExt: 10, heures: 1000 }, { tExt: 15, heures: 1600 }, { tExt: 20, heures: 1800 }, { tExt: 25, heures: 1500 }, { tExt: 30, heures: 700 }, { tExt: 35, heures: 200 }] },
+};
+
+// U-values forfaitaires (W/m².K) par type d'isolation
+const U_MURS: Record<string, number> = {
+  "Non isolés": 2.5,
+  "Isolation intérieure (ITE)": 0.36,
+  "Isolation extérieure (ITE)": 0.28,
+  "Isolation répartie": 0.32,
+  "Inconnu": 1.5,
+};
+
+const U_TOITURE: Record<string, number> = {
+  "Non isolés": 3.0,
+  "Combles perdus isolés": 0.20,
+  "Rampants isolés": 0.28,
+  "Toiture terrasse isolée": 0.25,
+  "Inconnu": 1.5,
+};
+
+const U_VITRAGE: Record<string, number> = {
+  "Simple vitrage": 5.8,
+  "Double vitrage ancien (avant 2000)": 2.9,
+  "Double vitrage performant": 1.4,
+  "Triple vitrage": 0.8,
+  "Mixte": 2.5,
+};
+
+// Rendement par type de générateur existant (PCI)
+const RENDEMENTS_GENERATEURS: Record<string, number> = {
+  "Chaudière standard": 0.80,
+  "Chaudière basse température": 0.88,
+  "Chaudière condensation": 0.95,
+  "Convecteurs électriques": 1.0,
+  "Radiateurs électriques": 1.0,
+  "CTA avec batterie électrique": 1.0,
+  "PAC existante (à remplacer)": 2.5,
+  "Autre": 0.85,
+};
+
+// Facteur d'émission CO₂ (kg CO₂ / kWh final)
+const FACTEUR_CO2: Record<string, number> = {
+  "Gaz naturel": 0.227,
+  "Fioul domestique": 0.324,
+  "Charbon": 0.385,
+  "Électricité (effet Joule)": 0.0569,
+  "GPL": 0.272,
+  "Réseau de chaleur": 0.180,
+  "Bois": 0.030,
+  "Autre": 0.200,
+};
+
+const PRIX_ELEC_KWH = 0.15; // €/kWh moyen tertiaire
+
+// ─── Calculs BAT-TH-134 — HP Flottante ─────────────────────────
+
+interface Calcul134Result {
+  copMoyenAvant: number;
+  copMoyenApres: number;
+  consoApres: number;
+  gainMwh: number;
+  gainPct: number;
+  economiEuros: number;
+  dureeRetour: number | null;
+  detailMethode: string;
+}
+
+function calculer134(v: FormValues): Calcul134Result | null {
+  const zone = v.zone_climatique;
+  const zoneData = zone ? ZONE_CLIMATIQUE_DATA[zone] : null;
+  if (!zoneData) return null;
+
+  // Récupérer les données des groupes froids
+  const nbGroupes = parseInt(v.nb_groupes_multi || "1", 10) || 1;
+  let puissanceFroidTotale = 0;
+  let puissanceAbsorbeeTotale = 0;
+  let tCondFixeMoyenne = 0;
+  let countGroupes = 0;
+
+  for (let i = 1; i <= nbGroupes; i++) {
+    const pf = parseFloat(v[`puissance_froid_${i}`] || "0");
+    const pa = parseFloat(v[`puissance_absorbee_${i}`] || "0");
+    const tc = parseFloat(v[`temp_condensation_fixe_${i}`] || "0");
+    if (pf > 0 && pa > 0) {
+      puissanceFroidTotale += pf;
+      puissanceAbsorbeeTotale += pa;
+      tCondFixeMoyenne += tc * pf; // pondéré par puissance
+      countGroupes++;
+    }
+  }
+
+  if (countGroupes === 0 || puissanceFroidTotale === 0 || puissanceAbsorbeeTotale === 0) return null;
+  tCondFixeMoyenne /= puissanceFroidTotale;
+
+  const consoAvant = parseFloat(v.conso_electrique_avant || "0");
+  if (consoAvant <= 0) return null;
+
+  const tCondMin = parseFloat(v.temp_condensation_min || "25");
+  const ecartApproche = parseFloat(v.ecart_approche || "10");
+  const heuresFonctionnement = parseFloat(v.heures_fonctionnement || "6500");
+
+  // Températures d'évaporation
+  const tEvapPos = parseFloat(v.temp_evaporation_pos || "-8");
+  const tEvapNeg = parseFloat(v.temp_evaporation_neg || "-30");
+  const regime = v.regime_froid || "Froid positif uniquement (> 0°C)";
+
+  let tEvapMoyen: number;
+  if (regime.includes("négatif uniquement")) {
+    tEvapMoyen = tEvapNeg;
+  } else if (regime.includes("positif + négatif")) {
+    tEvapMoyen = (tEvapPos + tEvapNeg) / 2;
+  } else {
+    tEvapMoyen = tEvapPos;
+  }
+
+  // COP moyen existant (réel mesuré)
+  const copMoyenAvant = puissanceFroidTotale / puissanceAbsorbeeTotale;
+
+  // Calcul par méthode bin — COP pondéré avec HP flottante
+  const etaCarnot = copMoyenAvant / ((273.15 + tEvapMoyen) / (tCondFixeMoyenne - tEvapMoyen));
+  let heuresPonderees = 0;
+  let copPondereApres = 0;
+
+  const detailBins: string[] = [];
+
+  for (const bin of zoneData.bins) {
+    const heuresBin = bin.heures * (heuresFonctionnement / 8760);
+    if (heuresBin <= 0) continue;
+
+    // T° condensation flottante = max(T_ext + écart, T_cond_min)
+    const tCondFlottante = Math.max(bin.tExt + ecartApproche, tCondMin);
+
+    // COP pour ce bin (basé sur Carnot corrigé)
+    const deltaT = tCondFlottante - tEvapMoyen;
+    if (deltaT <= 0) continue;
+    const copBin = etaCarnot * (273.15 + tEvapMoyen) / deltaT;
+
+    copPondereApres += copBin * heuresBin;
+    heuresPonderees += heuresBin;
+
+    detailBins.push(`T°ext=${bin.tExt}°C → T°cond=${tCondFlottante.toFixed(1)}°C → COP=${copBin.toFixed(2)} (${Math.round(heuresBin)}h)`);
+  }
+
+  if (heuresPonderees === 0) return null;
+  const copMoyenApres = copPondereApres / heuresPonderees;
+
+  // Gains
+  const ratioGain = 1 - (copMoyenAvant / copMoyenApres);
+  const consoApres = consoAvant * (1 - ratioGain);
+  const gainMwh = consoAvant - consoApres;
+  const gainPct = ratioGain * 100;
+  const economiEuros = gainMwh * 1000 * PRIX_ELEC_KWH;
+
+  const coutInvest = parseFloat(v.cout_investissement || "0");
+  const dureeRetour = coutInvest > 0 && economiEuros > 0 ? coutInvest / economiEuros : null;
+
+  const detailMethode = [
+    `Méthode bin — Zone ${zone}`,
+    `${countGroupes} groupe(s) froid · Puissance totale: ${puissanceFroidTotale} kW`,
+    `COP moyen AVANT (HP fixe ${tCondFixeMoyenne.toFixed(1)}°C): ${copMoyenAvant.toFixed(2)}`,
+    `Écart d'approche: ${ecartApproche} K · T° condensation min: ${tCondMin}°C`,
+    `Rendement Carnot corrigé η = ${(etaCarnot * 100).toFixed(1)}%`,
+    "",
+    "Détail par tranche de température:",
+    ...detailBins,
+    "",
+    `COP moyen APRÈS (HP flottante): ${copMoyenApres.toFixed(2)}`,
+    `Gain = 1 - (${copMoyenAvant.toFixed(2)} / ${copMoyenApres.toFixed(2)}) = ${gainPct.toFixed(1)}%`,
+    `Conso avant: ${consoAvant} MWh/an → Conso après: ${consoApres.toFixed(1)} MWh/an`,
+    `Économie: ${gainMwh.toFixed(1)} MWh/an · ${Math.round(economiEuros)} €/an`,
+  ].join("\n");
+
+  return { copMoyenAvant, copMoyenApres, consoApres, gainMwh, gainPct, economiEuros, dureeRetour, detailMethode };
+}
+
+// ─── Calculs BAT-TH-163 — PAC air/eau ──────────────────────────
+
+interface Calcul163Result {
+  volumeChauffe: number;
+  deperditionsParois: number;
+  deperditionsVentilation: number;
+  deperditionsTotales: number;
+  coeffG: number;
+  deperditionsParM2: number;
+  besoinChauffage: number;
+  consoAvant: number;
+  consoApres: number;
+  gainMwh: number;
+  gainPct: number;
+  reductionCo2: number;
+  economiEuros: number;
+  dureeRetour: number | null;
+  detailMethode: string;
+}
+
+function calculer163(v: FormValues): Calcul163Result | null {
+  const surfaceChauffee = parseFloat(v.surface_chauffee || "0");
+  const zone = v.zone_climatique;
+  const zoneData = zone ? ZONE_CLIMATIQUE_DATA[zone] : null;
+  if (!zoneData || surfaceChauffee <= 0) return null;
+
+  const tempBase = parseFloat(v.temp_base || String(zoneData.tBase));
+  const tempInt = parseFloat(v.temp_interieure || "19");
+  const deltaT = tempInt - tempBase;
+  if (deltaT <= 0) return null;
+
+  const nbNiveaux = parseFloat(v.nb_niveaux || "1") || 1;
+  const hsp = parseFloat(v.hauteur_sous_plafond || "3");
+  const volumeChauffe = parseFloat(v.volume_chauffe || "0") || (surfaceChauffee * hsp);
+
+  // Surfaces d'enveloppe
+  const surfaceToiture = parseFloat(v.surface_toiture || String(surfaceChauffee / nbNiveaux));
+  const surfacePlancher = surfaceToiture;
+  const perimetre = Math.sqrt(surfacePlancher) * 4; // approximation carré
+  const hauteurTotale = hsp * nbNiveaux;
+  const surfaceMursExt = parseFloat(v.surface_murs_ext || String(perimetre * hauteurTotale));
+  const tauxVitrage = parseFloat(v.taux_vitrage || "25") / 100;
+  const surfaceVitree = surfaceMursExt * tauxVitrage;
+  const surfaceMursOpaques = surfaceMursExt - surfaceVitree;
+
+  // U-values
+  const uMur = U_MURS[v.isolation_murs || "Inconnu"] || 1.5;
+  const uToiture = U_TOITURE[v.isolation_toiture || "Inconnu"] || 1.5;
+  const uVitrage = U_VITRAGE[v.type_vitrage || "Mixte"] || 2.5;
+  const uPlancher = 0.8; // valeur forfaitaire
+
+  // Déperditions par les parois (W)
+  const depMurs = surfaceMursOpaques * uMur * deltaT;
+  const depToiture = surfaceToiture * uToiture * deltaT;
+  const depVitrage = surfaceVitree * uVitrage * deltaT;
+  const depPlancher = surfacePlancher * uPlancher * deltaT * 0.6; // facteur sol
+  const deperditionsParois = (depMurs + depToiture + depVitrage + depPlancher) / 1000; // kW
+
+  // Déperditions par renouvellement d'air
+  const tauxRenouv = parseFloat(v.taux_renouvellement_air || "0.7"); // vol/h
+  const depVentilation = (0.34 * tauxRenouv * volumeChauffe * deltaT) / 1000; // kW
+
+  // Ponts thermiques forfait +15%
+  const deperditionsTotales = (deperditionsParois + depVentilation) * 1.15;
+  const coeffG = (deperditionsTotales * 1000) / (volumeChauffe * deltaT);
+  const deperditionsParM2 = (deperditionsTotales * 1000) / surfaceChauffee;
+
+  // Besoins de chauffage (MWh/an)
+  const besoinChauffage = (coeffG * volumeChauffe * zoneData.dju * 24) / 1e6;
+
+  // Conso avant
+  const rendExistant = RENDEMENTS_GENERATEURS[v.type_generateur_existant || "Autre"] || 0.85;
+  const consoAvant = besoinChauffage / rendExistant;
+
+  // Conso après (PAC)
+  const scop = parseFloat(v.scop || "0");
+  const tauxCouverture = parseFloat(v.taux_couverture || "90") / 100;
+  if (scop <= 0) return null;
+
+  const consoApres = (besoinChauffage * tauxCouverture) / scop + (besoinChauffage * (1 - tauxCouverture)) / rendExistant;
+
+  // Gains
+  const gainMwh = consoAvant - consoApres;
+  const gainPct = (gainMwh / consoAvant) * 100;
+
+  // CO₂
+  const energieExistante = v.energie_existante || "Gaz naturel";
+  const facteurCo2Avant = FACTEUR_CO2[energieExistante] || 0.200;
+  const facteurCo2Apres = 0.0569; // électricité
+  const reductionCo2 = (consoAvant * facteurCo2Avant * 1000 - consoApres * facteurCo2Apres * 1000) / 1000;
+
+  const economiEuros = gainMwh * 1000 * PRIX_ELEC_KWH;
+  const coutInvest = parseFloat(v.cout_investissement || "0");
+  const dureeRetour = coutInvest > 0 && economiEuros > 0 ? coutInvest / economiEuros : null;
+
+  const detailMethode = [
+    `Méthode simplifiée G × V × DJU — Zone ${zone}`,
+    `DJU base 18°C: ${zoneData.dju} · T° base: ${tempBase}°C · T° int: ${tempInt}°C · ΔT: ${deltaT}K`,
+    "",
+    "Déperditions par les parois:",
+    `  Murs (${surfaceMursOpaques.toFixed(0)} m² × U=${uMur} W/m².K): ${(depMurs / 1000).toFixed(1)} kW`,
+    `  Toiture (${surfaceToiture.toFixed(0)} m² × U=${uToiture} W/m².K): ${(depToiture / 1000).toFixed(1)} kW`,
+    `  Vitrages (${surfaceVitree.toFixed(0)} m² × U=${uVitrage} W/m².K): ${(depVitrage / 1000).toFixed(1)} kW`,
+    `  Plancher (${surfacePlancher.toFixed(0)} m² × U=${uPlancher} × 0.6): ${(depPlancher / 1000).toFixed(1)} kW`,
+    `  Sous-total parois: ${deperditionsParois.toFixed(1)} kW`,
+    "",
+    `Déperditions par ventilation (${tauxRenouv} vol/h × ${volumeChauffe.toFixed(0)} m³): ${depVentilation.toFixed(1)} kW`,
+    `Ponts thermiques forfait +15%`,
+    `Déperditions totales: ${deperditionsTotales.toFixed(1)} kW · G = ${coeffG.toFixed(2)} W/m³.K`,
+    "",
+    `Besoins chauffage: G × V × DJU × 24 / 10⁶ = ${besoinChauffage.toFixed(1)} MWh/an`,
+    `Conso AVANT: ${besoinChauffage.toFixed(1)} / η${rendExistant.toFixed(2)} = ${consoAvant.toFixed(1)} MWh/an`,
+    `Conso APRÈS: (${(besoinChauffage * tauxCouverture).toFixed(1)} / SCOP ${scop}) + appoint = ${consoApres.toFixed(1)} MWh/an`,
+    `Gain: ${gainMwh.toFixed(1)} MWh/an (${gainPct.toFixed(1)}%)`,
+    `Réduction CO₂: ${reductionCo2.toFixed(1)} t/an`,
+  ].join("\n");
+
+  return {
+    volumeChauffe, deperditionsParois, deperditionsVentilation: depVentilation,
+    deperditionsTotales, coeffG, deperditionsParM2, besoinChauffage,
+    consoAvant, consoApres, gainMwh, gainPct, reductionCo2, economiEuros, dureeRetour, detailMethode,
+  };
+}
+
 const QUESTIONNAIRES: Record<FicheId, QuestionSection[]> = {
   "BAT-TH-134": QUESTIONNAIRE_134,
   "BAT-TH-163": QUESTIONNAIRE_163,
@@ -2139,6 +2454,12 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
     setValues((prev) => ({ ...prev, [id]: value }));
     setSaved(false);
   }
+
+  // ─── Auto-calcul BAT-TH-134 ──────────────────────────────────
+  const calcul134 = selectedFiche === "BAT-TH-134" ? calculer134(values) : null;
+
+  // ─── Auto-calcul BAT-TH-163 ──────────────────────────────────
+  const calcul163 = selectedFiche === "BAT-TH-163" ? calculer163(values) : null;
 
   async function handleSave() {
     if (!selectedFiche) return;
@@ -2515,6 +2836,111 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
                       </div>
                     ))}
                   </div>
+
+                  {/* ─── Résultats calculés BAT-TH-134 ─── */}
+                  {selectedFiche === "BAT-TH-134" && currentSection.titre.includes("5.") && calcul134 && (
+                    <div className="border-t pt-4 space-y-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                        <h4 className="text-sm font-semibold text-green-700 dark:text-green-400">Résultats calculés automatiquement</h4>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        {[
+                          { label: "COP moyen AVANT", value: calcul134.copMoyenAvant.toFixed(2), sub: "HP fixe" },
+                          { label: "COP moyen APRÈS", value: calcul134.copMoyenApres.toFixed(2), sub: "HP flottante" },
+                          { label: "Gain énergétique", value: `${calcul134.gainPct.toFixed(1)}%`, sub: `${calcul134.gainMwh.toFixed(1)} MWh/an` },
+                          { label: "Économie annuelle", value: `${Math.round(calcul134.economiEuros).toLocaleString("fr-FR")} €`, sub: calcul134.dureeRetour ? `Retour: ${calcul134.dureeRetour.toFixed(1)} ans` : "" },
+                        ].map((kpi) => (
+                          <div key={kpi.label} className="rounded-xl border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30 p-3 text-center">
+                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{kpi.label}</p>
+                            <p className="text-xl font-bold text-green-700 dark:text-green-400">{kpi.value}</p>
+                            {kpi.sub && <p className="text-[11px] text-muted-foreground">{kpi.sub}</p>}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="text-green-700 border-green-300 hover:bg-green-50"
+                          onClick={() => {
+                            if (!calcul134) return;
+                            updateValue("conso_electrique_apres", calcul134.consoApres.toFixed(1));
+                            updateValue("gain_energetique_pct", calcul134.gainPct.toFixed(1));
+                            updateValue("gain_energetique_mwh", calcul134.gainMwh.toFixed(1));
+                            updateValue("economie_euros", String(Math.round(calcul134.economiEuros)));
+                            if (calcul134.dureeRetour) updateValue("duree_retour", calcul134.dureeRetour.toFixed(1));
+                            updateValue("detail_calcul", calcul134.detailMethode);
+                            updateValue("methode_calcul", "Méthode bin (répartition des heures par tranche de T° ext.)");
+                          }}
+                        >
+                          <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+                          Appliquer les résultats aux champs du formulaire
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ─── Résultats calculés BAT-TH-163 ─── */}
+                  {selectedFiche === "BAT-TH-163" && currentSection.titre.includes("6.") && calcul163 && (
+                    <div className="border-t pt-4 space-y-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+                        <h4 className="text-sm font-semibold text-blue-700 dark:text-blue-400">Résultats calculés automatiquement</h4>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        {[
+                          { label: "Déperditions totales", value: `${calcul163.deperditionsTotales.toFixed(1)} kW`, sub: `${calcul163.deperditionsParM2.toFixed(0)} W/m² · G=${calcul163.coeffG.toFixed(2)}` },
+                          { label: "Besoins chauffage", value: `${calcul163.besoinChauffage.toFixed(1)} MWh/an`, sub: `Volume: ${calcul163.volumeChauffe.toFixed(0)} m³` },
+                          { label: "Gain énergétique", value: `${calcul163.gainPct.toFixed(1)}%`, sub: `${calcul163.gainMwh.toFixed(1)} MWh/an` },
+                          { label: "Réduction CO₂", value: `${calcul163.reductionCo2.toFixed(1)} t/an`, sub: calcul163.dureeRetour ? `Retour: ${calcul163.dureeRetour.toFixed(1)} ans` : `${Math.round(calcul163.economiEuros).toLocaleString("fr-FR")} €/an` },
+                        ].map((kpi) => (
+                          <div key={kpi.label} className="rounded-xl border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-3 text-center">
+                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{kpi.label}</p>
+                            <p className="text-xl font-bold text-blue-700 dark:text-blue-400">{kpi.value}</p>
+                            {kpi.sub && <p className="text-[11px] text-muted-foreground">{kpi.sub}</p>}
+                          </div>
+                        ))}
+                      </div>
+                      <details className="rounded-lg border bg-muted/30 p-3">
+                        <summary className="text-xs font-medium cursor-pointer">Détail des déperditions</summary>
+                        <div className="mt-2 grid gap-2 sm:grid-cols-3 text-xs">
+                          <div>Murs: <strong>{calcul163.deperditionsParois.toFixed(1)} kW</strong></div>
+                          <div>Ventilation: <strong>{calcul163.deperditionsVentilation.toFixed(1)} kW</strong></div>
+                          <div>Total (+15% PT): <strong>{calcul163.deperditionsTotales.toFixed(1)} kW</strong></div>
+                        </div>
+                      </details>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="text-blue-700 border-blue-300 hover:bg-blue-50"
+                          onClick={() => {
+                            if (!calcul163) return;
+                            updateValue("volume_chauffe", calcul163.volumeChauffe.toFixed(0));
+                            updateValue("deperditions_totales", calcul163.deperditionsTotales.toFixed(1));
+                            updateValue("deperditions_par_m2", calcul163.deperditionsParM2.toFixed(0));
+                            updateValue("coeff_G", calcul163.coeffG.toFixed(2));
+                            updateValue("besoin_chauffage", calcul163.besoinChauffage.toFixed(1));
+                            updateValue("conso_avant_travaux", calcul163.consoAvant.toFixed(1));
+                            updateValue("conso_apres_travaux", calcul163.consoApres.toFixed(1));
+                            updateValue("gain_energetique_pct", calcul163.gainPct.toFixed(1));
+                            updateValue("gain_energetique_mwh", calcul163.gainMwh.toFixed(1));
+                            updateValue("reduction_co2", calcul163.reductionCo2.toFixed(1));
+                            updateValue("economie_euros", String(Math.round(calcul163.economiEuros)));
+                            if (calcul163.dureeRetour) updateValue("duree_retour", calcul163.dureeRetour.toFixed(1));
+                            updateValue("detail_calcul", calcul163.detailMethode);
+                            updateValue("methode_calcul", "Calcul simplifié (G × V × ΔT)");
+                          }}
+                        >
+                          <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+                          Appliquer les résultats aux champs du formulaire
+                        </Button>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Multi-group dynamic fields */}
                   {currentSection.multiGroup && (() => {
