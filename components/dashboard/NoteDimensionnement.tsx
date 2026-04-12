@@ -17,6 +17,8 @@ import {
   ImagePlus,
   FileText,
   Loader2,
+  Plus,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -229,6 +231,13 @@ interface QuestionSection {
   titre: string;
   description?: string;
   fields: QuestionField[];
+  multiGroup?: {
+    label: string;
+    countKey: string;
+    minCount?: number;
+    maxCount?: number;
+    templateFields: QuestionField[];
+  };
 }
 
 // ─── BAT-TH-134 — HP Flottante ─────────────────────────────────
@@ -295,63 +304,72 @@ const QUESTIONNAIRE_134: QuestionSection[] = [
   },
   {
     titre: "3. Installation frigorifique existante",
-    description: "Description complète du groupe de production de froid avant travaux",
+    description: "Description complète des groupes de production de froid avant travaux",
     fields: [
-      {
-        id: "type_groupe_froid",
-        label: "Type de groupe de froid",
-        type: "select",
-        options: ["Groupe à condensation à air", "Groupe à condensation à eau", "Centrale frigorifique", "Groupe semi-hermétique", "Groupe à vis", "Autre"],
-        required: true,
-      },
       { id: "nb_groupes", label: "Nombre de groupes de production de froid", type: "number", placeholder: "Ex: 3", required: true },
-      { id: "marque_groupe_existant", label: "Marque du groupe existant", type: "text", placeholder: "Ex: Bitzer, Carrier, Copeland...", required: true },
-      { id: "modele_groupe_existant", label: "Modèle / référence du groupe", type: "text", placeholder: "Référence constructeur" },
-      { id: "annee_installation_existante", label: "Année d'installation", type: "number", placeholder: "Ex: 2010", required: true },
-      { id: "puissance_froid_existante", label: "Puissance frigorifique totale installée", type: "number", placeholder: "Ex: 350", unit: "kW", required: true },
-      { id: "puissance_absorbee_existante", label: "Puissance électrique absorbée compresseurs", type: "number", placeholder: "Ex: 120", unit: "kW", required: true },
-      {
-        id: "fluide_frigorigene_existant",
-        label: "Fluide frigorigène",
-        type: "select",
-        options: ["R-404A", "R-407C", "R-134a", "R-410A", "R-448A", "R-449A", "R-744 (CO₂)", "R-290 (propane)", "R-717 (ammoniac)", "Autre"],
-        required: true,
-      },
-      { id: "charge_fluide_existant", label: "Charge en fluide frigorigène", type: "number", placeholder: "Ex: 85", unit: "kg" },
-      {
-        id: "type_condenseur",
-        label: "Type de condenseur",
-        type: "select",
-        options: ["À air (ventilateurs axiaux)", "À air (ventilateurs centrifuges)", "À eau (tour de refroidissement)", "Évaporatif", "Adiabatique", "Autre"],
-        required: true,
-      },
-      { id: "surface_condenseur", label: "Surface d'échange condenseur", type: "number", placeholder: "Ex: 120", unit: "m²" },
-      { id: "nb_ventilateurs", label: "Nombre de ventilateurs condenseur", type: "number", placeholder: "Ex: 6", required: true },
-      { id: "puissance_ventilateurs", label: "Puissance totale ventilateurs", type: "number", placeholder: "Ex: 12", unit: "kW" },
-      {
-        id: "regulation_hp_existante",
-        label: "Mode de régulation HP actuel",
-        type: "select",
-        options: [
-          "Aucune régulation (HP fixe toute l'année)",
-          "Pressostat HP — seuil fixe",
-          "Régulation ON/OFF des ventilateurs (par paliers)",
-          "Régulation par pressostat + étagement ventilateurs",
-          "Autre (préciser en observations)",
-        ],
-        required: true,
-        help: "Mode de contrôle actuel de la haute pression de condensation",
-      },
-      { id: "consigne_hp_fixe", label: "Consigne HP fixe actuelle", type: "number", placeholder: "Ex: 18", unit: "bar", required: true, help: "Pression de condensation de référence actuelle" },
-      { id: "temp_condensation_fixe", label: "T° de condensation correspondante", type: "number", placeholder: "Ex: 45", unit: "°C", required: true },
       {
         id: "etat_installation_existante",
         label: "État général de l'installation existante",
         type: "textarea",
-        placeholder: "Décrire l'état des compresseurs, condenseur, détendeurs, tuyauteries, isolation, fuites éventuelles...",
+        placeholder: "Décrire l'état général : compresseurs, condenseurs, détendeurs, tuyauteries, isolation, fuites éventuelles...",
         colSpan: 2,
       },
     ],
+    multiGroup: {
+      label: "Groupe froid",
+      countKey: "nb_groupes_multi",
+      minCount: 1,
+      maxCount: 10,
+      templateFields: [
+        {
+          id: "type_groupe_froid",
+          label: "Type de groupe de froid",
+          type: "select",
+          options: ["Groupe à condensation à air", "Groupe à condensation à eau", "Centrale frigorifique", "Groupe semi-hermétique", "Groupe à vis", "Autre"],
+          required: true,
+        },
+        { id: "marque_groupe", label: "Marque", type: "text", placeholder: "Ex: Bitzer, Carrier, Copeland...", required: true },
+        { id: "modele_groupe", label: "Modèle / référence", type: "text", placeholder: "Référence constructeur" },
+        { id: "annee_installation", label: "Année d'installation", type: "number", placeholder: "Ex: 2010", required: true },
+        { id: "puissance_froid", label: "Puissance frigorifique", type: "number", placeholder: "Ex: 350", unit: "kW", required: true },
+        { id: "puissance_absorbee", label: "Puissance élec. absorbée compresseurs", type: "number", placeholder: "Ex: 120", unit: "kW", required: true },
+        {
+          id: "fluide_frigorigene",
+          label: "Fluide frigorigène",
+          type: "select",
+          options: ["R-404A", "R-407C", "R-134a", "R-410A", "R-448A", "R-449A", "R-744 (CO₂)", "R-290 (propane)", "R-717 (ammoniac)", "Autre"],
+          required: true,
+        },
+        { id: "charge_fluide", label: "Charge en fluide", type: "number", placeholder: "Ex: 85", unit: "kg" },
+        {
+          id: "type_condenseur",
+          label: "Type de condenseur",
+          type: "select",
+          options: ["À air (ventilateurs axiaux)", "À air (ventilateurs centrifuges)", "À eau (tour de refroidissement)", "Évaporatif", "Adiabatique", "Autre"],
+          required: true,
+        },
+        { id: "surface_condenseur", label: "Surface d'échange condenseur", type: "number", placeholder: "Ex: 120", unit: "m²" },
+        { id: "nb_ventilateurs", label: "Nb ventilateurs condenseur", type: "number", placeholder: "Ex: 6", required: true },
+        { id: "puissance_ventilateurs", label: "Puissance totale ventilateurs", type: "number", placeholder: "Ex: 12", unit: "kW" },
+        {
+          id: "regulation_hp",
+          label: "Mode de régulation HP actuel",
+          type: "select",
+          options: [
+            "Aucune régulation (HP fixe toute l'année)",
+            "Pressostat HP — seuil fixe",
+            "Régulation ON/OFF des ventilateurs (par paliers)",
+            "Régulation par pressostat + étagement ventilateurs",
+            "Autre (préciser en observations)",
+          ],
+          required: true,
+          help: "Mode de contrôle actuel de la haute pression de condensation",
+        },
+        { id: "consigne_hp_fixe", label: "Consigne HP fixe actuelle", type: "number", placeholder: "Ex: 18", unit: "bar", required: true, help: "Pression de condensation de référence actuelle" },
+        { id: "temp_condensation_fixe", label: "T° de condensation correspondante", type: "number", placeholder: "Ex: 45", unit: "°C", required: true },
+        { id: "observations_groupe", label: "Observations", type: "textarea", placeholder: "État spécifique de ce groupe, dysfonctionnements...", colSpan: 2 },
+      ],
+    },
   },
   {
     titre: "4. Système de régulation HP flottante projeté",
@@ -2497,6 +2515,120 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
                       </div>
                     ))}
                   </div>
+
+                  {/* Multi-group dynamic fields */}
+                  {currentSection.multiGroup && (() => {
+                    const mg = currentSection.multiGroup;
+                    const groupCount = parseInt(values[mg.countKey] || "1", 10) || 1;
+                    const safeCount = Math.max(mg.minCount ?? 1, Math.min(groupCount, mg.maxCount ?? 10));
+
+                    return (
+                      <div className="space-y-4 border-t pt-4">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-sm font-semibold">{mg.label}s ({safeCount})</h4>
+                          <div className="flex gap-2">
+                            {safeCount > (mg.minCount ?? 1) && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  const newCount = safeCount - 1;
+                                  updateValue(mg.countKey, String(newCount));
+                                  // Clean up removed group values
+                                  const removedIdx = safeCount;
+                                  for (const tf of mg.templateFields) {
+                                    const key = `${tf.id}_${removedIdx}`;
+                                    if (values[key]) updateValue(key, "");
+                                  }
+                                }}
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="mr-1 h-3.5 w-3.5" />
+                                Retirer
+                              </Button>
+                            )}
+                            {safeCount < (mg.maxCount ?? 10) && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => updateValue(mg.countKey, String(safeCount + 1))}
+                              >
+                                <Plus className="mr-1 h-3.5 w-3.5" />
+                                Ajouter un {mg.label.toLowerCase()}
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+
+                        {Array.from({ length: safeCount }, (_, idx) => {
+                          const groupNum = idx + 1;
+                          return (
+                            <div key={groupNum} className="rounded-xl border bg-muted/20 p-4 space-y-3">
+                              <h5 className="text-sm font-medium text-primary">
+                                {mg.label} {groupNum}
+                              </h5>
+                              <div className="grid gap-4 sm:grid-cols-2">
+                                {mg.templateFields.map((field) => {
+                                  const fieldKey = `${field.id}_${groupNum}`;
+                                  return (
+                                    <div
+                                      key={fieldKey}
+                                      className={cn("space-y-1.5", field.colSpan === 2 && "sm:col-span-2")}
+                                    >
+                                      <label className="text-sm font-medium flex items-center gap-1">
+                                        {field.label}
+                                        {field.required && <span className="text-destructive">*</span>}
+                                        {field.unit && (
+                                          <span className="text-xs text-muted-foreground font-normal">({field.unit})</span>
+                                        )}
+                                      </label>
+
+                                      {field.type === "select" ? (
+                                        <select
+                                          value={values[fieldKey] || ""}
+                                          onChange={(e) => updateValue(fieldKey, e.target.value)}
+                                          className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                                        >
+                                          <option value="">— Sélectionner —</option>
+                                          {field.options?.map((opt) => (
+                                            <option key={opt} value={opt}>{opt}</option>
+                                          ))}
+                                        </select>
+                                      ) : field.type === "textarea" ? (
+                                        <textarea
+                                          value={values[fieldKey] || ""}
+                                          onChange={(e) => updateValue(fieldKey, e.target.value)}
+                                          rows={3}
+                                          placeholder={field.placeholder}
+                                          className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none resize-none"
+                                        />
+                                      ) : (
+                                        <input
+                                          type={field.type}
+                                          value={values[fieldKey] || ""}
+                                          onChange={(e) => updateValue(fieldKey, e.target.value)}
+                                          placeholder={field.placeholder}
+                                          className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                                        />
+                                      )}
+
+                                      {field.help && (
+                                        <p className="text-[11px] text-muted-foreground leading-snug">
+                                          {field.help}
+                                        </p>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
 
                   {/* Photos de cette étape */}
                   <div className="border-t pt-4 space-y-3">

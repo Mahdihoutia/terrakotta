@@ -289,7 +289,46 @@ const SECTIONS: QuestionSection[] = [
     ],
   },
   {
-    titre: "10. Préconisations et conclusion",
+    titre: "10. Groupe froid",
+    description: "Installation frigorifique du bâtiment (si applicable)",
+    fields: [
+      {
+        id: "presence_groupe_froid", label: "Présence d\u0027un groupe froid", type: "select", required: true,
+        options: ["Oui", "Non"],
+      },
+      {
+        id: "type_groupe_froid", label: "Type de groupe froid", type: "select",
+        options: ["Groupe à condensation à air", "Groupe à condensation à eau", "Centrale frigorifique", "Groupe semi-hermétique", "Groupe à vis", "Rooftop", "Autre"],
+      },
+      { id: "nb_groupes_froid", label: "Nombre de groupes froid", type: "text", placeholder: "Ex : 2" },
+      { id: "marque_modele_gf", label: "Marque / Modèle", type: "text", placeholder: "Ex : Carrier 30RBS, Daikin EWAD..." },
+      { id: "puissance_froid", label: "Puissance frigorifique (kW)", type: "text", placeholder: "Ex : 150 kW" },
+      { id: "puissance_absorbee_gf", label: "Puissance électrique absorbée (kW)", type: "text", placeholder: "Ex : 50 kW" },
+      {
+        id: "fluide_frigorigene", label: "Fluide frigorigène", type: "select",
+        options: ["R-410A", "R-407C", "R-134a", "R-404A", "R-32", "R-448A", "R-449A", "R-744 (CO₂)", "R-290 (propane)", "Autre"],
+      },
+      { id: "charge_fluide", label: "Charge en fluide (kg)", type: "text", placeholder: "Ex : 45 kg" },
+      {
+        id: "type_condenseur_gf", label: "Type de condenseur", type: "select",
+        options: ["À air (ventilateurs axiaux)", "À air (ventilateurs centrifuges)", "À eau (tour de refroidissement)", "Évaporatif", "Adiabatique"],
+      },
+      { id: "annee_installation_gf", label: "Année d\u0027installation", type: "text", placeholder: "Ex : 2012" },
+      {
+        id: "etat_groupe_froid", label: "État du groupe froid", type: "select",
+        options: ["Bon état", "Usé / vieillissant", "Encrassé", "Fuites détectées", "Hors service"],
+      },
+      {
+        id: "type_distribution_froid", label: "Type de distribution", type: "select",
+        options: ["Réseau d\u0027eau glacée", "Détente directe", "Volume Réfrigérant Variable (VRV/VRF)", "Mixte"],
+      },
+      { id: "emetteurs_froid", label: "Émetteurs de froid", type: "text", placeholder: "Ventilo-convecteurs, cassettes, gainable, splits..." },
+      { id: "regulation_froid", label: "Régulation / GTB", type: "text", placeholder: "Type de régulation, programmation horaire, consignes..." },
+      { id: "observations_groupe_froid", label: "Observations", type: "textarea", colSpan: 2, placeholder: "État général, nuisances sonores, entretien, conformité réglementaire, fuites, contrôle d\u0027étanchéité..." },
+    ],
+  },
+  {
+    titre: "11. Préconisations et conclusion",
     description: "Recommandations de travaux et synthèse de la visite",
     fields: [
       {
