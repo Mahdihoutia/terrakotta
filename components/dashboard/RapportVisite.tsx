@@ -268,7 +268,24 @@ const SECTIONS: QuestionSection[] = [
         options: ["Bon état", "Encrassé", "Bruyant", "Hors service"],
       },
       { id: "bouches_extraction", label: "Bouches d\u0027extraction", type: "text", placeholder: "Nombre et emplacement (cuisine, SdB, WC...)" },
-      { id: "observations_ventilation", label: "Observations", type: "textarea", colSpan: 2, placeholder: "Condensation, moisissures, courants d\u0027air, qualité de l\u0027air intérieur..." },
+      {
+        id: "presence_cta", label: "Présence d\u0027une CTA", type: "select",
+        options: ["Oui", "Non"],
+      },
+      {
+        id: "type_cta", label: "Type de CTA", type: "select",
+        options: ["CTA simple flux", "CTA double flux", "CTA double flux avec récupération de chaleur", "Rooftop"],
+      },
+      { id: "marque_modele_cta", label: "Marque / Modèle CTA", type: "text", placeholder: "Ex : Aldes DFE 600, France Air Cocoon..." },
+      { id: "puissance_cta", label: "Puissance CTA (kW)", type: "text", placeholder: "Ex : 12 kW" },
+      { id: "debit_cta", label: "Débit d\u0027air CTA (m³/h)", type: "text", placeholder: "Ex : 3000 m³/h" },
+      {
+        id: "etat_cta", label: "État de la CTA", type: "select",
+        options: ["Bon état", "Usé / vieillissant", "Encrassé", "Hors service"],
+      },
+      { id: "annee_installation_cta", label: "Année d\u0027installation CTA", type: "text", placeholder: "Ex : 2008" },
+      { id: "observations_cta", label: "Observations CTA", type: "textarea", colSpan: 2, placeholder: "Filtres, registres, gaine, calorifugeage, régulation, programmation horaire..." },
+      { id: "observations_ventilation", label: "Observations ventilation", type: "textarea", colSpan: 2, placeholder: "Condensation, moisissures, courants d\u0027air, qualité de l\u0027air intérieur..." },
     ],
   },
   {

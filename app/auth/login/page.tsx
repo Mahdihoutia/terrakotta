@@ -213,7 +213,7 @@ function LoginForm() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="mahdi.houtia@gmail.com"
+                placeholder="votre@email.com"
                 className="w-full rounded-xl border bg-white px-4 py-3 text-sm text-[#0D1B35] placeholder:text-[#9a8a7c] transition-all outline-none"
                 style={{
                   borderColor: "#e2dcd5",
@@ -244,7 +244,7 @@ function LoginForm() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder=""
                 className="w-full rounded-xl border bg-white px-4 py-3 text-sm text-[#0D1B35] placeholder:text-[#9a8a7c] transition-all outline-none"
                 style={{ borderColor: "#e2dcd5" }}
                 onFocus={(e) => {
