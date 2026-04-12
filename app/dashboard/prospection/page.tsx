@@ -28,6 +28,12 @@ const SOURCE_LABELS: Record<string, { label: string; icon: typeof Globe; color: 
   DPE_ADEME: { label: "DPE ADEME", icon: Target, color: "text-red-600 bg-red-100" },
   BOAMP: { label: "Marchés Publics", icon: Building2, color: "text-teal-600 bg-teal-100" },
   PERMIS_CONSTRUIRE: { label: "Permis Construire", icon: Building2, color: "text-violet-600 bg-violet-100" },
+  LINKEDIN: { label: "LinkedIn", icon: Users, color: "text-sky-700 bg-sky-100" },
+  INFOGREFFE: { label: "Infogreffe", icon: Building2, color: "text-rose-600 bg-rose-100" },
+  PAPPERS: { label: "Pappers", icon: Globe, color: "text-cyan-600 bg-cyan-100" },
+  CADASTRE_DVF: { label: "Cadastre / DVF", icon: MapPin, color: "text-lime-700 bg-lime-100" },
+  FRANCE_TRAVAIL: { label: "France Travail", icon: TrendingUp, color: "text-fuchsia-600 bg-fuchsia-100" },
+  ANNONCES_LEGALES: { label: "Annonces Légales", icon: BookOpen, color: "text-amber-700 bg-amber-100" },
 };
 
 const ROLE_OPTIONS = [
@@ -39,6 +45,10 @@ const ROLE_OPTIONS = [
   "Adjoint au Maire",
   "Directeur technique",
   "Responsable patrimoine",
+  "Dirigeant",
+  "Gestionnaire de patrimoine",
+  "CEO / Directeur général",
+  "Apporteur d'affaires immobilier",
 ];
 
 const DEPT_OPTIONS = [
@@ -100,7 +110,7 @@ export default function ProspectionPage() {
 
   // Search config
   const [showConfig, setShowConfig] = useState(false);
-  const [selectedSources, setSelectedSources] = useState<LeadSource[]>(["PAGES_JAUNES", "SOCIETE_COM", "WEB_SCRAPING", "SIRENE", "BODACC", "DPE_ADEME", "BOAMP", "PERMIS_CONSTRUIRE"]);
+  const [selectedSources, setSelectedSources] = useState<LeadSource[]>(["PAGES_JAUNES", "SOCIETE_COM", "WEB_SCRAPING", "SIRENE", "BODACC", "DPE_ADEME", "BOAMP", "PERMIS_CONSTRUIRE", "LINKEDIN", "INFOGREFFE", "PAPPERS", "CADASTRE_DVF", "FRANCE_TRAVAIL", "ANNONCES_LEGALES"]);
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [selectedDepts, setSelectedDepts] = useState<string[]>([]);
   const [surfaceMin, setSurfaceMin] = useState(1000);
@@ -128,7 +138,7 @@ export default function ProspectionPage() {
       if (leadsRes.ok) {
         const leadsData: Lead[] = await leadsRes.json();
         // Only show prospection leads
-        const prospectionSources = ["PAGES_JAUNES", "SOCIETE_COM", "WEB_SCRAPING", "SIRENE", "BODACC", "DPE_ADEME", "BOAMP", "PERMIS_CONSTRUIRE"];
+        const prospectionSources = ["PAGES_JAUNES", "SOCIETE_COM", "WEB_SCRAPING", "SIRENE", "BODACC", "DPE_ADEME", "BOAMP", "PERMIS_CONSTRUIRE", "LINKEDIN", "INFOGREFFE", "PAPPERS", "CADASTRE_DVF", "FRANCE_TRAVAIL", "ANNONCES_LEGALES"];
         const prospectionLeads = leadsData.filter(
           (l) => prospectionSources.includes(l.source),
         );

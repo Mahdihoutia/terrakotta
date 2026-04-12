@@ -39,6 +39,12 @@ const SOURCE_LABELS: Record<LeadSource, string> = {
   DPE_ADEME: "DPE ADEME",
   BOAMP: "Marchés Publics",
   PERMIS_CONSTRUIRE: "Permis Construire",
+  LINKEDIN: "LinkedIn",
+  INFOGREFFE: "Infogreffe",
+  PAPPERS: "Pappers",
+  CADASTRE_DVF: "Cadastre / DVF",
+  FRANCE_TRAVAIL: "France Travail",
+  ANNONCES_LEGALES: "Annonces Légales",
   AUTRE: "Autre",
 };
 
