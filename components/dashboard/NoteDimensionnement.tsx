@@ -25,7 +25,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 // ─── Types ──────────────────────────────────────────────────────
 
-type FicheId = "BAT-TH-134" | "BAT-TH-163" | "BAR-TH-171" | "BAR-TH-159" | "BAR-EN-101" | "BAR-EN-102" | "BAR-EN-103" | "BAT-TH-116";
+type FicheId = "BAT-TH-134" | "BAT-TH-163" | "BAT-TH-142" | "BAT-TH-139" | "BAR-TH-171" | "BAR-TH-159" | "BAR-EN-101" | "BAR-EN-102" | "BAR-EN-103" | "BAT-TH-116";
 
 interface FicheConfig {
   id: FicheId;
@@ -64,6 +64,22 @@ const FICHES: FicheConfig[] = [
     sousTitre: "Pompe à chaleur de type air/eau",
     description:
       "Mise en place d'une pompe à chaleur de type air/eau pour le chauffage des locaux en bâtiment tertiaire existant.",
+    secteur: "Tertiaire",
+  },
+  {
+    id: "BAT-TH-142",
+    titre: "BAT-TH-142",
+    sousTitre: "Déstratification de l'air en bâtiment tertiaire",
+    description:
+      "Mise en place d'un système de déstratification d'air (déstratificateurs ou brasseurs) dans un bâtiment tertiaire existant avec une hauteur sous plafond ≥ 5 m.",
+    secteur: "Tertiaire",
+  },
+  {
+    id: "BAT-TH-139",
+    titre: "BAT-TH-139",
+    sousTitre: "Récupération de chaleur sur groupe de production de froid",
+    description:
+      "Mise en place d'un système de récupération de chaleur sur un groupe de production de froid pour le chauffage de l'eau ou le préchauffage de fluide en bâtiment tertiaire existant.",
     secteur: "Tertiaire",
   },
   {
@@ -210,6 +226,30 @@ const PHOTO_CATEGORIES_116 = [
   "Installation existante (avant travaux)",
   "Schéma d'architecture GTB",
   "Vue générale du local technique",
+  "Autre",
+];
+
+const PHOTO_CATEGORIES_142 = [
+  "Vue générale du local (hauteur sous plafond)",
+  "Système de chauffage existant",
+  "Déstratificateur installé (vue d'ensemble)",
+  "Plaque signalétique du déstratificateur",
+  "Sondes de température (haute / basse)",
+  "Système de régulation / boîtier de commande",
+  "Mesure de vitesse d'air au sol",
+  "Vue générale après installation",
+  "Autre",
+];
+
+const PHOTO_CATEGORIES_139 = [
+  "Plaque signalétique du groupe froid",
+  "Condenseur existant",
+  "Échangeur de récupération installé",
+  "Raccordement hydraulique (circuit secondaire)",
+  "Sondes / capteurs installés",
+  "Système de régulation",
+  "Compteur d'énergie récupérée",
+  "Vue générale de l'installation",
   "Autre",
 ];
 
@@ -1932,6 +1972,490 @@ const QUESTIONNAIRE_116: QuestionSection[] = [
   },
 ];
 
+// ─── BAT-TH-142 — Déstratification d'air ──────────────────────
+
+const QUESTIONNAIRE_142: QuestionSection[] = [
+  {
+    titre: "1. Informations du projet",
+    description: "Identification du site, du demandeur et du bureau d'étude",
+    fields: [
+      { id: "ref_projet", label: "Référence du projet", type: "text", placeholder: "Ex: ND-2026-XXX", required: true },
+      { id: "date_visite", label: "Date de visite technique", type: "date", required: true },
+      { id: "date_note", label: "Date de la note", type: "date", required: true },
+      { id: "redacteur", label: "Rédacteur de la note", type: "text", placeholder: "Nom du technicien / ingénieur", required: true },
+      { id: "client_nom", label: "Bénéficiaire (raison sociale)", type: "text", placeholder: "Raison sociale", required: true },
+      { id: "client_siret", label: "SIRET du bénéficiaire", type: "text", placeholder: "Ex: 123 456 789 00012" },
+      { id: "adresse", label: "Adresse du site des travaux", type: "text", placeholder: "Adresse complète", required: true, colSpan: 2 },
+      { id: "installateur", label: "Installateur", type: "text", placeholder: "Raison sociale de l'installateur", required: true },
+      { id: "installateur_rge", label: "N° qualification RGE", type: "text", placeholder: "Ex: QUA-XXX-XXXX" },
+    ],
+  },
+  {
+    titre: "2. Caractéristiques du bâtiment et du local",
+    description: "Description du bâtiment et des locaux concernés — hauteur minimale 5 m",
+    fields: [
+      {
+        id: "type_batiment",
+        label: "Type de bâtiment",
+        type: "select",
+        options: ["Entrepôt / Logistique", "Atelier industriel", "Hall d'exposition", "Grande surface commerciale", "Gymnase / Salle de sport", "Église / Lieu de culte", "Autre bâtiment tertiaire à grande hauteur"],
+        required: true,
+      },
+      {
+        id: "zone_climatique",
+        label: "Zone climatique",
+        type: "select",
+        options: ["H1a — Nord", "H1b — Nord-Est", "H1c — Est", "H2a — Nord-Ouest", "H2b — Ouest", "H2c — Sud-Ouest", "H2d — Centre", "H3 — Méditerranée"],
+        required: true,
+      },
+      { id: "surface_local", label: "Surface au sol du local", type: "number", placeholder: "Ex: 2000", unit: "m²", required: true },
+      { id: "hauteur_sous_plafond", label: "Hauteur sous plafond / sous toiture", type: "number", placeholder: "Ex: 8", unit: "m", required: true, help: "Minimum 5 m exigé par la fiche BAT-TH-142" },
+      { id: "volume_local", label: "Volume du local", type: "number", placeholder: "Ex: 16000", unit: "m³", help: "= Surface × hauteur — calculé auto si vide" },
+      { id: "annee_construction", label: "Année de construction", type: "number", placeholder: "Ex: 1985" },
+      {
+        id: "type_chauffage",
+        label: "Type de chauffage existant",
+        type: "select",
+        options: ["Aérothermes à gaz", "Aérothermes à eau chaude", "Tubes radiants gaz", "Panneaux radiants", "Chauffage soufflé (CTA)", "Plancher chauffant", "Autre"],
+        required: true,
+        help: "La fiche s'applique aux locaux chauffés par systèmes convectifs et/ou radiants",
+      },
+      { id: "puissance_chauffage", label: "Puissance de chauffage installée", type: "number", placeholder: "Ex: 250", unit: "kW", required: true },
+      { id: "consigne_chauffage", label: "Température de consigne de chauffage", type: "number", placeholder: "Ex: 18", unit: "°C", required: true, help: "Doit être ≥ 15°C quand le local est occupé" },
+      {
+        id: "energie_chauffage",
+        label: "Énergie de chauffage",
+        type: "select",
+        options: ["Gaz naturel", "Électricité", "Fioul", "GPL", "Réseau de chaleur", "Autre"],
+        required: true,
+      },
+      {
+        id: "isolation_toiture",
+        label: "Isolation de la toiture",
+        type: "select",
+        options: ["Non isolée", "Faiblement isolée (R < 2)", "Moyennement isolée (R 2-4)", "Bien isolée (R > 4)", "Inconnu"],
+      },
+      { id: "conso_chauffage_annuelle", label: "Consommation annuelle de chauffage", type: "number", placeholder: "Ex: 350", unit: "MWh/an", required: true, help: "Sur la base des factures énergie" },
+      { id: "source_conso", label: "Source de la donnée", type: "select", options: ["Factures énergétiques (3 ans)", "Compteur dédié", "Estimation par calcul", "DPE existant"], required: true },
+      {
+        id: "description_local",
+        label: "Description complémentaire du local",
+        type: "textarea",
+        placeholder: "Dimensions, particularités (portes sectionnelles, ponts roulants, quais, zones d'activité…), problèmes de confort thermique observés…",
+        colSpan: 2,
+      },
+    ],
+  },
+  {
+    titre: "3. Stratification thermique existante",
+    description: "Diagnostic de la stratification de l'air avant travaux",
+    fields: [
+      { id: "temp_sol_mesuree", label: "Température mesurée au sol (zone de travail)", type: "number", placeholder: "Ex: 14", unit: "°C", required: true },
+      { id: "temp_mi_hauteur", label: "Température mesurée à mi-hauteur", type: "number", placeholder: "Ex: 18", unit: "°C" },
+      { id: "temp_sous_toiture", label: "Température mesurée sous toiture", type: "number", placeholder: "Ex: 28", unit: "°C", required: true },
+      { id: "gradient_thermique", label: "Gradient thermique mesuré (sol → plafond)", type: "number", placeholder: "Ex: 14", unit: "°C", required: true, help: "= T° sous toiture - T° au sol" },
+      { id: "gradient_par_metre", label: "Gradient par mètre de hauteur", type: "number", placeholder: "Ex: 1.75", unit: "°C/m", help: "= Gradient total / hauteur" },
+      {
+        id: "conditions_mesure",
+        label: "Conditions de mesure",
+        type: "textarea",
+        placeholder: "Date, heure, température extérieure, état du chauffage (régime établi / démarrage), instruments utilisés…",
+        colSpan: 2,
+        required: true,
+      },
+      {
+        id: "probleme_confort",
+        label: "Problèmes de confort identifiés",
+        type: "textarea",
+        placeholder: "Pieds froids, inconfort en zone basse, surchauffe en hauteur, sur-consommation de chauffage…",
+        colSpan: 2,
+      },
+    ],
+  },
+  {
+    titre: "4. Système de déstratification projeté",
+    description: "Caractéristiques techniques des déstratificateurs",
+    fields: [
+      { id: "marque_destratificateur", label: "Marque", type: "text", placeholder: "Ex: Airius, Envira-Norte, Big Ass Fans…", required: true },
+      { id: "modele_destratificateur", label: "Modèle / Référence", type: "text", placeholder: "Référence constructeur", required: true },
+      { id: "nb_destratificateurs", label: "Nombre de déstratificateurs", type: "number", placeholder: "Ex: 8", required: true },
+      { id: "puissance_unitaire", label: "Puissance électrique unitaire", type: "number", placeholder: "Ex: 0.03", unit: "kW", required: true },
+      { id: "puissance_totale_destrat", label: "Puissance électrique totale", type: "number", placeholder: "Ex: 0.24", unit: "kW" },
+      { id: "debit_air_unitaire", label: "Débit d'air unitaire", type: "number", placeholder: "Ex: 1200", unit: "m³/h" },
+      { id: "hauteur_installation", label: "Hauteur d'installation", type: "number", placeholder: "Ex: 7.5", unit: "m", required: true, help: "Aspiration ≤ 1 m sous plafond exigée" },
+      {
+        id: "type_destratificateur",
+        label: "Type de déstratificateur",
+        type: "select",
+        options: ["Déstratificateur hélicoïdal (colonne d'air)", "Brasseur d'air HVLS (grand diamètre)", "Ventilateur axial directionnel", "Déstratificateur à jet orientable", "Autre"],
+        required: true,
+      },
+      {
+        id: "regulation_destrat",
+        label: "Régulation du système",
+        type: "select",
+        options: [
+          "Sonde différentielle (sol / plafond) — automatique",
+          "Thermostat simple + horloge",
+          "Intégration GTB",
+          "Fonctionnement continu en période de chauffe",
+        ],
+        required: true,
+        help: "Surveillance continue de la température recommandée",
+      },
+      { id: "vitesse_air_sol", label: "Vitesse d'air au sol garantie", type: "text", placeholder: "Ex: 0.1 à 0.25 m/s", required: true, help: "Doit être comprise entre 0.1 et 0.3 m/s (confort)" },
+      { id: "niveau_sonore", label: "Niveau sonore", type: "number", placeholder: "Ex: 38", unit: "dB(A)", help: "Maximum 45 dB(A) exigé" },
+      {
+        id: "justification_choix",
+        label: "Justification du dimensionnement et du choix du matériel",
+        type: "textarea",
+        placeholder: "Expliquer :\n- Nombre d'appareils retenu par rapport au volume et à la hauteur\n- Couverture de la surface au sol\n- Compatibilité avec le type de chauffage existant\n- Respect des critères BAT-TH-142 (hauteur ≥ 5m, aspiration ≤ 1m du plafond, vitesse 0.1-0.3 m/s, bruit ≤ 45 dB)",
+        colSpan: 2,
+        required: true,
+      },
+    ],
+  },
+  {
+    titre: "5. Calcul des gains énergétiques",
+    description: "Estimation des économies de chauffage par réduction de la stratification",
+    fields: [
+      {
+        id: "methode_calcul",
+        label: "Méthode de calcul utilisée",
+        type: "select",
+        options: [
+          "Méthode par gradient thermique (réduction du ΔT sol-plafond)",
+          "Méthode forfaitaire (3% d'économie par °C de gradient réduit)",
+          "Simulation logicielle (CFD ou thermique)",
+          "Données constructeur + retour d'expérience",
+        ],
+        required: true,
+      },
+      { id: "gradient_avant", label: "Gradient thermique AVANT travaux", type: "number", placeholder: "Ex: 14", unit: "°C", required: true },
+      { id: "gradient_apres", label: "Gradient thermique APRÈS travaux (estimé)", type: "number", placeholder: "Ex: 3", unit: "°C", required: true, help: "Objectif : réduction de 70-80% du gradient" },
+      { id: "reduction_gradient", label: "Réduction du gradient", type: "number", placeholder: "Ex: 11", unit: "°C" },
+      { id: "conso_chauffage_avant", label: "Consommation de chauffage AVANT travaux", type: "number", placeholder: "Ex: 350", unit: "MWh/an", required: true },
+      { id: "conso_chauffage_apres", label: "Consommation de chauffage APRÈS travaux (estimée)", type: "number", placeholder: "Ex: 248", unit: "MWh/an", required: true },
+      {
+        id: "detail_calcul",
+        label: "Détail du calcul de gain énergétique",
+        type: "textarea",
+        placeholder: "Détailler le calcul :\n1. Gradient thermique avant : X °C sur Y m → Z °C/m\n2. Gradient après (estimé) : X' °C → réduction de N °C\n3. Économie = 3% par °C de gradient réduit × conso avant\n   Ou : réduction de la consigne effective de ΔT °C\n4. Surconsommation des déstratificateurs à déduire\n5. Gain net = Économie brute - Conso déstratificateurs",
+        colSpan: 2,
+        required: true,
+        help: "Règle usuelle : 3% d'économie de chauffage par °C de gradient réduit",
+      },
+      { id: "gain_energetique_pct", label: "Gain énergétique total", type: "number", placeholder: "Ex: 28", unit: "%", required: true },
+      { id: "gain_energetique_mwh", label: "Gain annuel en énergie finale", type: "number", placeholder: "Ex: 102", unit: "MWh/an", required: true },
+      { id: "economie_cee_cumac", label: "Volume CEE estimé", type: "number", placeholder: "Ex: 1200", unit: "MWh cumac", help: "Selon la fiche standardisée BAT-TH-142" },
+      { id: "economie_euros", label: "Économie financière annuelle", type: "number", placeholder: "Ex: 8000", unit: "€/an" },
+      { id: "cout_investissement", label: "Coût total de l'investissement", type: "number", placeholder: "Ex: 15000", unit: "€ HT" },
+      { id: "duree_retour", label: "Temps de retour sur investissement", type: "number", placeholder: "Ex: 1.8", unit: "ans" },
+    ],
+  },
+  {
+    titre: "6. Conformité et conclusion",
+    description: "Vérification de la conformité à la fiche CEE BAT-TH-142",
+    fields: [
+      {
+        id: "conformite_hauteur",
+        label: "La hauteur sous plafond est ≥ 5 m",
+        type: "select",
+        options: ["Oui — conforme", "Non — non conforme"],
+        required: true,
+      },
+      {
+        id: "conformite_aspiration",
+        label: "L'aspiration est à ≤ 1 m du plafond",
+        type: "select",
+        options: ["Oui — conforme", "Non — non conforme"],
+        required: true,
+      },
+      {
+        id: "conformite_vitesse",
+        label: "La vitesse d'air au sol est comprise entre 0.1 et 0.3 m/s",
+        type: "select",
+        options: ["Oui — conforme", "Non — non conforme"],
+        required: true,
+      },
+      {
+        id: "conformite_bruit",
+        label: "Le niveau sonore est ≤ 45 dB(A)",
+        type: "select",
+        options: ["Oui — conforme", "Non — non conforme"],
+        required: true,
+      },
+      {
+        id: "conformite_consigne",
+        label: "La consigne de chauffage est ≥ 15°C en occupation",
+        type: "select",
+        options: ["Oui — conforme", "Non — non conforme"],
+        required: true,
+      },
+      {
+        id: "conformite_usage",
+        label: "Le local n'est pas un entrepôt logistique, réserve ou stockage",
+        type: "select",
+        options: ["Oui — local éligible", "Non — local exclu"],
+        required: true,
+        help: "Les entrepôts logistiques, réserves et stockages sont exclus de la fiche",
+      },
+      { id: "date_installation_prevue", label: "Date d'installation prévue", type: "date", required: true },
+      { id: "duree_vie_equipement", label: "Durée de vie conventionnelle", type: "text", placeholder: "15 ans (selon fiche BAT-TH-142)" },
+      {
+        id: "conclusion",
+        label: "Conclusion et avis technique du bureau d'étude",
+        type: "textarea",
+        placeholder: "Synthèse : confirmer la conformité BAT-TH-142, le dimensionnement adapté, le gain énergétique justifié. Émettre un avis favorable ou réserves.",
+        colSpan: 2,
+        required: true,
+      },
+    ],
+  },
+];
+
+// ─── BAT-TH-139 — Récupération de chaleur sur groupe froid ─────
+
+const QUESTIONNAIRE_139: QuestionSection[] = [
+  {
+    titre: "1. Informations du projet",
+    description: "Identification du site, du demandeur et du bureau d'étude",
+    fields: [
+      { id: "ref_projet", label: "Référence du projet", type: "text", placeholder: "Ex: ND-2026-XXX", required: true },
+      { id: "date_visite", label: "Date de visite technique", type: "date", required: true },
+      { id: "date_note", label: "Date de la note", type: "date", required: true },
+      { id: "redacteur", label: "Rédacteur de la note", type: "text", placeholder: "Nom du technicien / ingénieur", required: true },
+      { id: "client_nom", label: "Bénéficiaire (raison sociale)", type: "text", placeholder: "Raison sociale", required: true },
+      { id: "client_siret", label: "SIRET du bénéficiaire", type: "text", placeholder: "Ex: 123 456 789 00012" },
+      { id: "adresse", label: "Adresse du site des travaux", type: "text", placeholder: "Adresse complète", required: true, colSpan: 2 },
+      { id: "installateur", label: "Installateur / entreprise", type: "text", placeholder: "Raison sociale de l'installateur", required: true },
+      { id: "installateur_rge", label: "N° qualification RGE", type: "text", placeholder: "Ex: QUA-XXX-XXXX" },
+    ],
+  },
+  {
+    titre: "2. Caractéristiques du site et besoins thermiques",
+    description: "Description du bâtiment et des besoins en chaleur",
+    fields: [
+      {
+        id: "type_batiment",
+        label: "Secteur d'activité",
+        type: "select",
+        options: ["Commerce / Grande distribution", "Hôtellerie / Restauration", "Santé / Hôpital", "Sport / Loisirs / Culture", "Transport / Logistique", "Industrie agroalimentaire", "Autre tertiaire"],
+        required: true,
+        help: "Le secteur influence le volume CEE cumac",
+      },
+      {
+        id: "zone_climatique",
+        label: "Zone climatique",
+        type: "select",
+        options: ["H1a — Nord", "H1b — Nord-Est", "H1c — Est", "H2a — Nord-Ouest", "H2b — Ouest", "H2c — Sud-Ouest", "H2d — Centre", "H3 — Méditerranée"],
+        required: true,
+      },
+      { id: "surface_batiment", label: "Surface du bâtiment", type: "number", placeholder: "Ex: 5000", unit: "m²" },
+      {
+        id: "usage_chaleur_recuperee",
+        label: "Usage de la chaleur récupérée",
+        type: "select",
+        options: ["Production d'eau chaude sanitaire (ECS)", "Préchauffage d'eau (process ou ECS)", "Chauffage de locaux (boucle d'eau)", "Dégivrage (chambres froides)", "Autre usage thermique sur site"],
+        required: true,
+        help: "La chaleur doit être utilisée sur site — pas pour le préchauffage d'air",
+      },
+      { id: "besoin_chaleur_annuel", label: "Besoin thermique annuel couvert par la récupération", type: "number", placeholder: "Ex: 200", unit: "MWh/an", required: true, help: "Besoin en chaleur qui sera satisfait par la récupération" },
+      {
+        id: "source_chaleur_actuelle",
+        label: "Source de chaleur actuelle (avant récupération)",
+        type: "select",
+        options: ["Chaudière gaz", "Chaudière fioul", "Résistance électrique", "Réseau de chaleur", "Aucune (besoin non couvert)", "Autre"],
+        required: true,
+      },
+      { id: "conso_chaleur_actuelle", label: "Consommation annuelle de la production de chaleur actuelle", type: "number", placeholder: "Ex: 230", unit: "MWh/an", help: "Énergie finale consommée par le générateur de chaleur remplacé" },
+      {
+        id: "description_besoins",
+        label: "Description des besoins thermiques",
+        type: "textarea",
+        placeholder: "Décrire les besoins en chaleur : ECS pour vestiaires, préchauffage process, dégivrage chambres froides, profil de consommation saisonnier/constant…",
+        colSpan: 2,
+      },
+    ],
+  },
+  {
+    titre: "3. Installation frigorifique existante",
+    description: "Groupe de production de froid sur lequel sera installée la récupération",
+    fields: [
+      {
+        id: "type_groupe_froid",
+        label: "Type de groupe de froid",
+        type: "select",
+        options: ["Groupe à condensation à air", "Groupe à condensation à eau", "Centrale frigorifique", "Groupe semi-hermétique", "Groupe à vis", "Autre"],
+        required: true,
+      },
+      { id: "marque_groupe", label: "Marque du groupe froid", type: "text", placeholder: "Ex: Bitzer, Carrier, Copeland…", required: true },
+      { id: "modele_groupe", label: "Modèle / référence", type: "text", placeholder: "Référence constructeur" },
+      { id: "annee_installation", label: "Année d'installation", type: "number", placeholder: "Ex: 2015" },
+      { id: "puissance_froid", label: "Puissance frigorifique nominale", type: "number", placeholder: "Ex: 250", unit: "kW", required: true },
+      { id: "puissance_absorbee", label: "Puissance électrique absorbée", type: "number", placeholder: "Ex: 90", unit: "kW", required: true },
+      {
+        id: "fluide_frigorigene",
+        label: "Fluide frigorigène",
+        type: "select",
+        options: ["R-404A", "R-407C", "R-134a", "R-410A", "R-448A", "R-449A", "R-744 (CO₂)", "R-290 (propane)", "R-717 (ammoniac)", "Autre"],
+        required: true,
+      },
+      { id: "temp_evaporation", label: "Température d'évaporation", type: "number", placeholder: "Ex: -10", unit: "°C", required: true, help: "Doit être ≤ 18°C (condition d'éligibilité)" },
+      { id: "temp_condensation", label: "Température de condensation", type: "number", placeholder: "Ex: 40", unit: "°C", required: true },
+      { id: "heures_fonctionnement", label: "Heures de fonctionnement annuelles du groupe froid", type: "number", placeholder: "Ex: 6000", unit: "h/an", required: true },
+      { id: "taux_charge_moyen", label: "Taux de charge moyen", type: "number", placeholder: "Ex: 65", unit: "%", required: true, help: "Taux de charge moyen annuel du compresseur" },
+      {
+        id: "description_installation",
+        label: "Description de l'installation frigorifique",
+        type: "textarea",
+        placeholder: "Nombre d'évaporateurs, température des chambres froides, type de distribution, état général…",
+        colSpan: 2,
+      },
+    ],
+  },
+  {
+    titre: "4. Système de récupération de chaleur projeté",
+    description: "Caractéristiques techniques du système de récupération",
+    fields: [
+      {
+        id: "type_echangeur",
+        label: "Type d'échangeur de récupération",
+        type: "select",
+        options: [
+          "Désurchauffeur sur refoulement compresseur",
+          "Échangeur sur circuit de condensation (sous-refroidisseur)",
+          "Condenseur dédié récupération (double condenseur)",
+          "Échangeur à plaques sur circuit secondaire",
+          "Autre",
+        ],
+        required: true,
+      },
+      { id: "marque_echangeur", label: "Marque de l'échangeur", type: "text", placeholder: "Ex: Alfa Laval, SWEP, Danfoss…", required: true },
+      { id: "modele_echangeur", label: "Modèle / Référence", type: "text", placeholder: "Référence constructeur", required: true },
+      { id: "puissance_recuperation", label: "Puissance thermique de récupération", type: "number", placeholder: "Ex: 80", unit: "kW", required: true, help: "Puissance thermique récupérable à pleine charge" },
+      { id: "temp_eau_entree", label: "Température d'eau entrée échangeur", type: "number", placeholder: "Ex: 15", unit: "°C" },
+      { id: "temp_eau_sortie", label: "Température d'eau sortie échangeur", type: "number", placeholder: "Ex: 55", unit: "°C" },
+      { id: "debit_eau", label: "Débit d'eau circuit secondaire", type: "number", placeholder: "Ex: 3.5", unit: "m³/h" },
+      {
+        id: "regulation_recup",
+        label: "Régulation du système de récupération",
+        type: "select",
+        options: [
+          "Vanne 3 voies thermostatique",
+          "Régulation électronique (sonde T° + vanne motorisée)",
+          "Intégration automate / GTB",
+          "Autre",
+        ],
+        required: true,
+      },
+      { id: "ballon_stockage", label: "Ballon de stockage", type: "select", options: ["Oui", "Non"], required: true },
+      { id: "volume_ballon", label: "Volume du ballon de stockage", type: "number", placeholder: "Ex: 1000", unit: "L" },
+      { id: "compteur_energie", label: "Compteur d'énergie récupérée prévu", type: "select", options: ["Oui", "Non"], required: true, help: "Recommandé pour le suivi des performances" },
+      {
+        id: "justification_choix",
+        label: "Justification du choix et du dimensionnement",
+        type: "textarea",
+        placeholder: "Expliquer :\n- Adéquation entre la chaleur récupérable et les besoins\n- Choix du point de récupération (désurchauffe vs condensation)\n- Dimensionnement de l'échangeur et du stockage\n- Impact sur le fonctionnement du groupe froid\n- Conformité à la fiche BAT-TH-139",
+        colSpan: 2,
+        required: true,
+      },
+    ],
+  },
+  {
+    titre: "5. Calcul des gains énergétiques",
+    description: "Bilan thermique de la récupération et preuve du gain d'énergie",
+    fields: [
+      {
+        id: "methode_calcul",
+        label: "Méthode de calcul utilisée",
+        type: "select",
+        options: [
+          "Bilan thermique (puissance × heures × taux de charge × taux de récup.)",
+          "Analyse sur données 24h représentatives (2 ans historique)",
+          "Simulation logicielle (préciser)",
+          "Données constructeur + historique consommation",
+        ],
+        required: true,
+      },
+      { id: "chaleur_rejetee_annuelle", label: "Chaleur totale rejetée par le groupe froid", type: "number", placeholder: "Ex: 520", unit: "MWh/an", required: true, help: "= (Pfroid + Pélec) × heures × taux charge / 1000" },
+      { id: "taux_recuperation", label: "Taux de récupération effectif", type: "number", placeholder: "Ex: 35", unit: "%", required: true, help: "Part de la chaleur rejetée effectivement récupérée" },
+      { id: "chaleur_recuperee_annuelle", label: "Chaleur récupérée annuellement", type: "number", placeholder: "Ex: 182", unit: "MWh/an", required: true },
+      { id: "conso_evitee", label: "Consommation d'énergie évitée (production de chaleur substituée)", type: "number", placeholder: "Ex: 210", unit: "MWh/an", required: true, help: "= Chaleur récupérée / rendement du générateur remplacé" },
+      {
+        id: "detail_calcul",
+        label: "Détail du calcul de gain énergétique",
+        type: "textarea",
+        placeholder: "Détailler :\n1. Chaleur totale au condenseur = (Pfroid + Pélec) × heures × taux charge\n2. Chaleur récupérable = Chaleur totale × taux de récupération\n3. Énergie évitée = Chaleur récupérée / rendement générateur existant\n4. Surcoût électrique pompe de circulation (à déduire si significatif)\n5. Gain net = Énergie évitée - surcoût auxiliaires",
+        colSpan: 2,
+        required: true,
+        help: "Le détail du calcul prouve le gain d'énergie — pièce essentielle du dossier CEE",
+      },
+      { id: "gain_energetique_pct", label: "Gain énergétique", type: "number", placeholder: "Ex: 35", unit: "%", required: true },
+      { id: "gain_energetique_mwh", label: "Gain annuel en énergie finale", type: "number", placeholder: "Ex: 182", unit: "MWh/an", required: true },
+      { id: "reduction_co2", label: "Réduction des émissions CO₂", type: "number", placeholder: "Ex: 42", unit: "t CO₂/an" },
+      { id: "economie_cee_cumac", label: "Volume CEE estimé", type: "number", placeholder: "Ex: 2500", unit: "MWh cumac", help: "Selon la fiche BAT-TH-139 et le secteur d'activité" },
+      { id: "economie_euros", label: "Économie financière annuelle", type: "number", placeholder: "Ex: 18000", unit: "€/an" },
+      { id: "cout_investissement", label: "Coût total de l'investissement", type: "number", placeholder: "Ex: 45000", unit: "€ HT" },
+      { id: "duree_retour", label: "Temps de retour sur investissement", type: "number", placeholder: "Ex: 2.5", unit: "ans" },
+    ],
+  },
+  {
+    titre: "6. Conformité et conclusion",
+    description: "Vérification de la conformité à la fiche CEE BAT-TH-139",
+    fields: [
+      {
+        id: "conformite_evaporation",
+        label: "La température d'évaporation est ≤ 18°C",
+        type: "select",
+        options: ["Oui — conforme", "Non — non conforme"],
+        required: true,
+        help: "Condition obligatoire de la fiche BAT-TH-139",
+      },
+      {
+        id: "conformite_usage",
+        label: "La chaleur récupérée est utilisée sur site (hors préchauffage d'air)",
+        type: "select",
+        options: ["Oui — conforme", "Non — non conforme"],
+        required: true,
+      },
+      {
+        id: "conformite_etude",
+        label: "Une étude de dimensionnement préalable a été réalisée",
+        type: "select",
+        options: ["Oui — étude signée par un professionnel / BE", "Non"],
+        required: true,
+        help: "Étude obligatoire couvrant besoins thermiques, besoins froid, puissances, économies",
+      },
+      {
+        id: "conformite_compression",
+        label: "Le groupe de froid est à compression mécanique (circuit fermé)",
+        type: "select",
+        options: ["Oui — conforme", "Non — non conforme"],
+        required: true,
+        help: "Exclusion des PAC et des groupes de secours",
+      },
+      {
+        id: "conformite_installateur",
+        label: "L'installateur est qualifié",
+        type: "select",
+        options: ["Oui — qualification vérifiée", "Non — non qualifié", "En cours de vérification"],
+        required: true,
+      },
+      { id: "date_installation_prevue", label: "Date d'installation prévue", type: "date", required: true },
+      { id: "duree_vie_equipement", label: "Durée de vie conventionnelle", type: "text", placeholder: "14 ans (selon fiche BAT-TH-139)" },
+      {
+        id: "conclusion",
+        label: "Conclusion et avis technique du bureau d'étude",
+        type: "textarea",
+        placeholder: "Synthèse : confirmer l'adéquation du dimensionnement, le gain énergétique justifié, la conformité BAT-TH-139. Émettre un avis favorable ou réserves.",
+        colSpan: 2,
+        required: true,
+      },
+    ],
+  },
+];
+
 // ─── Constantes de calcul ───────────────────────────────────────
 
 // DJU (base 18°C) et T° base par zone climatique
@@ -2242,9 +2766,157 @@ function calculer163(v: FormValues): Calcul163Result | null {
   };
 }
 
+// ─── Calculs BAT-TH-142 — Déstratification ─────────────────────
+
+interface Calcul142Result {
+  reductionGradient: number;
+  gainBrutPct: number;
+  consoDestrat: number;
+  consoApres: number;
+  gainNetMwh: number;
+  gainNetPct: number;
+  economiEuros: number;
+  dureeRetour: number | null;
+  detailMethode: string;
+}
+
+function calculer142(v: FormValues): Calcul142Result | null {
+  const gradientAvant = parseFloat(v.gradient_avant || v.gradient_thermique || "0");
+  const gradientApres = parseFloat(v.gradient_apres || "0");
+  const consoAvant = parseFloat(v.conso_chauffage_avant || v.conso_chauffage_annuelle || "0");
+  if (gradientAvant <= 0 || consoAvant <= 0) return null;
+
+  const reductionGradient = gradientAvant - gradientApres;
+  if (reductionGradient <= 0) return null;
+
+  // Règle usuelle : 3% d'économie de chauffage par °C de gradient réduit
+  const gainBrutPct = reductionGradient * 3;
+  const economieBrute = consoAvant * (gainBrutPct / 100);
+
+  // Surconsommation des déstratificateurs
+  const nbDestrat = parseInt(v.nb_destratificateurs || "0", 10);
+  const puissanceUnit = parseFloat(v.puissance_unitaire || "0");
+  const heuresFonctionnement = parseFloat(v.heures_fonctionnement_destrat || "4000"); // ~saison de chauffe
+  const consoDestrat = (nbDestrat * puissanceUnit * heuresFonctionnement) / 1000; // MWh
+
+  const gainNetMwh = economieBrute - consoDestrat;
+  const consoApres = consoAvant - gainNetMwh;
+  const gainNetPct = (gainNetMwh / consoAvant) * 100;
+
+  // Économie financière
+  const prixEnergie = v.energie_chauffage === "Électricité" ? PRIX_ELEC_KWH : 0.08; // gaz ~80€/MWh
+  const economiEuros = gainNetMwh * 1000 * prixEnergie;
+
+  const coutInvest = parseFloat(v.cout_investissement || "0");
+  const dureeRetour = coutInvest > 0 && economiEuros > 0 ? coutInvest / economiEuros : null;
+
+  const hauteur = parseFloat(v.hauteur_sous_plafond || "0");
+  const detailMethode = [
+    `Méthode par gradient thermique — Règle des 3%/°C`,
+    `Hauteur sous plafond: ${hauteur} m · Surface: ${v.surface_local || "?"} m²`,
+    "",
+    "Diagnostic de stratification:",
+    `  T° au sol: ${v.temp_sol_mesuree || "?"}°C · T° sous toiture: ${v.temp_sous_toiture || "?"}°C`,
+    `  Gradient AVANT: ${gradientAvant.toFixed(1)}°C (${(gradientAvant / hauteur).toFixed(2)} °C/m)`,
+    `  Gradient APRÈS (estimé): ${gradientApres.toFixed(1)}°C`,
+    `  Réduction: ${reductionGradient.toFixed(1)}°C`,
+    "",
+    "Calcul du gain:",
+    `  Économie brute = ${reductionGradient.toFixed(1)}°C × 3%/°C = ${gainBrutPct.toFixed(1)}%`,
+    `  Économie brute = ${consoAvant.toFixed(1)} × ${(gainBrutPct / 100).toFixed(3)} = ${economieBrute.toFixed(1)} MWh/an`,
+    `  Conso déstratificateurs = ${nbDestrat} × ${puissanceUnit} kW × ${heuresFonctionnement}h / 1000 = ${consoDestrat.toFixed(2)} MWh/an`,
+    `  Gain NET = ${economieBrute.toFixed(1)} - ${consoDestrat.toFixed(2)} = ${gainNetMwh.toFixed(1)} MWh/an (${gainNetPct.toFixed(1)}%)`,
+    "",
+    `Conso AVANT: ${consoAvant.toFixed(1)} MWh/an → Conso APRÈS: ${consoApres.toFixed(1)} MWh/an`,
+    `Économie: ${Math.round(economiEuros)} €/an`,
+  ].join("\n");
+
+  return { reductionGradient, gainBrutPct, consoDestrat, consoApres, gainNetMwh, gainNetPct, economiEuros, dureeRetour, detailMethode };
+}
+
+// ─── Calculs BAT-TH-139 — Récupération chaleur ─────────────────
+
+interface Calcul139Result {
+  chaleurRejetee: number;
+  chaleurRecuperee: number;
+  consoEvitee: number;
+  gainPct: number;
+  reductionCo2: number;
+  economiEuros: number;
+  dureeRetour: number | null;
+  detailMethode: string;
+}
+
+function calculer139(v: FormValues): Calcul139Result | null {
+  const puissanceFroid = parseFloat(v.puissance_froid || "0");
+  const puissanceAbsorbee = parseFloat(v.puissance_absorbee || "0");
+  const heures = parseFloat(v.heures_fonctionnement || "0");
+  const tauxCharge = parseFloat(v.taux_charge_moyen || "0") / 100;
+  const tauxRecup = parseFloat(v.taux_recuperation || "0") / 100;
+
+  if (puissanceFroid <= 0 || puissanceAbsorbee <= 0 || heures <= 0 || tauxCharge <= 0 || tauxRecup <= 0) return null;
+
+  // Chaleur totale rejetée au condenseur = (Pfroid + Pélec) × heures × taux charge
+  const chaleurRejetee = ((puissanceFroid + puissanceAbsorbee) * heures * tauxCharge) / 1000; // MWh
+  const chaleurRecuperee = chaleurRejetee * tauxRecup;
+
+  // Énergie évitée = chaleur récupérée / rendement du générateur remplacé
+  const sourceActuelle = v.source_chaleur_actuelle || "Chaudière gaz";
+  let rendementRemplace = 0.90; // chaudière gaz par défaut
+  if (sourceActuelle.includes("fioul")) rendementRemplace = 0.85;
+  else if (sourceActuelle.includes("lectrique")) rendementRemplace = 1.0;
+  else if (sourceActuelle.includes("seau de chaleur")) rendementRemplace = 0.95;
+  const consoEvitee = chaleurRecuperee / rendementRemplace;
+
+  // Gain en %
+  const consoActuelle = parseFloat(v.conso_chaleur_actuelle || "0");
+  const gainPct = consoActuelle > 0 ? (consoEvitee / consoActuelle) * 100 : (chaleurRecuperee > 0 ? 100 : 0);
+
+  // CO₂
+  let facteurCo2 = 0.227; // gaz
+  if (sourceActuelle.includes("fioul")) facteurCo2 = 0.324;
+  else if (sourceActuelle.includes("lectrique")) facteurCo2 = 0.0569;
+  else if (sourceActuelle.includes("seau de chaleur")) facteurCo2 = 0.180;
+  const reductionCo2 = (consoEvitee * facteurCo2 * 1000) / 1000; // t CO₂/an
+
+  // Économie financière
+  let prixEnergie = 0.08; // gaz ~80€/MWh
+  if (sourceActuelle.includes("fioul")) prixEnergie = 0.10;
+  else if (sourceActuelle.includes("lectrique")) prixEnergie = PRIX_ELEC_KWH;
+  const economiEuros = consoEvitee * 1000 * prixEnergie;
+
+  const coutInvest = parseFloat(v.cout_investissement || "0");
+  const dureeRetour = coutInvest > 0 && economiEuros > 0 ? coutInvest / economiEuros : null;
+
+  const detailMethode = [
+    `Bilan thermique de récupération de chaleur sur groupe froid`,
+    `Groupe froid: ${v.marque_groupe || "?"} · Pfroid = ${puissanceFroid} kW · Pélec = ${puissanceAbsorbee} kW`,
+    `Fonctionnement: ${heures}h/an · Taux de charge moyen: ${(tauxCharge * 100).toFixed(0)}%`,
+    "",
+    "Calcul de la chaleur disponible:",
+    `  Chaleur au condenseur = (${puissanceFroid} + ${puissanceAbsorbee}) × ${heures}h × ${(tauxCharge * 100).toFixed(0)}% / 1000`,
+    `  = ${chaleurRejetee.toFixed(1)} MWh/an`,
+    "",
+    "Chaleur récupérée:",
+    `  Taux de récupération: ${(tauxRecup * 100).toFixed(0)}%`,
+    `  Chaleur récupérée = ${chaleurRejetee.toFixed(1)} × ${(tauxRecup * 100).toFixed(0)}% = ${chaleurRecuperee.toFixed(1)} MWh/an`,
+    "",
+    "Énergie substituée:",
+    `  Source actuelle: ${sourceActuelle} (η = ${(rendementRemplace * 100).toFixed(0)}%)`,
+    `  Conso évitée = ${chaleurRecuperee.toFixed(1)} / ${rendementRemplace.toFixed(2)} = ${consoEvitee.toFixed(1)} MWh/an`,
+    "",
+    `Réduction CO₂: ${reductionCo2.toFixed(1)} t/an`,
+    `Économie: ${consoEvitee.toFixed(1)} MWh/an · ${Math.round(economiEuros)} €/an`,
+  ].join("\n");
+
+  return { chaleurRejetee, chaleurRecuperee, consoEvitee, gainPct, reductionCo2, economiEuros, dureeRetour, detailMethode };
+}
+
 const QUESTIONNAIRES: Record<FicheId, QuestionSection[]> = {
   "BAT-TH-134": QUESTIONNAIRE_134,
   "BAT-TH-163": QUESTIONNAIRE_163,
+  "BAT-TH-142": QUESTIONNAIRE_142,
+  "BAT-TH-139": QUESTIONNAIRE_139,
   "BAR-TH-171": QUESTIONNAIRE_171,
   "BAR-TH-159": QUESTIONNAIRE_159,
   "BAR-EN-101": QUESTIONNAIRE_101,
@@ -2256,6 +2928,8 @@ const QUESTIONNAIRES: Record<FicheId, QuestionSection[]> = {
 const PHOTO_CATEGORIES: Record<FicheId, string[]> = {
   "BAT-TH-134": PHOTO_CATEGORIES_134,
   "BAT-TH-163": PHOTO_CATEGORIES_163,
+  "BAT-TH-142": PHOTO_CATEGORIES_142,
+  "BAT-TH-139": PHOTO_CATEGORIES_139,
   "BAR-TH-171": PHOTO_CATEGORIES_171,
   "BAR-TH-159": PHOTO_CATEGORIES_159,
   "BAR-EN-101": PHOTO_CATEGORIES_101,
@@ -2461,6 +3135,12 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
   // ─── Auto-calcul BAT-TH-163 ──────────────────────────────────
   const calcul163 = selectedFiche === "BAT-TH-163" ? calculer163(values) : null;
 
+  // ─── Auto-calcul BAT-TH-142 ──────────────────────────────────
+  const calcul142 = selectedFiche === "BAT-TH-142" ? calculer142(values) : null;
+
+  // ─── Auto-calcul BAT-TH-139 ──────────────────────────────────
+  const calcul139 = selectedFiche === "BAT-TH-139" ? calculer139(values) : null;
+
   // ─── Pré-remplissage auto section "Calcul gains" BAT-TH-134 ──
   // Étape 1 : pré-remplir les champs d'entrée de la section 5 à partir des sections précédentes
   const didPrefill134Ref = useRef(false);
@@ -2591,6 +3271,108 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
     }));
     setSaved(false);
   }, [selectedFiche, activeSection, calcul163]);
+
+  // ─── Pré-remplissage auto section "Calcul gains" BAT-TH-142 ──
+  const didPrefill142Ref = useRef(false);
+  useEffect(() => {
+    if (selectedFiche !== "BAT-TH-142" || activeSection !== 4) return;
+    if (didPrefill142Ref.current) return;
+
+    // Pré-remplir depuis les sections précédentes
+    const gradient = parseFloat(values.gradient_thermique || "0");
+    const consoAnnuelle = parseFloat(values.conso_chauffage_annuelle || "0");
+    if (gradient <= 0 || consoAnnuelle <= 0) return;
+
+    didPrefill142Ref.current = true;
+    const hauteur = parseFloat(values.hauteur_sous_plafond || "8");
+
+    setValues((prev) => {
+      const updates: FormValues = {};
+      if (!prev.methode_calcul) updates.methode_calcul = "Méthode forfaitaire (3% d'économie par °C de gradient réduit)";
+      if (!prev.gradient_avant) updates.gradient_avant = String(gradient);
+      // Estimer gradient après : réduction de 75% typique
+      if (!prev.gradient_apres) updates.gradient_apres = (gradient * 0.25).toFixed(1);
+      if (!prev.conso_chauffage_avant) updates.conso_chauffage_avant = String(consoAnnuelle);
+      if (!prev.reduction_gradient) updates.reduction_gradient = (gradient * 0.75).toFixed(1);
+      if (Object.keys(updates).length === 0) return prev;
+      return { ...prev, ...updates };
+    });
+    setSaved(false);
+  }, [selectedFiche, activeSection, values]);
+
+  // Étape 2 : résultats calculés BAT-TH-142
+  const prevCalcul142Ref = useRef<string | null>(null);
+  useEffect(() => {
+    if (selectedFiche !== "BAT-TH-142" || activeSection !== 4 || !calcul142) return;
+    const sig = `${calcul142.gainNetMwh.toFixed(1)}|${calcul142.gainNetPct.toFixed(1)}|${Math.round(calcul142.economiEuros)}`;
+    if (prevCalcul142Ref.current === sig) return;
+    prevCalcul142Ref.current = sig;
+
+    setValues((prev) => ({
+      ...prev,
+      conso_chauffage_apres: calcul142.consoApres.toFixed(1),
+      gain_energetique_pct: calcul142.gainNetPct.toFixed(1),
+      gain_energetique_mwh: calcul142.gainNetMwh.toFixed(1),
+      economie_euros: String(Math.round(calcul142.economiEuros)),
+      ...(calcul142.dureeRetour ? { duree_retour: calcul142.dureeRetour.toFixed(1) } : {}),
+      detail_calcul: calcul142.detailMethode,
+      reduction_gradient: calcul142.reductionGradient.toFixed(1),
+    }));
+    setSaved(false);
+  }, [selectedFiche, activeSection, calcul142]);
+
+  // ─── Pré-remplissage auto section "Calcul gains" BAT-TH-139 ──
+  const didPrefill139Ref = useRef(false);
+  useEffect(() => {
+    if (selectedFiche !== "BAT-TH-139" || activeSection !== 4) return;
+    if (didPrefill139Ref.current) return;
+
+    // Pré-remplir depuis les sections précédentes
+    const puissanceFroid = parseFloat(values.puissance_froid || "0");
+    const puissanceAbsorbee = parseFloat(values.puissance_absorbee || "0");
+    const heures = parseFloat(values.heures_fonctionnement || "0");
+    const tauxCharge = parseFloat(values.taux_charge_moyen || "0");
+    if (puissanceFroid <= 0 || puissanceAbsorbee <= 0 || heures <= 0 || tauxCharge <= 0) return;
+
+    didPrefill139Ref.current = true;
+
+    // Estimer la chaleur rejetée et proposer un taux de récupération
+    const chaleurRejetee = ((puissanceFroid + puissanceAbsorbee) * heures * (tauxCharge / 100)) / 1000;
+
+    setValues((prev) => {
+      const updates: FormValues = {};
+      if (!prev.methode_calcul) updates.methode_calcul = "Bilan thermique (puissance × heures × taux de charge × taux de récup.)";
+      if (!prev.chaleur_rejetee_annuelle) updates.chaleur_rejetee_annuelle = chaleurRejetee.toFixed(1);
+      if (!prev.taux_recuperation) updates.taux_recuperation = "35";
+      if (!prev.chaleur_recuperee_annuelle) updates.chaleur_recuperee_annuelle = (chaleurRejetee * 0.35).toFixed(1);
+      if (Object.keys(updates).length === 0) return prev;
+      return { ...prev, ...updates };
+    });
+    setSaved(false);
+  }, [selectedFiche, activeSection, values]);
+
+  // Étape 2 : résultats calculés BAT-TH-139
+  const prevCalcul139Ref = useRef<string | null>(null);
+  useEffect(() => {
+    if (selectedFiche !== "BAT-TH-139" || activeSection !== 4 || !calcul139) return;
+    const sig = `${calcul139.consoEvitee.toFixed(1)}|${calcul139.gainPct.toFixed(1)}|${Math.round(calcul139.economiEuros)}`;
+    if (prevCalcul139Ref.current === sig) return;
+    prevCalcul139Ref.current = sig;
+
+    setValues((prev) => ({
+      ...prev,
+      chaleur_rejetee_annuelle: calcul139.chaleurRejetee.toFixed(1),
+      chaleur_recuperee_annuelle: calcul139.chaleurRecuperee.toFixed(1),
+      conso_evitee: calcul139.consoEvitee.toFixed(1),
+      gain_energetique_pct: calcul139.gainPct.toFixed(1),
+      gain_energetique_mwh: calcul139.chaleurRecuperee.toFixed(1),
+      reduction_co2: calcul139.reductionCo2.toFixed(1),
+      economie_euros: String(Math.round(calcul139.economiEuros)),
+      ...(calcul139.dureeRetour ? { duree_retour: calcul139.dureeRetour.toFixed(1) } : {}),
+      detail_calcul: calcul139.detailMethode,
+    }));
+    setSaved(false);
+  }, [selectedFiche, activeSection, calcul139]);
 
   async function handleSave() {
     if (!selectedFiche) return;
@@ -2767,6 +3549,10 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
                   prevCalcul134Ref.current = null;
                   didPrefill163Ref.current = false;
                   prevCalcul163Ref.current = null;
+                  didPrefill142Ref.current = false;
+                  prevCalcul142Ref.current = null;
+                  didPrefill139Ref.current = false;
+                  prevCalcul139Ref.current = null;
                 }}
               >
                 <CardContent className="p-6 space-y-3">
@@ -3068,6 +3854,98 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
                             if (calcul163.dureeRetour) updateValue("duree_retour", calcul163.dureeRetour.toFixed(1));
                             updateValue("detail_calcul", calcul163.detailMethode);
                             updateValue("methode_calcul", "Calcul simplifié (G × V × ΔT)");
+                          }}
+                        >
+                          <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+                          Appliquer les résultats aux champs du formulaire
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ─── Résultats calculés BAT-TH-142 ─── */}
+                  {selectedFiche === "BAT-TH-142" && currentSection.titre.includes("5.") && calcul142 && (
+                    <div className="border-t pt-4 space-y-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                        <h4 className="text-sm font-semibold text-amber-700 dark:text-amber-400">Résultats calculés automatiquement</h4>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        {[
+                          { label: "Réduction gradient", value: `${calcul142.reductionGradient.toFixed(1)}°C`, sub: `${calcul142.gainBrutPct.toFixed(0)}% brut` },
+                          { label: "Conso déstratificateurs", value: `${calcul142.consoDestrat.toFixed(2)} MWh`, sub: "À déduire" },
+                          { label: "Gain net", value: `${calcul142.gainNetPct.toFixed(1)}%`, sub: `${calcul142.gainNetMwh.toFixed(1)} MWh/an` },
+                          { label: "Économie annuelle", value: `${Math.round(calcul142.economiEuros).toLocaleString("fr-FR")} €`, sub: calcul142.dureeRetour ? `Retour: ${calcul142.dureeRetour.toFixed(1)} ans` : "" },
+                        ].map((kpi) => (
+                          <div key={kpi.label} className="rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 p-3 text-center">
+                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{kpi.label}</p>
+                            <p className="text-xl font-bold text-amber-700 dark:text-amber-400">{kpi.value}</p>
+                            {kpi.sub && <p className="text-[11px] text-muted-foreground">{kpi.sub}</p>}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="text-amber-700 border-amber-300 hover:bg-amber-50"
+                          onClick={() => {
+                            if (!calcul142) return;
+                            updateValue("conso_chauffage_apres", calcul142.consoApres.toFixed(1));
+                            updateValue("gain_energetique_pct", calcul142.gainNetPct.toFixed(1));
+                            updateValue("gain_energetique_mwh", calcul142.gainNetMwh.toFixed(1));
+                            updateValue("economie_euros", String(Math.round(calcul142.economiEuros)));
+                            if (calcul142.dureeRetour) updateValue("duree_retour", calcul142.dureeRetour.toFixed(1));
+                            updateValue("detail_calcul", calcul142.detailMethode);
+                            updateValue("reduction_gradient", calcul142.reductionGradient.toFixed(1));
+                          }}
+                        >
+                          <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+                          Appliquer les résultats aux champs du formulaire
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ─── Résultats calculés BAT-TH-139 ─── */}
+                  {selectedFiche === "BAT-TH-139" && currentSection.titre.includes("5.") && calcul139 && (
+                    <div className="border-t pt-4 space-y-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="h-2 w-2 rounded-full bg-orange-500 animate-pulse" />
+                        <h4 className="text-sm font-semibold text-orange-700 dark:text-orange-400">Résultats calculés automatiquement</h4>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        {[
+                          { label: "Chaleur rejetée", value: `${calcul139.chaleurRejetee.toFixed(1)} MWh`, sub: "Total condenseur" },
+                          { label: "Chaleur récupérée", value: `${calcul139.chaleurRecuperee.toFixed(1)} MWh/an`, sub: `${calcul139.gainPct.toFixed(0)}% du besoin` },
+                          { label: "Énergie évitée", value: `${calcul139.consoEvitee.toFixed(1)} MWh/an`, sub: `CO₂: -${calcul139.reductionCo2.toFixed(1)} t/an` },
+                          { label: "Économie annuelle", value: `${Math.round(calcul139.economiEuros).toLocaleString("fr-FR")} €`, sub: calcul139.dureeRetour ? `Retour: ${calcul139.dureeRetour.toFixed(1)} ans` : "" },
+                        ].map((kpi) => (
+                          <div key={kpi.label} className="rounded-xl border border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950/30 p-3 text-center">
+                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{kpi.label}</p>
+                            <p className="text-xl font-bold text-orange-700 dark:text-orange-400">{kpi.value}</p>
+                            {kpi.sub && <p className="text-[11px] text-muted-foreground">{kpi.sub}</p>}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="text-orange-700 border-orange-300 hover:bg-orange-50"
+                          onClick={() => {
+                            if (!calcul139) return;
+                            updateValue("chaleur_rejetee_annuelle", calcul139.chaleurRejetee.toFixed(1));
+                            updateValue("chaleur_recuperee_annuelle", calcul139.chaleurRecuperee.toFixed(1));
+                            updateValue("conso_evitee", calcul139.consoEvitee.toFixed(1));
+                            updateValue("gain_energetique_pct", calcul139.gainPct.toFixed(1));
+                            updateValue("gain_energetique_mwh", calcul139.chaleurRecuperee.toFixed(1));
+                            updateValue("reduction_co2", calcul139.reductionCo2.toFixed(1));
+                            updateValue("economie_euros", String(Math.round(calcul139.economiEuros)));
+                            if (calcul139.dureeRetour) updateValue("duree_retour", calcul139.dureeRetour.toFixed(1));
+                            updateValue("detail_calcul", calcul139.detailMethode);
                           }}
                         >
                           <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
