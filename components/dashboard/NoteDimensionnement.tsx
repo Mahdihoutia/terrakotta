@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -2461,6 +2461,111 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
   // ─── Auto-calcul BAT-TH-163 ──────────────────────────────────
   const calcul163 = selectedFiche === "BAT-TH-163" ? calculer163(values) : null;
 
+  // ─── Pré-remplissage auto section "Calcul gains" BAT-TH-134 ──
+  // Étape 1 : pré-remplir les champs d'entrée de la section 5 à partir des sections précédentes
+  const didPrefill134Ref = useRef(false);
+  useEffect(() => {
+    if (selectedFiche !== "BAT-TH-134" || activeSection !== 4) return;
+    if (didPrefill134Ref.current) return;
+
+    // Calculer la conso avant à partir des groupes froids (section 3)
+    const nbGroupes = parseInt(values.nb_groupes_multi || "1", 10) || 1;
+    let puissanceAbsorbeeTotale = 0;
+    for (let i = 1; i <= nbGroupes; i++) {
+      puissanceAbsorbeeTotale += parseFloat(values[`puissance_absorbee_${i}`] || "0");
+    }
+    if (puissanceAbsorbeeTotale <= 0) return; // pas assez de données des sections précédentes
+
+    didPrefill134Ref.current = true;
+    const heures = values.heures_fonctionnement || "6500";
+    const consoEstimee = (puissanceAbsorbeeTotale * parseFloat(heures)) / 1000;
+
+    setValues((prev) => {
+      const updates: FormValues = {};
+      if (!prev.methode_calcul) updates.methode_calcul = "Méthode bin (répartition des heures par tranche de T° ext.)";
+      if (!prev.heures_fonctionnement) updates.heures_fonctionnement = heures;
+      if (!prev.conso_electrique_avant) updates.conso_electrique_avant = consoEstimee.toFixed(1);
+      if (!prev.source_conso_avant) updates.source_conso_avant = "Estimation par calcul";
+      if (!prev.regime_froid) updates.regime_froid = "Froid positif uniquement (> 0°C)";
+      if (!prev.profil_utilisation) updates.profil_utilisation = "Continu (24h/24, 7j/7)";
+      if (Object.keys(updates).length === 0) return prev;
+      return { ...prev, ...updates };
+    });
+    setSaved(false);
+  }, [selectedFiche, activeSection, values]);
+
+  // Étape 2 : une fois calculer134 disponible, pré-remplir les champs de résultat
+  const prevCalcul134Ref = useRef<string | null>(null);
+  useEffect(() => {
+    if (selectedFiche !== "BAT-TH-134" || activeSection !== 4 || !calcul134) return;
+    // Signature des résultats pour éviter les boucles infinies
+    const sig = `${calcul134.consoApres.toFixed(1)}|${calcul134.gainPct.toFixed(1)}|${calcul134.gainMwh.toFixed(1)}|${Math.round(calcul134.economiEuros)}|${calcul134.dureeRetour?.toFixed(1) ?? ""}`;
+    if (prevCalcul134Ref.current === sig) return;
+    prevCalcul134Ref.current = sig;
+
+    setValues((prev) => ({
+      ...prev,
+      conso_electrique_apres: calcul134.consoApres.toFixed(1),
+      gain_energetique_pct: calcul134.gainPct.toFixed(1),
+      gain_energetique_mwh: calcul134.gainMwh.toFixed(1),
+      economie_euros: String(Math.round(calcul134.economiEuros)),
+      ...(calcul134.dureeRetour ? { duree_retour: calcul134.dureeRetour.toFixed(1) } : {}),
+      detail_calcul: calcul134.detailMethode,
+    }));
+    setSaved(false);
+  }, [selectedFiche, activeSection, calcul134]);
+
+  // ─── Pré-remplissage auto section "Dimensionnement" BAT-TH-163 ──
+  // Étape 1 : pré-remplir les champs d'entrée de la section 6 à partir des sections précédentes
+  const didPrefill163Ref = useRef(false);
+  useEffect(() => {
+    if (selectedFiche !== "BAT-TH-163" || activeSection !== 5) return;
+    if (didPrefill163Ref.current) return;
+
+    // Vérifier qu'on a assez de données des sections précédentes
+    const surface = parseFloat(values.surface_chauffee || "0");
+    const scop = parseFloat(values.scop || "0");
+    if (surface <= 0 || scop <= 0) return;
+
+    didPrefill163Ref.current = true;
+
+    setValues((prev) => {
+      const updates: FormValues = {};
+      if (!prev.methode_calcul) updates.methode_calcul = "Calcul simplifié (G × V × ΔT)";
+      if (!prev.taux_couverture) updates.taux_couverture = "90";
+      if (!prev.appoint) updates.appoint = "Résistance électrique intégrée";
+      if (Object.keys(updates).length === 0) return prev;
+      return { ...prev, ...updates };
+    });
+    setSaved(false);
+  }, [selectedFiche, activeSection, values]);
+
+  // Étape 2 : une fois calculer163 disponible, pré-remplir les champs de résultat
+  const prevCalcul163Ref = useRef<string | null>(null);
+  useEffect(() => {
+    if (selectedFiche !== "BAT-TH-163" || activeSection !== 5 || !calcul163) return;
+    const sig = `${calcul163.deperditionsTotales.toFixed(1)}|${calcul163.gainPct.toFixed(1)}|${calcul163.gainMwh.toFixed(1)}|${Math.round(calcul163.economiEuros)}|${calcul163.dureeRetour?.toFixed(1) ?? ""}`;
+    if (prevCalcul163Ref.current === sig) return;
+    prevCalcul163Ref.current = sig;
+
+    setValues((prev) => ({
+      ...prev,
+      deperditions_totales: calcul163.deperditionsTotales.toFixed(1),
+      deperditions_par_m2: calcul163.deperditionsParM2.toFixed(0),
+      coeff_G: calcul163.coeffG.toFixed(2),
+      besoin_chauffage: calcul163.besoinChauffage.toFixed(1),
+      conso_avant_travaux: calcul163.consoAvant.toFixed(1),
+      conso_apres_travaux: calcul163.consoApres.toFixed(1),
+      gain_energetique_pct: calcul163.gainPct.toFixed(1),
+      gain_energetique_mwh: calcul163.gainMwh.toFixed(1),
+      reduction_co2: calcul163.reductionCo2.toFixed(1),
+      economie_euros: String(Math.round(calcul163.economiEuros)),
+      ...(calcul163.dureeRetour ? { duree_retour: calcul163.dureeRetour.toFixed(1) } : {}),
+      detail_calcul: calcul163.detailMethode,
+    }));
+    setSaved(false);
+  }, [selectedFiche, activeSection, calcul163]);
+
   async function handleSave() {
     if (!selectedFiche) return;
     setSaving(true);
@@ -2632,6 +2737,10 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
                   setActiveSection(0);
                   setValues({});
                   setSectionPhotos({});
+                  didPrefill134Ref.current = false;
+                  prevCalcul134Ref.current = null;
+                  didPrefill163Ref.current = false;
+                  prevCalcul163Ref.current = null;
                 }}
               >
                 <CardContent className="p-6 space-y-3">
