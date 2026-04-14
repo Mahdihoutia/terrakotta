@@ -2469,10 +2469,12 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
     if (didPrefill134Ref.current) return;
 
     // Calculer la conso avant à partir des groupes froids (section 3)
+    // Puissance absorbée totale = compresseurs + ventilateurs condenseur (kW)
     const nbGroupes = parseInt(values.nb_groupes_multi || "1", 10) || 1;
     let puissanceAbsorbeeTotale = 0;
     for (let i = 1; i <= nbGroupes; i++) {
       puissanceAbsorbeeTotale += parseFloat(values[`puissance_absorbee_${i}`] || "0");
+      puissanceAbsorbeeTotale += parseFloat(values[`puissance_ventilateurs_${i}`] || "0");
     }
     if (puissanceAbsorbeeTotale <= 0) return; // pas assez de données des sections précédentes
 
@@ -2525,35 +2527,59 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
     // Vérifier qu'on a assez de données des sections précédentes
     const surface = parseFloat(values.surface_chauffee || "0");
     const scop = parseFloat(values.scop || "0");
-    if (surface <= 0 || scop <= 0) return;
+    const zone = values.zone_climatique;
+    const zoneData = zone ? ZONE_CLIMATIQUE_DATA[zone] : null;
+    if (surface <= 0 || scop <= 0 || !zoneData) return;
 
     didPrefill163Ref.current = true;
+
+    // Calculer le volume chauffé si pas renseigné
+    const hsp = parseFloat(values.hauteur_sous_plafond || "3");
+    const volumeCalc = (surface * hsp).toFixed(0);
+
+    // Température de base depuis la zone climatique
+    const tempBase = values.temp_base || String(zoneData.tBase);
+
+    // Taux de couverture par défaut
+    const tauxCouverture = "90";
+
+    // Point de bivalence estimé (température de base + 5°C typiquement)
+    const bivalence = String(parseFloat(tempBase) + 5);
 
     setValues((prev) => {
       const updates: FormValues = {};
       if (!prev.methode_calcul) updates.methode_calcul = "Calcul simplifié (G × V × ΔT)";
-      if (!prev.taux_couverture) updates.taux_couverture = "90";
+      if (!prev.taux_couverture) updates.taux_couverture = tauxCouverture;
       if (!prev.appoint) updates.appoint = "Résistance électrique intégrée";
+      if (!prev.volume_chauffe) updates.volume_chauffe = volumeCalc;
+      if (!prev.temp_base) updates.temp_base = tempBase;
+      if (!prev.point_bivalence) updates.point_bivalence = bivalence;
+      // Pré-remplir conso avant travaux depuis section 3 si renseignée
+      if (!prev.conso_avant_travaux && prev.conso_chauffage_existante) {
+        updates.conso_avant_travaux = prev.conso_chauffage_existante;
+      }
       if (Object.keys(updates).length === 0) return prev;
       return { ...prev, ...updates };
     });
     setSaved(false);
   }, [selectedFiche, activeSection, values]);
 
-  // Étape 2 : une fois calculer163 disponible, pré-remplir les champs de résultat
+  // Étape 2 : une fois calculer163 disponible, pré-remplir les champs de résultat (déperditions + gains)
   const prevCalcul163Ref = useRef<string | null>(null);
   useEffect(() => {
     if (selectedFiche !== "BAT-TH-163" || activeSection !== 5 || !calcul163) return;
-    const sig = `${calcul163.deperditionsTotales.toFixed(1)}|${calcul163.gainPct.toFixed(1)}|${calcul163.gainMwh.toFixed(1)}|${Math.round(calcul163.economiEuros)}|${calcul163.dureeRetour?.toFixed(1) ?? ""}`;
+    const sig = `${calcul163.deperditionsTotales.toFixed(1)}|${calcul163.consoAvant.toFixed(1)}|${calcul163.gainPct.toFixed(1)}|${calcul163.gainMwh.toFixed(1)}|${Math.round(calcul163.economiEuros)}|${calcul163.dureeRetour?.toFixed(1) ?? ""}`;
     if (prevCalcul163Ref.current === sig) return;
     prevCalcul163Ref.current = sig;
 
     setValues((prev) => ({
       ...prev,
+      // Déperditions thermiques (calculées auto)
       deperditions_totales: calcul163.deperditionsTotales.toFixed(1),
       deperditions_par_m2: calcul163.deperditionsParM2.toFixed(0),
       coeff_G: calcul163.coeffG.toFixed(2),
       besoin_chauffage: calcul163.besoinChauffage.toFixed(1),
+      // Gains énergétiques (calculés auto)
       conso_avant_travaux: calcul163.consoAvant.toFixed(1),
       conso_apres_travaux: calcul163.consoApres.toFixed(1),
       gain_energetique_pct: calcul163.gainPct.toFixed(1),
