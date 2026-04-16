@@ -34,10 +34,32 @@ export const metadata: Metadata = {
   },
 };
 
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Accueil", item: "https://kilowater.fr" },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: "Bureau d'étude en rénovation énergétique",
+      item: "https://kilowater.fr/bureau-d-etude-renovation-energetique",
+    },
+  ],
+};
+
 export default function BureauDEtudeLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+      {children}
+    </>
+  );
 }

@@ -36,24 +36,28 @@ const EXPERTISES = [
     title: "Audit énergétique",
     desc: "Diagnostic complet de la performance thermique de votre bâtiment. Identification des déperditions et préconisations hiérarchisées.",
     num: "01",
+    href: "/audit-energetique",
   },
   {
     icon: HardHat,
-    title: "Maîtrise d'œuvre & AMO",
-    desc: "Pilotage des travaux de rénovation de A à Z et Assistant à Maîtrise d'Ouvrage (AMO). Coordination des corps de métier, suivi qualité et respect des délais.",
+    title: "Bureau d'étude",
+    desc: "Conception, dimensionnement et pilotage des travaux de rénovation énergétique. Assistance à Maîtrise d'Ouvrage (AMO) du diagnostic à la réception.",
     num: "02",
+    href: "/bureau-d-etude-renovation-energetique",
   },
   {
     icon: FileCheck,
     title: "Accompagnement CEE & aides",
-    desc: "Montage des dossiers MaPrimeRénov', CEE et aides locales. Optimisation du reste à charge pour chaque projet.",
+    desc: "Montage des dossiers CEE, MaPrimeRénov' et aides locales. Calcul des kWh cumac et optimisation du reste à charge.",
     num: "03",
+    href: "/accompagnement-cee",
   },
   {
     icon: Shield,
     title: "Thermique du bâtiment",
     desc: "Études thermiques réglementaires RT/RE. Simulations dynamiques et modélisation des performances énergétiques.",
     num: "04",
+    href: "/nos-prestations",
   },
 ];
 
@@ -138,6 +142,7 @@ export default function HomePage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.2 }}
                 className="text-[0.72rem] uppercase tracking-[0.3em] text-[#60A5FA] mb-6"
+                aria-hidden="true"
               >
                 Bureau d&apos;étude en rénovation énergétique
               </motion.p>
@@ -148,6 +153,9 @@ export default function HomePage() {
                 transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
                 className="font-display text-5xl md:text-7xl lg:text-[5.5rem] font-light text-white leading-[1.05] mb-8"
               >
+                <span className="sr-only">
+                  Kilowater, bureau d&apos;étude en rénovation énergétique —{" "}
+                </span>
                 Rénover
                 <span className="italic text-[#60A5FA]"> l&apos;existant</span>,
                 <br />
@@ -301,7 +309,7 @@ export default function HomePage() {
                   {item.desc}
                 </p>
                 <Link
-                  href="/nos-prestations"
+                  href={item.href}
                   className="mt-8 flex items-center gap-2 text-[#2563EB] opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500"
                 >
                   <span className="text-[0.78rem] font-semibold uppercase tracking-[0.12em]">
