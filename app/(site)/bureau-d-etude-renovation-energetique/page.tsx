@@ -333,8 +333,8 @@ export default function BureauDEtudePage() {
                     icon: Building2,
                     title: "Tertiaire",
                     image:
-                      "https://images.unsplash.com/photo-1486325212027-8081e485255e?w=800&q=80",
-                    alt: "Immeuble de bureaux tertiaire",
+                      "https://images.unsplash.com/photo-1554435493-93422e8220c8?w=800&q=80",
+                    alt: "Façade moderne d'un immeuble de bureaux",
                     items: [
                       "Bureaux et open spaces",
                       "Commerces et surfaces de vente",
@@ -347,8 +347,8 @@ export default function BureauDEtudePage() {
                     icon: Factory,
                     title: "Industrie",
                     image:
-                      "https://images.unsplash.com/photo-1513828583688-c52571a67c66?w=800&q=80",
-                    alt: "Site industriel avec installations énergétiques",
+                      "https://images.unsplash.com/photo-1565108244928-b43ea081c665?w=800&q=80",
+                    alt: "Site industriel avec installations techniques",
                     items: [
                       "Sites de production et usines",
                       "Entrepôts logistiques",

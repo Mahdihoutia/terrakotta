@@ -10,6 +10,7 @@ import {
   ArrowRight,
   Building2,
   Home,
+  Factory,
   ChevronDown,
   ChevronUp,
   Zap,
@@ -94,6 +95,34 @@ const fichesTermiaire: Fiche[] = [
     code: "BAT-TH-163",
     name: "PAC tertiaire",
     description: "Pompe à chaleur pour le chauffage ou la climatisation de locaux tertiaires.",
+  },
+];
+
+const fichesIndustrie: Fiche[] = [
+  {
+    code: "IND-UT-102",
+    name: "Système de variation de vitesse",
+    description: "Installation d'un variateur électronique de vitesse sur un moteur asynchrone existant.",
+  },
+  {
+    code: "IND-UT-104",
+    name: "Compresseur d'air à vitesse variable",
+    description: "Remplacement d'un compresseur d'air à vitesse fixe par un compresseur à vitesse variable.",
+  },
+  {
+    code: "IND-UT-116",
+    name: "Système de récupération de chaleur",
+    description: "Récupération de chaleur fatale sur un process industriel pour le chauffage ou le préchauffage.",
+  },
+  {
+    code: "IND-UT-117",
+    name: "Brûleur micro-modulant",
+    description: "Remplacement d'un brûleur de chaudière industrielle par un brûleur micro-modulant haut rendement.",
+  },
+  {
+    code: "IND-BA-112",
+    name: "Isolation des réseaux hydrauliques",
+    description: "Mise en place d'une isolation sur les réseaux hydrauliques de chauffage ou de froid industriel.",
   },
 ];
 
@@ -466,6 +495,37 @@ export default function AccompagnementCEEPage() {
                 <motion.div
                   key={fiche.code}
                   custom={10 + i}
+                  variants={fadeUp}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true }}
+                >
+                  <FicheCard fiche={fiche} />
+                </motion.div>
+              ))}
+            </div>
+          </div>
+
+          {/* Industrie */}
+          <div className="mt-12">
+            <motion.div
+              custom={15}
+              variants={fadeUp}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              className="mb-5 flex items-center gap-2"
+            >
+              <Factory size={16} className="text-[#2563EB]" />
+              <h3 className="font-display text-lg font-semibold text-[#0D1B35]">
+                Secteur industriel — Fiches IND-UT / IND-BA
+              </h3>
+            </motion.div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+              {fichesIndustrie.map((fiche, i) => (
+                <motion.div
+                  key={fiche.code}
+                  custom={16 + i}
                   variants={fadeUp}
                   initial="hidden"
                   whileInView="visible"
