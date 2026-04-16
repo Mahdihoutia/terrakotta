@@ -227,15 +227,16 @@ export default function AuditEnergetiquePage() {
               className="relative aspect-[4/3] overflow-hidden rounded-2xl shadow-xl"
             >
               <video
-                src="/videos/audit-energetique-definition.mp4"
                 poster="https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=800&q=80"
                 autoPlay
                 loop
                 muted
                 playsInline
                 className="h-full w-full object-cover"
-                aria-label="Ingénieur ouvrant la porte d'une éolienne — illustration d'un audit énergétique"
-              />
+                aria-label="Équipe d'ingénieurs dans une centrale électrique — illustration d'un audit énergétique"
+              >
+                <source src="https://assets.mixkit.co/videos/23107/23107-720.mp4" type="video/mp4" />
+              </video>
             </motion.div>
           </div>
         </div>
