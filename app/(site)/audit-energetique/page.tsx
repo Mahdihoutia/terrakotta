@@ -208,13 +208,13 @@ export default function AuditEnergetiquePage() {
               </h2>
               <div className="space-y-4 text-[0.97rem] leading-relaxed text-[#4A6285]">
                 <p>
-                  L'audit énergétique est une évaluation globale et détaillée de la performance thermique d'un bâtiment. Bien au-delà du simple DPE (Diagnostic de Performance Énergétique), il analyse en profondeur l'enveloppe du bâti — murs, toiture, planchers bas, menuiseries — les systèmes techniques (chauffage, eau chaude sanitaire, ventilation) et les usages réels des occupants. Il quantifie les déperditions thermiques poste par poste et identifie les leviers d'amélioration les plus efficaces.
+                  L'audit énergétique est une évaluation globale et détaillée de la performance thermique d'un bâtiment. Il consiste à <strong className="text-[#0D1B35]">quantifier les déperditions thermiques poste par poste</strong> — transmission à travers les parois opaques (murs, toiture, plancher bas), les ponts thermiques linéiques et ponctuels, les menuiseries, ainsi que les pertes par renouvellement d'air — et à analyser les rendements réels des systèmes techniques : chauffage, production d'eau chaude sanitaire, ventilation, groupes froid et pompes à chaleur.
                 </p>
                 <p>
-                  Le résultat est un rapport structuré présentant plusieurs scénarios de travaux de rénovation énergétique, classés par ordre de priorité, avec pour chacun les économies d'énergie attendues, les gains sur le classement DPE, l'impact sur les émissions de CO₂ et le montant des aides financières mobilisables.
+                  Cette analyse s'appuie sur des outils de modélisation thermique (simulation dynamique ou méthode Th-BCE) et des mesures in situ : thermographie infrarouge pour localiser les défauts d'isolation et les ponts thermiques, test d'infiltrométrie (blower door) pour quantifier les fuites d'air parasites, et relevé des courbes de charge pour identifier les surconsommations. Le résultat est un <strong className="text-[#0D1B35]">bilan complet des déperditions</strong>, exprimé en kWh/m²/an et réparti par poste, accompagné de plusieurs scénarios de travaux chiffrés et hiérarchisés.
                 </p>
                 <p>
-                  On distingue deux grandes catégories d'audit. L'<strong className="text-[#0D1B35]">audit réglementaire</strong> est obligatoire depuis 2023 pour la vente de logements classés F ou G. Il suit un cadre normatif strict défini par arrêté. L'<strong className="text-[#0D1B35]">audit incitatif</strong>, lui, est réalisé à l'initiative du propriétaire ou du maître d'ouvrage : plus complet, il intègre souvent une simulation thermique dynamique et des mesures in situ (test d'étanchéité, thermographie) pour une précision encore plus grande des préconisations.
+                  On distingue deux grandes catégories d'audit. L'<strong className="text-[#0D1B35]">audit réglementaire</strong> répond à des obligations légales (décret tertiaire, directive EED pour les grandes entreprises, vente de passoires thermiques). L'<strong className="text-[#0D1B35]">audit incitatif</strong>, réalisé à l'initiative du maître d'ouvrage, va plus loin : il intègre une simulation thermique dynamique, une analyse des consommations réelles sur 3 ans et des préconisations d'optimisation des systèmes CVC (chauffage, ventilation, climatisation) pour une feuille de route de rénovation complète.
                 </p>
               </div>
             </motion.div>
@@ -267,8 +267,8 @@ export default function AuditEnergetiquePage() {
               },
               {
                 icon: <Zap className="h-6 w-6 text-[#2563EB]" />,
-                title: "Étude des systèmes",
-                desc: "Évaluation des installations de chauffage, production d'eau chaude sanitaire (ECS) et systèmes de ventilation. Analyse des rendements réels.",
+                title: "Étude des systèmes CVC",
+                desc: "Évaluation des installations de chauffage, pompes à chaleur (PAC air/eau, eau/eau), groupes froid, production d'ECS, ventilation (CTA, VMC) et régulation. Analyse des rendements réels, des COP et des courbes de charge.",
               },
               {
                 icon: <Thermometer className="h-6 w-6 text-[#2563EB]" />,
@@ -283,7 +283,7 @@ export default function AuditEnergetiquePage() {
               {
                 icon: <BarChart3 className="h-6 w-6 text-[#2563EB]" />,
                 title: "Simulation thermique dynamique",
-                desc: "Modélisation heure par heure des échanges thermiques du bâtiment pour simuler précisément les consommations futures après travaux.",
+                desc: "Modélisation heure par heure des échanges thermiques du bâtiment. Évaluation des performances des PAC (COP saisonnier), des groupes froid (EER) et simulation des consommations futures après travaux.",
               },
               {
                 icon: <FileText className="h-6 w-6 text-[#2563EB]" />,
@@ -515,13 +515,13 @@ export default function AuditEnergetiquePage() {
               </h2>
               <div className="space-y-4 text-[0.97rem] leading-relaxed text-[#4A6285]">
                 <p>
-                  L'audit énergétique n'est pas une dépense isolée : il est le point de départ indispensable pour accéder aux aides à la rénovation d'ampleur. Dans le cadre de MaPrimeRénov' Parcours accompagné — le dispositif le plus généreux, avec des subventions pouvant atteindre 70 % du montant des travaux — la réalisation d'un audit énergétique par un professionnel qualifié est obligatoire.
+                  L'audit énergétique est le socle de toute stratégie de <strong className="text-[#0D1B35]">rénovation globale</strong>. En identifiant précisément les postes de déperdition et les équipements énergivores, il permet d'établir un plan de travaux cohérent qui maximise les économies d'énergie et évite les interventions isolées peu rentables. Cette approche globale — enveloppe, systèmes CVC, régulation — est aujourd'hui la clé pour atteindre les objectifs du décret tertiaire et de la directive EED.
                 </p>
                 <p>
-                  L'audit lui-même est éligible à MaPrimeRénov' : les propriétaires occupants peuvent bénéficier d'une aide pouvant aller jusqu'à <strong className="text-[#0D1B35]">500 €</strong>, réduisant significativement le reste à charge. Pour les copropriétés, des aides spécifiques via l'ANAH existent également.
+                  Les <strong className="text-[#0D1B35]">certificats d'économies d'énergie (CEE)</strong> sont le principal levier de financement des travaux identifiés lors de l'audit. Chaque opération (isolation, remplacement de chaudière, installation de PAC, optimisation de groupes froid, GTB/GTC) génère un volume de kWh cumac valorisable en prime énergie auprès des obligés. L'audit permet de sélectionner les fiches CEE les plus avantageuses et de calculer précisément le montant des primes avant même le démarrage des travaux.
                 </p>
                 <p>
-                  Les certificats d'économies d'énergie (CEE) constituent un autre levier majeur. L'audit permet d'identifier précisément les travaux éligibles aux CEE et de maximiser les primes obtenues auprès des obligés. Kilowater vous accompagne dans toute la démarche, de l'audit jusqu'au dépôt des dossiers d'aides.
+                  Au-delà des CEE, l'audit ouvre l'accès aux dispositifs de rénovation d'ampleur (MaPrimeRénov' Parcours accompagné, aides ANAH pour les copropriétés) et permet d'articuler ces financements de façon optimale. Kilowater vous accompagne de l'audit jusqu'au montage complet des dossiers de financement.
                 </p>
               </div>
               <div className="mt-7 flex items-center gap-3">
@@ -530,7 +530,7 @@ export default function AuditEnergetiquePage() {
                   href="/accompagnement-cee"
                   className="text-sm font-semibold text-[#2563EB] underline underline-offset-4 hover:text-[#1d4ed8]"
                 >
-                  En savoir plus sur l'accompagnement CEE & MaPrimeRénov' →
+                  En savoir plus sur l'accompagnement CEE →
                 </Link>
               </div>
             </motion.div>
@@ -588,7 +588,7 @@ export default function AuditEnergetiquePage() {
               Faites réaliser votre audit énergétique
             </h2>
             <p className="mx-auto mb-8 max-w-xl text-[0.97rem] leading-relaxed text-[#93C5FD]">
-              Kilowater, bureau d'étude RGE spécialisé en rénovation énergétique, réalise des audits pour les maisons individuelles, copropriétés et bâtiments tertiaires. Contactez-nous pour un premier échange gratuit.
+              Kilowater, bureau d'étude RGE spécialisé en rénovation énergétique, réalise des audits pour les bâtiments tertiaires, sites industriels et copropriétés. Contactez-nous pour un premier échange gratuit.
             </p>
             <Link
               href="/contactez-nous"
