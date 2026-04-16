@@ -72,7 +72,7 @@ const ABOUT_ITEMS = [
 
 /* ─── Top-level nav links ─── */
 const NAV_LINKS = [
-  { href: "/qui-sommes-nous", label: "Qui sommes-nous", dropdown: "about" as const },
+  { href: "/qui-sommes-nous", label: "Le Bureau", dropdown: "about" as const },
   { href: "/nos-prestations", label: "Nos prestations", dropdown: "prestations" as const },
   { href: "/nos-references", label: "Nos références" },
   { href: "/laboratoire-idees", label: "Laboratoire d'idées" },
