@@ -12,7 +12,7 @@ import {
   BadgeEuro,
   Home,
   Building2,
-  Landmark,
+  Factory,
   Search,
   Pencil,
   HardHat,
@@ -49,7 +49,7 @@ const faqs = [
   {
     question: "Combien coûte un audit énergétique ?",
     answer:
-      "Le coût d'un audit énergétique varie selon la surface du bâtiment, sa complexité et la profondeur de l'analyse souhaitée. Pour une maison individuelle, il se situe généralement entre 500 € et 1 500 € TTC. Pour un immeuble tertiaire ou une copropriété, le tarif est établi sur devis après une visite préalable. Il est important de noter que l'audit énergétique réglementaire — obligatoire depuis avril 2023 pour les ventes de passoires thermiques (classes F et G) — peut être partiellement financé par MaPrimeRénov' dans le cadre d'un projet de rénovation globale.",
+      "Le coût d'un audit énergétique varie selon la surface du bâtiment, sa complexité technique et la profondeur de l'analyse souhaitée. Pour un bâtiment tertiaire (bureaux, commerces, ERP), le tarif se situe généralement entre 2 000 € et 10 000 € HT selon la surface et le nombre de systèmes à analyser. Pour un site industriel, le périmètre intègre l'audit des process et des utilités, ce qui peut porter le coût au-delà de 15 000 € HT pour les installations complexes. Ces audits sont en grande partie finançables par les certificats d'économies d'énergie (CEE) et par les dispositifs d'aide à la décarbonation de l'industrie.",
   },
   {
     question: "Quelles sont les aides financières disponibles ?",
@@ -305,7 +305,7 @@ export default function BureauDEtudePage() {
                 className="mt-4 max-w-2xl text-[#4A6285] leading-relaxed"
               >
                 Notre bureau d'étude thermique intervient sur tous les types de
-                bâtiments, du pavillon individuel au grand patrimoine public.
+                bâtiments, du tertiaire à l'industrie en passant par le résidentiel collectif.
                 Chaque projet bénéficie d'une approche sur mesure adaptée à ses
                 contraintes architecturales, réglementaires et budgétaires.
               </motion.p>
@@ -317,17 +317,17 @@ export default function BureauDEtudePage() {
                 {[
                   {
                     icon: Home,
-                    title: "Résidentiel",
+                    title: "Résidentiel collectif",
                     image:
-                      "https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=800&q=80",
-                    alt: "Maison individuelle rénovée",
+                      "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&q=80",
+                    alt: "Immeuble résidentiel collectif",
                     items: [
-                      "Maisons individuelles",
-                      "Copropriétés",
+                      "Copropriétés et syndics",
                       "Logements locatifs (obligation DPE)",
+                      "Bailleurs sociaux",
                       "Rénovation globale BBC",
                     ],
-                    body: "Nous accompagnons les particuliers et les bailleurs dans la rénovation de leur patrimoine résidentiel, de l'audit initial au suivi de chantier. Notre connaissance des dispositifs MaPrimeRénov' et CEE vous permet d'optimiser le financement de chaque projet.",
+                    body: "Nous accompagnons les copropriétés et les bailleurs dans la rénovation de leur patrimoine résidentiel collectif, de l'audit initial au suivi de chantier. Notre connaissance des dispositifs CEE et MaPrimeRénov' Copropriétés vous permet d'optimiser le financement de chaque projet.",
                   },
                   {
                     icon: Building2,
@@ -344,18 +344,18 @@ export default function BureauDEtudePage() {
                     body: "Le secteur tertiaire représente près de 17 % de la consommation énergétique nationale. Nous aidons les entreprises à réduire leurs charges d'exploitation et à valoriser leur immobilier grâce à des programmes de rénovation ambitieux et financés.",
                   },
                   {
-                    icon: Landmark,
-                    title: "Collectivités",
+                    icon: Factory,
+                    title: "Industrie",
                     image:
-                      "https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=800&q=80",
-                    alt: "Bâtiment public communal",
+                      "https://images.unsplash.com/photo-1513828583688-c52571a67c66?w=800&q=80",
+                    alt: "Site industriel avec installations énergétiques",
                     items: [
-                      "Patrimoine communal",
-                      "Écoles et établissements scolaires",
-                      "Gymnases et équipements sportifs",
-                      "Logements sociaux (bailleurs publics)",
+                      "Sites de production et usines",
+                      "Entrepôts logistiques",
+                      "Process énergivores (groupes froid, air comprimé)",
+                      "Conformité ISO 50001 et directive EED",
                     ],
-                    body: "Les collectivités font face à des obligations réglementaires croissantes (décret tertiaire, loi Climat). Nous les accompagnons dans la définition d'une stratégie patrimoniale pluriannuelle, la mobilisation des fonds publics (DETR, DSIL, CEE collectivités) et le pilotage des chantiers.",
+                    body: "L'industrie représente un gisement majeur d'économies d'énergie. Nous auditons les process et les utilités (chauffage, froid, air comprimé, vapeur), identifions les fiches CEE industrie (IND-UT, IND-BA) et pilotons les projets d'optimisation énergétique de vos installations.",
                   },
                 ].map(({ icon: Icon, title, image, alt, items, body }) => (
                   <motion.div
