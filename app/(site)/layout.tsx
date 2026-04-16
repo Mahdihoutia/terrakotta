@@ -83,12 +83,34 @@ const organizationSchema = {
   email: "contact@kilowater.fr",
   address: {
     "@type": "PostalAddress",
+    streetAddress: "115 Rue Saint-Dominique",
+    addressLocality: "Paris",
+    postalCode: "75007",
+    addressRegion: "Île-de-France",
     addressCountry: "FR",
   },
-  areaServed: {
-    "@type": "Country",
-    name: "France",
+  geo: {
+    "@type": "GeoCoordinates",
+    latitude: 48.8606,
+    longitude: 2.3114,
   },
+  openingHoursSpecification: [
+    {
+      "@type": "OpeningHoursSpecification",
+      dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+      opens: "09:00",
+      closes: "18:00",
+    },
+  ],
+  priceRange: "€€€",
+  areaServed: [
+    { "@type": "City", name: "Paris" },
+    { "@type": "AdministrativeArea", name: "Île-de-France" },
+    { "@type": "Country", name: "France" },
+  ],
+  sameAs: [
+    "https://www.linkedin.com/company/kilowater",
+  ],
   serviceType: [
     "Audit énergétique",
     "Maîtrise d'œuvre",

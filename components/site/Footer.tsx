@@ -50,6 +50,7 @@ const FOOTER_NAV = [
 
 const FOOTER_EXPERTISES = [
   { href: "/bureau-d-etude-renovation-energetique", label: "Bureau d'étude" },
+  { href: "/bureau-d-etude-thermique", label: "Bureau d'étude thermique" },
   { href: "/audit-energetique", label: "Audit énergétique" },
   { href: "/accompagnement-cee", label: "Accompagnement CEE" },
 ];

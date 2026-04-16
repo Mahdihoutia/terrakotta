@@ -20,6 +20,9 @@ import {
   Award,
   ChevronDown,
   ArrowRight,
+  Layers,
+  Calendar,
+  Euro,
 } from "lucide-react";
 
 const fadeUp = {
@@ -66,6 +69,41 @@ const faqs = [
       "Le bureau d'étude intervient-il uniquement avant les travaux ?",
     answer:
       "Non. L'intervention d'un bureau d'étude en rénovation énergétique s'étend sur l'ensemble du cycle de vie du projet. En phase amont, il réalise le diagnostic et conçoit les solutions. En phase d'appel d'offres, il rédige les cahiers des charges et analyse les devis des entreprises. En phase chantier, il assure le suivi de l'exécution, contrôle la mise en œuvre des isolants, vérifie les raccordements et valide les tests d'étanchéité à l'air (test BlowerDoor). Enfin, lors de la réception, il dresse le bilan des performances atteintes et accompagne la levée des réserves.",
+  },
+  {
+    question:
+      "Quelle est la différence entre un bureau d'étude thermique et un bureau d'étude fluides ?",
+    answer:
+      "Un bureau d'étude thermique se concentre sur l'enveloppe du bâtiment, la performance énergétique globale et la conformité réglementaire (RT2012, RE2020, DPE, audit énergétique). Un bureau d'étude fluides dimensionne les équipements de CVC (chauffage, ventilation, climatisation), de plomberie et d'électricité. Un bureau d'étude en rénovation énergétique complet — comme Kilowater — combine ces deux approches : il calcule les déperditions thermiques, conçoit l'isolation, puis dimensionne les systèmes CVC adaptés (PAC, CTA, groupes froid) pour garantir la cohérence globale du projet. Cette double compétence est indispensable sur les projets tertiaires et industriels.",
+  },
+  {
+    question: "Combien coûte une mission de bureau d'étude en rénovation énergétique ?",
+    answer:
+      "Les honoraires d'un bureau d'étude en rénovation énergétique dépendent du périmètre de mission et de la complexité du bâtiment. Pour un audit énergétique seul, comptez 2 000 à 10 000 € HT sur le tertiaire et 15 000 € HT et plus sur l'industrie. Pour une mission complète de maîtrise d'œuvre (diagnostic, conception, consultation des entreprises, suivi de chantier, réception), le budget se situe généralement entre 8 % et 12 % du montant HT des travaux. La bonne nouvelle : ces honoraires sont en grande partie finançables par les Certificats d'Économies d'Énergie (CEE) et par les aides publiques à la rénovation énergétique (MaPrimeRénov' Copropriétés, Fonds Chaleur, éco-PTZ).",
+  },
+  {
+    question:
+      "Quand faut-il faire appel à un bureau d'étude en rénovation énergétique ?",
+    answer:
+      "Plusieurs situations justifient le recours à un bureau d'étude thermique indépendant : projet de rénovation globale (plusieurs lots coordonnés), bâtiment tertiaire soumis au Décret Tertiaire (obligation de -40 % en 2030), audit énergétique réglementaire pour une grande entreprise (décret n°2013-1121), DPE classé F ou G avec obligation d'audit avant vente ou location, copropriété préparant un plan pluriannuel de travaux (PPT), site industriel cherchant à se conformer à ISO 50001 ou à la directive EED. Plus le projet est complexe et les enjeux financiers importants, plus l'intervention d'un bureau d'étude indépendant est pertinente.",
+  },
+  {
+    question:
+      "Un bureau d'étude en rénovation énergétique peut-il intervenir sur tout le territoire ?",
+    answer:
+      "Oui. Kilowater intervient principalement à Paris et en Île-de-France, mais nos équipes se déplacent régulièrement en région pour des missions ponctuelles ou des projets d'envergure. Les phases de diagnostic et de visite nécessitent un déplacement physique ; les phases d'études, de modélisation thermique dynamique (STD) et de rédaction des cahiers des charges peuvent être réalisées à distance. Pour les projets multi-sites (foncières, grands comptes, bailleurs sociaux), nous proposons un dispositif d'accompagnement centralisé avec interlocuteur unique.",
+  },
+  {
+    question:
+      "Quelles obligations réglementaires un bureau d'étude doit-il maîtriser en 2026 ?",
+    answer:
+      "Un bureau d'étude en rénovation énergétique doit maîtriser un corpus réglementaire dense : RE2020 pour la construction neuve, audit énergétique obligatoire pour les grandes entreprises (plus de 250 salariés ou 50 M€ de CA), Décret Tertiaire — DEET (réduction de 40 % en 2030, 50 % en 2040, 60 % en 2050), Décret BACS (obligation de systèmes d'automatisation et contrôle des bâtiments tertiaires), obligation d'audit énergétique pour les DPE classés F ou G, programme RePower EU et directive EPBD révisée. Notre veille réglementaire permanente garantit que chaque projet respecte les obligations applicables à votre typologie de bâtiment.",
+  },
+  {
+    question:
+      "Quelle est la durée moyenne d'une mission de bureau d'étude ?",
+    answer:
+      "La durée dépend du type de mission. Un audit énergétique tertiaire se réalise en 3 à 8 semaines selon la surface et la complexité. Une mission de maîtrise d'œuvre complète en rénovation énergétique s'étend sur 12 à 36 mois pour un projet de copropriété ou de bâtiment tertiaire, de la première visite jusqu'à la réception des travaux. Les études préalables (diagnostic, conception, simulation thermique dynamique) occupent 3 à 6 mois ; la consultation et l'analyse des offres entreprises 2 à 4 mois ; la phase travaux varie selon l'ampleur du chantier. Kilowater vous fournit un rétroplanning détaillé dès la signature du contrat.",
   },
 ];
 
@@ -171,13 +209,15 @@ export default function BureauDEtudePage() {
                 variants={fadeUp}
                 className="mt-6 max-w-2xl text-[1.05rem] leading-relaxed text-[#CBD5E1]"
               >
-                Kilowater est un bureau d'étude indépendant spécialisé dans la
-                rénovation énergétique des bâtiments résidentiels, tertiaires et
-                publics. Notre rôle : analyser, concevoir et piloter les projets
-                de rénovation les plus ambitieux — de l'audit énergétique
-                initial jusqu'à la réception des travaux — pour vous garantir
-                des performances réelles, des aides maximisées et une
-                indépendance totale vis-à-vis des entreprises.
+                Kilowater est un <strong className="font-semibold text-white">bureau d'étude en rénovation énergétique</strong>{" "}
+                indépendant basé à Paris. Qualifié RGE, nous accompagnons
+                copropriétés, foncières tertiaires et industriels sur
+                l'ensemble du cycle de projet — audit énergétique, maîtrise
+                d'œuvre, accompagnement CEE et MaPrimeRénov'. Notre approche de{" "}
+                <strong className="font-semibold text-white">bureau d'étude thermique</strong>{" "}
+                combine modélisation STD, dimensionnement CVC et pilotage
+                chantier pour des performances réelles, pas seulement
+                calculatoires.
               </motion.p>
 
               <motion.div variants={fadeUp} className="mt-10 flex flex-wrap gap-4">
@@ -587,8 +627,300 @@ export default function BureauDEtudePage() {
           </div>
         </section>
 
-        {/* ── FAQ ── */}
+        {/* ── BET / BE thermique / BE fluides — Différences ── */}
         <section className="py-20 md:py-28">
+          <div className="mx-auto max-w-[1400px] px-6 md:px-10 lg:px-16">
+            <motion.div
+              variants={staggerContainer}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-80px" }}
+            >
+              <motion.p
+                variants={fadeUp}
+                className="mb-4 text-[0.72rem] uppercase tracking-[0.25em] text-[#2563EB]"
+              >
+                Clarifier les métiers
+              </motion.p>
+
+              <motion.h2
+                variants={fadeUp}
+                className="font-display text-3xl font-semibold text-[#0D1B35] md:text-4xl"
+              >
+                Bureau d'étude thermique, fluides ou rénovation énergétique : quelles différences ?
+              </motion.h2>
+
+              <motion.p
+                variants={fadeUp}
+                className="mt-4 max-w-3xl text-[#4A6285] leading-relaxed"
+              >
+                Les appellations se recoupent souvent dans le secteur de
+                l'ingénierie du bâtiment. Pour choisir le bon{" "}
+                <strong className="font-semibold text-[#0D1B35]">bureau d'étude en rénovation énergétique</strong>,
+                il est utile de distinguer les périmètres techniques de chacun.
+              </motion.p>
+
+              <motion.div
+                variants={staggerContainer}
+                className="mt-12 grid gap-6 md:grid-cols-3"
+              >
+                {[
+                  {
+                    icon: Layers,
+                    title: "Bureau d'étude thermique",
+                    tagline: "Périmètre : enveloppe + performance globale",
+                    body: "Le bureau d'étude thermique calcule les déperditions, dimensionne l'isolation, réalise la modélisation RT / STD, produit le DPE et audite la performance énergétique globale. Il garantit la conformité RE2020, BBC Rénovation et Décret Tertiaire.",
+                  },
+                  {
+                    icon: Pencil,
+                    title: "Bureau d'étude fluides",
+                    tagline: "Périmètre : CVC + plomberie + électricité",
+                    body: "Le bureau d'étude fluides dimensionne les systèmes CVC (PAC, chaudières, CTA, groupes froid), les réseaux hydrauliques et aérauliques, la plomberie sanitaire et les installations électriques. Son cœur de métier : le génie climatique.",
+                  },
+                  {
+                    icon: ShieldCheck,
+                    title: "BET rénovation énergétique",
+                    tagline: "Périmètre : thermique + fluides + maîtrise d'œuvre",
+                    body: "Un bureau d'étude en rénovation énergétique intègre les deux approches et pilote l'ensemble du projet : audit, conception, coordination des entreprises, suivi de chantier, réception. C'est le métier de Kilowater — et celui qui garantit la cohérence globale des travaux.",
+                  },
+                ].map(({ icon: Icon, title, tagline, body }) => (
+                  <motion.div
+                    key={title}
+                    variants={fadeUp}
+                    className="rounded-2xl border border-[#DBEAFE] bg-white p-7"
+                  >
+                    <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-[#EFF6FF]">
+                      <Icon className="h-5 w-5 text-[#2563EB]" />
+                    </div>
+                    <h3 className="mb-1 font-semibold text-[#0D1B35]">{title}</h3>
+                    <p className="mb-3 text-xs uppercase tracking-wider text-[#2563EB]">
+                      {tagline}
+                    </p>
+                    <p className="text-sm leading-relaxed text-[#4A6285]">{body}</p>
+                  </motion.div>
+                ))}
+              </motion.div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ── Quand faire appel ── */}
+        <section className="bg-[#F5FAFF] py-20 md:py-28">
+          <div className="mx-auto max-w-[1400px] px-6 md:px-10 lg:px-16">
+            <motion.div
+              variants={staggerContainer}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-80px" }}
+            >
+              <motion.p
+                variants={fadeUp}
+                className="mb-4 text-[0.72rem] uppercase tracking-[0.25em] text-[#2563EB]"
+              >
+                Cas d'usage
+              </motion.p>
+
+              <motion.h2
+                variants={fadeUp}
+                className="font-display text-3xl font-semibold text-[#0D1B35] md:text-4xl"
+              >
+                Quand faire appel à un bureau d'étude en rénovation énergétique ?
+              </motion.h2>
+
+              <motion.p
+                variants={fadeUp}
+                className="mt-4 max-w-3xl text-[#4A6285] leading-relaxed"
+              >
+                Au-delà des obligations réglementaires, l'intervention d'un{" "}
+                <strong className="font-semibold text-[#0D1B35]">bureau d'étude thermique indépendant</strong>{" "}
+                se justifie dès que le projet dépasse la simple substitution
+                d'équipement. Voici les situations où notre accompagnement
+                apporte le plus de valeur.
+              </motion.p>
+
+              <motion.div
+                variants={staggerContainer}
+                className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3"
+              >
+                {[
+                  {
+                    icon: Calendar,
+                    title: "Décret Tertiaire (DEET)",
+                    body: "Votre bâtiment tertiaire de plus de 1 000 m² doit réduire sa consommation de 40 % en 2030. Un BET rénovation énergétique définit la trajectoire et pilote les actions.",
+                  },
+                  {
+                    icon: ShieldCheck,
+                    title: "Audit réglementaire obligatoire",
+                    body: "Grande entreprise (>250 salariés ou >50 M€ CA) ou DPE classé F/G à vendre : l'audit énergétique est obligatoire et doit être réalisé par un bureau d'étude qualifié.",
+                  },
+                  {
+                    icon: Building2,
+                    title: "Plan pluriannuel de travaux (PPT)",
+                    body: "Copropriété de 15+ ans : le PPT est désormais obligatoire. Un bureau d'étude en rénovation énergétique cadre les priorités, chiffre les scénarios et mobilise les aides.",
+                  },
+                  {
+                    icon: Factory,
+                    title: "Conformité ISO 50001 & EED",
+                    body: "Site industriel cherchant à structurer son management de l'énergie : nous réalisons l'audit EED puis accompagnons la mise en place du système ISO 50001.",
+                  },
+                  {
+                    icon: BadgeEuro,
+                    title: "Optimisation des CEE",
+                    body: "Projet de rénovation > 100 000 € : les CEE et les primes coups de pouce peuvent couvrir 10 à 40 % du budget. Notre bureau d'étude optimise les fiches applicables.",
+                  },
+                  {
+                    icon: HardHat,
+                    title: "Rénovation globale performante",
+                    body: "Projet multi-lots (isolation, ventilation, chauffage, étanchéité) : un BET coordonne les interfaces pour éviter ponts thermiques, sous-dimensionnements et sinistres.",
+                  },
+                ].map(({ icon: Icon, title, body }) => (
+                  <motion.div
+                    key={title}
+                    variants={fadeUp}
+                    className="flex gap-4 rounded-xl border border-[#DBEAFE] bg-white p-5"
+                  >
+                    <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#EFF6FF]">
+                      <Icon className="h-5 w-5 text-[#2563EB]" />
+                    </div>
+                    <div>
+                      <h3 className="mb-1.5 font-semibold text-[#0D1B35] text-sm">
+                        {title}
+                      </h3>
+                      <p className="text-sm leading-relaxed text-[#4A6285]">
+                        {body}
+                      </p>
+                    </div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ── Prix & honoraires ── */}
+        <section className="py-20 md:py-28">
+          <div className="mx-auto max-w-[1400px] px-6 md:px-10 lg:px-16">
+            <motion.div
+              variants={staggerContainer}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-80px" }}
+              className="grid gap-12 lg:grid-cols-2 lg:items-start"
+            >
+              <div>
+                <motion.p
+                  variants={fadeUp}
+                  className="mb-4 text-[0.72rem] uppercase tracking-[0.25em] text-[#2563EB]"
+                >
+                  Tarifs & financement
+                </motion.p>
+
+                <motion.h2
+                  variants={fadeUp}
+                  className="font-display text-3xl font-semibold text-[#0D1B35] md:text-4xl"
+                >
+                  Prix d'un bureau d'étude en rénovation énergétique
+                </motion.h2>
+
+                <motion.p
+                  variants={fadeUp}
+                  className="mt-4 text-[#4A6285] leading-relaxed"
+                >
+                  Les honoraires d'un{" "}
+                  <strong className="font-semibold text-[#0D1B35]">bureau d'étude en rénovation énergétique</strong>{" "}
+                  dépendent du périmètre de mission et de la complexité du
+                  bâtiment. La bonne nouvelle : ces coûts sont en grande partie
+                  financés par les CEE et les aides publiques — jusqu'à 100 %
+                  sur certains dispositifs.
+                </motion.p>
+
+                <motion.p
+                  variants={fadeUp}
+                  className="mt-4 text-[#4A6285] leading-relaxed"
+                >
+                  Chez Kilowater, nous facturons au forfait sur la base d'un
+                  périmètre précisément défini. Pas de dépassement caché : le
+                  devis engage. Pour une mission complète de maîtrise d'œuvre,
+                  le BET rénovation énergétique représente typiquement{" "}
+                  <strong className="font-semibold text-[#0D1B35]">8 % à 12 % du montant HT des travaux</strong>{" "}
+                  — à comparer aux 15 à 30 % d'économies générées sur le budget
+                  global grâce à la consultation compétitive et au dimensionnement
+                  optimisé.
+                </motion.p>
+              </div>
+
+              <motion.div
+                variants={fadeUp}
+                className="rounded-2xl border border-[#DBEAFE] bg-white p-8"
+              >
+                <div className="mb-6 flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#EFF6FF]">
+                    <Euro className="h-5 w-5 text-[#2563EB]" />
+                  </div>
+                  <h3 className="font-semibold text-[#0D1B35]">
+                    Fourchettes indicatives HT
+                  </h3>
+                </div>
+                <ul className="space-y-4">
+                  {[
+                    {
+                      label: "Audit énergétique tertiaire",
+                      value: "2 000 – 10 000 €",
+                      sub: "Selon surface et nombre de systèmes",
+                    },
+                    {
+                      label: "Audit énergétique industriel (EED)",
+                      value: "15 000 € +",
+                      sub: "Périmètre process + utilités",
+                    },
+                    {
+                      label: "Simulation thermique dynamique (STD)",
+                      value: "3 500 – 8 000 €",
+                      sub: "Modélisation du comportement thermique",
+                    },
+                    {
+                      label: "Maîtrise d'œuvre complète",
+                      value: "8 – 12 % du montant travaux",
+                      sub: "Conception + consultation + DET + AOR",
+                    },
+                    {
+                      label: "Audit énergétique copropriété",
+                      value: "4 000 – 12 000 €",
+                      sub: "Selon nombre de lots",
+                    },
+                  ].map((row) => (
+                    <li
+                      key={row.label}
+                      className="flex items-start justify-between gap-4 border-b border-[#DBEAFE] pb-4 last:border-0"
+                    >
+                      <div>
+                        <p className="font-medium text-[#0D1B35] text-sm">
+                          {row.label}
+                        </p>
+                        <p className="mt-0.5 text-xs text-[#4A6285]">
+                          {row.sub}
+                        </p>
+                      </div>
+                      <p className="whitespace-nowrap font-semibold text-[#2563EB] text-sm">
+                        {row.value}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-6 rounded-lg bg-[#F5FAFF] p-4 text-xs leading-relaxed text-[#4A6285]">
+                  <strong className="font-semibold text-[#0D1B35]">Bon à savoir :</strong>{" "}
+                  la plupart de ces missions sont finançables par les
+                  Certificats d'Économies d'Énergie (CEE) et par les dispositifs
+                  d'aide à la rénovation énergétique. Contactez-nous pour
+                  évaluer le reste à charge réel.
+                </p>
+              </motion.div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ── FAQ ── */}
+        <section className="bg-[#F5FAFF] py-20 md:py-28">
           <div className="mx-auto max-w-[1400px] px-6 md:px-10 lg:px-16">
             <motion.div
               variants={staggerContainer}
