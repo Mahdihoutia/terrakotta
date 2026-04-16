@@ -1,12 +1,18 @@
 import Link from "next/link";
 import { ArrowUpRight, Mail, Phone, MapPin, Zap } from "lucide-react";
 
-const FOOTER_LINKS = [
+const FOOTER_NAV = [
   { href: "/qui-sommes-nous", label: "Qui sommes-nous" },
   { href: "/nos-prestations", label: "Nos prestations" },
   { href: "/nos-references", label: "Nos références" },
   { href: "/laboratoire-idees", label: "Laboratoire d'idées" },
   { href: "/contactez-nous", label: "Contactez-nous" },
+];
+
+const FOOTER_EXPERTISES = [
+  { href: "/bureau-d-etude-renovation-energetique", label: "Bureau d'étude" },
+  { href: "/audit-energetique", label: "Audit énergétique" },
+  { href: "/accompagnement-cee", label: "Accompagnement CEE" },
 ];
 
 export default function Footer() {
@@ -59,12 +65,31 @@ export default function Footer() {
           </div>
 
           {/* Navigation */}
-          <div className="md:col-span-3">
+          <div className="md:col-span-2">
             <h3 className="text-[0.7rem] uppercase tracking-[0.2em] text-[#7BAAC8] mb-6">
               Navigation
             </h3>
             <ul className="space-y-3">
-              {FOOTER_LINKS.map((link) => (
+              {FOOTER_NAV.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className="text-[0.88rem] text-[#BFDBFE] hover:text-[#EFF6FF] transition-colors duration-200"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Expertises */}
+          <div className="md:col-span-2">
+            <h3 className="text-[0.7rem] uppercase tracking-[0.2em] text-[#7BAAC8] mb-6">
+              Expertises
+            </h3>
+            <ul className="space-y-3">
+              {FOOTER_EXPERTISES.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
@@ -78,7 +103,7 @@ export default function Footer() {
           </div>
 
           {/* Contact */}
-          <div className="md:col-span-4">
+          <div className="md:col-span-3">
             <h3 className="text-[0.7rem] uppercase tracking-[0.2em] text-[#7BAAC8] mb-6">
               Contact
             </h3>
