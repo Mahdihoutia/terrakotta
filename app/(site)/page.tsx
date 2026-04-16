@@ -122,6 +122,7 @@ export default function HomePage() {
             src="https://images.unsplash.com/photo-1695445301510-459fb368d8af?w=1920&q=85&auto=format&fit=crop"
             alt="Rangée de climatiseurs sur un toit — rénovation énergétique"
             fill
+            sizes="100vw"
             className="object-cover brightness-75"
             priority
           />
@@ -508,6 +509,7 @@ export default function HomePage() {
                 src={REFERENCES[0].image}
                 alt={REFERENCES[0].title}
                 fill
+                sizes="(max-width: 768px) 100vw, 58vw"
                 className="object-cover transition-transform duration-700 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#0A1628]/80 via-transparent to-transparent" />
@@ -540,6 +542,7 @@ export default function HomePage() {
                     src={ref.image}
                     alt={ref.title}
                     fill
+                    sizes="(max-width: 768px) 100vw, 42vw"
                     className="object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0A1628]/80 via-[#0A1628]/20 to-transparent" />
@@ -568,6 +571,7 @@ export default function HomePage() {
                 src={REFERENCES[3].image}
                 alt={REFERENCES[3].title}
                 fill
+                sizes="100vw"
                 className="object-cover transition-transform duration-700 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-r from-[#0A1628]/80 via-[#0A1628]/30 to-transparent" />
@@ -594,6 +598,7 @@ export default function HomePage() {
             src="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1920&q=80"
             alt="Chantier de rénovation"
             fill
+            sizes="100vw"
             className="object-cover"
           />
           <div className="absolute inset-0 bg-[#0D1B35]/85" />

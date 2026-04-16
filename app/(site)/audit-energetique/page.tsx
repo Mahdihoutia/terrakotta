@@ -113,6 +113,7 @@ export default function AuditEnergetiquePage() {
             src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80"
             alt="Bâtiment résidentiel — audit énergétique"
             fill
+            sizes="100vw"
             className="object-cover opacity-[0.06]"
             priority
           />
@@ -173,6 +174,7 @@ export default function AuditEnergetiquePage() {
                   src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80"
                   alt="Thermographie infrarouge d'un bâtiment"
                   fill
+                  sizes="(max-width: 1024px) 100vw, 50vw"
                   className="object-cover"
                 />
               </div>
@@ -502,6 +504,7 @@ export default function AuditEnergetiquePage() {
                 src="https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=800&q=80"
                 alt="Aides financières pour la rénovation énergétique"
                 fill
+                sizes="(max-width: 1024px) 100vw, 50vw"
                 className="object-cover"
               />
             </motion.div>

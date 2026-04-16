@@ -95,6 +95,7 @@ export default function ArticlePage() {
             alt={article.title}
             fill
             priority
+            sizes="100vw"
             className="object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
@@ -227,6 +228,7 @@ export default function ArticlePage() {
                         src={rel.image}
                         alt={rel.title}
                         fill
+                        sizes="(max-width: 768px) 100vw, 33vw"
                         className="object-cover transition-transform duration-700 group-hover:scale-105"
                       />
                       <div className="absolute top-4 left-4">

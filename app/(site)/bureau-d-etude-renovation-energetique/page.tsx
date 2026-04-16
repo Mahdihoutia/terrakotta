@@ -138,6 +138,7 @@ export default function BureauDEtudePage() {
               src="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1600&q=80"
               alt="Chantier de rénovation énergétique d'un immeuble résidentiel"
               fill
+              sizes="100vw"
               className="object-cover opacity-20"
               priority
             />
@@ -368,6 +369,7 @@ export default function BureauDEtudePage() {
                         src={image}
                         alt={alt}
                         fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                         className="object-cover"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-[#0D1B35]/60 to-transparent" />

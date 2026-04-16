@@ -92,6 +92,7 @@ export default function QuiSommesNousPage() {
                 src="https://images.unsplash.com/photo-1527525443983-6e60c75fff46?w=1200&q=80"
                 alt="Équipe Kilowater — collaboration et esprit d'équipe"
                 fill
+                sizes="(max-width: 1024px) 100vw, 58vw"
                 className="object-cover"
               />
               {/* Decorative overlay corner */}
