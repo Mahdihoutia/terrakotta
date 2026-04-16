@@ -9,6 +9,7 @@ import {
   Wind,
   Zap,
   FileSearch,
+  Factory,
   Home,
   Building2,
   Landmark,
@@ -226,8 +227,8 @@ export default function AuditEnergetiquePage() {
               className="relative aspect-[4/3] overflow-hidden rounded-2xl shadow-xl"
             >
               <Image
-                src="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&q=80"
-                alt="Analyse thermique et bilan énergétique d'un bâtiment"
+                src="https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=800&q=80"
+                alt="Ingénieur réalisant un audit énergétique sur site industriel"
                 fill
                 className="object-cover"
               />
@@ -335,13 +336,13 @@ export default function AuditEnergetiquePage() {
           <div className="grid gap-8 lg:grid-cols-3">
             {[
               {
-                icon: <Home className="h-8 w-8 text-[#2563EB]" />,
-                title: "Maisons individuelles",
+                icon: <Factory className="h-8 w-8 text-[#2563EB]" />,
+                title: "Sites industriels",
                 points: [
-                  "Obligatoire pour la vente d'un logement F ou G depuis avril 2023",
-                  "Prérequis pour MaPrimeRénov' Parcours accompagné",
-                  "Essentiel avant tout projet de rénovation globale",
-                  "Éligible à une aide MaPrimeRénov' de 500 €",
+                  "Obligation de réaliser un audit tous les 4 ans pour les grandes entreprises (directive EED)",
+                  "Identification des process énergivores et des gisements d'économies",
+                  "Valorisation via les fiches CEE industrie (IND-UT, IND-BA)",
+                  "Conformité aux exigences ISO 50001 et décret BACS",
                 ],
               },
               {

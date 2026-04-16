@@ -48,7 +48,7 @@ const PRESTATIONS_ITEMS = [
   },
 ];
 
-const DROPDOWN_IMAGE = "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&q=80";
+const DROPDOWN_IMAGE = "https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=600&q=80";
 
 /* ─── Top-level nav links ─── */
 const NAV_LINKS = [
