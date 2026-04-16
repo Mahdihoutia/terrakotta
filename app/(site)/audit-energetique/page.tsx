@@ -226,11 +226,15 @@ export default function AuditEnergetiquePage() {
               viewport={{ once: true }}
               className="relative aspect-[4/3] overflow-hidden rounded-2xl shadow-xl"
             >
-              <Image
-                src="https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=800&q=80"
-                alt="Ingénieur réalisant un audit énergétique sur site industriel"
-                fill
-                className="object-cover"
+              <video
+                src="/videos/audit-energetique-definition.mp4"
+                poster="https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=800&q=80"
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="h-full w-full object-cover"
+                aria-label="Ingénieur ouvrant la porte d'une éolienne — illustration d'un audit énergétique"
               />
             </motion.div>
           </div>
