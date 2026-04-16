@@ -18,6 +18,11 @@ function markdownToHtml(md: string): string {
     // headings
     .replace(/^### (.+)$/gm, '<h3 class="text-xl font-semibold text-[#2C1810] mt-10 mb-4">$1</h3>')
     .replace(/^## (.+)$/gm, '<h2 class="font-display text-2xl md:text-3xl font-light text-[#2C1810] mt-12 mb-5">$1</h2>')
+    // links [text](url)
+    .replace(
+      /\[(.+?)\]\((.+?)\)/g,
+      '<a href="$2" class="text-[#2563EB] underline underline-offset-2 hover:text-[#1D4ED8] transition-colors">$1</a>',
+    )
     // bold & italic
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/\*(.+?)\*/g, "<em>$1</em>")
