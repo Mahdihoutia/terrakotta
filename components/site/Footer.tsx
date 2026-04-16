@@ -101,6 +101,31 @@ export default function Footer() {
               Nous accompagnons particuliers, professionnels et collectivités
               vers un bâti plus performant et durable.
             </p>
+
+            {/* Trust badges — compact */}
+            <div className="mt-6 max-w-sm">
+              <p className="text-[0.62rem] uppercase tracking-[0.18em] text-[#5E80A8] mb-3">
+                Qualifications &amp; référentiels
+              </p>
+              <ul className="flex flex-wrap gap-1.5">
+                {TRUST_BADGES.map(({ icon: Icon, label, sub }) => (
+                  <li
+                    key={label}
+                    title={sub}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-[#1B3356] bg-[#0D1B35]/60 px-2 py-1"
+                  >
+                    <Icon
+                      size={11}
+                      aria-hidden="true"
+                      className="text-[#60A5FA] shrink-0"
+                    />
+                    <span className="text-[0.65rem] text-[#BFDBFE] leading-none">
+                      {label}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
 
           {/* Navigation */}
@@ -163,35 +188,6 @@ export default function Footer() {
               </li>
             </ul>
           </div>
-        </div>
-      </div>
-
-      {/* Trust Badges */}
-      <div className="border-t border-[#1B3356] bg-[#0A1628]">
-        <div className="mx-auto max-w-[1400px] px-6 md:px-10 lg:px-16 py-10 md:py-12">
-          <p className="text-[0.7rem] uppercase tracking-[0.2em] text-[#7BAAC8] mb-6 text-center md:text-left">
-            Qualifications &amp; référentiels
-          </p>
-          <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-            {TRUST_BADGES.map(({ icon: Icon, label, sub }) => (
-              <li
-                key={label}
-                className="flex items-start gap-3 rounded-lg border border-[#1B3356] bg-[#0D1B35]/60 px-4 py-3"
-              >
-                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[#60A5FA]/10 text-[#60A5FA]">
-                  <Icon size={18} aria-hidden="true" />
-                </span>
-                <span className="flex flex-col">
-                  <span className="text-[0.82rem] font-semibold text-[#EFF6FF] leading-tight">
-                    {label}
-                  </span>
-                  <span className="text-[0.7rem] text-[#7BAAC8] leading-tight mt-0.5">
-                    {sub}
-                  </span>
-                </span>
-              </li>
-            ))}
-          </ul>
         </div>
       </div>
 
