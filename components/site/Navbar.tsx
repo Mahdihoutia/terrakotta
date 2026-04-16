@@ -14,6 +14,8 @@ import {
   HardHat,
   FileCheck,
   ArrowRight,
+  Users,
+  Mail,
 } from "lucide-react";
 
 /* ─── Dropdown prestations data ─── */
@@ -48,12 +50,30 @@ const PRESTATIONS_ITEMS = [
   },
 ];
 
-const DROPDOWN_IMAGE = "https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=600&q=80";
+const DROPDOWN_IMAGE = "https://images.unsplash.com/photo-1544724569-5f546fd6f2b5?w=600&q=80";
+
+/* ─── Dropdown "Qui sommes-nous" data ─── */
+const ABOUT_ITEMS = [
+  {
+    href: "/qui-sommes-nous",
+    label: "Qui sommes-nous",
+    desc: "Notre histoire, nos valeurs et notre équipe d'ingénieurs",
+    icon: Users,
+    accent: "#2563EB",
+  },
+  {
+    href: "/contactez-nous",
+    label: "Contactez-nous",
+    desc: "Coordonnées, formulaire et prise de rendez-vous",
+    icon: Mail,
+    accent: "#0EA5E9",
+  },
+];
 
 /* ─── Top-level nav links ─── */
 const NAV_LINKS = [
-  { href: "/qui-sommes-nous", label: "Qui sommes-nous" },
-  { href: "/nos-prestations", label: "Nos prestations", hasDropdown: true },
+  { href: "/qui-sommes-nous", label: "Qui sommes-nous", dropdown: "about" as const },
+  { href: "/nos-prestations", label: "Nos prestations", dropdown: "prestations" as const },
   { href: "/nos-references", label: "Nos références" },
   { href: "/laboratoire-idees", label: "Laboratoire d'idées" },
 ];
@@ -94,10 +114,10 @@ export default function Navbar() {
   const isHomepage = pathname === "/";
   const [scrolled, setScrolled] = useState(!isHomepage);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [mobileSubmenuOpen, setMobileSubmenuOpen] = useState(false);
+  const [openDropdownKey, setOpenDropdownKey] = useState<string | null>(null);
+  const [mobileSubmenuKey, setMobileSubmenuKey] = useState<string | null>(null);
   const [hoveredItem, setHoveredItem] = useState<number | null>(null);
-  const dropdownRef = useRef<HTMLLIElement>(null);
+  const dropdownRefs = useRef<Record<string, HTMLLIElement | null>>({});
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* ─── Scroll handler ─── */
@@ -120,19 +140,19 @@ export default function Navbar() {
 
   /* ─── Close dropdown on route change ─── */
   useEffect(() => {
-    setDropdownOpen(false);
+    setOpenDropdownKey(null);
     setMobileOpen(false);
-    setMobileSubmenuOpen(false);
+    setMobileSubmenuKey(null);
   }, [pathname]);
 
   /* ─── Dropdown hover with delay ─── */
-  const openDropdown = useCallback(() => {
+  const openDropdown = useCallback((key: string) => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    setDropdownOpen(true);
+    setOpenDropdownKey(key);
   }, []);
 
   const closeDropdown = useCallback(() => {
-    timeoutRef.current = setTimeout(() => setDropdownOpen(false), 180);
+    timeoutRef.current = setTimeout(() => setOpenDropdownKey(null), 180);
   }, []);
 
   useEffect(() => {
@@ -142,17 +162,23 @@ export default function Navbar() {
   /* ─── Close on click outside ─── */
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false);
+      if (!openDropdownKey) return;
+      const activeRef = dropdownRefs.current[openDropdownKey];
+      if (activeRef && !activeRef.contains(e.target as Node)) {
+        setOpenDropdownKey(null);
       }
     }
-    if (dropdownOpen) document.addEventListener("mousedown", handleClick);
+    if (openDropdownKey) document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
-  }, [dropdownOpen]);
+  }, [openDropdownKey]);
 
   /* ─── Active state helpers ─── */
   const prestationPaths = PRESTATIONS_ITEMS.map((p) => p.href);
   const isPrestationActive = prestationPaths.some(
+    (p) => pathname === p || pathname.startsWith(p + "/"),
+  );
+  const aboutPaths = ABOUT_ITEMS.map((p) => p.href);
+  const isAboutActive = aboutPaths.some(
     (p) => pathname === p || pathname.startsWith(p + "/"),
   );
 
@@ -185,21 +211,28 @@ export default function Navbar() {
           <ul className="hidden lg:flex items-center gap-10">
             {NAV_LINKS.map((link) => {
               const isActive =
-                link.hasDropdown
+                link.dropdown === "prestations"
                   ? isPrestationActive
-                  : pathname === link.href || pathname.startsWith(link.href + "/");
+                  : link.dropdown === "about"
+                    ? isAboutActive
+                    : pathname === link.href || pathname.startsWith(link.href + "/");
 
-              if (link.hasDropdown) {
+              if (link.dropdown) {
+                const key = link.dropdown;
+                const isOpen = openDropdownKey === key;
+                const isPrestations = key === "prestations";
+                const items = isPrestations ? PRESTATIONS_ITEMS : ABOUT_ITEMS;
+
                 return (
                   <li
                     key={link.href}
                     className="relative"
-                    ref={dropdownRef}
-                    onMouseEnter={openDropdown}
+                    ref={(el) => { dropdownRefs.current[key] = el; }}
+                    onMouseEnter={() => openDropdown(key)}
                     onMouseLeave={closeDropdown}
                   >
                     <button
-                      onClick={() => setDropdownOpen((o) => !o)}
+                      onClick={() => setOpenDropdownKey((k) => (k === key ? null : key))}
                       className={`group relative flex items-center gap-1 text-[0.82rem] font-medium uppercase tracking-[0.14em] transition-colors duration-500 ${
                         scrolled
                           ? "text-[#1D4ED8] hover:text-[#2563EB]"
@@ -209,9 +242,8 @@ export default function Navbar() {
                       {link.label}
                       <ChevronDown
                         size={14}
-                        className={`transition-transform duration-300 ${dropdownOpen ? "rotate-180" : ""}`}
+                        className={`transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`}
                       />
-                      {/* Active indicator */}
                       {isActive && (
                         <motion.span
                           layoutId="nav-active"
@@ -222,24 +254,126 @@ export default function Navbar() {
 
                     {/* ─── Dropdown Panel ─── */}
                     <AnimatePresence>
-                      {dropdownOpen && (
+                      {isOpen && (
                         <motion.div
                           variants={dropdownVariants}
                           initial="hidden"
                           animate="visible"
                           exit="exit"
                           className="absolute left-1/2 top-full pt-4 -translate-x-1/2"
-                          style={{ width: "680px" }}
+                          style={{ width: isPrestations ? "680px" : "340px" }}
                         >
                           <div className="overflow-hidden rounded-2xl border border-[#E8F0FE] bg-white shadow-[0_25px_60px_-12px_rgba(13,27,53,0.15)]">
-                            <div className="grid grid-cols-12">
-                              {/* ── Links column ── */}
-                              <div className="col-span-7 p-5">
-                                <p className="mb-3 text-[0.65rem] uppercase tracking-[0.2em] text-[#94A3B8]">
-                                  Nos expertises
+                            {isPrestations ? (
+                              <div className="grid grid-cols-12">
+                                {/* ── Links column ── */}
+                                <div className="col-span-7 p-5">
+                                  <p className="mb-3 text-[0.65rem] uppercase tracking-[0.2em] text-[#94A3B8]">
+                                    Nos expertises
+                                  </p>
+                                  <div className="space-y-0.5">
+                                    {items.map((item, i) => {
+                                      const Icon = item.icon;
+                                      const isHovered = hoveredItem === i;
+                                      return (
+                                        <motion.div
+                                          key={item.href}
+                                          custom={i}
+                                          variants={itemVariants}
+                                          initial="hidden"
+                                          animate="visible"
+                                        >
+                                          <Link
+                                            href={item.href}
+                                            onMouseEnter={() => setHoveredItem(i)}
+                                            onMouseLeave={() => setHoveredItem(null)}
+                                            className={`group/item flex items-start gap-3.5 rounded-xl px-3.5 py-3 transition-all duration-200 ${
+                                              isHovered ? "bg-[#F0F7FF]" : "hover:bg-[#F8FBFF]"
+                                            }`}
+                                          >
+                                            <div
+                                              className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors duration-200"
+                                              style={{ backgroundColor: isHovered ? `${item.accent}15` : "#F1F5F9" }}
+                                            >
+                                              <Icon
+                                                size={18}
+                                                strokeWidth={1.5}
+                                                style={{ color: isHovered ? item.accent : "#64748B" }}
+                                                className="transition-colors duration-200"
+                                              />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                              <div className="flex items-center gap-1.5">
+                                                <span className="text-[0.85rem] font-semibold text-[#0D1B35] group-hover/item:text-[#2563EB] transition-colors duration-200">
+                                                  {item.label}
+                                                </span>
+                                                <ArrowRight
+                                                  size={12}
+                                                  className="opacity-0 -translate-x-1 transition-all duration-200 group-hover/item:opacity-100 group-hover/item:translate-x-0 text-[#2563EB]"
+                                                />
+                                              </div>
+                                              <p className="mt-0.5 text-[0.76rem] leading-snug text-[#64748B]">
+                                                {item.desc}
+                                              </p>
+                                            </div>
+                                          </Link>
+                                        </motion.div>
+                                      );
+                                    })}
+                                  </div>
+
+                                  <div className="mt-3 border-t border-[#F1F5F9] pt-3">
+                                    <Link
+                                      href="/contactez-nous"
+                                      className="group/cta flex items-center gap-2 rounded-lg px-3.5 py-2.5 text-[0.78rem] font-semibold text-[#2563EB] transition-colors hover:bg-[#2563EB]/5"
+                                    >
+                                      Demander un devis gratuit
+                                      <ArrowRight size={13} className="transition-transform group-hover/cta:translate-x-0.5" />
+                                    </Link>
+                                  </div>
+                                </div>
+
+                                {/* ── Image column ── */}
+                                <div className="col-span-5 relative overflow-hidden">
+                                  <div className="absolute inset-0">
+                                    <Image
+                                      src={DROPDOWN_IMAGE}
+                                      alt="Composants électroniques d&apos;installation énergétique"
+                                      fill
+                                      className="object-cover"
+                                      sizes="300px"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-[#0D1B35]/80 via-[#0D1B35]/30 to-transparent" />
+                                  </div>
+                                  <div className="relative flex h-full flex-col justify-end p-5">
+                                    <motion.div
+                                      initial={{ opacity: 0, y: 10 }}
+                                      animate={{ opacity: 1, y: 0 }}
+                                      transition={{ delay: 0.15, duration: 0.4 }}
+                                    >
+                                      <p className="text-[0.65rem] uppercase tracking-[0.2em] text-[#93C5FD] mb-1.5">
+                                        Bureau d&apos;étude RGE
+                                      </p>
+                                      <p className="font-display text-lg font-semibold text-white leading-snug">
+                                        Votre partenaire en
+                                        <br />
+                                        <span className="text-[#60A5FA]">rénovation énergétique</span>
+                                      </p>
+                                      <p className="mt-2 text-[0.72rem] leading-relaxed text-[#CBD5E1]">
+                                        De l&apos;audit initial au suivi post-travaux, une expertise complète à votre service.
+                                      </p>
+                                    </motion.div>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              /* ── Compact dropdown (About) ── */
+                              <div className="p-4">
+                                <p className="mb-3 px-2 text-[0.65rem] uppercase tracking-[0.2em] text-[#94A3B8]">
+                                  Le cabinet
                                 </p>
                                 <div className="space-y-0.5">
-                                  {PRESTATIONS_ITEMS.map((item, i) => {
+                                  {items.map((item, i) => {
                                     const Icon = item.icon;
                                     const isHovered = hoveredItem === i;
                                     return (
@@ -254,19 +388,13 @@ export default function Navbar() {
                                           href={item.href}
                                           onMouseEnter={() => setHoveredItem(i)}
                                           onMouseLeave={() => setHoveredItem(null)}
-                                          className={`group/item flex items-start gap-3.5 rounded-xl px-3.5 py-3 transition-all duration-200 ${
-                                            isHovered
-                                              ? "bg-[#F0F7FF]"
-                                              : "hover:bg-[#F8FBFF]"
+                                          className={`group/item flex items-start gap-3.5 rounded-xl px-3 py-3 transition-all duration-200 ${
+                                            isHovered ? "bg-[#F0F7FF]" : "hover:bg-[#F8FBFF]"
                                           }`}
                                         >
                                           <div
                                             className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors duration-200"
-                                            style={{
-                                              backgroundColor: isHovered
-                                                ? `${item.accent}15`
-                                                : "#F1F5F9",
-                                            }}
+                                            style={{ backgroundColor: isHovered ? `${item.accent}15` : "#F1F5F9" }}
                                           >
                                             <Icon
                                               size={18}
@@ -294,58 +422,8 @@ export default function Navbar() {
                                     );
                                   })}
                                 </div>
-
-                                {/* Bottom CTA */}
-                                <div className="mt-3 border-t border-[#F1F5F9] pt-3">
-                                  <Link
-                                    href="/contactez-nous"
-                                    className="group/cta flex items-center gap-2 rounded-lg px-3.5 py-2.5 text-[0.78rem] font-semibold text-[#2563EB] transition-colors hover:bg-[#2563EB]/5"
-                                  >
-                                    Demander un devis gratuit
-                                    <ArrowRight
-                                      size={13}
-                                      className="transition-transform group-hover/cta:translate-x-0.5"
-                                    />
-                                  </Link>
-                                </div>
                               </div>
-
-                              {/* ── Image column ── */}
-                              <div className="col-span-5 relative overflow-hidden">
-                                <div className="absolute inset-0">
-                                  <Image
-                                    src={DROPDOWN_IMAGE}
-                                    alt="Chantier de rénovation énergétique"
-                                    fill
-                                    className="object-cover"
-                                    sizes="300px"
-                                  />
-                                  {/* Gradient overlay */}
-                                  <div className="absolute inset-0 bg-gradient-to-t from-[#0D1B35]/80 via-[#0D1B35]/30 to-transparent" />
-                                </div>
-                                {/* Floating text */}
-                                <div className="relative flex h-full flex-col justify-end p-5">
-                                  <motion.div
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.15, duration: 0.4 }}
-                                  >
-                                    <p className="text-[0.65rem] uppercase tracking-[0.2em] text-[#93C5FD] mb-1.5">
-                                      Bureau d&apos;étude RGE
-                                    </p>
-                                    <p className="font-display text-lg font-semibold text-white leading-snug">
-                                      Votre partenaire en
-                                      <br />
-                                      <span className="text-[#60A5FA]">rénovation énergétique</span>
-                                    </p>
-                                    <p className="mt-2 text-[0.72rem] leading-relaxed text-[#CBD5E1]">
-                                      De l&apos;audit initial au suivi post-travaux,
-                                      une expertise complète à votre service.
-                                    </p>
-                                  </motion.div>
-                                </div>
-                              </div>
-                            </div>
+                            )}
                           </div>
                         </motion.div>
                       )}
@@ -413,7 +491,10 @@ export default function Navbar() {
           >
             <nav className="flex flex-col items-center gap-6 w-full px-8">
               {NAV_LINKS.map((link, i) => {
-                if (link.hasDropdown) {
+                if (link.dropdown) {
+                  const key = link.dropdown;
+                  const submenuOpen = mobileSubmenuKey === key;
+                  const items = key === "prestations" ? PRESTATIONS_ITEMS : ABOUT_ITEMS;
                   return (
                     <motion.div
                       key={link.href}
@@ -423,18 +504,18 @@ export default function Navbar() {
                       className="w-full max-w-sm text-center"
                     >
                       <button
-                        onClick={() => setMobileSubmenuOpen((o) => !o)}
+                        onClick={() => setMobileSubmenuKey((k) => (k === key ? null : key))}
                         className="inline-flex items-center gap-2 font-display text-3xl font-light text-[#0D1B35] hover:text-[#2563EB] transition-colors"
                       >
                         {link.label}
                         <ChevronDown
                           size={20}
-                          className={`transition-transform duration-300 ${mobileSubmenuOpen ? "rotate-180" : ""}`}
+                          className={`transition-transform duration-300 ${submenuOpen ? "rotate-180" : ""}`}
                         />
                       </button>
 
                       <AnimatePresence>
-                        {mobileSubmenuOpen && (
+                        {submenuOpen && (
                           <motion.div
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: "auto", opacity: 1 }}
@@ -443,7 +524,7 @@ export default function Navbar() {
                             className="overflow-hidden"
                           >
                             <div className="mt-4 space-y-2">
-                              {PRESTATIONS_ITEMS.map((item, j) => {
+                              {items.map((item, j) => {
                                 const Icon = item.icon;
                                 return (
                                   <motion.div

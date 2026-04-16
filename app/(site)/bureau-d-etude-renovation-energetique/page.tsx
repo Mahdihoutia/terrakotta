@@ -347,7 +347,7 @@ export default function BureauDEtudePage() {
                     icon: Factory,
                     title: "Industrie",
                     image:
-                      "https://images.unsplash.com/photo-1565108244928-b43ea081c665?w=800&q=80",
+                      "https://images.unsplash.com/photo-1565008447742-97f6f38c985c?w=800&q=80",
                     alt: "Site industriel avec installations techniques",
                     items: [
                       "Sites de production et usines",
