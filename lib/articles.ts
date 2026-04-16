@@ -834,7 +834,7 @@ La qualification RGE Études est un prérequis indispensable pour tout bureau d'
     readTime: "10 min",
     date: "2 avril 2026",
     image:
-      "https://images.unsplash.com/photo-1519638831568-d9897f54ed69?w=900&q=80",
+      "https://images.unsplash.com/photo-1498623116890-37e912163d5d?w=1200&q=80",
     icon: Droplets,
     featured: true,
     content: `## Un basculement silencieux
