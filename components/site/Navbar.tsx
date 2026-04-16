@@ -261,7 +261,7 @@ export default function Navbar() {
                           animate="visible"
                           exit="exit"
                           className="absolute left-1/2 top-full pt-4 -translate-x-1/2"
-                          style={{ width: isPrestations ? "680px" : "340px" }}
+                          style={{ width: isPrestations ? "680px" : "600px" }}
                         >
                           <div className="overflow-hidden rounded-2xl border border-[#E8F0FE] bg-white shadow-[0_25px_60px_-12px_rgba(13,27,53,0.15)]">
                             {isPrestations ? (
@@ -367,60 +367,98 @@ export default function Navbar() {
                                 </div>
                               </div>
                             ) : (
-                              /* ── Compact dropdown (About) ── */
-                              <div className="p-4">
-                                <p className="mb-3 px-2 text-[0.65rem] uppercase tracking-[0.2em] text-[#94A3B8]">
-                                  Le cabinet
-                                </p>
-                                <div className="space-y-0.5">
-                                  {items.map((item, i) => {
-                                    const Icon = item.icon;
-                                    const isHovered = hoveredItem === i;
-                                    return (
-                                      <motion.div
-                                        key={item.href}
-                                        custom={i}
-                                        variants={itemVariants}
-                                        initial="hidden"
-                                        animate="visible"
-                                      >
-                                        <Link
-                                          href={item.href}
-                                          onMouseEnter={() => setHoveredItem(i)}
-                                          onMouseLeave={() => setHoveredItem(null)}
-                                          className={`group/item flex items-start gap-3.5 rounded-xl px-3 py-3 transition-all duration-200 ${
-                                            isHovered ? "bg-[#F0F7FF]" : "hover:bg-[#F8FBFF]"
-                                          }`}
+                              /* ── About dropdown with video ── */
+                              <div className="grid grid-cols-12">
+                                <div className="col-span-7 p-5">
+                                  <p className="mb-3 text-[0.65rem] uppercase tracking-[0.2em] text-[#94A3B8]">
+                                    Le cabinet
+                                  </p>
+                                  <div className="space-y-0.5">
+                                    {items.map((item, i) => {
+                                      const Icon = item.icon;
+                                      const isHovered = hoveredItem === i;
+                                      return (
+                                        <motion.div
+                                          key={item.href}
+                                          custom={i}
+                                          variants={itemVariants}
+                                          initial="hidden"
+                                          animate="visible"
                                         >
-                                          <div
-                                            className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors duration-200"
-                                            style={{ backgroundColor: isHovered ? `${item.accent}15` : "#F1F5F9" }}
+                                          <Link
+                                            href={item.href}
+                                            onMouseEnter={() => setHoveredItem(i)}
+                                            onMouseLeave={() => setHoveredItem(null)}
+                                            className={`group/item flex items-start gap-3.5 rounded-xl px-3.5 py-3 transition-all duration-200 ${
+                                              isHovered ? "bg-[#F0F7FF]" : "hover:bg-[#F8FBFF]"
+                                            }`}
                                           >
-                                            <Icon
-                                              size={18}
-                                              strokeWidth={1.5}
-                                              style={{ color: isHovered ? item.accent : "#64748B" }}
-                                              className="transition-colors duration-200"
-                                            />
-                                          </div>
-                                          <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-1.5">
-                                              <span className="text-[0.85rem] font-semibold text-[#0D1B35] group-hover/item:text-[#2563EB] transition-colors duration-200">
-                                                {item.label}
-                                              </span>
-                                              <ArrowRight
-                                                size={12}
-                                                className="opacity-0 -translate-x-1 transition-all duration-200 group-hover/item:opacity-100 group-hover/item:translate-x-0 text-[#2563EB]"
+                                            <div
+                                              className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors duration-200"
+                                              style={{ backgroundColor: isHovered ? `${item.accent}15` : "#F1F5F9" }}
+                                            >
+                                              <Icon
+                                                size={18}
+                                                strokeWidth={1.5}
+                                                style={{ color: isHovered ? item.accent : "#64748B" }}
+                                                className="transition-colors duration-200"
                                               />
                                             </div>
-                                            <p className="mt-0.5 text-[0.76rem] leading-snug text-[#64748B]">
-                                              {item.desc}
-                                            </p>
-                                          </div>
-                                        </Link>
-                                      </motion.div>
-                                    );
-                                  })}
+                                            <div className="flex-1 min-w-0">
+                                              <div className="flex items-center gap-1.5">
+                                                <span className="text-[0.85rem] font-semibold text-[#0D1B35] group-hover/item:text-[#2563EB] transition-colors duration-200">
+                                                  {item.label}
+                                                </span>
+                                                <ArrowRight
+                                                  size={12}
+                                                  className="opacity-0 -translate-x-1 transition-all duration-200 group-hover/item:opacity-100 group-hover/item:translate-x-0 text-[#2563EB]"
+                                                />
+                                              </div>
+                                              <p className="mt-0.5 text-[0.76rem] leading-snug text-[#64748B]">
+                                                {item.desc}
+                                              </p>
+                                            </div>
+                                          </Link>
+                                        </motion.div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+
+                                {/* ── Video column ── */}
+                                <div className="col-span-5 relative overflow-hidden">
+                                  <div className="absolute inset-0">
+                                    <video
+                                      autoPlay
+                                      loop
+                                      muted
+                                      playsInline
+                                      className="h-full w-full object-cover"
+                                      aria-label="Cheminée industrielle en activité"
+                                    >
+                                      <source src="https://assets.mixkit.co/videos/47738/47738-720.mp4" type="video/mp4" />
+                                    </video>
+                                    <div className="absolute inset-0 bg-gradient-to-t from-[#0D1B35]/85 via-[#0D1B35]/40 to-transparent" />
+                                  </div>
+                                  <div className="relative flex h-full flex-col justify-end p-5">
+                                    <motion.div
+                                      initial={{ opacity: 0, y: 10 }}
+                                      animate={{ opacity: 1, y: 0 }}
+                                      transition={{ delay: 0.15, duration: 0.4 }}
+                                    >
+                                      <p className="text-[0.65rem] uppercase tracking-[0.2em] text-[#93C5FD] mb-1.5">
+                                        Décarbonation
+                                      </p>
+                                      <p className="font-display text-lg font-semibold text-white leading-snug">
+                                        Réduire l&apos;empreinte
+                                        <br />
+                                        <span className="text-[#60A5FA]">de vos bâtiments</span>
+                                      </p>
+                                      <p className="mt-2 text-[0.72rem] leading-relaxed text-[#CBD5E1]">
+                                        Une mission : accompagner la transition énergétique du tertiaire et de l&apos;industrie.
+                                      </p>
+                                    </motion.div>
+                                  </div>
                                 </div>
                               </div>
                             )}
