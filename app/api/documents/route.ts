@@ -36,6 +36,7 @@ export async function GET(req: NextRequest) {
         statut: d.statut,
         clientNom: d.clientNom,
         donnees: d.donnees,
+        projetId: d.projetId,
         createdAt: d.createdAt.toISOString(),
         updatedAt: d.updatedAt.toISOString(),
       }))

@@ -20,6 +20,9 @@ import {
   X,
   Loader2,
   Briefcase,
+  FileText,
+  Sparkles,
+  Calculator,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -70,6 +73,36 @@ const STATUT_LABELS: Record<ProjetStatut, string> = {
   TERMINE: "Terminé",
   ANNULE: "Annulé",
 };
+
+/** CEE fiches disponibles pour simulation — kWh cumac calculés côté client */
+const CEE_FICHES = [
+  { id: "BAR-TH-171", nom: "PAC air/eau (maison indiv.)", secteur: "Résidentiel" },
+  { id: "BAR-TH-159", nom: "PAC air/eau (collectif)", secteur: "Résidentiel" },
+  { id: "BAR-EN-101", nom: "Isolation combles / toiture", secteur: "Résidentiel" },
+  { id: "BAR-EN-102", nom: "Isolation murs (ITE/ITI)", secteur: "Résidentiel" },
+  { id: "BAR-EN-103", nom: "Isolation plancher bas", secteur: "Résidentiel" },
+  { id: "BAT-TH-116", nom: "Système de régulation", secteur: "Tertiaire" },
+  { id: "BAT-TH-134", nom: "VEV sur ventilateur", secteur: "Tertiaire" },
+  { id: "BAT-TH-139", nom: "Récup. chaleur sur groupe froid", secteur: "Tertiaire" },
+  { id: "BAT-TH-142", nom: "Déstratificateur d'air", secteur: "Tertiaire" },
+  { id: "BAT-TH-163", nom: "PAC air/eau ou eau/eau", secteur: "Tertiaire" },
+] as const;
+
+interface AideCEE {
+  fiche: string;
+  nom: string;
+  kwhCumac: number;
+  prixUnitaire: number; // €/MWh cumac (ex: 8)
+  montant: number;
+}
+
+interface DocumentOption {
+  id: string;
+  titre: string;
+  reference: string;
+  type: string;
+  projetId: string | null;
+}
 
 const TYPES_TRAVAUX = [
   "PAC air/eau",
@@ -122,12 +155,15 @@ const EMPTY_FORM = {
 export default function ProjetsPage() {
   const [projets, setProjets] = useState<Projet[]>([]);
   const [clients, setClients] = useState<ClientOption[]>([]);
+  const [documents, setDocuments] = useState<DocumentOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [filterStatut, setFilterStatut] = useState<string>("TOUS");
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
+  const [aidesCEE, setAidesCEE] = useState<AideCEE[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
   const fetchProjets = useCallback(async () => {
@@ -152,14 +188,61 @@ export default function ProjetsPage() {
     }
   }, []);
 
+  const fetchDocuments = useCallback(async () => {
+    try {
+      const res = await fetch("/api/documents");
+      if (!res.ok) return;
+      const data: DocumentOption[] = await res.json();
+      setDocuments(data);
+    } catch {
+      // silently fail
+    }
+  }, []);
+
   useEffect(() => {
     async function init() {
       setLoading(true);
-      await Promise.all([fetchProjets(), fetchClients()]);
+      await Promise.all([fetchProjets(), fetchClients(), fetchDocuments()]);
       setLoading(false);
     }
     init();
-  }, [fetchProjets, fetchClients]);
+  }, [fetchProjets, fetchClients, fetchDocuments]);
+
+  // CEE totals (live simulation)
+  const totalKwhCumac = aidesCEE.reduce((s, a) => s + (a.kwhCumac || 0), 0);
+  const totalAidesEuros = aidesCEE.reduce((s, a) => s + (a.montant || 0), 0);
+
+  function addAideCEE() {
+    setAidesCEE((prev) => [
+      ...prev,
+      { fiche: "BAR-TH-171", nom: "PAC air/eau (maison indiv.)", kwhCumac: 0, prixUnitaire: 8, montant: 0 },
+    ]);
+  }
+
+  function updateAideCEE(index: number, patch: Partial<AideCEE>) {
+    setAidesCEE((prev) =>
+      prev.map((a, i) => {
+        if (i !== index) return a;
+        const next = { ...a, ...patch };
+        // If fiche changed, update its display name
+        if (patch.fiche) {
+          const f = CEE_FICHES.find((x) => x.id === patch.fiche);
+          if (f) next.nom = f.nom;
+        }
+        // Recompute € = kWh cumac × (prixUnitaire / 1000)  [prix en €/MWh cumac]
+        next.montant = Math.round((next.kwhCumac * next.prixUnitaire) / 1000);
+        return next;
+      }),
+    );
+  }
+
+  function removeAideCEE(index: number) {
+    setAidesCEE((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function toggleDoc(id: string) {
+    setSelectedDocIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
 
   const filteredProjets =
     filterStatut === "TOUS"
@@ -182,6 +265,8 @@ export default function ProjetsPage() {
       budgetPrevu: form.budgetPrevu ? Number(form.budgetPrevu) : undefined,
       dateDebut: form.dateDebut ? new Date(form.dateDebut).toISOString() : undefined,
       dateFin: form.dateFin ? new Date(form.dateFin).toISOString() : undefined,
+      documentIds: selectedDocIds.length > 0 ? selectedDocIds : undefined,
+      aides: aidesCEE.length > 0 ? aidesCEE : undefined,
     };
 
     try {
@@ -194,7 +279,11 @@ export default function ProjetsPage() {
       const created: Projet = await res.json();
       setProjets((prev) => [created, ...prev]);
       setForm(EMPTY_FORM);
+      setSelectedDocIds([]);
+      setAidesCEE([]);
       setShowForm(false);
+      // Refresh documents list to reflect new links
+      fetchDocuments();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur inconnue");
     } finally {
@@ -369,6 +458,149 @@ export default function ProjetsPage() {
                   />
                 </div>
               </div>
+
+              {/* Documents liés */}
+              <div className="mt-6 rounded-xl border border-tk-border bg-tk-surface/40 p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-tk-text-muted" />
+                    <h4 className="text-xs font-semibold uppercase tracking-wide text-tk-text">Documents liés</h4>
+                    {selectedDocIds.length > 0 && (
+                      <span className="rounded-full bg-orange-500/10 px-2 py-0.5 text-[10px] text-orange-400">
+                        {selectedDocIds.length} sélectionné{selectedDocIds.length > 1 ? "s" : ""}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-tk-text-faint">Devis, notes, rapports, audits…</span>
+                </div>
+                {documents.length === 0 ? (
+                  <p className="text-xs text-tk-text-faint">Aucun document disponible. Créez-en depuis l&apos;onglet Documents.</p>
+                ) : (
+                  <div className="max-h-48 overflow-y-auto space-y-1 pr-1">
+                    {documents.map((doc) => {
+                      const checked = selectedDocIds.includes(doc.id);
+                      const alreadyLinked = doc.projetId && doc.projetId !== null;
+                      return (
+                        <label
+                          key={doc.id}
+                          className={cn(
+                            "flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-xs transition-colors",
+                            checked
+                              ? "border-orange-500/30 bg-orange-500/5"
+                              : "border-tk-border bg-tk-surface hover:bg-tk-hover",
+                            alreadyLinked && !checked && "opacity-50",
+                          )}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleDoc(doc.id)}
+                            className="h-3.5 w-3.5 accent-orange-500"
+                          />
+                          <span className="font-mono text-[10px] text-tk-text-faint">{doc.reference}</span>
+                          <span className="flex-1 truncate text-tk-text-secondary">{doc.titre}</span>
+                          <span className="rounded-full bg-tk-hover px-1.5 py-0.5 text-[9px] uppercase text-tk-text-muted">
+                            {doc.type.replace("_", " ")}
+                          </span>
+                          {alreadyLinked && (
+                            <span className="text-[9px] text-amber-400">déjà lié</span>
+                          )}
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Simulation CEE */}
+              <div className="mt-4 rounded-xl border border-tk-border bg-tk-surface/40 p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-emerald-400" />
+                    <h4 className="text-xs font-semibold uppercase tracking-wide text-tk-text">Aides CEE — Simulation par fiche</h4>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addAideCEE}
+                    className="h-7 border-tk-border bg-tk-surface text-tk-text-secondary hover:bg-tk-hover"
+                  >
+                    <Plus className="mr-1 h-3 w-3" />
+                    Ajouter une fiche
+                  </Button>
+                </div>
+
+                {aidesCEE.length === 0 ? (
+                  <p className="text-xs text-tk-text-faint">
+                    Aucune fiche CEE ajoutée. Cliquez sur « Ajouter une fiche » pour simuler les kWh cumac et la prime associée.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {aidesCEE.map((aide, i) => (
+                      <div
+                        key={i}
+                        className="grid grid-cols-12 gap-2 rounded-lg border border-tk-border bg-tk-surface p-2"
+                      >
+                        <select
+                          value={aide.fiche}
+                          onChange={(e) => updateAideCEE(i, { fiche: e.target.value })}
+                          className="col-span-4 rounded-md border border-tk-border bg-tk-surface px-2 py-1.5 text-xs text-tk-text"
+                        >
+                          {CEE_FICHES.map((f) => (
+                            <option key={f.id} value={f.id}>
+                              {f.id} — {f.nom}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="col-span-3 flex items-center gap-1">
+                          <input
+                            type="number"
+                            value={aide.kwhCumac || ""}
+                            onChange={(e) => updateAideCEE(i, { kwhCumac: Number(e.target.value) || 0 })}
+                            placeholder="kWh cumac"
+                            className="w-full rounded-md border border-tk-border bg-tk-surface px-2 py-1.5 text-xs text-tk-text"
+                          />
+                          <span className="text-[10px] text-tk-text-faint">kWhc</span>
+                        </div>
+                        <div className="col-span-2 flex items-center gap-1">
+                          <input
+                            type="number"
+                            step="0.5"
+                            value={aide.prixUnitaire || ""}
+                            onChange={(e) => updateAideCEE(i, { prixUnitaire: Number(e.target.value) || 0 })}
+                            placeholder="€/MWhc"
+                            className="w-full rounded-md border border-tk-border bg-tk-surface px-2 py-1.5 text-xs text-tk-text"
+                          />
+                          <span className="text-[10px] text-tk-text-faint">€/MWhc</span>
+                        </div>
+                        <div className="col-span-2 flex items-center justify-end gap-1 rounded-md bg-emerald-500/10 px-2 text-xs font-semibold text-emerald-400">
+                          <Calculator className="h-3 w-3" />
+                          {formatCurrency(aide.montant)}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeAideCEE(i)}
+                          className="col-span-1 flex items-center justify-center rounded-md text-tk-text-faint hover:text-red-400"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+
+                    {/* Totaux */}
+                    <div className="mt-2 flex items-center justify-between rounded-lg bg-emerald-500/5 px-3 py-2 text-xs">
+                      <span className="text-tk-text-muted">
+                        Total : <strong className="text-tk-text">{new Intl.NumberFormat("fr-FR").format(totalKwhCumac)}</strong> kWh cumac
+                      </span>
+                      <span className="text-sm font-semibold text-emerald-400">
+                        {formatCurrency(totalAidesEuros)}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="mt-4 flex gap-2">
                 <Button size="sm" onClick={handleCreate} disabled={submitting}>
                   {submitting ? (

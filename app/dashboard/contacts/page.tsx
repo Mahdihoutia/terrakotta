@@ -26,10 +26,14 @@ import {
   Loader2,
   Trash2,
   MapPin,
+  Download,
+  FileSpreadsheet,
+  FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useContacts } from "@/lib/hooks/use-contacts";
-import type { ClientType, LeadStatus, LeadSource } from "@/types";
+import { exportToExcel, exportToPdf } from "@/lib/export-leads";
+import type { ClientType, LeadStatus, LeadSource, Lead } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
 
 const TYPE_STYLES: Record<string, string> = {
@@ -85,6 +89,7 @@ export default function ContactsPage() {
   const [filterType, setFilterType] = useState<string>("TOUS");
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [showExport, setShowExport] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
 
@@ -166,10 +171,49 @@ export default function ContactsPage() {
             Clients et contacts professionnels — {contacts.length} au total
           </p>
         </div>
-        <Button size="sm" onClick={() => setShowForm(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nouveau contact
-        </Button>
+        <div className="flex gap-2">
+          {/* Export dropdown */}
+          <div className="relative">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowExport(!showExport)}
+              className="border-tk-border bg-tk-surface text-tk-text-secondary hover:bg-tk-hover"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Exporter
+            </Button>
+            <AnimatePresence>
+              {showExport && (
+                <motion.div
+                  initial={{ opacity: 0, y: -5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -5 }}
+                  className="absolute right-0 top-full z-50 mt-1 w-48 rounded-xl glass p-1"
+                >
+                  <button
+                    onClick={() => { exportToExcel(filtered as unknown as Lead[], "contacts-kilowater"); setShowExport(false); }}
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-tk-text-secondary hover:bg-tk-hover"
+                  >
+                    <FileSpreadsheet className="h-4 w-4 text-green-400" />
+                    Export Excel (.xlsx)
+                  </button>
+                  <button
+                    onClick={() => { exportToPdf(filtered as unknown as Lead[], "contacts-kilowater"); setShowExport(false); }}
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-tk-text-secondary hover:bg-tk-hover"
+                  >
+                    <FileText className="h-4 w-4 text-red-400" />
+                    Export PDF
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+          <Button size="sm" onClick={() => setShowForm(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nouveau contact
+          </Button>
+        </div>
       </div>
 
       {/* Formulaire nouveau contact */}

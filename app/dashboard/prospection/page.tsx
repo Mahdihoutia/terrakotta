@@ -11,7 +11,7 @@ import StatusBadge from "@/components/dashboard/StatusBadge";
 import {
   Search, Loader2, Star, MapPin, Building2, Filter, ArrowRight,
   Radar, Globe, BookOpen, Sparkles, Users, TrendingUp, Target,
-  Download, RefreshCw, Phone, Mail, ExternalLink,
+  Download, RefreshCw, Phone, Mail, ExternalLink, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Lead, LeadSource } from "@/types";
@@ -120,6 +120,10 @@ export default function ProspectionPage() {
   const [filterSource, setFilterSource] = useState<string>("TOUS");
   const [filterScore, setFilterScore] = useState<number | null>(null);
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 15;
+
   // Result feedback
   const [lastResult, setLastResult] = useState<{ found: number; saved: number; duplicates: number } | null>(null);
 
@@ -186,6 +190,19 @@ export default function ProspectionPage() {
     if (filterScore !== null && (l.score ?? 0) < filterScore) return false;
     return true;
   });
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filteredLeads.length / ITEMS_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedLeads = filteredLeads.slice(
+    (safePage - 1) * ITEMS_PER_PAGE,
+    safePage * ITEMS_PER_PAGE,
+  );
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterSource, filterScore]);
 
   if (loading) {
     return (
@@ -464,52 +481,83 @@ export default function ProspectionPage() {
       </AnimatePresence>
 
       {/* Filters */}
-      <div className="flex items-center gap-4 overflow-x-auto pb-1">
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 shrink-0 text-tk-text-faint" />
-          <div className="flex gap-1">
-            {["TOUS", ...Object.keys(SOURCE_LABELS)].map((s) => (
-              <Button
-                key={s}
-                variant={filterSource === s ? "default" : "outline"}
-                size="sm"
-                onClick={() => setFilterSource(s)}
-                className={cn(
-                  "text-xs whitespace-nowrap",
-                  filterSource !== s && "border-tk-border bg-tk-surface text-tk-text-muted hover:bg-tk-hover hover:text-tk-text-secondary",
-                )}
-              >
-                {s === "TOUS" ? `Tous (${leads.length})` : (SOURCE_LABELS[s]?.label ?? s)}
-              </Button>
-            ))}
+      <div className="glass rounded-2xl p-4 space-y-3">
+        {/* Sources — wrapped grid */}
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <Filter className="h-3.5 w-3.5 text-tk-text-faint" />
+            <span className="text-xs font-medium text-tk-text-muted">Sources</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {["TOUS", ...Object.keys(SOURCE_LABELS)].map((s) => {
+              const cfg = SOURCE_LABELS[s];
+              const Icon = cfg?.icon;
+              const isActive = filterSource === s;
+              const count = s === "TOUS"
+                ? leads.length
+                : leads.filter((l) => l.source === s).length;
+              return (
+                <button
+                  key={s}
+                  onClick={() => setFilterSource(s)}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs transition-colors",
+                    isActive
+                      ? "border-blue-500/30 bg-blue-500/10 text-tk-text font-medium"
+                      : "border-tk-border bg-tk-surface text-tk-text-muted hover:bg-tk-hover hover:text-tk-text-secondary",
+                  )}
+                >
+                  {Icon && (
+                    <div className={cn("rounded p-0.5", isActive ? "text-blue-500" : cfg?.color)}>
+                      <Icon className="h-3 w-3" />
+                    </div>
+                  )}
+                  {s === "TOUS" ? "Tous" : cfg?.label ?? s}
+                  <span className={cn(
+                    "ml-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-none",
+                    isActive ? "bg-blue-500/20 text-blue-400" : "bg-tk-hover text-tk-text-faint",
+                  )}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
-        <div className="h-4 w-px bg-tk-border" />
-        <div className="flex items-center gap-2">
-          <Star className="h-4 w-4 text-tk-text-faint" />
+
+        {/* Score — inline */}
+        <div className="flex items-center gap-3 pt-1 border-t border-tk-border">
+          <div className="flex items-center gap-2">
+            <Star className="h-3.5 w-3.5 text-tk-text-faint" />
+            <span className="text-xs font-medium text-tk-text-muted">Score min.</span>
+          </div>
           <div className="flex gap-1">
             {[null, 3, 4, 5].map((score) => (
-              <Button
+              <button
                 key={score ?? "all"}
-                variant={filterScore === score ? "default" : "outline"}
-                size="sm"
                 onClick={() => setFilterScore(score)}
                 className={cn(
-                  "text-xs whitespace-nowrap",
-                  filterScore !== score && "border-tk-border bg-tk-surface text-tk-text-muted hover:bg-tk-hover hover:text-tk-text-secondary",
+                  "rounded-lg border px-2.5 py-1.5 text-xs transition-colors",
+                  filterScore === score
+                    ? "border-amber-500/30 bg-amber-500/10 text-tk-text font-medium"
+                    : "border-tk-border bg-tk-surface text-tk-text-muted hover:bg-tk-hover",
                 )}
               >
                 {score === null ? "Tous" : `${score}+ ★`}
-              </Button>
+              </button>
             ))}
           </div>
+          <span className="ml-auto text-xs text-tk-text-faint">
+            {filteredLeads.length} résultat{filteredLeads.length !== 1 ? "s" : ""}
+          </span>
         </div>
       </div>
 
       {/* Results table */}
-      <div className="glass rounded-2xl overflow-hidden">
+      <div className="glass rounded-2xl overflow-hidden flex flex-col">
+        <div className="overflow-y-auto overflow-x-auto max-h-[calc(100vh-420px)] min-h-[380px] scroll-smooth [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-tk-border [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-tk-text-faint/40">
         <Table>
-          <TableHeader>
+          <TableHeader className="sticky top-0 z-10 bg-tk-surface/95 backdrop-blur-sm">
             <TableRow className="border-tk-border hover:bg-transparent">
               <TableHead>Score</TableHead>
               <TableHead>Entreprise / Contact</TableHead>
@@ -522,7 +570,7 @@ export default function ProspectionPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredLeads.map((lead) => {
+            {paginatedLeads.map((lead) => {
               const sourceCfg = SOURCE_LABELS[lead.source];
               const SourceIcon = sourceCfg?.icon ?? Globe;
               return (
@@ -601,7 +649,7 @@ export default function ProspectionPage() {
                 </TableRow>
               );
             })}
-            {filteredLeads.length === 0 && (
+            {paginatedLeads.length === 0 && (
               <TableRow>
                 <TableCell colSpan={8} className="py-12 text-center">
                   <div className="flex flex-col items-center gap-3">
@@ -623,6 +671,49 @@ export default function ProspectionPage() {
             )}
           </TableBody>
         </Table>
+        </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between border-t border-tk-border px-4 py-3">
+            <p className="text-xs text-tk-text-faint">
+              {(safePage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(safePage * ITEMS_PER_PAGE, filteredLeads.length)} sur {filteredLeads.length}
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setCurrentPage(1)}
+                disabled={safePage === 1}
+                className="rounded-lg border border-tk-border px-2 py-1.5 text-xs text-tk-text-muted hover:bg-tk-hover disabled:opacity-30 disabled:pointer-events-none"
+              >
+                1
+              </button>
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={safePage === 1}
+                className="rounded-lg border border-tk-border p-1.5 text-tk-text-muted hover:bg-tk-hover disabled:opacity-30 disabled:pointer-events-none"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </button>
+              <span className="px-3 py-1.5 text-xs font-medium text-tk-text">
+                {safePage} / {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={safePage === totalPages}
+                className="rounded-lg border border-tk-border p-1.5 text-tk-text-muted hover:bg-tk-hover disabled:opacity-30 disabled:pointer-events-none"
+              >
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={safePage === totalPages}
+                className="rounded-lg border border-tk-border px-2 py-1.5 text-xs text-tk-text-muted hover:bg-tk-hover disabled:opacity-30 disabled:pointer-events-none"
+              >
+                {totalPages}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Distribution by role & department */}

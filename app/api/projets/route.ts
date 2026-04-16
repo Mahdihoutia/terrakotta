@@ -81,6 +81,18 @@ const createProjetSchema = z.object({
   dateDebut: z.string().datetime({ offset: true }).nullable().optional(),
   dateFin: z.string().datetime({ offset: true }).nullable().optional(),
   clientId: z.string().min(1, "Le client est requis"),
+  documentIds: z.array(z.string()).optional(),
+  aides: z
+    .array(
+      z.object({
+        fiche: z.string(),
+        nom: z.string(),
+        kwhCumac: z.number().nonnegative(),
+        prixUnitaire: z.number().nonnegative().default(8),
+        montant: z.number().nonnegative(),
+      }),
+    )
+    .optional(),
 });
 
 /** POST /api/projets — Créer un nouveau projet */
@@ -122,9 +134,30 @@ export async function POST(request: Request) {
       dateDebut: data.dateDebut ? new Date(data.dateDebut) : null,
       dateFin: data.dateFin ? new Date(data.dateFin) : null,
       clientId: data.clientId,
+      aides:
+        data.aides && data.aides.length > 0
+          ? {
+              create: data.aides.map((a) => ({
+                type: "CEE" as const,
+                nom: a.nom,
+                fiche: a.fiche,
+                kwhCumac: a.kwhCumac,
+                prixUnitaire: a.prixUnitaire,
+                montant: a.montant,
+              })),
+            }
+          : undefined,
     },
     include: includeRelations,
   });
+
+  // Link documents to the newly created project (optional)
+  if (data.documentIds && data.documentIds.length > 0) {
+    await prisma.document.updateMany({
+      where: { id: { in: data.documentIds } },
+      data: { projetId: projet.id },
+    });
+  }
 
   return NextResponse.json(serializeProjet(projet), { status: 201 });
 }

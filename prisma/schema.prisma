@@ -102,6 +102,7 @@ model Projet {
   jalons         Jalon[]
   devis          Devis[]
   aides          Aide[]
+  documents      Document[]
   createdAt      DateTime       @default(now()) @map("created_at")
   updatedAt      DateTime       @updatedAt @map("updated_at")
 
@@ -167,6 +168,10 @@ model Aide {
   type          AideType
   nom           String
   montant       Decimal?
+  // CEE fields
+  fiche         String?    // Ex: BAT-TH-134, BAR-TH-171
+  kwhCumac      Decimal?   @map("kwh_cumac")
+  prixUnitaire  Decimal?   @map("prix_unitaire") // €/MWh cumac
   numeroDossier String?    @map("numero_dossier")
   statut        AideStatut @default(EN_ATTENTE)
   dateDepot     DateTime?  @map("date_depot")
@@ -209,6 +214,8 @@ model Document {
   statut        DocumentStatut @default(BROUILLON)
   clientNom     String?        @map("client_nom")
   donnees       String?        // JSON stringified form values
+  projetId      String?        @map("projet_id")
+  projet        Projet?        @relation(fields: [projetId], references: [id], onDelete: SetNull)
   createdAt     DateTime       @default(now()) @map("created_at")
   updatedAt     DateTime       @updatedAt @map("updated_at")
 
