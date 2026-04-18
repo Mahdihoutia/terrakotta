@@ -2912,6 +2912,63 @@ function calculer139(v: FormValues): Calcul139Result | null {
   return { chaleurRejetee, chaleurRecuperee, consoEvitee, gainPct, reductionCo2, economiEuros, dureeRetour, detailMethode };
 }
 
+// ─── Textes par défaut pour 3 champs rédactionnels ──────────────
+// Pré-remplissage générique cohérent, librement éditable par l'utilisateur.
+
+function getDefaultTexts(ficheId: FicheId): {
+  justification_choix: string;
+  detail_calcul: string;
+  conclusion: string;
+} {
+  const fiche = FICHES.find((f) => f.id === ficheId);
+  const operation = fiche ? `${fiche.titre} — ${fiche.sousTitre}` : "l'opération";
+  const shortOp = fiche ? fiche.sousTitre : "l'opération projetée";
+
+  const justification_choix = `Le matériel retenu pour l'opération « ${shortOp} » a été sélectionné au regard des critères suivants :
+
+• Conformité stricte aux exigences techniques de la fiche d'opération standardisée ${fiche?.titre ?? "applicable"} (performances minimales, marquage CE, certifications).
+• Adéquation du dimensionnement aux besoins réels du bâtiment identifiés en phase d'audit (déperditions calculées, puissance utile, profils d'appel de puissance).
+• Pérennité et qualité de la filière d'installation : équipement disponible auprès de fabricants reconnus, pièces détachées garanties, réseau SAV structuré.
+• Optimisation du coût global sur la durée de vie (CAPEX + OPEX + maintenance), en cohérence avec le budget de l'opération et les aides mobilisables.
+
+Les références exactes du matériel, ses caractéristiques techniques et les fiches constructeur sont fournies en annexe du présent dossier.`;
+
+  const detail_calcul = `Méthode de calcul du gain d'énergie pour l'opération « ${shortOp} » :
+
+1. Données d'entrée
+   – Caractéristiques du bâtiment : surface chauffée/refroidie, zone climatique, DJU de référence.
+   – Situation initiale : rendement ou performance saisonnière du système existant, consommations mesurées (factures) ou estimées (DPE, audit).
+   – Situation projetée : performances contractuelles de l'équipement retenu (SCOP, SEER, coefficient U après travaux, R des isolants, etc.).
+
+2. Méthodologie
+   Le gain énergétique est établi par différence entre la consommation de référence (situation initiale) et la consommation prévisionnelle après mise en œuvre des travaux, selon la méthode de la fiche ${fiche?.titre ?? "CEE applicable"} et les normes en vigueur (EN 15232 / EN 15316 / RE2020 selon les cas).
+
+3. Résultats
+   – Consommation avant travaux : [à compléter] kWh EF/an
+   – Consommation après travaux : [à compléter] kWh EF/an
+   – Gain annuel en énergie finale : [à compléter] MWh/an soit [à compléter] % d'économie.
+
+4. Hypothèses et limites
+   – Usage normal des occupants, sans modification des consignes de confort.
+   – DJU moyen décennal retenu pour la zone climatique concernée.
+   – Conversion énergie finale ↔ énergie primaire selon les coefficients réglementaires en vigueur.
+   – Tolérance calculatoire estimée à ± 10 % compte tenu des incertitudes de mesure et de comportement.`;
+
+  const conclusion = `Au terme de l'étude de dimensionnement, le bureau d'étude confirme la faisabilité technique et la pertinence énergétique de l'opération ${operation}.
+
+Le dimensionnement retenu est cohérent avec les besoins du bâtiment, le matériel sélectionné satisfait aux exigences de la fiche d'opération standardisée ${fiche?.titre ?? "applicable"}, et le gain énergétique calculé dépasse le seuil minimal ouvrant droit à la valorisation CEE.
+
+Le bureau d'étude émet un avis technique favorable à la mise en œuvre des travaux, sous les réserves d'usage suivantes :
+• respect des règles de l'art et des DTU en vigueur lors de la réalisation ;
+• qualification RGE de l'entreprise d'installation pour la famille de travaux concernée ;
+• mise en service conforme aux prescriptions du fabricant, avec procès-verbal de réception ;
+• mise en place d'un contrat de maintenance préventive assurant la pérennité des performances dans le temps.
+
+Les éléments justificatifs (photographies datées, notes de calcul, fiches techniques, attestations d'assurance décennale, factures) constituent le dossier de preuve à archiver pendant la durée réglementaire de 9 ans au titre du dispositif des Certificats d'Économies d'Énergie.`;
+
+  return { justification_choix, detail_calcul, conclusion };
+}
+
 const QUESTIONNAIRES: Record<FicheId, QuestionSection[]> = {
   "BAT-TH-134": QUESTIONNAIRE_134,
   "BAT-TH-163": QUESTIONNAIRE_163,
@@ -3128,6 +3185,26 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
     setValues((prev) => ({ ...prev, [id]: value }));
     setSaved(false);
   }
+
+  // ─── Pré-remplissage éditable des 3 champs rédactionnels ─────
+  // Quand une fiche est choisie, on injecte un texte générique cohérent
+  // pour justification_choix / detail_calcul / conclusion — uniquement
+  // si le champ est vide (on n'écrase jamais la saisie de l'utilisateur).
+  useEffect(() => {
+    if (!selectedFiche) return;
+    const defaults = getDefaultTexts(selectedFiche);
+    setValues((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      for (const key of ["justification_choix", "detail_calcul", "conclusion"] as const) {
+        if (!next[key] || !next[key].trim()) {
+          next[key] = defaults[key];
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [selectedFiche]);
 
   // ─── Auto-calcul BAT-TH-134 ──────────────────────────────────
   const calcul134 = selectedFiche === "BAT-TH-134" ? calculer134(values) : null;
