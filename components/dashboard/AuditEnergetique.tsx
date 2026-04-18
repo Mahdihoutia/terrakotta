@@ -90,8 +90,22 @@ const SECTIONS: QuestionSection[] = [
     description: "Identification du bâtiment et du commanditaire",
     fields: [
       { id: "ref_audit", label: "Référence de l'audit", type: "text", placeholder: "Ex: AU-2026-XXX", required: true },
+      {
+        id: "type_audit",
+        label: "Type d'audit",
+        type: "select",
+        required: true,
+        options: [
+          "Tertiaire / Industrie — NF EN 16247-1/2 (Décret Tertiaire, DEET)",
+          "Résidentiel collectif — audit énergétique réglementaire (logements ≥ 2 lots)",
+        ],
+        help: "Conditionne les référentiels applicables et le niveau de détail attendu (étanchéité à l'air, ACV, Décret Tertiaire).",
+        colSpan: 2,
+      },
+      { id: "regime_reglementaire", label: "Régime réglementaire applicable", type: "select", options: ["Audit énergétique obligatoire (Code de l'énergie L233-1, entreprises > 250 sal.)", "Décret Tertiaire (DEET) — bât. > 1000 m²", "Audit incitatif (aide, CEE, MPR Copro)", "Audit volontaire"] },
       { id: "date_visite", label: "Date de visite", type: "date", required: true },
       { id: "redacteur", label: "Auditeur / Rédacteur", type: "text", placeholder: "Nom et qualification", required: true },
+      { id: "redacteur_qualif", label: "Qualification de l'auditeur", type: "select", options: ["OPQIBI 1905 — Audit énergétique bâtiment tertiaire", "OPQIBI 1906 — Audit énergétique bâtiment industriel", "OPQIBI 0901 — Étude thermique réglementaire", "Qualibat 8731", "Autre"], help: "Obligatoire pour les audits réglementaires et incitatifs." },
       { id: "client_nom", label: "Bénéficiaire", type: "text", placeholder: "Nom complet ou raison sociale", required: true },
       { id: "client_telephone", label: "Téléphone", type: "text", placeholder: "06 XX XX XX XX" },
       { id: "client_email", label: "Email", type: "text", placeholder: "email@exemple.fr" },
@@ -136,7 +150,31 @@ const SECTIONS: QuestionSection[] = [
     ],
   },
   {
-    titre: "4. Systèmes énergétiques",
+    titre: "4. Étanchéité à l'air & apports",
+    description: "Mesures d'infiltrométrie et bilan d'apports solaires / internes (EN 13829 / EN ISO 52016)",
+    fields: [
+      { id: "test_infiltrometrie", label: "Test d'infiltrométrie réalisé ?", type: "select", options: ["Non réalisé — valeurs estimées", "Oui — par tiers certifié Qualibat 8721", "Oui — mesure de réception (livraison)", "Oui — audit a posteriori"], required: true },
+      { id: "n50", label: "n50 — taux de renouvellement à 50 Pa", type: "number", placeholder: "Ex: 3.5", unit: "vol/h", help: "Cible RT2012/RE2020 : ≤ 0,6 (indiv.) / ≤ 1,0 (collectif)" },
+      { id: "q4pa_surf", label: "Q4Pa-surf — perméabilité", type: "number", placeholder: "Ex: 1.2", unit: "m³/(h·m²)", help: "Référence RT2012 : 1,0 indiv. — 1,7 collectif / tertiaire" },
+      { id: "date_test_infiltro", label: "Date du test", type: "date" },
+      { id: "operateur_infiltro", label: "Opérateur mesure", type: "text", placeholder: "Nom, n° Qualibat 8721" },
+      { id: "defauts_identifies", label: "Défauts d'étanchéité identifiés", type: "textarea", colSpan: 2, placeholder: "Jonctions menuiseries, passages de gaines, trappe de comble, boîtiers électriques..." },
+      { id: "surface_vitree_totale", label: "Surface vitrée totale", type: "number", placeholder: "Ex: 35", unit: "m²", required: true },
+      { id: "surface_vitree_sud", label: "Dont orientation Sud", type: "number", placeholder: "Ex: 18", unit: "m²", help: "Apports solaires majeurs en saison de chauffe" },
+      { id: "surface_vitree_est", label: "Dont orientation Est", type: "number", placeholder: "Ex: 6", unit: "m²" },
+      { id: "surface_vitree_ouest", label: "Dont orientation Ouest", type: "number", placeholder: "Ex: 6", unit: "m²", help: "Attention risque de surchauffe estivale" },
+      { id: "surface_vitree_nord", label: "Dont orientation Nord", type: "number", placeholder: "Ex: 5", unit: "m²" },
+      { id: "facteur_solaire_g", label: "Facteur solaire moyen (g)", type: "number", placeholder: "Ex: 0.55", unit: "—", help: "Double vitrage standard ≈ 0,60 ; triple ≈ 0,50 ; contrôle solaire ≈ 0,35" },
+      { id: "masques_proches", label: "Masques solaires proches (débords, loggia, brise-soleil)", type: "select", options: ["Aucun", "Casquettes fixes", "Brise-soleil orientables", "Loggia / retrait", "Stores intérieurs"] },
+      { id: "masques_lointains", label: "Masques lointains (bâtiments, relief, végétation)", type: "textarea", colSpan: 2, placeholder: "Décrire l'impact par orientation (hauteur angulaire des obstacles, saisons concernées)" },
+      { id: "apports_internes_occup", label: "Apports internes — densité d'occupation", type: "number", placeholder: "Ex: 12", unit: "m²/occ.", help: "Tertiaire bureaux : 10–15 m²/pers. ; enseignement : 2–3 m²/pers." },
+      { id: "apports_internes_equip", label: "Apports internes — équipements", type: "number", placeholder: "Ex: 15", unit: "W/m²", help: "Bureaux : 10–20 W/m² (PC + éclairage) ; commerces : 25–40 W/m²" },
+      { id: "scenario_occupation", label: "Scénario d'occupation", type: "select", options: ["Bureaux 8h-18h, 5j/7", "Occupation continue 24h/24", "Intermittence forte (scolaire, hôtellerie)", "Saisonnière", "Autre"] },
+      { id: "synthese_apports", label: "Synthèse des gains gratuits et préconisations", type: "textarea", colSpan: 2, placeholder: "Exploitation des apports solaires hivernaux, protections estivales à mettre en place, risques de surchauffe identifiés..." },
+    ],
+  },
+  {
+    titre: "5. Systèmes énergétiques",
     description: "Chauffage, eau chaude sanitaire, ventilation, climatisation",
     fields: [
       { id: "chauffage_type", label: "Type de chauffage", type: "select", required: true, options: ["Chaudière gaz", "Chaudière fioul", "Chaudière bois/granulés", "PAC air/eau", "PAC air/air", "Convecteurs électriques", "Radiateurs électriques", "Poêle à bois", "Réseau de chaleur", "Autre"] },
@@ -160,7 +198,7 @@ const SECTIONS: QuestionSection[] = [
     ],
   },
   {
-    titre: "5. Consommations et étiquettes énergétiques",
+    titre: "6. Consommations et étiquettes énergétiques",
     description: "Bilan énergétique annuel et classement DPE/GES officiels (Arrêté 31 mars 2021)",
     fields: [
       { id: "conso_totale", label: "Consommation totale énergie primaire", type: "number", placeholder: "Ex: 22000", unit: "kWhEP/an", required: true },
@@ -174,7 +212,7 @@ const SECTIONS: QuestionSection[] = [
     ],
   },
   {
-    titre: "6. Répartition des consommations par poste",
+    titre: "7. Répartition des consommations par poste",
     description: "Ventilation des consommations selon les 5 postes réglementaires (méthodologie 3CL-DPE)",
     fields: [
       { id: "poste_chauffage", label: "Chauffage", type: "number", placeholder: "Ex: 12000", unit: "kWh/an", required: true, help: "Poste 1 — généralement 50 à 75 % du total" },
@@ -187,7 +225,7 @@ const SECTIONS: QuestionSection[] = [
     ],
   },
   {
-    titre: "7. Bilan thermique — déperditions par paroi",
+    titre: "8. Bilan thermique — déperditions par paroi",
     description: "Part relative des déperditions pour chaque élément de l'enveloppe (méthode Th-BCE)",
     fields: [
       { id: "deperd_murs", label: "Murs extérieurs", type: "number", placeholder: "Ex: 25", unit: "%", required: true, help: "Généralement 20-25 % en l'absence d'ITE/ITI" },
@@ -202,7 +240,33 @@ const SECTIONS: QuestionSection[] = [
     ],
   },
   {
-    titre: "8. Scénarios de rénovation",
+    titre: "9. Bilan carbone — ACV et scopes 1/2/3",
+    description: "Empreinte carbone du bâtiment selon les 3 scopes GHG Protocol + ACV matériaux (RE2020 / EN 15978)",
+    fields: [
+      { id: "acv_perimetre", label: "Périmètre du bilan", type: "select", required: true, options: ["Scopes 1+2 (énergie directe + électricité)", "Scopes 1+2+3 partiel", "Scopes 1+2+3 complet", "ACV bâtiment complète (EN 15978 — tous modules A→D)"] },
+      { id: "acv_annee_ref", label: "Année de référence du bilan", type: "number", placeholder: "Ex: 2025" },
+      { id: "acv_facteurs_source", label: "Source des facteurs d'émission", type: "select", options: ["Base Carbone ADEME (à jour)", "Base INIES — FDES produits", "Facteurs Bilan Carbone V8", "RE2020 — fiche de données environnementales", "Mixte"] },
+      { id: "scope1_combustibles", label: "Scope 1 — Combustion directe (chauffage, ECS)", type: "number", placeholder: "Ex: 12.5", unit: "tCO₂e/an", help: "Gaz naturel : 0,204 kgCO₂e/kWh PCI ; fioul : 0,272 ; propane : 0,230" },
+      { id: "scope1_fluides", label: "Scope 1 — Fuites fluides frigorigènes", type: "number", placeholder: "Ex: 0.8", unit: "tCO₂e/an", help: "Taux de fuite × PRG (R-410A = 2 088 ; R-32 = 675 ; R-744 = 1)" },
+      { id: "scope1_mobilite", label: "Scope 1 — Véhicules de service / flotte", type: "number", placeholder: "Ex: 1.2", unit: "tCO₂e/an" },
+      { id: "scope2_electricite", label: "Scope 2 — Électricité consommée", type: "number", placeholder: "Ex: 4.2", unit: "tCO₂e/an", help: "Mix France moyen 2024 : ~60 gCO₂e/kWh (Base Carbone)" },
+      { id: "scope2_reseaux", label: "Scope 2 — Réseau de chaleur / froid urbain", type: "number", placeholder: "Ex: 0", unit: "tCO₂e/an", help: "Facteur d'émission spécifique au réseau (arrêté DPE réseaux)" },
+      { id: "scope3_amont_energie", label: "Scope 3 — Amont des énergies (extraction, transport)", type: "number", placeholder: "Ex: 2.1", unit: "tCO₂e/an" },
+      { id: "scope3_deplacements", label: "Scope 3 — Déplacements domicile-travail / visiteurs", type: "number", placeholder: "Ex: 8.5", unit: "tCO₂e/an" },
+      { id: "scope3_dechets", label: "Scope 3 — Déchets d'activité", type: "number", placeholder: "Ex: 0.6", unit: "tCO₂e/an" },
+      { id: "scope3_achats", label: "Scope 3 — Achats de biens & services", type: "number", placeholder: "Ex: 5.4", unit: "tCO₂e/an" },
+      { id: "acv_materiaux_a13", label: "Matériaux — Production (A1-A3)", type: "number", placeholder: "Ex: 25", unit: "kgCO₂e/m²·an", help: "ACV bâtiment — matériaux rénovation amortis sur durée de vie" },
+      { id: "acv_travaux_a45", label: "Chantier — Transport & mise en œuvre (A4-A5)", type: "number", placeholder: "Ex: 3", unit: "kgCO₂e/m²·an" },
+      { id: "acv_exploitation_b", label: "Exploitation (B — usage)", type: "number", placeholder: "Ex: 12", unit: "kgCO₂e/m²·an" },
+      { id: "acv_fin_de_vie_cd", label: "Fin de vie & bénéfices (C+D)", type: "number", placeholder: "Ex: 2", unit: "kgCO₂e/m²·an" },
+      { id: "total_ges_annuel", label: "Total GES annuel (scopes 1+2+3)", type: "number", placeholder: "Ex: 35.3", unit: "tCO₂e/an", required: true },
+      { id: "intensite_carbone_m2", label: "Intensité carbone par m²", type: "number", placeholder: "Ex: 42", unit: "kgCO₂e/m²·an", help: "Décret Tertiaire — seuil indicatif bureaux : ≤ 30 kgCO₂e/m²·an" },
+      { id: "reduction_visee_2030", label: "Réduction visée à horizon 2030", type: "number", placeholder: "Ex: 40", unit: "%", help: "SNBC : −40 % vs 2015 (tertiaire)" },
+      { id: "strategie_decarbonation", label: "Stratégie de décarbonation", type: "textarea", colSpan: 2, placeholder: "Leviers : sortie des énergies fossiles (gaz/fioul), électrification, EnR autoconsommées, optimisation des usages, choix matériaux biosourcés/recyclés, sobriété..." },
+    ],
+  },
+  {
+    titre: "10. Scénarios de rénovation",
     description: "Bouquets de travaux proposés avec gains et coûts estimés",
     fields: [
       {
@@ -222,7 +286,7 @@ const SECTIONS: QuestionSection[] = [
     ],
   },
   {
-    titre: "9. Plan de financement et aides",
+    titre: "11. Plan de financement et aides",
     description: "Aides mobilisables et reste à charge pour chaque scénario",
     fields: [
       { id: "mprenov_montant", label: "MaPrimeRénov' estimée", type: "number", placeholder: "Ex: 10000", unit: "€", help: "Selon revenus et travaux — barème en vigueur" },
@@ -238,7 +302,7 @@ const SECTIONS: QuestionSection[] = [
     ],
   },
   {
-    titre: "10. Conclusion et recommandations",
+    titre: "12. Conclusion et recommandations",
     description: "Synthèse de l'audit et avis de l'auditeur",
     fields: [
       { id: "scenario_recommande", label: "Scénario recommandé", type: "select", required: true, options: ["Scénario 1 — Rénovation par étapes", "Scénario 2 — Rénovation globale performante"] },
@@ -433,8 +497,8 @@ async function generatePDF(sections: QuestionSection[], values: FormValues, sect
     }
 
     // ─── Diagrammes pro selon la section ───────────────────
-    // Section 5 (index 4) — étiquettes DPE + GES officielles
-    if (sIdx === 4) {
+    // Section 6 (index 5) — étiquettes DPE + GES officielles
+    if (sIdx === 5) {
       const dpeLetter = (values.dpe_actuel || "").charAt(0) || "G";
       const gesLetter = (values.ges_actuel || "").charAt(0) || "G";
       const kwhVal = values.conso_par_m2 ? `${values.conso_par_m2} kWhEP/m²/an` : "—";
@@ -448,8 +512,8 @@ async function generatePDF(sections: QuestionSection[], values: FormValues, sect
       });
     }
 
-    // Section 6 (index 5) — répartition consommations par poste
-    if (sIdx === 5) {
+    // Section 7 (index 6) — répartition consommations par poste
+    if (sIdx === 6) {
       const postes = [
         { label: "Chauffage",       kwh: parseFloat(values.poste_chauffage || "0"),       color: [37, 99, 235]   as [number, number, number] },
         { label: "ECS",             kwh: parseFloat(values.poste_ecs || "0"),             color: [14, 165, 233]  as [number, number, number] },
@@ -464,8 +528,8 @@ async function generatePDF(sections: QuestionSection[], values: FormValues, sect
       }
     }
 
-    // Section 7 (index 6) — déperditions par paroi
-    if (sIdx === 6) {
+    // Section 8 (index 7) — déperditions par paroi
+    if (sIdx === 7) {
       const items = [
         { label: "Murs extérieurs",    pct: parseFloat(values.deperd_murs || "0") },
         { label: "Toiture / combles",  pct: parseFloat(values.deperd_toiture || "0") },
@@ -481,8 +545,27 @@ async function generatePDF(sections: QuestionSection[], values: FormValues, sect
       }
     }
 
-    // Section 10 (index 9) — comparaison DPE avant / après
-    if (sIdx === 9) {
+    // Section 9 (index 8) — bilan carbone : répartition par scope
+    if (sIdx === 8) {
+      const scopes = [
+        { label: "Scope 1 — Combustion", kwh: parseFloat(values.scope1_combustibles || "0"), color: [220, 38, 38]  as [number, number, number] },
+        { label: "Scope 1 — Fluides",    kwh: parseFloat(values.scope1_fluides || "0"),      color: [244, 114, 22] as [number, number, number] },
+        { label: "Scope 1 — Mobilité",   kwh: parseFloat(values.scope1_mobilite || "0"),     color: [234, 179, 8]  as [number, number, number] },
+        { label: "Scope 2 — Électricité",kwh: parseFloat(values.scope2_electricite || "0"),  color: [37, 99, 235]  as [number, number, number] },
+        { label: "Scope 2 — Réseaux",    kwh: parseFloat(values.scope2_reseaux || "0"),      color: [14, 165, 233] as [number, number, number] },
+        { label: "Scope 3 — Amont énergie", kwh: parseFloat(values.scope3_amont_energie || "0"), color: [139, 92, 246] as [number, number, number] },
+        { label: "Scope 3 — Déplacements", kwh: parseFloat(values.scope3_deplacements || "0"), color: [168, 85, 247] as [number, number, number] },
+        { label: "Scope 3 — Déchets",    kwh: parseFloat(values.scope3_dechets || "0"),      color: [107, 91, 80]  as [number, number, number] },
+        { label: "Scope 3 — Achats",     kwh: parseFloat(values.scope3_achats || "0"),       color: [156, 163, 175] as [number, number, number] },
+      ];
+      if (scopes.some((s) => s.kwh > 0)) {
+        checkPage(60);
+        y = drawConsoBreakdown(doc, y + 2, scopes, { title: "Répartition des émissions par scope (tCO₂e/an)" });
+      }
+    }
+
+    // Section 12 (index 11) — comparaison DPE avant / après
+    if (sIdx === 11) {
       const dpeBefore = (values.dpe_actuel || "").charAt(0);
       const dpeAfter  = (values.dpe_projete || "").charAt(0);
       if (dpeBefore && dpeAfter) {
@@ -743,7 +826,7 @@ export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Aperçu live DPE + GES au-dessus de la section Consommations */}
-                  {activeSection === 4 && (dpeLive !== "—" || gesLive !== "—") && (
+                  {activeSection === 5 && (dpeLive !== "—" || gesLive !== "—") && (
                     <div className="grid gap-3 sm:grid-cols-2">
                       <EnergyLabelUI
                         kind="DPE"

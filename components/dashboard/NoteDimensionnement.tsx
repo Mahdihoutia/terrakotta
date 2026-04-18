@@ -908,6 +908,7 @@ const QUESTIONNAIRE_163: QuestionSection[] = [
       { id: "deperditions_par_m2", label: "Déperditions rapportées à la surface", type: "number", placeholder: "Ex: 108", unit: "W/m²", help: "= Déperditions totales / surface chauffée" },
       { id: "coeff_G", label: "Coefficient G (ou Ubât)", type: "number", placeholder: "Ex: 1.2", unit: "W/m³.K", help: "Coefficient de déperdition volumique global" },
       { id: "besoin_chauffage", label: "Besoins annuels de chauffage", type: "number", placeholder: "Ex: 185", unit: "MWh/an", required: true },
+      { id: "part_apports_gratuits", label: "Apports gratuits retenus (solaire + internes)", type: "number", placeholder: "Ex: 15", unit: "%", help: "Réduction forfaitaire des besoins bruts. Tertiaire bureaux ≈ 15 % ; logement ≈ 10–20 %. Max 35 %." },
       { id: "besoin_ecs", label: "Besoins annuels ECS (si PAC assure l'ECS)", type: "number", placeholder: "Ex: 25", unit: "MWh/an" },
       { id: "taux_couverture", label: "Taux de couverture PAC", type: "number", placeholder: "Ex: 90", unit: "%", required: true, help: "Part des besoins couverts par la PAC. Recommandé ≥ 80%" },
       {
@@ -2507,19 +2508,42 @@ const RENDEMENTS_GENERATEURS: Record<string, number> = {
   "Autre": 0.85,
 };
 
-// Facteur d'émission CO₂ (kg CO₂ / kWh final)
+// Facteur d'émission CO₂ (kg CO₂e / kWh EF)
+// Sources : arrêté DPE 31 mars 2021 (art. R.126-17), Base Carbone ADEME 2024.
 const FACTEUR_CO2: Record<string, number> = {
-  "Gaz naturel": 0.227,
-  "Fioul domestique": 0.324,
-  "Charbon": 0.385,
-  "Électricité (effet Joule)": 0.0569,
-  "GPL": 0.272,
-  "Réseau de chaleur": 0.180,
-  "Bois": 0.030,
+  "Gaz naturel": 0.227,        // Base Carbone (amont + combustion)
+  "Fioul domestique": 0.324,   // Arrêté DPE 2021
+  "Charbon": 0.385,            // Base Carbone
+  "Électricité (effet Joule)": 0.079, // Arrêté DPE 2021 — usage chauffage (ex 0.0569 obsolète)
+  "Électricité (usage ECS)": 0.065,   // Arrêté DPE 2021 — usage ECS
+  "Électricité (mix moyen)": 0.060,   // Base Carbone ADEME 2024 (mix annuel)
+  "GPL": 0.272,                // Base Carbone
+  "Réseau de chaleur": 0.180,  // Moyenne France (à ajuster selon réseau — arrêté DPE réseaux)
+  "Bois": 0.030,               // Base Carbone (combustion nette, biogène court)
   "Autre": 0.200,
 };
 
-const PRIX_ELEC_KWH = 0.15; // €/kWh moyen tertiaire
+// Facteur CO₂ de l'électricité pour les calculs post-travaux (PAC, récup).
+// = arrêté DPE 2021 usage chauffage.
+const FACTEUR_CO2_ELEC_CHAUFFAGE = 0.079;
+
+// Prix moyens HT tertiaire France 2025-2026 (€/kWh EF)
+// Sources : Pégase SDES, observatoire CEREN, FNCCR.
+const PRIX_ELEC_KWH = 0.18;   // tertiaire moyen (fourchette 0.15–0.22)
+const PRIX_GAZ_KWH  = 0.09;   // gaz naturel B2I (fourchette 0.07–0.12)
+const PRIX_FIOUL_KWH = 0.11;  // fioul domestique
+const PRIX_PROPANE_KWH = 0.14;
+const PRIX_RESEAU_CHALEUR_KWH = 0.10;
+
+function prixEnergie(source: string): number {
+  const s = source.toLowerCase();
+  if (s.includes("lectric")) return PRIX_ELEC_KWH;
+  if (s.includes("fioul")) return PRIX_FIOUL_KWH;
+  if (s.includes("propane") || s.includes("gpl")) return PRIX_PROPANE_KWH;
+  if (s.includes("seau de chaleur")) return PRIX_RESEAU_CHALEUR_KWH;
+  if (s.includes("gaz")) return PRIX_GAZ_KWH;
+  return PRIX_GAZ_KWH; // défaut gaz
+}
 
 // ─── Calculs BAT-TH-134 — HP Flottante ─────────────────────────
 
@@ -2709,8 +2733,20 @@ function calculer163(v: FormValues): Calcul163Result | null {
   const coeffG = (deperditionsTotales * 1000) / (volumeChauffe * deltaT);
   const deperditionsParM2 = (deperditionsTotales * 1000) / surfaceChauffee;
 
-  // Besoins de chauffage (MWh/an)
-  const besoinChauffage = (coeffG * volumeChauffe * zoneData.dju * 24) / 1e6;
+  // Besoins bruts de chauffage (MWh/an) — intégrale G×V sur DJU base 18°C.
+  // Formule : Besoin_brut = G × V × DJU × 24 h/jour / 1e6 → MWh/an
+  const besoinBrut = (coeffG * volumeChauffe * zoneData.dju * 24) / 1e6;
+
+  // Prise en compte des apports gratuits (solaires + internes).
+  // Méthode simplifiée inspirée de EN ISO 52016 : un coefficient d'utilisation
+  // des apports γ·η est appliqué.
+  //  - tertiaire bureaux : coef apports ~ 0.15 (15 % des besoins couverts)
+  //  - résidentiel peu occupé : coef ~ 0.10
+  //  - logement occupé + sud : coef ~ 0.20
+  // L'utilisateur peut saisir "part_apports_gratuits" en %, sinon défaut 15 %.
+  const partApports = parseFloat(v.part_apports_gratuits || "15") / 100;
+  const coefApports = Math.max(0, Math.min(0.35, partApports)); // borné 0–35%
+  const besoinChauffage = besoinBrut * (1 - coefApports);
 
   // Conso avant
   const rendExistant = RENDEMENTS_GENERATEURS[v.type_generateur_existant || "Autre"] || 0.85;
@@ -2727,19 +2763,23 @@ function calculer163(v: FormValues): Calcul163Result | null {
   const gainMwh = consoAvant - consoApres;
   const gainPct = (gainMwh / consoAvant) * 100;
 
-  // CO₂
+  // CO₂ — arrêté DPE 2021 (chauffage) + Base Carbone ADEME 2024
   const energieExistante = v.energie_existante || "Gaz naturel";
   const facteurCo2Avant = FACTEUR_CO2[energieExistante] || 0.200;
-  const facteurCo2Apres = 0.0569; // électricité
-  const reductionCo2 = (consoAvant * facteurCo2Avant * 1000 - consoApres * facteurCo2Apres * 1000) / 1000;
+  const facteurCo2Apres = FACTEUR_CO2_ELEC_CHAUFFAGE; // 0.079 kgCO₂e/kWh
+  const reductionCo2 = consoAvant * facteurCo2Avant - consoApres * facteurCo2Apres;
 
-  const economiEuros = gainMwh * 1000 * PRIX_ELEC_KWH;
+  // Coûts — prix spécifiques par énergie (avant) et élec (après)
+  const prixAvant = prixEnergie(energieExistante);
+  const coutAvant = consoAvant * 1000 * prixAvant;
+  const coutApres = consoApres * 1000 * PRIX_ELEC_KWH;
+  const economiEuros = coutAvant - coutApres;
   const coutInvest = parseFloat(v.cout_investissement || "0");
   const dureeRetour = coutInvest > 0 && economiEuros > 0 ? coutInvest / economiEuros : null;
 
   const detailMethode = [
-    `Méthode simplifiée G × V × DJU — Zone ${zone}`,
-    `DJU base 18°C: ${zoneData.dju} · T° base: ${tempBase}°C · T° int: ${tempInt}°C · ΔT: ${deltaT}K`,
+    `Méthode G × V × DJU avec apports gratuits — Zone ${zone}`,
+    `DJU base 18°C: ${zoneData.dju} · T° base: ${tempBase}°C · T° int: ${tempInt}°C · ΔT dim.: ${deltaT}K`,
     "",
     "Déperditions par les parois:",
     `  Murs (${surfaceMursOpaques.toFixed(0)} m² × U=${uMur} W/m².K): ${(depMurs / 1000).toFixed(1)} kW`,
@@ -2752,11 +2792,14 @@ function calculer163(v: FormValues): Calcul163Result | null {
     `Ponts thermiques forfait +15%`,
     `Déperditions totales: ${deperditionsTotales.toFixed(1)} kW · G = ${coeffG.toFixed(2)} W/m³.K`,
     "",
-    `Besoins chauffage: G × V × DJU × 24 / 10⁶ = ${besoinChauffage.toFixed(1)} MWh/an`,
+    `Besoins BRUTS chauffage: G × V × DJU × 24 / 10⁶ = ${besoinBrut.toFixed(1)} MWh/an`,
+    `Apports gratuits (solaire + internes) retenus: ${(coefApports * 100).toFixed(0)} %`,
+    `Besoins NETS = ${besoinBrut.toFixed(1)} × (1 − ${coefApports.toFixed(2)}) = ${besoinChauffage.toFixed(1)} MWh/an`,
     `Conso AVANT: ${besoinChauffage.toFixed(1)} / η${rendExistant.toFixed(2)} = ${consoAvant.toFixed(1)} MWh/an`,
     `Conso APRÈS: (${(besoinChauffage * tauxCouverture).toFixed(1)} / SCOP ${scop}) + appoint = ${consoApres.toFixed(1)} MWh/an`,
-    `Gain: ${gainMwh.toFixed(1)} MWh/an (${gainPct.toFixed(1)}%)`,
-    `Réduction CO₂: ${reductionCo2.toFixed(1)} t/an`,
+    `Gain énergétique: ${gainMwh.toFixed(1)} MWh/an (${gainPct.toFixed(1)}%)`,
+    `Réduction CO₂: ${reductionCo2.toFixed(1)} tCO₂e/an (facteurs : ${facteurCo2Avant} → ${facteurCo2Apres} kgCO₂e/kWh)`,
+    `Économie : ${Math.round(coutAvant)} € (avant) − ${Math.round(coutApres)} € (après) = ${Math.round(economiEuros)} €/an`,
   ].join("\n");
 
   return {
@@ -2803,9 +2846,9 @@ function calculer142(v: FormValues): Calcul142Result | null {
   const consoApres = consoAvant - gainNetMwh;
   const gainNetPct = (gainNetMwh / consoAvant) * 100;
 
-  // Économie financière
-  const prixEnergie = v.energie_chauffage === "Électricité" ? PRIX_ELEC_KWH : 0.08; // gaz ~80€/MWh
-  const economiEuros = gainNetMwh * 1000 * prixEnergie;
+  // Économie financière — prix par vecteur énergétique (réel 2025-2026)
+  const prix = prixEnergie(v.energie_chauffage || "Gaz");
+  const economiEuros = gainNetMwh * 1000 * prix;
 
   const coutInvest = parseFloat(v.cout_investissement || "0");
   const dureeRetour = coutInvest > 0 && economiEuros > 0 ? coutInvest / economiEuros : null;
@@ -2872,18 +2915,16 @@ function calculer139(v: FormValues): Calcul139Result | null {
   const consoActuelle = parseFloat(v.conso_chaleur_actuelle || "0");
   const gainPct = consoActuelle > 0 ? (consoEvitee / consoActuelle) * 100 : (chaleurRecuperee > 0 ? 100 : 0);
 
-  // CO₂
-  let facteurCo2 = 0.227; // gaz
-  if (sourceActuelle.includes("fioul")) facteurCo2 = 0.324;
-  else if (sourceActuelle.includes("lectrique")) facteurCo2 = 0.0569;
-  else if (sourceActuelle.includes("seau de chaleur")) facteurCo2 = 0.180;
-  const reductionCo2 = (consoEvitee * facteurCo2 * 1000) / 1000; // t CO₂/an
+  // CO₂ — arrêté DPE 2021 + Base Carbone ADEME 2024
+  let facteurCo2 = FACTEUR_CO2["Gaz naturel"]; // 0.227
+  if (sourceActuelle.includes("fioul")) facteurCo2 = FACTEUR_CO2["Fioul domestique"]; // 0.324
+  else if (sourceActuelle.includes("lectrique")) facteurCo2 = FACTEUR_CO2_ELEC_CHAUFFAGE; // 0.079
+  else if (sourceActuelle.includes("seau de chaleur")) facteurCo2 = FACTEUR_CO2["Réseau de chaleur"]; // 0.180
+  const reductionCo2 = consoEvitee * facteurCo2; // tCO₂e/an (consoEvitee en MWh × kgCO₂/kWh → kg/1000=t)
 
-  // Économie financière
-  let prixEnergie = 0.08; // gaz ~80€/MWh
-  if (sourceActuelle.includes("fioul")) prixEnergie = 0.10;
-  else if (sourceActuelle.includes("lectrique")) prixEnergie = PRIX_ELEC_KWH;
-  const economiEuros = consoEvitee * 1000 * prixEnergie;
+  // Économie financière — prix par vecteur énergétique (réel 2025-2026)
+  const prix = prixEnergie(sourceActuelle);
+  const economiEuros = consoEvitee * 1000 * prix;
 
   const coutInvest = parseFloat(v.cout_investissement || "0");
   const dureeRetour = coutInvest > 0 && economiEuros > 0 ? coutInvest / economiEuros : null;
@@ -2994,6 +3035,133 @@ const PHOTO_CATEGORIES: Record<FicheId, string[]> = {
   "BAR-EN-103": PHOTO_CATEGORIES_103,
   "BAT-TH-116": PHOTO_CATEGORIES_116,
 };
+
+// ─── Calcul kWh cumac ───────────────────────────────────────────
+// Durée de vie conventionnelle (années) par fiche CEE — source : arrêtés
+// publiés au JO fixant les forfaits des fiches d'opérations standardisées.
+// kWh cumac = gain annuel (kWh EF) × durée de vie conv. × coef. actualisation.
+const DUREE_VIE_CONV: Record<FicheId, number> = {
+  "BAT-TH-134": 15, // Haute pression flottante — 15 ans
+  "BAT-TH-163": 17, // PAC air/eau tertiaire — 17 ans
+  "BAT-TH-142": 10, // Déstratification air — 10 ans
+  "BAT-TH-139": 15, // Récupération de chaleur sur GF — 15 ans
+  "BAR-TH-171": 17, // PAC air/eau résidentiel — 17 ans
+  "BAR-TH-159": 17, // PAC hybride résidentiel — 17 ans
+  "BAR-EN-101": 30, // Isolation combles / toiture — 30 ans
+  "BAR-EN-102": 25, // Isolation des murs — 25 ans
+  "BAR-EN-103": 30, // Isolation d'un plancher — 30 ans
+  "BAT-TH-116": 10, // GTB classes A/B — 10 ans
+};
+
+// Coefficient d'actualisation réglementaire (taux 4 %/an).
+// Formule : a(N) = (1 - (1 + r)^-N) / (1 - (1 + r)^-1) avec r = 0.04.
+// Conservé en valeurs usuelles pour la robustesse des résultats.
+function coefActualisation(dureeVieAns: number): number {
+  const r = 0.04;
+  if (dureeVieAns <= 0) return 0;
+  return (1 - Math.pow(1 + r, -dureeVieAns)) / (1 - Math.pow(1 + r, -1));
+}
+
+/**
+ * Calcule le volume de CEE en kWh cumac.
+ * @param ficheId  Fiche CEE concernée (détermine la durée de vie conv.)
+ * @param gainMWhAn Gain énergétique annuel en énergie finale (MWh/an)
+ * @returns cumac en kWh, ou null si données insuffisantes.
+ */
+function computeCumac(ficheId: FicheId, gainMWhAn: number): {
+  cumacKWh: number;
+  cumacMWh: number;
+  duree: number;
+  coefActu: number;
+} | null {
+  if (!ficheId || !Number.isFinite(gainMWhAn) || gainMWhAn <= 0) return null;
+  const duree = DUREE_VIE_CONV[ficheId];
+  const coefActu = coefActualisation(duree);
+  const cumacKWh = gainMWhAn * 1000 * duree * coefActu;
+  return { cumacKWh, cumacMWh: cumacKWh / 1000, duree, coefActu };
+}
+
+// ─── Section "Entreprise RGE" — commune à toutes les fiches ─────
+// Exigée pour la recevabilité des dossiers CEE (circulaire RGE,
+// décret n° 2014-812 du 16/07/2014). Ajoutée automatiquement à
+// chaque questionnaire après sa définition.
+const SECTION_ENTREPRISE_RGE: QuestionSection = {
+  titre: "Entreprise RGE titulaire",
+  description:
+    "Identification de l'entreprise qualifiée RGE qui réalise les travaux. Pièces à archiver au dossier : attestation RGE en cours de validité, attestation d'assurance décennale, K-bis de moins de 3 mois.",
+  fields: [
+    { id: "rge_raison_sociale", label: "Raison sociale de l'entreprise", type: "text", placeholder: "Ex: ENERGIES SUD SARL", required: true, colSpan: 2 },
+    { id: "rge_siret", label: "SIRET", type: "text", placeholder: "Ex: 812 345 678 00021", required: true },
+    { id: "rge_forme", label: "Forme juridique", type: "select", options: ["SARL", "SAS", "SASU", "EURL", "SA", "Artisan / EI", "Autre"] },
+    { id: "rge_adresse", label: "Adresse du siège social", type: "text", placeholder: "N°, rue, CP, commune", required: true, colSpan: 2 },
+    { id: "rge_telephone", label: "Téléphone", type: "text", placeholder: "Ex: 04 XX XX XX XX" },
+    { id: "rge_email", label: "Email contact dossier", type: "text", placeholder: "contact@entreprise.fr" },
+    { id: "rge_contact_nom", label: "Interlocuteur (nom, fonction)", type: "text", placeholder: "Ex: M. Durand, conducteur de travaux", colSpan: 2 },
+    {
+      id: "rge_organisme",
+      label: "Organisme de qualification RGE",
+      type: "select",
+      options: [
+        "Qualibat",
+        "Qualit'EnR (QualiPAC / Qualisol / QualiBois / Chauffage+)",
+        "Qualifelec",
+        "OPQIBI (études)",
+        "Cequami",
+        "CERTIBAT",
+        "Autre",
+      ],
+      required: true,
+    },
+    {
+      id: "rge_famille",
+      label: "Famille / domaine de travaux RGE",
+      type: "select",
+      options: [
+        "1911 — Installation de pompes à chaleur (Qualibat)",
+        "1531 — Chauffage ou refroidissement biomasse / ENR",
+        "8621 — Isolation thermique par l'intérieur",
+        "7141 — Isolation thermique par l'extérieur (ITE)",
+        "8731 — Étanchéité et isolation de toiture",
+        "QualiPAC (Qualit'EnR)",
+        "QualiPV (Qualit'EnR)",
+        "OPQIBI 1905 — Audit énergétique bâtiment (tertiaire)",
+        "OPQIBI 0901 — Étude thermique bâtiment",
+        "Autre (à préciser dans remarques)",
+      ],
+      required: true,
+      colSpan: 2,
+    },
+    { id: "rge_numero", label: "Numéro de certification RGE", type: "text", placeholder: "Ex: E-E123456 / QPAC-2024-XXXX", required: true },
+    { id: "rge_date_debut", label: "Date de début de validité", type: "date" },
+    { id: "rge_date_validite", label: "Date de fin de validité", type: "date", required: true, help: "La qualification doit être valide à la date de signature du devis." },
+    { id: "rge_assurance_compagnie", label: "Compagnie d'assurance décennale", type: "text", placeholder: "Ex: MAAF PRO, SMABTP" },
+    { id: "rge_assurance_police", label: "N° de police d'assurance décennale", type: "text", placeholder: "Ex: 987654321" },
+    { id: "rge_assurance_validite", label: "Validité de l'assurance", type: "date" },
+    {
+      id: "rge_sous_traitance",
+      label: "Recours à la sous-traitance ?",
+      type: "select",
+      options: ["Non — travaux réalisés en propre", "Oui — entreprise sous-traitante RGE (à préciser)"],
+      help: "La sous-traitance est admise si le sous-traitant est lui-même RGE pour la famille de travaux concernée.",
+    },
+    {
+      id: "rge_remarques",
+      label: "Remarques complémentaires sur l'entreprise",
+      type: "textarea",
+      placeholder: "Références similaires, antécédents sur ce bénéficiaire, précisions éventuelles sur la sous-traitance, etc.",
+      colSpan: 2,
+    },
+  ],
+};
+
+// Ajout automatique de la section RGE à chaque questionnaire — évite la
+// duplication du bloc dans chacune des 10 fiches.
+for (const k of Object.keys(QUESTIONNAIRES) as FicheId[]) {
+  const arr = QUESTIONNAIRES[k];
+  if (!arr.some((s) => s.titre === SECTION_ENTREPRISE_RGE.titre)) {
+    arr.push(SECTION_ENTREPRISE_RGE);
+  }
+}
 
 // ─── Props ──────────────────────────────────────────────────────
 
@@ -3106,6 +3274,35 @@ async function generatePDF(
       y = (doc as any).lastAutoTable.finalY + 6;
     }
 
+    // ─── Encart volume CEE calculé (après la section "gain") ───
+    const hasGainField = section.fields.some((f) => f.id === "gain_energetique_mwh");
+    const gainMWh = parseFloat(values.gain_energetique_mwh || "0");
+    if (hasGainField && gainMWh > 0) {
+      const cumac = computeCumac(fiche.id, gainMWh);
+      if (cumac) {
+        checkPage(28);
+        const boxY = y;
+        const boxH = 22;
+        doc.setFillColor(240, 246, 255);
+        doc.setDrawColor(180, 200, 230);
+        doc.roundedRect(margin, boxY, contentWidth, boxH, 2, 2, "FD");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        doc.setTextColor(30, 60, 120);
+        doc.text("Volume CEE calcule automatiquement", margin + 3, boxY + 5);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(40, 40, 40);
+        const line1 = `Gain annuel : ${gainMWh.toFixed(1)} MWh/an  |  Duree de vie conv. : ${cumac.duree} ans  |  Coef. actualisation 4% : ${cumac.coefActu.toFixed(3)}`;
+        const line2 = `Volume CEE : ${cumac.cumacMWh.toFixed(0)} MWh cumac   (${Math.round(cumac.cumacKWh).toLocaleString("fr-FR")} kWh cumac)`;
+        doc.text(line1, margin + 3, boxY + 11);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(30, 60, 120);
+        doc.text(line2, margin + 3, boxY + 17);
+        y = boxY + boxH + 6;
+      }
+    }
+
     // Photos de cette section
     const photos = sectionPhotos[sIdx] || [];
     if (photos.length > 0) {
@@ -3205,6 +3402,26 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
       return changed ? next : prev;
     });
   }, [selectedFiche]);
+
+  // ─── Calcul automatique kWh cumac ────────────────────────────
+  // Le gain annuel en énergie finale (MWh/an) saisi par l'utilisateur,
+  // combiné à la durée de vie conventionnelle de la fiche, donne le
+  // volume de CEE en kWh cumac avec actualisation 4 %.
+  const cumacInfo = selectedFiche
+    ? computeCumac(selectedFiche, parseFloat(values.gain_energetique_mwh || "0"))
+    : null;
+
+  // Persistance du cumac calculé dans les valeurs du formulaire — utile
+  // pour la sérialisation (JSON document.donnees) et l'injection PDF.
+  useEffect(() => {
+    if (!cumacInfo) return;
+    const mwh = cumacInfo.cumacMWh.toFixed(0);
+    const kwh = Math.round(cumacInfo.cumacKWh).toString();
+    setValues((prev) => {
+      if (prev.cee_cumac_calcule_mwh === mwh && prev.cee_cumac_calcule_kwh === kwh) return prev;
+      return { ...prev, cee_cumac_calcule_mwh: mwh, cee_cumac_calcule_kwh: kwh };
+    });
+  }, [cumacInfo?.cumacKWh, cumacInfo?.cumacMWh]);
 
   // ─── Auto-calcul BAT-TH-134 ──────────────────────────────────
   const calcul134 = selectedFiche === "BAT-TH-134" ? calculer134(values) : null;
@@ -3834,6 +4051,36 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
                       </div>
                     ))}
                   </div>
+
+                  {/* ─── Volume CEE — kWh cumac calculé automatiquement ─── */}
+                  {cumacInfo && currentSection.fields.some((f) => f.id === "gain_energetique_mwh") && (
+                    <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                        <h4 className="text-sm font-semibold text-primary">Volume CEE — calcul automatique</h4>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <div>
+                          <div className="text-xs text-muted-foreground">Gain annuel</div>
+                          <div className="text-lg font-semibold">{parseFloat(values.gain_energetique_mwh || "0").toFixed(1)} MWh/an</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-muted-foreground">Durée de vie conventionnelle</div>
+                          <div className="text-lg font-semibold">{cumacInfo.duree} ans</div>
+                          <div className="text-[11px] text-muted-foreground">coef. actualisation 4 % = {cumacInfo.coefActu.toFixed(3)}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-muted-foreground">Volume CEE</div>
+                          <div className="text-lg font-semibold text-primary">{cumacInfo.cumacMWh.toFixed(0)} MWh cumac</div>
+                          <div className="text-[11px] text-muted-foreground">= {Math.round(cumacInfo.cumacKWh).toLocaleString("fr-FR")} kWh cumac</div>
+                        </div>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground leading-snug pt-1 border-t border-primary/20">
+                        Formule : kWh cumac = gain annuel (kWh EF) × durée de vie conv. × coefficient d&apos;actualisation 4 %.
+                        Valeur indicative à consolider avec la formule forfaitaire de la fiche {selectedFiche} et les exigences du PNCEE.
+                      </p>
+                    </div>
+                  )}
 
                   {/* ─── Résultats calculés BAT-TH-134 ─── */}
                   {selectedFiche === "BAT-TH-134" && currentSection.titre.includes("5.") && calcul134 && (
