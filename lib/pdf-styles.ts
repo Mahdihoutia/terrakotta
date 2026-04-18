@@ -618,6 +618,85 @@ export function drawSignatureBlock(doc: jsPDF, y: number): number {
   return y;
 }
 
+// ─── Prose / littérature ────────────────────────────────────────
+// Dessine un paragraphe justifié avec la typographie du rapport.
+// Usage : y = drawProse(doc, "Texte…", y, { italic?, size?, color? });
+
+export function drawProse(
+  doc: jsPDF,
+  text: string,
+  y: number,
+  opts: {
+    italic?: boolean;
+    size?: number;
+    color?: [number, number, number];
+    spacingBefore?: number;
+    spacingAfter?: number;
+    align?: "left" | "justify";
+  } = {},
+): number {
+  const margin       = PDF_LAYOUT.margin;
+  const contentWidth = doc.internal.pageSize.getWidth() - margin * 2;
+  const size         = opts.size ?? 9;
+  const color        = opts.color ?? PDF_COLORS.body;
+  const lineH        = size * 0.52;
+
+  y += opts.spacingBefore ?? 0;
+
+  doc.setFont("helvetica", opts.italic ? "italic" : "normal");
+  doc.setFontSize(size);
+  doc.setTextColor(...color);
+
+  const lines = doc.splitTextToSize(text, contentWidth) as string[];
+  doc.text(lines, margin, y);
+  y += lines.length * lineH;
+  y += opts.spacingAfter ?? 0;
+  return y;
+}
+
+// Encadré "pull quote" — bloc de littérature mis en valeur avec filet bleu
+export function drawCallout(
+  doc: jsPDF,
+  text: string,
+  y: number,
+  opts: { title?: string } = {},
+): number {
+  const margin       = PDF_LAYOUT.margin;
+  const pw           = doc.internal.pageSize.getWidth();
+  const contentWidth = pw - margin * 2;
+  const padX = 8;
+  const padY = 6;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  const lines = doc.splitTextToSize(text, contentWidth - padX * 2 - 4) as string[];
+  const titleH = opts.title ? 6 : 0;
+  const boxH = padY * 2 + titleH + lines.length * 4.7;
+
+  // Fond crème surface
+  doc.setFillColor(...PDF_COLORS.surface);
+  doc.roundedRect(margin, y, contentWidth, boxH, 1.5, 1.5, "F");
+  // Filet bleu gauche
+  doc.setFillColor(...PDF_COLORS.blue);
+  doc.rect(margin, y, 1.5, boxH, "F");
+
+  let ty = y + padY + 3;
+  if (opts.title) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8.5);
+    doc.setTextColor(...PDF_COLORS.blue);
+    doc.text(opts.title.toUpperCase(), margin + padX + 4, ty);
+    ty += titleH;
+  }
+
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(9);
+  doc.setTextColor(...PDF_COLORS.heading);
+  doc.text(lines, margin + padX + 4, ty);
+
+  return y + boxH + 6;
+}
+
 // ─── Page break check ───────────────────────────────────────────
 
 export function needsPageBreak(y: number, needed: number): boolean {

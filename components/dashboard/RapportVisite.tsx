@@ -379,6 +379,34 @@ interface Props {
   existingDoc?: DocumentRecord | null;
 }
 
+// ─── Littérature / prose contextualisée ────────────────────────
+
+const PREAMBULE_INTRO =
+  "Le présent rapport retranscrit les constats réalisés lors de la visite technique du bâtiment. Il a pour objet de dresser un état des lieux objectif de l'enveloppe et des équipements énergétiques, d'identifier les pathologies et points d'amélioration, puis de formuler un bouquet de préconisations cohérent avec les usages, le budget et les objectifs réglementaires du maître d'ouvrage.";
+
+const PREAMBULE_METHODE =
+  "La démarche suit une logique d'audit in situ : relevé visuel contradictoire, prise de photographies datées, recueil documentaire lorsque disponible (factures, DPE antérieurs, plans), et recoupement avec les exigences réglementaires en vigueur. Les chiffres et repères utilisés s'appuient sur les référentiels RE2020, DPE 2021 et Décret Tertiaire 2019. Aucun calcul thermique dynamique n'est engagé à ce stade : les ordres de grandeur énergétiques indiqués dans les préconisations devront, le cas échéant, être précisés par une étude thermique (STD, DTG ou audit RGE).";
+
+const PREAMBULE_LECTURE =
+  "Le document s'organise en onze sections thématiques. Les six premières décrivent l'existant (enveloppe, systèmes, ventilation, froid) ; la septième synthétise les préconisations, leur priorisation et les aides financières mobilisables. Chaque constat est, autant que possible, illustré par une ou plusieurs photographies annexées au fil du rapport. La conclusion dresse l'avis technique global et trace les prochaines étapes opérationnelles.";
+
+const SECTION_PROSE: Record<number, string> = {
+  0: "Cette première section fixe le cadre contractuel et administratif de la visite : identité du bénéficiaire, localisation du bien, personnes présentes lors du constat et référence unique du rapport. Ces informations conditionnent la recevabilité du document dans les dispositifs d'aides (MaPrimeRénov', CEE) et servent d'ancrage à l'ensemble des observations qui suivent.",
+  1: "La description générale du bâtiment oriente l'analyse thermique à venir. L'année de construction renseigne sur les réglementations applicables à l'époque (avant 1975, RT 2000, RT 2005, RT 2012, RE 2020) et sur les matériaux vraisemblablement employés. La surface, l'orientation et la mitoyenneté déterminent les apports solaires utiles, les déperditions par surfaces déperditives et le potentiel de rénovation bioclimatique.",
+  2: "Les murs représentent en moyenne 20 à 25 % des déperditions d'un bâtiment non isolé. Leur traitement (isolation par l'intérieur, par l'extérieur ou répartie) est l'un des leviers les plus structurants d'un projet de rénovation. Les observations ci-dessous visent à identifier la composition existante, les pathologies éventuelles (humidité, fissures, ponts thermiques) et le mode d'isolation le plus adapté.",
+  3: "La toiture et les combles concentrent 25 à 30 % des déperditions d'un logement mal isolé : l'air chaud s'élève et s'échappe par la partie haute du bâti. C'est généralement le chantier le plus rentable — meilleur rapport économie d'énergie / coût — et le point de départ naturel d'un parcours de rénovation énergétique performant.",
+  4: "Les menuiseries jouent un double rôle : isolation thermique (Uw) et étanchéité à l'air. Leur état de vieillissement conditionne le confort d'hiver, les courants d'air perceptibles et la performance globale de l'enveloppe. Un simple vitrage ou un double vitrage ancien (< 2000) constitue systématiquement une cible d'amélioration, particulièrement lorsque les joints sont dégradés.",
+  5: "Le plancher bas est souvent le parent pauvre de la rénovation, pourtant il représente 7 à 10 % des déperditions et influence directement le confort au sol. Son traitement dépend fortement de la configuration (terre-plein, vide sanitaire accessible, sous-sol) et de l'accessibilité à sa sous-face.",
+  6: "Le système de chauffage est le premier poste de consommation énergétique d'un bâtiment (≈ 66 % en résidentiel en France). Son audit porte sur la technologie, l'âge, l'état, la régulation et la cohérence avec l'enveloppe. La réglementation impose désormais une interdiction progressive des chaudières fioul et, à terme, gaz ; le remplacement par une pompe à chaleur ou un système biomasse constitue le principal scénario de décarbonation.",
+  7: "L'eau chaude sanitaire (ECS) pèse 10 à 15 % de la consommation énergétique d'un logement, et davantage pour les bâtiments à forte occupation. L'évolution vers des solutions décarbonées (ballon thermodynamique, solaire thermique, couplage PAC) est un gisement d'économie souvent sous-exploité au démarrage du projet.",
+  8: "La ventilation n'est pas un gadget : elle protège le bâti (évacuation de l'humidité), garantit la qualité de l'air intérieur et conditionne la performance réelle de l'isolation. Une enveloppe rendue étanche sans système de renouvellement d'air maîtrisé produit inévitablement des pathologies (condensation, moisissures, dégradation des isolants).",
+  9: "La production de froid, lorsqu'elle existe, représente un poste de consommation électrique notable et relève de réglementations spécifiques (fluides frigorigènes, étanchéité, contrôles périodiques). Son audit vise tant la performance énergétique (EER, SEER) que la conformité aux exigences F-Gaz et la compatibilité avec les objectifs de décarbonation.",
+  10: "Les préconisations ci-dessous ordonnent les actions recommandées selon un triple critère : urgence technique, rentabilité énergétique et éligibilité aux aides. Le séquençage proposé privilégie la logique bioclimatique « d'abord l'enveloppe, puis les systèmes » afin de dimensionner les équipements au plus juste et de maximiser le gain énergétique à l'euro investi.",
+};
+
+const METHODOLOGIE_CLOSING =
+  "Le présent rapport rend compte de constats visuels effectués sans démontage ni investigation destructive. Les valeurs d'épaisseur d'isolant, de performance d'équipement ou d'étanchéité à l'air indiquées reposent sur les éléments accessibles lors de la visite et sur la documentation transmise par le bénéficiaire. Un audit énergétique réglementaire, une étude thermique dynamique ou un test d'infiltrométrie permettront, au besoin, de fiabiliser ces données avant phase travaux.";
+
 // ─── PDF Generation ─────────────────────────────────────────────
 
 async function generatePDF(
@@ -394,6 +422,8 @@ async function generatePDF(
     drawSectionHeader,
     drawFooter,
     drawPhotoEntry,
+    drawProse,
+    drawCallout,
     getDataTableConfig,
     needsPageBreak,
     PDF_LAYOUT,
@@ -438,6 +468,20 @@ async function generatePDF(
   let y: number = PDF_LAYOUT.topMargin;
   const tocEntries: { title: string; page: number }[] = [];
 
+  // ─── Préambule littéraire ─────────────────────────────────
+  tocEntries.push({ title: "Préambule", page: doc.getNumberOfPages() - 1 });
+  y = drawSectionHeader(doc, "Préambule", y, "Objet, méthodologie et clé de lecture du rapport");
+  y = drawProse(doc, PREAMBULE_INTRO, y, { spacingAfter: 4 });
+  y = drawProse(doc, PREAMBULE_METHODE, y, { spacingAfter: 4 });
+  y = drawProse(doc, PREAMBULE_LECTURE, y, { spacingAfter: 4 });
+  y = drawCallout(
+    doc,
+    "Ce rapport ne vaut ni diagnostic de performance énergétique (DPE) ni audit énergétique réglementaire. Il constitue une base technique pour orienter les arbitrages de rénovation et préparer les études détaillées à venir.",
+    y,
+    { title: "Portée du document" },
+  );
+  y += PDF_LAYOUT.sectionGap - 6;
+
   // ─── Sections ─────────────────────────────────────────────
   for (let sIdx = 0; sIdx < sections.length; sIdx++) {
     const section = sections[sIdx];
@@ -450,9 +494,16 @@ async function generatePDF(
     }
     if (tableData.length === 0 && !(sectionPhotos[sIdx]?.length > 0)) continue;
 
-    checkPage(30);
+    checkPage(40);
     tocEntries.push({ title: section.titre, page: doc.getNumberOfPages() - 1 });
     y = drawSectionHeader(doc, section.titre, y, section.description);
+
+    // Paragraphe de contextualisation (littérature)
+    const prose = SECTION_PROSE[sIdx];
+    if (prose) {
+      checkPage(30);
+      y = drawProse(doc, prose, y, { italic: true, size: 8.5, spacingAfter: 5 });
+    }
 
     if (tableData.length > 0) {
       autoTable(doc, getDataTableConfig(y, tableData, contentWidth));
@@ -471,6 +522,18 @@ async function generatePDF(
 
     y += PDF_LAYOUT.sectionGap - 6;
   }
+
+  // ─── Clôture méthodologique ───────────────────────────────
+  checkPage(50);
+  tocEntries.push({ title: "Réserves et suites à donner", page: doc.getNumberOfPages() - 1 });
+  y = drawSectionHeader(doc, "Réserves et suites à donner", y);
+  y = drawProse(doc, METHODOLOGIE_CLOSING, y, { spacingAfter: 4 });
+  y = drawCallout(
+    doc,
+    "La mise en œuvre des préconisations suppose une étude de conception approfondie (dimensionnement, vérification de la faisabilité technique, coordination des lots) et, le cas échéant, le dépôt d'un dossier de financement auprès des dispositifs d'aides mobilisables.",
+    y,
+    { title: "Prochaine étape" },
+  );
 
   // ─── Fill sommaire page ───────────────────────────────────
   doc.setPage(tocPageNum);
