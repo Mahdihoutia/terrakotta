@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -160,23 +160,49 @@ const SECTIONS: QuestionSection[] = [
     ],
   },
   {
-    titre: "5. Consommations et DPE actuel",
-    description: "Analyse des consommations réelles et étiquette énergétique",
+    titre: "5. Consommations et étiquettes énergétiques",
+    description: "Bilan énergétique annuel et classement DPE/GES officiels (Arrêté 31 mars 2021)",
     fields: [
-      { id: "conso_chauffage", label: "Consommation chauffage", type: "number", placeholder: "Ex: 12000", unit: "kWh/an", required: true },
-      { id: "conso_ecs", label: "Consommation ECS", type: "number", placeholder: "Ex: 3500", unit: "kWh/an" },
-      { id: "conso_electricite", label: "Consommation électricité (hors chauffage)", type: "number", placeholder: "Ex: 4500", unit: "kWh/an" },
       { id: "conso_totale", label: "Consommation totale énergie primaire", type: "number", placeholder: "Ex: 22000", unit: "kWhEP/an", required: true },
-      { id: "conso_par_m2", label: "Consommation par m²", type: "number", placeholder: "Ex: 280", unit: "kWhEP/m²/an", required: true, help: "= Conso totale / Surface habitable" },
+      { id: "conso_par_m2", label: "Consommation par m²", type: "number", placeholder: "Ex: 280", unit: "kWhEP/m²/an", required: true, help: "Auto-calculé si conso totale + SHAB sont renseignés" },
       { id: "facture_annuelle", label: "Facture énergétique annuelle", type: "number", placeholder: "Ex: 2800", unit: "€/an" },
       { id: "source_conso", label: "Source des données", type: "select", required: true, options: ["Factures (3 ans)", "Factures (1 an)", "Estimation par calcul", "DPE existant", "Compteurs dédiés"] },
-      { id: "dpe_actuel", label: "Étiquette DPE actuelle", type: "select", required: true, options: ["A — ≤ 70 kWhEP/m²/an", "B — 71 à 110", "C — 111 à 180", "D — 181 à 250", "E — 251 à 330", "F — 331 à 420", "G — > 420"] },
-      { id: "ges_actuel", label: "Étiquette GES actuelle", type: "select", options: ["A — ≤ 6 kgCO₂/m²/an", "B — 7 à 11", "C — 12 à 30", "D — 31 à 50", "E — 51 à 70", "F — 71 à 100", "G — > 100"] },
-      { id: "emissions_co2", label: "Émissions CO₂ annuelles", type: "number", placeholder: "Ex: 4.2", unit: "tCO₂/an" },
+      { id: "dpe_actuel", label: "Étiquette DPE actuelle", type: "select", required: true, options: ["A — ≤ 70 kWhEP/m²/an", "B — 71 à 110", "C — 111 à 180", "D — 181 à 250", "E — 251 à 330", "F — 331 à 420", "G — > 420"], help: "Auto-déterminé à partir de la conso/m²" },
+      { id: "emissions_co2", label: "Émissions CO₂ annuelles totales", type: "number", placeholder: "Ex: 4200", unit: "kgCO₂/an" },
+      { id: "emissions_co2_m2", label: "Émissions par m²", type: "number", placeholder: "Ex: 35", unit: "kgCO₂/m²/an", help: "Auto-calculé si CO₂ total + SHAB sont renseignés" },
+      { id: "ges_actuel", label: "Étiquette GES actuelle", type: "select", required: true, options: ["A — ≤ 6 kgCO₂/m²/an", "B — 7 à 11", "C — 12 à 30", "D — 31 à 50", "E — 51 à 70", "F — 71 à 100", "G — > 100"], help: "Auto-déterminée à partir des émissions/m²" },
     ],
   },
   {
-    titre: "6. Scénarios de rénovation",
+    titre: "6. Répartition des consommations par poste",
+    description: "Ventilation des consommations selon les 5 postes réglementaires (méthodologie 3CL-DPE)",
+    fields: [
+      { id: "poste_chauffage", label: "Chauffage", type: "number", placeholder: "Ex: 12000", unit: "kWh/an", required: true, help: "Poste 1 — généralement 50 à 75 % du total" },
+      { id: "poste_ecs", label: "Eau chaude sanitaire", type: "number", placeholder: "Ex: 3500", unit: "kWh/an", required: true, help: "Poste 2 — généralement 10 à 15 %" },
+      { id: "poste_refroidissement", label: "Refroidissement / climatisation", type: "number", placeholder: "Ex: 0", unit: "kWh/an", help: "Poste 3 — 0 si absence" },
+      { id: "poste_eclairage", label: "Éclairage", type: "number", placeholder: "Ex: 800", unit: "kWh/an", help: "Poste 4 — 3 à 5 %" },
+      { id: "poste_auxiliaires", label: "Auxiliaires (ventilation, circulateurs)", type: "number", placeholder: "Ex: 400", unit: "kWh/an", help: "Poste 5 — 1 à 3 %" },
+      { id: "poste_autres", label: "Autres usages (électroménager, multimédia)", type: "number", placeholder: "Ex: 2500", unit: "kWh/an", help: "Hors champ DPE — pour information" },
+      { id: "commentaire_postes", label: "Commentaires / hypothèses", type: "textarea", colSpan: 2, placeholder: "Méthode de répartition (compteurs dédiés, sous-compteurs, estimation par rendement)..." },
+    ],
+  },
+  {
+    titre: "7. Bilan thermique — déperditions par paroi",
+    description: "Part relative des déperditions pour chaque élément de l'enveloppe (méthode Th-BCE)",
+    fields: [
+      { id: "deperd_murs", label: "Murs extérieurs", type: "number", placeholder: "Ex: 25", unit: "%", required: true, help: "Généralement 20-25 % en l'absence d'ITE/ITI" },
+      { id: "deperd_toiture", label: "Toiture / combles", type: "number", placeholder: "Ex: 30", unit: "%", required: true, help: "Généralement 25-30 % non isolé" },
+      { id: "deperd_plancher", label: "Plancher bas", type: "number", placeholder: "Ex: 10", unit: "%", required: true, help: "Généralement 7-10 %" },
+      { id: "deperd_menuiseries", label: "Menuiseries (fenêtres, portes)", type: "number", placeholder: "Ex: 13", unit: "%", required: true, help: "Généralement 10-15 %" },
+      { id: "deperd_ponts", label: "Ponts thermiques", type: "number", placeholder: "Ex: 7", unit: "%", required: true, help: "Généralement 5-10 %" },
+      { id: "deperd_ventilation", label: "Ventilation (VMC)", type: "number", placeholder: "Ex: 10", unit: "%", required: true, help: "Généralement 10-15 %" },
+      { id: "deperd_infiltrations", label: "Renouvellement d'air / infiltrations", type: "number", placeholder: "Ex: 5", unit: "%", required: true, help: "Généralement 3-8 %" },
+      { id: "ubat", label: "Coefficient Ubat moyen estimé", type: "number", placeholder: "Ex: 1.2", unit: "W/m².K", help: "Moyenne pondérée par surfaces" },
+      { id: "commentaire_deperditions", label: "Commentaires et hiérarchie des priorités", type: "textarea", colSpan: 2, placeholder: "Identifier les postes prioritaires d'intervention au regard des parts de déperdition les plus élevées..." },
+    ],
+  },
+  {
+    titre: "8. Scénarios de rénovation",
     description: "Bouquets de travaux proposés avec gains et coûts estimés",
     fields: [
       {
@@ -196,7 +222,7 @@ const SECTIONS: QuestionSection[] = [
     ],
   },
   {
-    titre: "7. Plan de financement et aides",
+    titre: "9. Plan de financement et aides",
     description: "Aides mobilisables et reste à charge pour chaque scénario",
     fields: [
       { id: "mprenov_montant", label: "MaPrimeRénov' estimée", type: "number", placeholder: "Ex: 10000", unit: "€", help: "Selon revenus et travaux — barème en vigueur" },
@@ -212,7 +238,7 @@ const SECTIONS: QuestionSection[] = [
     ],
   },
   {
-    titre: "8. Conclusion et recommandations",
+    titre: "10. Conclusion et recommandations",
     description: "Synthèse de l'audit et avis de l'auditeur",
     fields: [
       { id: "scenario_recommande", label: "Scénario recommandé", type: "select", required: true, options: ["Scénario 1 — Rénovation par étapes", "Scénario 2 — Rénovation globale performante"] },
@@ -226,6 +252,108 @@ const SECTIONS: QuestionSection[] = [
   },
 ];
 
+// ─── DPE visual constants (Arrêté 2021) ─────────────────────────
+
+const DPE_HEX: Record<string, string> = {
+  A: "#319834",
+  B: "#33A457",
+  C: "#79B72E",
+  D: "#F3D93F",
+  E: "#EEB239",
+  F: "#E8741E",
+  G: "#D7221F",
+};
+const GES_HEX: Record<string, string> = {
+  A: "#F6F4FA",
+  B: "#E4DBEF",
+  C: "#C8B6DE",
+  D: "#A98ACB",
+  E: "#8762B6",
+  F: "#633F9C",
+  G: "#401C83",
+};
+
+const DPE_TIERS: Array<[string, string]> = [
+  ["A", "≤ 70"],
+  ["B", "71 à 110"],
+  ["C", "111 à 180"],
+  ["D", "181 à 250"],
+  ["E", "251 à 330"],
+  ["F", "331 à 420"],
+  ["G", "> 420"],
+];
+const GES_TIERS: Array<[string, string]> = [
+  ["A", "≤ 6"],
+  ["B", "7 à 11"],
+  ["C", "12 à 30"],
+  ["D", "31 à 50"],
+  ["E", "51 à 70"],
+  ["F", "71 à 100"],
+  ["G", "> 100"],
+];
+
+function computeDpeLetter(kwhM2: number): string {
+  if (kwhM2 <= 70) return "A";
+  if (kwhM2 <= 110) return "B";
+  if (kwhM2 <= 180) return "C";
+  if (kwhM2 <= 250) return "D";
+  if (kwhM2 <= 330) return "E";
+  if (kwhM2 <= 420) return "F";
+  return "G";
+}
+function computeGesLetter(co2M2: number): string {
+  if (co2M2 <= 6) return "A";
+  if (co2M2 <= 11) return "B";
+  if (co2M2 <= 30) return "C";
+  if (co2M2 <= 50) return "D";
+  if (co2M2 <= 70) return "E";
+  if (co2M2 <= 100) return "F";
+  return "G";
+}
+
+function EnergyLabelUI({ kind, letter, value }: { kind: "DPE" | "GES"; letter: string; value?: string }) {
+  const tiers = kind === "DPE" ? DPE_TIERS : GES_TIERS;
+  const colors = kind === "DPE" ? DPE_HEX : GES_HEX;
+  return (
+    <div className="rounded-md border bg-background p-3">
+      <div className="flex items-baseline justify-between mb-2">
+        <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">
+          {kind === "DPE" ? "Consommation énergétique" : "Émissions GES"}
+        </p>
+        {value && (
+          <p className="text-sm font-bold" style={{ color: colors[letter] ?? "#333" }}>
+            {value}
+          </p>
+        )}
+      </div>
+      <div className="space-y-[2px]">
+        {tiers.map(([l, range], i) => {
+          const active = l === letter;
+          const width = 55 + i * 6; // staircase effect
+          const darkBg = kind === "DPE" ? ["A", "B", "C", "G"].includes(l) : ["E", "F", "G"].includes(l);
+          return (
+            <div key={l} className="flex items-center gap-2">
+              <div
+                className={cn(
+                  "flex items-center gap-2 px-2 py-1 rounded-sm transition-all",
+                  active && "ring-2 ring-offset-1 ring-foreground",
+                )}
+                style={{ background: colors[l], width: `${width}%`, color: darkBg ? "#fff" : "#222" }}
+              >
+                <span className="text-[11px] font-bold">{l}</span>
+                <span className="text-[10px] opacity-90">{range}</span>
+              </div>
+              {active && (
+                <span className="text-[10px] font-semibold text-foreground">◀ classe actuelle</span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ─── PDF Generation ─────────────────────────────────────────────
 
 async function generatePDF(sections: QuestionSection[], values: FormValues, sectionPhotos: Record<number, PhotoItem[]>) {
@@ -237,6 +365,10 @@ async function generatePDF(sections: QuestionSection[], values: FormValues, sect
     drawSectionHeader,
     drawFooter,
     drawPhotoEntry,
+    drawDPEGESDual,
+    drawConsoBreakdown,
+    drawDeperditionsChart,
+    drawBeforeAfterComparison,
     getDataTableConfig,
     needsPageBreak,
     PDF_LAYOUT,
@@ -298,6 +430,71 @@ async function generatePDF(sections: QuestionSection[], values: FormValues, sect
       autoTable(doc, getDataTableConfig(y, tableData, contentWidth));
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       y = (doc as any).lastAutoTable.finalY + 6;
+    }
+
+    // ─── Diagrammes pro selon la section ───────────────────
+    // Section 5 (index 4) — étiquettes DPE + GES officielles
+    if (sIdx === 4) {
+      const dpeLetter = (values.dpe_actuel || "").charAt(0) || "G";
+      const gesLetter = (values.ges_actuel || "").charAt(0) || "G";
+      const kwhVal = values.conso_par_m2 ? `${values.conso_par_m2} kWhEP/m²/an` : "—";
+      const co2Val = values.emissions_co2_m2 ? `${values.emissions_co2_m2} kgCO₂/m²/an` : "—";
+      checkPage(75);
+      y = drawDPEGESDual(doc, y + 2, {
+        kwhValue: kwhVal,
+        dpeLetter,
+        co2Value: co2Val,
+        gesLetter,
+      });
+    }
+
+    // Section 6 (index 5) — répartition consommations par poste
+    if (sIdx === 5) {
+      const postes = [
+        { label: "Chauffage",       kwh: parseFloat(values.poste_chauffage || "0"),       color: [37, 99, 235]   as [number, number, number] },
+        { label: "ECS",             kwh: parseFloat(values.poste_ecs || "0"),             color: [14, 165, 233]  as [number, number, number] },
+        { label: "Refroidissement", kwh: parseFloat(values.poste_refroidissement || "0"), color: [139, 92, 246]  as [number, number, number] },
+        { label: "Éclairage",       kwh: parseFloat(values.poste_eclairage || "0"),       color: [245, 158, 11]  as [number, number, number] },
+        { label: "Auxiliaires",     kwh: parseFloat(values.poste_auxiliaires || "0"),     color: [107, 91, 80]   as [number, number, number] },
+        { label: "Autres usages",   kwh: parseFloat(values.poste_autres || "0"),          color: [156, 163, 175] as [number, number, number] },
+      ];
+      if (postes.some((p) => p.kwh > 0)) {
+        checkPage(55);
+        y = drawConsoBreakdown(doc, y + 2, postes, { title: "Diagramme de répartition des consommations" });
+      }
+    }
+
+    // Section 7 (index 6) — déperditions par paroi
+    if (sIdx === 6) {
+      const items = [
+        { label: "Murs extérieurs",    pct: parseFloat(values.deperd_murs || "0") },
+        { label: "Toiture / combles",  pct: parseFloat(values.deperd_toiture || "0") },
+        { label: "Plancher bas",       pct: parseFloat(values.deperd_plancher || "0") },
+        { label: "Menuiseries",        pct: parseFloat(values.deperd_menuiseries || "0") },
+        { label: "Ponts thermiques",   pct: parseFloat(values.deperd_ponts || "0") },
+        { label: "Ventilation",        pct: parseFloat(values.deperd_ventilation || "0") },
+        { label: "Infiltrations",      pct: parseFloat(values.deperd_infiltrations || "0") },
+      ];
+      if (items.some((i) => i.pct > 0)) {
+        checkPage(65);
+        y = drawDeperditionsChart(doc, y + 2, items, { title: "Répartition des déperditions par paroi" });
+      }
+    }
+
+    // Section 10 (index 9) — comparaison DPE avant / après
+    if (sIdx === 9) {
+      const dpeBefore = (values.dpe_actuel || "").charAt(0);
+      const dpeAfter  = (values.dpe_projete || "").charAt(0);
+      if (dpeBefore && dpeAfter) {
+        checkPage(45);
+        y = drawBeforeAfterComparison(
+          doc,
+          y + 2,
+          { letter: dpeBefore, value: `Classe ${dpeBefore}` },
+          { letter: dpeAfter,  value: `Classe ${dpeAfter}` },
+          { title: "Projection DPE après travaux", kind: "DPE" },
+        );
+      }
     }
 
     // Photos de cette section
@@ -364,6 +561,70 @@ export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function updateValue(id: string, value: string) { setValues((prev) => ({ ...prev, [id]: value })); setSaved(false); }
+
+  // ─── Auto-compute: conso/m², CO₂/m², DPE letter, GES letter ──
+  useEffect(() => {
+    setValues((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      const shab = parseFloat(prev.surface_habitable || "0");
+      const consoTot = parseFloat(prev.conso_totale || "0");
+      const co2Tot = parseFloat(prev.emissions_co2 || "0");
+
+      // conso/m²
+      if (shab > 0 && consoTot > 0) {
+        const consoM2 = Math.round(consoTot / shab);
+        if (prev.conso_par_m2 !== String(consoM2)) {
+          next.conso_par_m2 = String(consoM2);
+          changed = true;
+        }
+        // DPE letter (auto-set to match the official class)
+        const letter = computeDpeLetter(consoM2);
+        const match = [
+          "A — ≤ 70 kWhEP/m²/an",
+          "B — 71 à 110",
+          "C — 111 à 180",
+          "D — 181 à 250",
+          "E — 251 à 330",
+          "F — 331 à 420",
+          "G — > 420",
+        ].find((opt) => opt.startsWith(letter));
+        if (match && prev.dpe_actuel !== match) {
+          next.dpe_actuel = match;
+          changed = true;
+        }
+      }
+
+      // CO₂/m²
+      if (shab > 0 && co2Tot > 0) {
+        const co2M2 = Math.round(co2Tot / shab);
+        if (prev.emissions_co2_m2 !== String(co2M2)) {
+          next.emissions_co2_m2 = String(co2M2);
+          changed = true;
+        }
+        const gesLetter = computeGesLetter(co2M2);
+        const match = [
+          "A — ≤ 6 kgCO₂/m²/an",
+          "B — 7 à 11",
+          "C — 12 à 30",
+          "D — 31 à 50",
+          "E — 51 à 70",
+          "F — 71 à 100",
+          "G — > 100",
+        ].find((opt) => opt.startsWith(gesLetter));
+        if (match && prev.ges_actuel !== match) {
+          next.ges_actuel = match;
+          changed = true;
+        }
+      }
+
+      return changed ? next : prev;
+    });
+  }, [values.surface_habitable, values.conso_totale, values.emissions_co2]);
+
+  // ─── Live DPE / GES letters pour l'aperçu UI ─────────────────
+  const dpeLive = useMemo(() => (values.dpe_actuel || "").charAt(0) || "—", [values.dpe_actuel]);
+  const gesLive = useMemo(() => (values.ges_actuel || "").charAt(0) || "—", [values.ges_actuel]);
 
   async function handleSave() {
     setSaving(true);
@@ -481,6 +742,22 @@ export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props
                   {currentSection.description && <p className="text-sm text-muted-foreground">{currentSection.description}</p>}
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {/* Aperçu live DPE + GES au-dessus de la section Consommations */}
+                  {activeSection === 4 && (dpeLive !== "—" || gesLive !== "—") && (
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <EnergyLabelUI
+                        kind="DPE"
+                        letter={dpeLive}
+                        value={values.conso_par_m2 ? `${values.conso_par_m2} kWhEP/m²/an` : undefined}
+                      />
+                      <EnergyLabelUI
+                        kind="GES"
+                        letter={gesLive}
+                        value={values.emissions_co2_m2 ? `${values.emissions_co2_m2} kgCO₂/m²/an` : undefined}
+                      />
+                    </div>
+                  )}
+
                   <div className="grid gap-4 sm:grid-cols-2">
                     {currentSection.fields.map((field) => (
                       <div key={field.id} className={cn("space-y-1.5", field.colSpan === 2 && "sm:col-span-2")}>
