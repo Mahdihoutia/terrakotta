@@ -305,7 +305,7 @@ async function generatePDF(sections: QuestionSection[], values: FormValues, sect
     if (photos.length > 0) {
       for (let i = 0; i < photos.length; i++) {
         checkPage(85);
-        y = drawPhotoEntry(doc, i, photos[i].preview, photos[i].categorie, photos[i].legende, y);
+        y = await drawPhotoEntry(doc, i, photos[i].preview, photos[i].categorie, photos[i].legende, y);
       }
     }
 

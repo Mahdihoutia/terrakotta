@@ -541,46 +541,119 @@ export function drawPhotoAppendixHeader(doc: jsPDF): number {
   return y;
 }
 
-export function drawPhotoEntry(
+/**
+ * Mesure les dimensions naturelles d'une image (data URL ou URL).
+ * Renvoie { w, h } en pixels natifs, ou null si la mesure échoue.
+ */
+export function measureImage(
+  src: string,
+): Promise<{ w: number; h: number } | null> {
+  return new Promise((resolve) => {
+    if (typeof window === "undefined") return resolve(null);
+    const img = new window.Image();
+    img.onload = () =>
+      resolve({ w: img.naturalWidth || img.width, h: img.naturalHeight || img.height });
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+}
+
+/**
+ * Détecte le format (JPEG/PNG) d'une data URL.
+ */
+function detectImageFormat(src: string): "JPEG" | "PNG" {
+  if (/^data:image\/png/i.test(src)) return "PNG";
+  return "JPEG";
+}
+
+/**
+ * Dessine une entrée photo dans le rapport.
+ * Version async : respecte le ratio natif de l'image (pas de déformation),
+ * centre horizontalement, et encadre d'un filet crème pour l'harmonie.
+ *
+ * Box maximale : contentWidth × maxH mm (par défaut 95 mm).
+ */
+export async function drawPhotoEntry(
   doc: jsPDF,
   index: number,
   preview: string,
   categorie: string,
   legende: string,
   y: number,
-): number {
+  opts: { maxH?: number } = {},
+): Promise<number> {
   const margin       = PDF_LAYOUT.margin;
-  const contentWidth = doc.internal.pageSize.getWidth() - margin * 2;
+  const pw           = doc.internal.pageSize.getWidth();
+  const contentWidth = pw - margin * 2;
+  const maxH         = opts.maxH ?? 95;
+
+  // Mesure le ratio natif pour éviter toute déformation
+  const dims = await measureImage(preview);
+  let drawW = contentWidth;
+  let drawH = maxH;
+  if (dims && dims.w > 0 && dims.h > 0) {
+    const ratio = dims.w / dims.h;
+    // On privilégie la largeur puis on clampe la hauteur
+    drawW = contentWidth;
+    drawH = drawW / ratio;
+    if (drawH > maxH) {
+      drawH = maxH;
+      drawW = drawH * ratio;
+    }
+  }
+  const drawX = margin + (contentWidth - drawW) / 2; // centrage horizontal
+
+  // Fond crème (bande sur toute la largeur, donne un rythme visuel harmonieux)
+  const frameH = (dims ? drawH : maxH) + 6;
+  doc.setFillColor(...PDF_COLORS.surface);
+  doc.roundedRect(margin, y, contentWidth, frameH, 1.5, 1.5, "F");
 
   try {
-    doc.addImage(preview, "JPEG", margin, y, contentWidth, 65, undefined, "MEDIUM");
-    y += 68;
+    doc.addImage(
+      preview,
+      detectImageFormat(preview),
+      drawX,
+      y + 3,
+      drawW,
+      drawH,
+      undefined,
+      "MEDIUM",
+    );
   } catch {
     doc.setFontSize(9);
     doc.setTextColor(...PDF_COLORS.placeholder);
-    doc.text(`[Photo ${index + 1} — impossible de charger]`, margin, y + 30);
+    doc.text(
+      `[Photo ${index + 1} — impossible de charger]`,
+      pw / 2,
+      y + frameH / 2,
+      { align: "center" },
+    );
     doc.setTextColor(...PDF_COLORS.body);
-    y += 68;
   }
 
+  y += frameH + 3;
+
+  // Ligne de légende : "Photo N — catégorie"
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8);
   doc.setTextColor(...PDF_COLORS.blue);
-  doc.text(`Photo ${index + 1}`, margin, y);
+  const labelLeft = `Photo ${index + 1}`;
+  doc.text(labelLeft, margin, y);
+  doc.setFont("helvetica", "normal");
   doc.setTextColor(...PDF_COLORS.heading);
-  doc.text(` — ${categorie}`, margin + doc.getTextWidth(`Photo ${index + 1}`), y);
+  doc.text(` — ${categorie}`, margin + doc.getTextWidth(labelLeft), y);
   y += 4;
 
   if (legende) {
-    doc.setFont("helvetica", "normal");
+    doc.setFont("helvetica", "italic");
     doc.setFontSize(8);
     doc.setTextColor(...PDF_COLORS.body);
     const lines = doc.splitTextToSize(legende, contentWidth);
     doc.text(lines, margin, y);
-    y += lines.length * 3.5;
+    y += lines.length * 3.8;
   }
 
-  y += 10;
+  y += 8;
   return y;
 }
 

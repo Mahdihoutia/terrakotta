@@ -516,7 +516,7 @@ async function generatePDF(
     if (photos.length > 0) {
       for (let i = 0; i < photos.length; i++) {
         checkPage(85);
-        y = drawPhotoEntry(doc, i, photos[i].preview, photos[i].categorie, photos[i].legende, y);
+        y = await drawPhotoEntry(doc, i, photos[i].preview, photos[i].categorie, photos[i].legende, y);
       }
     }
 
@@ -888,9 +888,9 @@ export default function RapportVisite({ onBack, onSaved, existingDoc }: Props) {
                       <div className="space-y-3">
                         {(sectionPhotos[activeSection] || []).map((photo, i) => (
                           <div key={photo.id} className="flex gap-3 rounded-lg border p-2.5">
-                            <div className="relative w-28 h-20 shrink-0 rounded-md overflow-hidden bg-muted">
+                            <div className="relative w-28 h-20 shrink-0 rounded-md overflow-hidden bg-muted flex items-center justify-center">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={photo.preview} alt={photo.legende || `Photo ${i + 1}`} className="w-full h-full object-cover" />
+                              <img src={photo.preview} alt={photo.legende || `Photo ${i + 1}`} className="max-w-full max-h-full object-contain" />
                               <button onClick={() => removePhoto(activeSection, photo.id)} className="absolute top-1 right-1 rounded-full bg-destructive p-1 text-white shadow-sm">
                                 <X className="h-3 w-3" />
                               </button>
