@@ -572,6 +572,7 @@ export default function DevisDocument({ onBack, onSaved, existingDoc }: Props) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             titre,
+            reference,
             clientNom: values.client_nom || null,
             donnees,
             statut: "EN_COURS",

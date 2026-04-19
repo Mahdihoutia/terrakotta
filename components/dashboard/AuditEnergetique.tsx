@@ -722,7 +722,7 @@ export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props
       }
       const donnees = JSON.stringify({ ...values, _sectionPhotos: Object.keys(photosToSave).length > 0 ? photosToSave : undefined });
       if (docId) {
-        const res = await fetch(`/api/documents/${docId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ titre, clientNom: values.client_nom || null, donnees, statut: "EN_COURS" }) });
+        const res = await fetch(`/api/documents/${docId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ titre, reference, clientNom: values.client_nom || null, donnees, statut: "EN_COURS" }) });
         if (res.ok) { setSaved(true); setTimeout(() => setSaved(false), 2000); onSaved?.(); }
       } else {
         const res = await fetch("/api/documents", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ titre, reference, type: "AUDIT", statut: "EN_COURS", clientNom: values.client_nom || null, donnees }) });

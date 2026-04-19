@@ -635,6 +635,7 @@ export default function RapportVisite({ onBack, onSaved, existingDoc }: Props) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             titre,
+            reference,
             clientNom: values.client_nom || null,
             donnees,
             statut: "EN_COURS",

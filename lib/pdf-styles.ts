@@ -703,6 +703,35 @@ export function drawSignatureBlock(doc: jsPDF, y: number): number {
   return y;
 }
 
+// ─── Sanitization pour Helvetica (WinAnsi) ─────────────────────
+// Remplace les caractères hors WinAnsi par des équivalents ASCII
+// afin d'éviter les substitutions ratées (largeur mal calculée,
+// lignes débordant du contentWidth).
+
+export function sanitizePdfText(input: string): string {
+  return input
+    .replace(/≈/g, "~")
+    .replace(/≤/g, "<=")
+    .replace(/≥/g, ">=")
+    .replace(/·/g, "\u00B7")  // middle dot OK en WinAnsi
+    .replace(/–/g, "-")
+    .replace(/—/g, "-")
+    .replace(/…/g, "...")
+    .replace(/“|”/g, '"')
+    .replace(/‘|’/g, "'")
+    .replace(/\u00A0/g, " ");  // NBSP → espace normale
+}
+
+// Réinitialise l'état texte (certains plugins comme autoTable laissent
+// un charSpace non nul qui étire l'interlettrage des rendus suivants)
+function resetTextState(doc: jsPDF): void {
+  try {
+    doc.setCharSpace?.(0);
+  } catch {
+    /* noop */
+  }
+}
+
 // ─── Prose / littérature ────────────────────────────────────────
 // Dessine un paragraphe justifié avec la typographie du rapport.
 // Usage : y = drawProse(doc, "Texte…", y, { italic?, size?, color? });
@@ -728,17 +757,20 @@ export function drawProse(
 
   y += opts.spacingBefore ?? 0;
 
+  resetTextState(doc);
   doc.setFont("helvetica", opts.italic ? "italic" : "normal");
   doc.setFontSize(size);
   doc.setTextColor(...color);
 
-  const lines = doc.splitTextToSize(text, contentWidth) as string[];
+  const clean = sanitizePdfText(text);
+  const lines = doc.splitTextToSize(clean, contentWidth) as string[];
   // Pagination automatique ligne par ligne : évite le débordement sur le footer
   const limitY = PDF_LAYOUT.footerY - 12;
   for (const line of lines) {
     if (y + lineH > limitY) {
       doc.addPage();
       y = PDF_LAYOUT.topMargin;
+      resetTextState(doc);
       doc.setFont("helvetica", opts.italic ? "italic" : "normal");
       doc.setFontSize(size);
       doc.setTextColor(...color);
@@ -762,14 +794,23 @@ export function drawCallout(
   const contentWidth = pw - margin * 2;
   const padX = 8;
   const padY = 6;
+  const limitY = PDF_LAYOUT.footerY - 12;
 
+  resetTextState(doc);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  const lines = doc.splitTextToSize(text, contentWidth - padX * 2 - 4) as string[];
+  const clean = sanitizePdfText(text);
+  const lines = doc.splitTextToSize(clean, contentWidth - padX * 2 - 4) as string[];
   const titleH = opts.title ? 6 : 0;
   const boxH = padY * 2 + titleH + lines.length * 4.7;
 
-  // Fond crème surface
+  // Si la boîte ne tient pas, page-break avant
+  if (y + boxH > limitY) {
+    doc.addPage();
+    y = PDF_LAYOUT.topMargin;
+  }
+
+  // Fond surface
   doc.setFillColor(...PDF_COLORS.surface);
   doc.roundedRect(margin, y, contentWidth, boxH, 1.5, 1.5, "F");
   // Filet bleu gauche
@@ -781,7 +822,7 @@ export function drawCallout(
     doc.setFont("helvetica", "bold");
     doc.setFontSize(8.5);
     doc.setTextColor(...PDF_COLORS.blue);
-    doc.text(opts.title.toUpperCase(), margin + padX + 4, ty);
+    doc.text(sanitizePdfText(opts.title).toUpperCase(), margin + padX + 4, ty);
     ty += titleH;
   }
 

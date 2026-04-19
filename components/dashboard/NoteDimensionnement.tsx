@@ -3691,6 +3691,7 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             titre,
+            reference,
             clientNom: values.client_nom || null,
             donnees,
             statut: "EN_COURS",

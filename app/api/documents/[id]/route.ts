@@ -8,6 +8,7 @@ interface RouteContext {
 
 const updateDocumentSchema = z.object({
   titre: z.string().min(1).optional(),
+  reference: z.string().min(1).optional(),
   statut: z.enum(["BROUILLON", "EN_COURS", "TERMINE", "ENVOYE"]).optional(),
   clientNom: z.string().nullable().optional(),
   donnees: z.string().nullable().optional(),
@@ -70,6 +71,7 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
     const data = parsed.data;
     const updateData: Record<string, unknown> = {};
     if (data.titre !== undefined) updateData.titre = data.titre;
+    if (data.reference !== undefined) updateData.reference = data.reference;
     if (data.statut !== undefined) updateData.statut = data.statut;
     if (data.clientNom !== undefined) updateData.clientNom = data.clientNom;
     if (data.donnees !== undefined) updateData.donnees = data.donnees;
@@ -82,6 +84,10 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
     return NextResponse.json(serialize(doc));
   } catch (err) {
     console.error("[PATCH /api/documents/[id]]", err);
+    // Conflit de référence unique
+    if (err && typeof err === "object" && "code" in err && (err as { code: string }).code === "P2002") {
+      return NextResponse.json({ error: "Cette référence est déjà utilisée par un autre document." }, { status: 409 });
+    }
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }
