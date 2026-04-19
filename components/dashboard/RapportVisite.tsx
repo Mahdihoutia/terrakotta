@@ -391,21 +391,22 @@ const PREAMBULE_LECTURE =
   "Le document s'organise en onze sections thématiques. Les six premières décrivent l'existant (enveloppe, systèmes, ventilation, froid) ; la septième synthétise les préconisations, leur priorisation et les aides financières mobilisables. Chaque constat est, autant que possible, illustré par une ou plusieurs photographies annexées au fil du rapport. La conclusion dresse l'avis technique global et trace les prochaines étapes opérationnelles.";
 
 const SECTION_PROSE: Record<number, string> = {
-  0: "Cette première section fixe le cadre contractuel et administratif de la visite : identité du bénéficiaire, localisation du bien, personnes présentes lors du constat et référence unique du rapport. Ces informations conditionnent la recevabilité du document dans les dispositifs d'aides (MaPrimeRénov', CEE) et servent d'ancrage à l'ensemble des observations qui suivent.",
-  1: "La description générale du bâtiment oriente l'analyse thermique à venir. L'année de construction renseigne sur les réglementations applicables à l'époque (avant 1975, RT 2000, RT 2005, RT 2012, RE 2020) et sur les matériaux vraisemblablement employés. La surface, l'orientation et la mitoyenneté déterminent les apports solaires utiles, les déperditions par surfaces déperditives et le potentiel de rénovation bioclimatique.",
-  2: "Les murs représentent en moyenne 20 à 25 % des déperditions d'un bâtiment non isolé. Leur traitement (isolation par l'intérieur, par l'extérieur ou répartie) est l'un des leviers les plus structurants d'un projet de rénovation. Les observations ci-dessous visent à identifier la composition existante, les pathologies éventuelles (humidité, fissures, ponts thermiques) et le mode d'isolation le plus adapté.",
-  3: "La toiture et les combles concentrent 25 à 30 % des déperditions d'un logement mal isolé : l'air chaud s'élève et s'échappe par la partie haute du bâti. C'est généralement le chantier le plus rentable — meilleur rapport économie d'énergie / coût — et le point de départ naturel d'un parcours de rénovation énergétique performant.",
-  4: "Les menuiseries jouent un double rôle : isolation thermique (Uw) et étanchéité à l'air. Leur état de vieillissement conditionne le confort d'hiver, les courants d'air perceptibles et la performance globale de l'enveloppe. Un simple vitrage ou un double vitrage ancien (< 2000) constitue systématiquement une cible d'amélioration, particulièrement lorsque les joints sont dégradés.",
-  5: "Le plancher bas est souvent le parent pauvre de la rénovation, pourtant il représente 7 à 10 % des déperditions et influence directement le confort au sol. Son traitement dépend fortement de la configuration (terre-plein, vide sanitaire accessible, sous-sol) et de l'accessibilité à sa sous-face.",
-  6: "Le système de chauffage est le premier poste de consommation énergétique d'un bâtiment (≈ 66 % en résidentiel en France). Son audit porte sur la technologie, l'âge, l'état, la régulation et la cohérence avec l'enveloppe. La réglementation impose désormais une interdiction progressive des chaudières fioul et, à terme, gaz ; le remplacement par une pompe à chaleur ou un système biomasse constitue le principal scénario de décarbonation.",
-  7: "L'eau chaude sanitaire (ECS) pèse 10 à 15 % de la consommation énergétique d'un logement, et davantage pour les bâtiments à forte occupation. L'évolution vers des solutions décarbonées (ballon thermodynamique, solaire thermique, couplage PAC) est un gisement d'économie souvent sous-exploité au démarrage du projet.",
-  8: "La ventilation n'est pas un gadget : elle protège le bâti (évacuation de l'humidité), garantit la qualité de l'air intérieur et conditionne la performance réelle de l'isolation. Une enveloppe rendue étanche sans système de renouvellement d'air maîtrisé produit inévitablement des pathologies (condensation, moisissures, dégradation des isolants).",
-  9: "La production de froid, lorsqu'elle existe, représente un poste de consommation électrique notable et relève de réglementations spécifiques (fluides frigorigènes, étanchéité, contrôles périodiques). Son audit vise tant la performance énergétique (EER, SEER) que la conformité aux exigences F-Gaz et la compatibilité avec les objectifs de décarbonation.",
-  10: "Les préconisations ci-dessous ordonnent les actions recommandées selon un triple critère : urgence technique, rentabilité énergétique et éligibilité aux aides. Le séquençage proposé privilégie la logique bioclimatique « d'abord l'enveloppe, puis les systèmes » afin de dimensionner les équipements au plus juste et de maximiser le gain énergétique à l'euro investi.",
+  0: "Cadre administratif de la visite : identification du bénéficiaire, du bien et du rédacteur. Ces éléments conditionnent la recevabilité du document dans les dispositifs d'aides.",
+  1: "La description du bâti oriente l'analyse thermique à venir : année de construction, surface, orientation et mitoyenneté déterminent le potentiel de rénovation et les déperditions attendues.",
+  2: "Les murs représentent 20 à 25 % des déperditions d'un bâtiment non isolé. L'objectif est d'identifier la composition existante, les pathologies éventuelles et le mode d'isolation le plus adapté.",
+  3: "La toiture concentre 25 à 30 % des déperditions d'un logement mal isolé. C'est généralement le chantier le plus rentable et le point de départ naturel d'une rénovation performante.",
+  4: "Les menuiseries jouent un double rôle : isolation thermique (Uw) et étanchéité à l'air. Simple vitrage ou double vitrage ancien constituent des cibles d'amélioration prioritaires.",
+  5: "Le plancher bas représente 7 à 10 % des déperditions et influence le confort au sol. Son traitement dépend de la configuration (terre-plein, vide sanitaire, sous-sol) et de l'accessibilité.",
+  6: "Le chauffage est le premier poste de consommation (≈ 66 % en résidentiel). L'audit porte sur la technologie, l'âge, la régulation et la cohérence avec l'enveloppe, en cohérence avec la trajectoire de décarbonation.",
+  7: "L'ECS pèse 10 à 15 % de la consommation, davantage en bâtiment à forte occupation. Les solutions décarbonées (thermodynamique, solaire, PAC) constituent un gisement d'économie encore sous-exploité.",
+  8: "La ventilation protège le bâti, garantit la qualité de l'air et conditionne la performance réelle de l'isolation. Une enveloppe étanche sans renouvellement d'air maîtrisé produit pathologies et dégradations.",
+  9: "La production de froid, lorsqu'elle existe, constitue un poste électrique notable et relève de réglementations spécifiques (fluides frigorigènes, F-Gaz). L'audit vise la performance (EER, SEER) et la conformité.",
+  10: "Les préconisations ordonnent les actions selon un triple critère : urgence technique, rentabilité énergétique et éligibilité aux aides. Le séquençage privilégie la logique « d'abord l'enveloppe, puis les systèmes ».",
 };
 
 const METHODOLOGIE_CLOSING =
   "Le présent rapport rend compte de constats visuels effectués sans démontage ni investigation destructive. Les valeurs d'épaisseur d'isolant, de performance d'équipement ou d'étanchéité à l'air indiquées reposent sur les éléments accessibles lors de la visite et sur la documentation transmise par le bénéficiaire. Un audit énergétique réglementaire, une étude thermique dynamique ou un test d'infiltrométrie permettront, au besoin, de fiabiliser ces données avant phase travaux.";
+
 
 // ─── PDF Generation ─────────────────────────────────────────────
 
@@ -486,13 +487,19 @@ async function generatePDF(
   for (let sIdx = 0; sIdx < sections.length; sIdx++) {
     const section = sections[sIdx];
     const tableData: string[][] = [];
+    const freeText: { label: string; text: string }[] = [];
     for (const field of section.fields) {
       const val = values[field.id];
       if (!val || !val.trim()) continue;
-      const label = field.unit ? `${field.label} (${field.unit})` : field.label;
-      tableData.push([label, val]);
+      if (field.type === "textarea") {
+        freeText.push({ label: field.label, text: val.trim() });
+      } else {
+        const label = field.unit ? `${field.label} (${field.unit})` : field.label;
+        tableData.push([label, val]);
+      }
     }
-    if (tableData.length === 0 && !(sectionPhotos[sIdx]?.length > 0)) continue;
+    const photos = sectionPhotos[sIdx] || [];
+    if (tableData.length === 0 && freeText.length === 0 && photos.length === 0) continue;
 
     checkPage(40);
     tocEntries.push({ title: section.titre, page: doc.getNumberOfPages() - 1 });
@@ -505,14 +512,21 @@ async function generatePDF(
       y = drawProse(doc, prose, y, { italic: true, size: 8.5, spacingAfter: 5 });
     }
 
+    // Tableau synthétique des saisies structurées
     if (tableData.length > 0) {
       autoTable(doc, getDataTableConfig(y, tableData, contentWidth));
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       y = (doc as any).lastAutoTable.finalY + 6;
     }
 
+    // Champs libres (observations, descriptions) — rendus en prose
+    for (const ft of freeText) {
+      checkPage(30);
+      y = drawProse(doc, ft.label, y, { size: 9, spacingAfter: 1 });
+      y = drawProse(doc, ft.text, y, { size: 9.5, spacingAfter: 4 });
+    }
+
     // Photos de cette section
-    const photos = sectionPhotos[sIdx] || [];
     if (photos.length > 0) {
       for (let i = 0; i < photos.length; i++) {
         checkPage(85);
