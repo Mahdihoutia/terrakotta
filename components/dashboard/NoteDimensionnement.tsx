@@ -3199,6 +3199,7 @@ async function generatePDF(
     drawSectionHeader,
     drawFooter,
     drawPhotoEntry,
+    drawProse,
     getDataTableConfig,
     needsPageBreak,
     PDF_LAYOUT,
@@ -3256,13 +3257,18 @@ async function generatePDF(
   for (let sIdx = 0; sIdx < sections.length; sIdx++) {
     const section = sections[sIdx];
     const tableData: string[][] = [];
+    const freeText: { label: string; text: string }[] = [];
     for (const field of section.fields) {
       const val = values[field.id];
       if (!val || !val.trim()) continue;
-      const label = field.unit ? `${field.label} (${field.unit})` : field.label;
-      tableData.push([label, val]);
+      if (field.type === "textarea") {
+        freeText.push({ label: field.label, text: val.trim() });
+      } else {
+        const label = field.unit ? `${field.label} (${field.unit})` : field.label;
+        tableData.push([label, val]);
+      }
     }
-    if (tableData.length === 0 && !(sectionPhotos[sIdx]?.length > 0)) continue;
+    if (tableData.length === 0 && freeText.length === 0 && !(sectionPhotos[sIdx]?.length > 0)) continue;
 
     checkPage(30);
     tocEntries.push({ title: section.titre, page: doc.getNumberOfPages() - 1 });
@@ -3272,6 +3278,13 @@ async function generatePDF(
       autoTable(doc, getDataTableConfig(y, tableData, contentWidth));
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       y = (doc as any).lastAutoTable.finalY + 6;
+    }
+
+    // Textareas → paragraphes rédigés
+    for (const ft of freeText) {
+      checkPage(30);
+      y = drawProse(doc, ft.label, y, { size: 9, spacingAfter: 1 });
+      y = drawProse(doc, ft.text, y, { size: 9.5, spacingAfter: 4 });
     }
 
     // ─── Encart volume CEE calculé (après la section "gain") ───

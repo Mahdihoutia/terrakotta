@@ -429,6 +429,7 @@ async function generatePDF(sections: QuestionSection[], values: FormValues, sect
     drawSectionHeader,
     drawFooter,
     drawPhotoEntry,
+    drawProse,
     drawDPEGESDual,
     drawConsoBreakdown,
     drawDeperditionsChart,
@@ -478,13 +479,18 @@ async function generatePDF(sections: QuestionSection[], values: FormValues, sect
   for (let sIdx = 0; sIdx < sections.length; sIdx++) {
     const section = sections[sIdx];
     const tableData: string[][] = [];
+    const freeText: { label: string; text: string }[] = [];
     for (const field of section.fields) {
       const val = values[field.id];
       if (!val || !val.trim()) continue;
-      const label = field.unit ? `${field.label} (${field.unit})` : field.label;
-      tableData.push([label, val]);
+      if (field.type === "textarea") {
+        freeText.push({ label: field.label, text: val.trim() });
+      } else {
+        const label = field.unit ? `${field.label} (${field.unit})` : field.label;
+        tableData.push([label, val]);
+      }
     }
-    if (tableData.length === 0 && !(sectionPhotos[sIdx]?.length > 0)) continue;
+    if (tableData.length === 0 && freeText.length === 0 && !(sectionPhotos[sIdx]?.length > 0)) continue;
 
     checkPage(30);
     tocEntries.push({ title: section.titre, page: doc.getNumberOfPages() - 1 });
@@ -494,6 +500,13 @@ async function generatePDF(sections: QuestionSection[], values: FormValues, sect
       autoTable(doc, getDataTableConfig(y, tableData, contentWidth));
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       y = (doc as any).lastAutoTable.finalY + 6;
+    }
+
+    // Textareas → paragraphes rédigés, pas de tableau
+    for (const ft of freeText) {
+      checkPage(30);
+      y = drawProse(doc, ft.label, y, { size: 9, spacingAfter: 1 });
+      y = drawProse(doc, ft.text, y, { size: 9.5, spacingAfter: 4 });
     }
 
     // ─── Diagrammes pro selon la section ───────────────────
