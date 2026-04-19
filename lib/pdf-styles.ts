@@ -17,9 +17,9 @@ export const PDF_COLORS = {
   heading:     [13,  27,  53]  as [number, number, number],  // same as navy
   body:        [107, 91,  80]  as [number, number, number],  // #6B5B50
   bodyLight:   [150, 136, 126] as [number, number, number],
-  background:  [250, 248, 245] as [number, number, number],  // #FAF8F5
-  surface:     [245, 240, 232] as [number, number, number],
-  border:      [232, 224, 212] as [number, number, number],  // #E8E0D4
+  background:  [255, 255, 255] as [number, number, number],  // fond blanc pur
+  surface:     [247, 248, 250] as [number, number, number],  // gris très clair (photos, callouts)
+  border:      [224, 228, 234] as [number, number, number],  // filet gris clair
   white:       [255, 255, 255] as [number, number, number],
   placeholder: [195, 185, 175] as [number, number, number],
   coverText:   [245, 250, 255] as [number, number, number],  // near-white on dark
@@ -109,68 +109,66 @@ export function drawCoverPage(
   const pw = doc.internal.pageSize.getWidth();
   const ph = doc.internal.pageSize.getHeight();
 
-  // ── Background ──────────────────────────────────────────────
-  doc.setFillColor(...PDF_COLORS.navy);
+  // ── Background blanc ────────────────────────────────────────
+  doc.setFillColor(...PDF_COLORS.white);
   doc.rect(0, 0, pw, ph, "F");
 
-  // ── Lightning bolt (large, centered upper area) ──────────────
-  const bW = 24, bH = 39, bCx = pw / 2, bCy = 62;
-  // soft glow: slightly larger bolt in mid-blue
-  drawZap(doc, bCx, bCy, bW + 8, bH + 13, [25, 65, 140] as [number, number, number]);
-  drawZap(doc, bCx, bCy, bW, bH, PDF_COLORS.blue);
+  // ── Bandeau haut bleu fin ───────────────────────────────────
+  doc.setFillColor(...PDF_COLORS.blue);
+  doc.rect(0, 0, pw, 3, "F");
 
-  // ── KILOWATER wordmark ───────────────────────────────────────
+  // ── Lightning bolt + wordmark centrés ───────────────────────
+  const bCx = pw / 2, bCy = 58;
+  drawZap(doc, bCx, bCy, 22, 36, PDF_COLORS.blue);
+
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(27);
-  doc.setTextColor(...PDF_COLORS.coverText);
-  doc.text("KILOWATER", pw / 2, 91, { align: "center" });
+  doc.setFontSize(26);
+  doc.setTextColor(...PDF_COLORS.heading);
+  doc.text("KILOWATER", pw / 2, 90, { align: "center" });
 
-  // ── Tagline ──────────────────────────────────────────────────
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
-  doc.setTextColor(...PDF_COLORS.coverMuted);
-  doc.text("Bureau d'etude en renovation energetique", pw / 2, 98, { align: "center" });
+  doc.setTextColor(...PDF_COLORS.bodyLight);
+  doc.text("Bureau d'etude en renovation energetique", pw / 2, 97, { align: "center" });
 
-  // ── Horizontal rule ──────────────────────────────────────────
-  doc.setDrawColor(...PDF_COLORS.navyMid);
-  doc.setLineWidth(0.4);
-  doc.line(35, 105, pw - 35, 105);
+  // ── Filet horizontal ────────────────────────────────────────
+  doc.setDrawColor(...PDF_COLORS.border);
+  doc.setLineWidth(0.3);
+  doc.line(40, 105, pw - 40, 105);
 
-  // ── Document type ────────────────────────────────────────────
+  // ── Type de document ────────────────────────────────────────
   doc.setFont("helvetica", "bold");
   doc.setFontSize(20);
   doc.setTextColor(...PDF_COLORS.blue);
-  doc.text(documentType.toUpperCase(), pw / 2, 120, { align: "center" });
+  doc.text(documentType.toUpperCase(), pw / 2, 122, { align: "center" });
 
-  // ── Subtitle ─────────────────────────────────────────────────
+  // ── Sous-titre ──────────────────────────────────────────────
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(9.5);
-  doc.setTextColor(...PDF_COLORS.coverMuted);
-  const subLines = doc.splitTextToSize(subtitle, pw - 60);
-  doc.text(subLines, pw / 2, 130, { align: "center" });
+  doc.setFontSize(10);
+  doc.setTextColor(...PDF_COLORS.body);
+  const subLines = doc.splitTextToSize(subtitle, pw - 60) as string[];
+  doc.text(subLines, pw / 2, 132, { align: "center" });
 
-  // ── Reference ────────────────────────────────────────────────
-  const refY = 130 + subLines.length * 5 + 7;
+  // ── Référence ───────────────────────────────────────────────
+  const refY = 132 + subLines.length * 5 + 7;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
-  doc.setTextColor(...PDF_COLORS.blueLight);
+  doc.setTextColor(...PDF_COLORS.bodyLight);
   doc.text(`Ref. ${reference}`, pw / 2, refY, { align: "center" });
 
-  // ── Info card (white rounded rect) ──────────────────────────
+  // ── Carte info (fond gris clair, filet bleu à gauche) ──────
   const filtered = infoRows.filter(([, v]) => v && v !== "—");
-  const cardX  = 20;
+  const cardX  = 25;
   const cardY  = refY + 12;
-  const cardW  = pw - 40;
-  const cardH  = filtered.length * 9 + 16;
+  const cardW  = pw - 50;
+  const cardH  = filtered.length * 9 + 14;
 
-  doc.setFillColor(...PDF_COLORS.white);
-  doc.roundedRect(cardX, cardY, cardW, cardH, 3, 3, "F");
-
-  // Blue top strip on card
+  doc.setFillColor(...PDF_COLORS.surface);
+  doc.roundedRect(cardX, cardY, cardW, cardH, 2, 2, "F");
   doc.setFillColor(...PDF_COLORS.blue);
-  doc.rect(cardX, cardY, cardW, 2.5, "F");
+  doc.rect(cardX, cardY, 1.8, cardH, "F");
 
-  let iy = cardY + 12;
+  let iy = cardY + 10;
   for (const [label, value] of filtered) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7.5);
@@ -184,24 +182,25 @@ export function drawCoverPage(
     iy += 9;
   }
 
-  // ── Bottom bar ───────────────────────────────────────────────
+  // ── Barre basse ─────────────────────────────────────────────
   const barY = ph - 18;
-  doc.setDrawColor(...PDF_COLORS.navyMid);
+  doc.setDrawColor(...PDF_COLORS.border);
   doc.setLineWidth(0.3);
-  doc.line(20, barY, pw - 20, barY);
+  doc.line(25, barY, pw - 25, barY);
 
-  drawZap(doc, 30, barY + 6, 4, 6.5, PDF_COLORS.blue);
+  drawZap(doc, 30, barY + 6, 3.5, 5.5, PDF_COLORS.blue);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7.5);
-  doc.setTextColor(...PDF_COLORS.coverMuted);
-  doc.text("KILOWATER", 34.5, barY + 7.5);
+  doc.setTextColor(...PDF_COLORS.blue);
+  doc.text("KILOWATER", 34, barY + 7.5);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.5);
+  doc.setTextColor(...PDF_COLORS.bodyLight);
   doc.text(
     new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }),
-    pw - 20, barY + 7.5, { align: "right" },
+    pw - 25, barY + 7.5, { align: "right" },
   );
 }
 
@@ -372,7 +371,7 @@ export function getDataTableConfig(
       0: { fontStyle: "bold", cellWidth: 65, textColor: PDF_COLORS.heading },
       1: { cellWidth: contentWidth - 65 },
     },
-    alternateRowStyles: { fillColor: PDF_COLORS.background },
+    alternateRowStyles: { fillColor: PDF_COLORS.surface },
     didParseCell: undefined,
   };
 }
@@ -402,7 +401,7 @@ export function getInfoTableConfig(
       fontStyle: "bold",
       fontSize: 9,
     },
-    alternateRowStyles: { fillColor: PDF_COLORS.background },
+    alternateRowStyles: { fillColor: PDF_COLORS.surface },
     columnStyles: {
       0: { fontStyle: "bold", cellWidth: 50, textColor: PDF_COLORS.heading },
     },
@@ -433,7 +432,7 @@ export function getDevisTableConfig(
       fontStyle: "bold",
       fontSize: 9,
     },
-    alternateRowStyles: { fillColor: PDF_COLORS.background },
+    alternateRowStyles: { fillColor: PDF_COLORS.surface },
     columnStyles: {
       0: { cellWidth: 65 },
       1: { cellWidth: 20, halign: "center" },
@@ -505,14 +504,27 @@ export function drawFooter(
   doc.setTextColor(...PDF_COLORS.blue);
   doc.text("KILOWATER", margin + 5.5, footerY);
 
-  // Center: label · reference
+  // Right: page X / Y (mesuré en premier pour éviter le chevauchement)
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7);
   doc.setTextColor(...PDF_COLORS.bodyLight);
-  doc.text(`${documentLabel}  \u00b7  ${reference}`, pw / 2, footerY, { align: "center" });
+  const pageStr = `${pageNum} / ${totalPages}`;
+  const pageW   = doc.getTextWidth(pageStr);
+  doc.text(pageStr, pw - margin, footerY, { align: "right" });
 
-  // Right: page X / Y
-  doc.text(`${pageNum} / ${totalPages}`, pw - margin, footerY, { align: "right" });
+  // Center: label · reference (tronqué si chevauchement)
+  const leftEnd   = margin + 5.5 + doc.getTextWidth("KILOWATER") + 4; // marge sécurité
+  const rightStart = pw - margin - pageW - 4;
+  const maxCenterW = rightStart - leftEnd;
+  let centerText = `${documentLabel}  \u00b7  ${reference}`;
+  if (doc.getTextWidth(centerText) > maxCenterW) {
+    // Ellipsise caractère par caractère jusqu'à passer
+    while (centerText.length > 3 && doc.getTextWidth(centerText + "…") > maxCenterW) {
+      centerText = centerText.slice(0, -1);
+    }
+    centerText = centerText.trimEnd() + "…";
+  }
+  doc.text(centerText, (leftEnd + rightStart) / 2, footerY, { align: "center" });
 }
 
 // ─── Photo appendix ─────────────────────────────────────────────
@@ -721,8 +733,19 @@ export function drawProse(
   doc.setTextColor(...color);
 
   const lines = doc.splitTextToSize(text, contentWidth) as string[];
-  doc.text(lines, margin, y);
-  y += lines.length * lineH;
+  // Pagination automatique ligne par ligne : évite le débordement sur le footer
+  const limitY = PDF_LAYOUT.footerY - 12;
+  for (const line of lines) {
+    if (y + lineH > limitY) {
+      doc.addPage();
+      y = PDF_LAYOUT.topMargin;
+      doc.setFont("helvetica", opts.italic ? "italic" : "normal");
+      doc.setFontSize(size);
+      doc.setTextColor(...color);
+    }
+    doc.text(line, margin, y);
+    y += lineH;
+  }
   y += opts.spacingAfter ?? 0;
   return y;
 }

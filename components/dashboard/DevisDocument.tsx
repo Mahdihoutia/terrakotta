@@ -202,7 +202,6 @@ async function generatePDF(
   const { default: jsPDF } = await import("jspdf");
   const { default: autoTable } = await import("jspdf-autotable");
   const {
-    drawCoverPage,
     drawSectionHeader,
     drawFooter,
     drawSignatureBlock,
@@ -229,25 +228,61 @@ async function generatePDF(
 
   const reference = values.ref_devis || "Ref. non definie";
 
-  // ─── Page 1 : Cover ──────────────────────────────────────
-  drawCoverPage(
-    doc,
-    "Devis",
-    values.objet || "Travaux de renovation energetique",
-    [
-      ["Reference",       reference],
-      ["Client",          values.client_nom      || "—"],
-      ["Adresse chantier",values.adresse_chantier || values.client_adresse || "—"],
-      ["Date d'emission", values.date_emission    || "—"],
-      ["Date validite",   values.date_validite    || "—"],
-      ["Delai execution", values.delai_execution  || "—"],
-    ],
-    reference,
-  );
-
-  // ─── Page 2+ : Content ───────────────────────────────────
-  doc.addPage();
+  // ─── Entête de document (remplace la page de garde) ─────
   let y: number = PDF_LAYOUT.topMargin;
+
+  // Bandeau bleu + wordmark
+  doc.setFillColor(...PDF_COLORS.blue);
+  doc.rect(0, 0, pageWidth, 3, "F");
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.setTextColor(...PDF_COLORS.heading);
+  doc.text("KILOWATER", margin, y);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(...PDF_COLORS.bodyLight);
+  doc.text("Bureau d'etude en renovation energetique", margin, y + 4.5);
+
+  // Type + référence à droite
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.setTextColor(...PDF_COLORS.blue);
+  doc.text("DEVIS", pageWidth - margin, y, { align: "right" });
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(...PDF_COLORS.bodyLight);
+  doc.text(`Ref. ${reference}`, pageWidth - margin, y + 4.5, { align: "right" });
+
+  y += 10;
+  doc.setDrawColor(...PDF_COLORS.border);
+  doc.setLineWidth(0.3);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 8;
+
+  // Bloc info compact (client / dates)
+  const infoRows: [string, string][] = [
+    ["Client",          values.client_nom      || "—"],
+    ["Adresse chantier",values.adresse_chantier || values.client_adresse || "—"],
+    ["Date d'emission", values.date_emission    || "—"],
+    ["Date validite",   values.date_validite    || "—"],
+    ["Delai execution", values.delai_execution  || "—"],
+    ["Objet",           values.objet            || "Travaux de renovation energetique"],
+  ].filter(([, v]) => v && v !== "—") as [string, string][];
+
+  doc.setFontSize(9);
+  for (const [label, val] of infoRows) {
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...PDF_COLORS.bodyLight);
+    doc.text(label, margin, y);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...PDF_COLORS.heading);
+    const wrapped = doc.splitTextToSize(val, contentWidth - 55) as string[];
+    doc.text(wrapped, margin + 55, y);
+    y += Math.max(5, wrapped.length * 4.5);
+  }
+  y += 6;
 
   // ─── Ligne items table ────────────────────────────────────
   checkPage(40);
@@ -390,12 +425,11 @@ async function generatePDF(
   checkPage(50);
   drawSignatureBlock(doc, y);
 
-  // ─── Footers (skip page 1 = dark cover) ──────────────────
+  // ─── Footers (toutes les pages, plus de cover) ───────────
   const totalPages = doc.getNumberOfPages();
-  const contentPages = totalPages - 1;
-  for (let i = 2; i <= totalPages; i++) {
+  for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
-    drawFooter(doc, "Devis", reference, i - 1, contentPages);
+    drawFooter(doc, "Devis", reference, i, totalPages);
   }
 
   const filename = `Devis_${values.ref_devis || "DRAFT"}_${new Date().toISOString().slice(0, 10)}.pdf`;
