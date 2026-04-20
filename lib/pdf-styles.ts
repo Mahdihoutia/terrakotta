@@ -27,11 +27,12 @@ export const PDF_COLORS = {
 } as const;
 
 export const PDF_LAYOUT = {
-  margin:        25,
-  topMargin:     30,
+  margin:        22,
+  topMargin:     26,
   footerY:       282,
+  safeBottom:    270,   // contenu doit rester au-dessus — laisse 12mm de respiration jusqu'au footer
   headerHeight:  40,
-  sectionGap:    14,
+  sectionGap:    10,
   lineHeight:    5,
 } as const;
 
@@ -316,25 +317,25 @@ export function drawSectionHeader(
     const kicker = opts.kicker
       ?? (opts.number !== undefined ? `SECTION ${String(opts.number).padStart(2, "0")}` : "");
     doc.text(sanitizePdfText(kicker.toUpperCase()), margin, y + 3);
-    y += 5;
+    y += 4;
   }
 
   // Titre principal en caps serrées
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
+  doc.setFontSize(13);
   doc.setTextColor(...PDF_COLORS.heading);
   const titleClean = sanitizePdfText(title.replace(/^\d+\.\s*/, "")); // retire "03. " si présent
   doc.text(titleClean, margin, y + 5);
-  y += 8;
+  y += 7;
 
   // Barre bleue épaisse sous le titre
   doc.setFillColor(...PDF_COLORS.blue);
-  doc.rect(margin, y, 28, 1.4, "F");
+  doc.rect(margin, y, 26, 1.2, "F");
   // Filet gris discret jusqu'au bord droit
   doc.setDrawColor(...PDF_COLORS.border);
   doc.setLineWidth(0.2);
-  doc.line(margin + 28, y + 0.7, pw - margin, y + 0.7);
-  y += 5;
+  doc.line(margin + 26, y + 0.6, pw - margin, y + 0.6);
+  y += 4;
 
   if (description) {
     doc.setFont("helvetica", "italic");
@@ -343,9 +344,9 @@ export function drawSectionHeader(
     const lines = doc.splitTextToSize(sanitizePdfText(description), pw - margin * 2) as string[];
     for (const line of lines) {
       doc.text(line, margin, y + 2);
-      y += 4.3;
+      y += 4.2;
     }
-    y += 3;
+    y += 2;
   }
 
   return y;
@@ -379,15 +380,15 @@ export function getDataTableConfig(
     margin: { left: margin, right: margin },
     styles: {
       fontSize: 9,
-      cellPadding: { top: 3, bottom: 3, left: 4, right: 4 },
+      cellPadding: { top: 2, bottom: 2, left: 3, right: 3 },
       overflow: "linebreak",
       textColor: PDF_COLORS.body,
       lineColor: PDF_COLORS.border,
       lineWidth: 0.2,
     },
     columnStyles: {
-      0: { fontStyle: "bold", cellWidth: 65, textColor: PDF_COLORS.heading },
-      1: { cellWidth: contentWidth - 65 },
+      0: { fontStyle: "bold", cellWidth: 60, textColor: PDF_COLORS.heading },
+      1: { cellWidth: contentWidth - 60 },
     },
     alternateRowStyles: { fillColor: PDF_COLORS.surface },
     didParseCell: undefined,
@@ -408,7 +409,7 @@ export function getInfoTableConfig(
     margin: { left: margin, right: margin },
     styles: {
       fontSize: 9,
-      cellPadding: { top: 3.5, bottom: 3.5, left: 5, right: 5 },
+      cellPadding: { top: 2.5, bottom: 2.5, left: 4, right: 4 },
       textColor: PDF_COLORS.body,
       lineColor: PDF_COLORS.border,
       lineWidth: 0.2,
@@ -421,7 +422,7 @@ export function getInfoTableConfig(
     },
     alternateRowStyles: { fillColor: PDF_COLORS.surface },
     columnStyles: {
-      0: { fontStyle: "bold", cellWidth: 50, textColor: PDF_COLORS.heading },
+      0: { fontStyle: "bold", cellWidth: 48, textColor: PDF_COLORS.heading },
     },
   };
 }
@@ -439,10 +440,11 @@ export function getDevisTableConfig(
     margin: { left: margin, right: margin },
     styles: {
       fontSize: 9,
-      cellPadding: { top: 3, bottom: 3, left: 4, right: 4 },
+      cellPadding: { top: 2, bottom: 2, left: 3, right: 3 },
       textColor: PDF_COLORS.body,
       lineColor: PDF_COLORS.border,
       lineWidth: 0.2,
+      overflow: "linebreak",
     },
     headStyles: {
       fillColor: PDF_COLORS.navy,
@@ -452,9 +454,9 @@ export function getDevisTableConfig(
     },
     alternateRowStyles: { fillColor: PDF_COLORS.surface },
     columnStyles: {
-      0: { cellWidth: 65 },
-      1: { cellWidth: 20, halign: "center" },
-      2: { cellWidth: 20, halign: "right" },
+      0: { cellWidth: 70 },
+      1: { cellWidth: 18, halign: "center" },
+      2: { cellWidth: 18, halign: "right" },
       3: { cellWidth: 30, halign: "right" },
       4: { cellWidth: 30, halign: "right" },
     },
@@ -474,7 +476,7 @@ export function getTotalsTableConfig(
     margin: { left: margin + contentWidth - 85, right: margin },
     styles: {
       fontSize: 10,
-      cellPadding: { top: 3, bottom: 3, left: 5, right: 5 },
+      cellPadding: { top: 2.5, bottom: 2.5, left: 4, right: 4 },
       textColor: PDF_COLORS.heading,
       lineColor: PDF_COLORS.border,
       lineWidth: 0.2,
@@ -742,7 +744,7 @@ export function sanitizePdfText(input: string): string {
 
 // Réinitialise l'état texte (certains plugins comme autoTable laissent
 // un charSpace non nul qui étire l'interlettrage des rendus suivants)
-function resetTextState(doc: jsPDF): void {
+export function resetTextState(doc: jsPDF): void {
   try {
     doc.setCharSpace?.(0);
   } catch {
@@ -783,7 +785,7 @@ export function drawProse(
   const clean = sanitizePdfText(text);
   const lines = doc.splitTextToSize(clean, contentWidth) as string[];
   // Pagination automatique ligne par ligne : évite le débordement sur le footer
-  const limitY = PDF_LAYOUT.footerY - 12;
+  const limitY = PDF_LAYOUT.safeBottom;
   for (const line of lines) {
     if (y + lineH > limitY) {
       doc.addPage();
@@ -812,7 +814,7 @@ export function drawCallout(
   const contentWidth = pw - margin * 2;
   const padX = 8;
   const padY = 6;
-  const limitY = PDF_LAYOUT.footerY - 12;
+  const limitY = PDF_LAYOUT.safeBottom;
 
   resetTextState(doc);
   doc.setFont("helvetica", "normal");
@@ -1485,7 +1487,7 @@ export function drawExecutiveSummary(
   // Constats clés + leviers en 2 colonnes
   const colW = (contentWidth - 8) / 2;
   const colGap = 8;
-  const limitY = PDF_LAYOUT.footerY - 14;
+  const limitY = PDF_LAYOUT.safeBottom;
 
   function drawColumn(x: number, title: string, items: string[]): void {
     doc.setFont("helvetica", "bold");
@@ -1604,13 +1606,14 @@ export function drawActionSheet(
   const margin       = PDF_LAYOUT.margin;
   const pw           = doc.internal.pageSize.getWidth();
   const contentWidth = pw - margin * 2;
-  const limitY       = PDF_LAYOUT.footerY - 14;
+  const limitY       = PDF_LAYOUT.safeBottom;
 
   // Hauteur estimée — si ça ne tient pas, saute de page
   const briefLines = action.brief
     ? (doc.splitTextToSize(sanitizePdfText(action.brief), contentWidth - 10) as string[]).length
     : 0;
-  const estH = 14 + 10 + (briefLines * 4 + 4) + 22 + 10;
+  // bandeau (10) + meta (8+4) + brief + KPI (16+4) + coûts (6) + filet (5)
+  const estH = 10 + 12 + (briefLines * 4 + (briefLines ? 2 : 0)) + 20 + 11;
   if (y + estH > limitY) {
     doc.addPage();
     y = PDF_LAYOUT.topMargin;
@@ -1751,7 +1754,7 @@ export function drawKpiRow(
   if (n === 0) return y;
   const gap          = 3;
   const tileW        = (contentWidth - (n - 1) * gap) / n;
-  const tileH        = 20;
+  const tileH        = 17;
 
   resetTextState(doc);
   for (let i = 0; i < n; i++) {
@@ -1767,21 +1770,21 @@ export function drawKpiRow(
     doc.setFont("helvetica", "normal");
     doc.setFontSize(6.5);
     doc.setTextColor(...PDF_COLORS.bodyLight);
-    doc.text(sanitizePdfText(k.label.toUpperCase()), tx + 4, y + 4.5);
+    doc.text(sanitizePdfText(k.label.toUpperCase()), tx + 3.5, y + 4);
 
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
+    doc.setFontSize(11);
     doc.setTextColor(...PDF_COLORS.heading);
-    doc.text(sanitizePdfText(k.value), tx + 4, y + 12);
+    doc.text(sanitizePdfText(k.value), tx + 3.5, y + 10.5);
 
     if (k.hint) {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(6.5);
       doc.setTextColor(...PDF_COLORS.bodyLight);
-      doc.text(sanitizePdfText(k.hint), tx + 4, y + 17);
+      doc.text(sanitizePdfText(k.hint), tx + 3.5, y + 14.5);
     }
   }
-  return y + tileH + 4;
+  return y + tileH + 3;
 }
 
 // ─── Radar chart (grille d'analyse / profil Uₜₕ) ────────────────
@@ -1904,7 +1907,7 @@ export function drawSeasonalBalance(
   const pw           = doc.internal.pageSize.getWidth();
   const contentWidth = pw - margin * 2;
   const colW = (contentWidth - 2 * 4) / 3;
-  const colH = 38;
+  const colH = 34;
 
   const cols: Array<{
     title:    string;
@@ -1969,7 +1972,7 @@ export function drawSeasonalBalance(
     doc.setTextColor(...PDF_COLORS.bodyLight);
     doc.text(col.sub, x + 3, y + 9.5);
 
-    let ly = y + 14;
+    let ly = y + 13;
     for (const [label, val] of col.lines) {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(7);
@@ -1979,7 +1982,7 @@ export function drawSeasonalBalance(
       doc.setFontSize(8.5);
       doc.setTextColor(...PDF_COLORS.heading);
       doc.text(sanitizePdfText(val), x + colW - 3, ly, { align: "right" });
-      ly += 7;
+      ly += 6;
     }
   }
   return y + colH + 4;
@@ -2023,9 +2026,9 @@ export function drawFactureBreakdown(
     return y + 8;
   }
 
-  const rowH = 13;
-  const labelW = 44;
-  const totalsW = 32;
+  const rowH = 11;
+  const labelW = 42;
+  const totalsW = 30;
   const barMaxW = contentWidth - labelW - totalsW - 6;
   const maxTotal = Math.max(...active.map((v) => v.abonnement + v.consommation + (v.taxes ?? 0)));
 
@@ -2265,5 +2268,5 @@ export function drawCertificationStudy(
 // ─── Page break check ───────────────────────────────────────────
 
 export function needsPageBreak(y: number, needed: number): boolean {
-  return y + needed > PDF_LAYOUT.footerY - 15;
+  return y + needed > PDF_LAYOUT.safeBottom;
 }

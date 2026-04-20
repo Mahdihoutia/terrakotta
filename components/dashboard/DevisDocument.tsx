@@ -210,6 +210,7 @@ async function generatePDF(
     getTotalsTableConfig,
     getDataTableConfig,
     needsPageBreak,
+    resetTextState,
     PDF_LAYOUT,
     PDF_COLORS,
   } = await import("@/lib/pdf-styles");
@@ -319,6 +320,7 @@ async function generatePDF(
   ));
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   y = (doc as any).lastAutoTable.finalY + 6;
+  resetTextState(doc);
 
   // Totals box
   autoTable(doc, getTotalsTableConfig(
@@ -333,6 +335,7 @@ async function generatePDF(
   ));
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   y = (doc as any).lastAutoTable.finalY + PDF_LAYOUT.sectionGap;
+  resetTextState(doc);
 
   // ─── Aides section ────────────────────────────────────────
   const aidesData: string[][] = [];
@@ -355,6 +358,7 @@ async function generatePDF(
     autoTable(doc, getDataTableConfig(y, aidesData, contentWidth));
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     y = (doc as any).lastAutoTable.finalY + PDF_LAYOUT.sectionGap;
+    resetTextState(doc);
   }
 
   // ─── Photos des premières sections (entreprise, client, devis) ─
@@ -393,20 +397,21 @@ async function generatePDF(
         margin: { left: margin, right: margin },
         styles: {
           fontSize: 9,
-          cellPadding: { top: 3, bottom: 3, left: 4, right: 4 },
+          cellPadding: { top: 2, bottom: 2, left: 3, right: 3 },
           overflow: "linebreak",
           textColor: PDF_COLORS.body,
           lineColor: PDF_COLORS.border,
           lineWidth: 0.2,
         },
         columnStyles: {
-          0: { fontStyle: "bold", cellWidth: 65, textColor: PDF_COLORS.heading },
-          1: { cellWidth: contentWidth - 65 },
+          0: { fontStyle: "bold", cellWidth: 60, textColor: PDF_COLORS.heading },
+          1: { cellWidth: contentWidth - 60 },
         },
         alternateRowStyles: { fillColor: PDF_COLORS.background },
       });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       y = (doc as any).lastAutoTable.finalY + 6;
+      resetTextState(doc);
     }
 
     // Photos de cette section

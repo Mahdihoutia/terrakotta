@@ -545,6 +545,7 @@ async function generatePDF(
     getDataTableConfig,
     getInfoTableConfig,
     needsPageBreak,
+    resetTextState,
     PDF_COLORS,
     PDF_LAYOUT,
   } = await import("@/lib/pdf-styles");
@@ -668,6 +669,7 @@ async function generatePDF(
       autoTable(doc, getDataTableConfig(y, tableData, contentWidth));
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       y = (doc as any).lastAutoTable.finalY + 6;
+      resetTextState(doc);
     }
 
     // Textareas → paragraphes rédigés, pas de tableau
@@ -914,19 +916,20 @@ async function generatePDF(
         lineWidth: 0.15,
       },
       columnStyles: {
-        0: { fontStyle: "bold", cellWidth: 18, textColor: PDF_COLORS.heading },
-        1: { cellWidth: 52 },
-        2: { cellWidth: 16, halign: "center", textColor: PDF_COLORS.blue, fontStyle: "bold" },
-        3: { cellWidth: 20 },
-        4: { cellWidth: 22 },
-        5: { cellWidth: 18, halign: "right" },
-        6: { cellWidth: 16, halign: "right" },
-        7: { cellWidth: 14, halign: "right" },
-        8: { cellWidth: 20, halign: "right" },
+        0: { fontStyle: "bold", cellWidth: 15, textColor: PDF_COLORS.heading },
+        1: { cellWidth: 44 },
+        2: { cellWidth: 14, halign: "center", textColor: PDF_COLORS.blue, fontStyle: "bold" },
+        3: { cellWidth: 17 },
+        4: { cellWidth: 18 },
+        5: { cellWidth: 16, halign: "right" },
+        6: { cellWidth: 14, halign: "right" },
+        7: { cellWidth: 12, halign: "right" },
+        8: { cellWidth: 16, halign: "right" },
       },
     });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     y = (doc as any).lastAutoTable.finalY + 10;
+    resetTextState(doc);
 
     // Fiches action détaillées
     doc.addPage();

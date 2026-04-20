@@ -427,6 +427,7 @@ async function generatePDF(
     drawCallout,
     getDataTableConfig,
     needsPageBreak,
+    resetTextState,
     PDF_LAYOUT,
   } = await import("@/lib/pdf-styles");
 
@@ -517,6 +518,7 @@ async function generatePDF(
       autoTable(doc, getDataTableConfig(y, tableData, contentWidth));
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       y = (doc as any).lastAutoTable.finalY + 6;
+      resetTextState(doc);
     }
 
     // Champs libres (observations, descriptions) — rendus en prose

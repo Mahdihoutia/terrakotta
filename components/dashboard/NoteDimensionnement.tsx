@@ -3202,6 +3202,7 @@ async function generatePDF(
     drawProse,
     getDataTableConfig,
     needsPageBreak,
+    resetTextState,
     PDF_LAYOUT,
     PDF_COLORS,
   } = await import("@/lib/pdf-styles");
@@ -3278,6 +3279,7 @@ async function generatePDF(
       autoTable(doc, getDataTableConfig(y, tableData, contentWidth));
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       y = (doc as any).lastAutoTable.finalY + 6;
+      resetTextState(doc);
     }
 
     // Textareas → paragraphes rédigés
