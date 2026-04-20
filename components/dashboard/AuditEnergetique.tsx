@@ -101,8 +101,14 @@ const PRECO_FAMILLES: Array<{ key: string; prefix: string; label: string }> = [
   { key: "Comportemental",   prefix: "COM", label: "Comportemental / usages" },
 ];
 
-const PRECO_HORIZONS = ["Court terme (< 1 an)", "Moyen terme (1 à 3 ans)", "Long terme (3+ ans)"];
+const PRECO_HORIZONS = [
+  "Immédiat (< 3 mois)",
+  "Court terme (3-12 mois)",
+  "Moyen terme (1-3 ans)",
+  "Long terme (3-10 ans)",
+];
 const PRECO_FAISABILITE = ["Facile", "Moyenne", "Difficile"];
+const PRECO_RESPONSABILITES = ["Propriétaire", "Locataire", "ADB (annexe bail)", "Mixte"];
 
 function nextPrecoCode(list: PreconisationAction[], famille: string): string {
   const prefix = PRECO_FAMILLES.find((f) => f.key === famille)?.prefix ?? "ACT";
@@ -346,6 +352,60 @@ const SECTIONS: QuestionSection[] = [
       { id: "conclusion", label: "Conclusion générale", type: "textarea", required: true, colSpan: 2, placeholder: "Synthèse de l'audit : diagnostic global, scénario recommandé, gains attendus, prochaines étapes pour le bénéficiaire..." },
     ],
   },
+  {
+    titre: "13. Bilan thermique avancé (STD + factures)",
+    description: "Simulation thermique dynamique 3 saisons (Design Builder / équivalent) + analyse de factures par vecteur énergétique",
+    fields: [
+      { id: "std_annuel_chauffage", label: "Besoin annuel chauffage (STD)", type: "number", placeholder: "Ex: 185", unit: "MWh/an", help: "Résultat simulation annuelle" },
+      { id: "std_annuel_froid",     label: "Besoin annuel froid (STD)",    type: "number", placeholder: "Ex: 42",  unit: "MWh/an" },
+      { id: "std_dju",              label: "DJU site (base 18°C)",         type: "number", placeholder: "Ex: 2450", unit: "DJU/an", help: "Météo France ou Eurometeo, moyenne 10 ans" },
+      { id: "std_periode",          label: "Période de simulation",         type: "text",   placeholder: "Ex: 2020-2024" },
+      { id: "std_jour_froid_kwh",   label: "Besoin jour le plus froid",    type: "number", placeholder: "Ex: 1250", unit: "kWh/j", help: "Dimensionnement chauffage" },
+      { id: "std_jour_chaud_kwh",   label: "Besoin jour le plus chaud",    type: "number", placeholder: "Ex: 780",  unit: "kWh/j", help: "Dimensionnement climatisation" },
+      { id: "std_commentaire",      label: "Hypothèses STD et résultats clés", type: "textarea", colSpan: 2, placeholder: "Logiciel utilisé, zones thermiques modélisées, scénarios d'occupation et consignes, températures extrêmes retenues (-7°C, +32°C), apports internes/solaires..." },
+
+      // Factures par vecteur
+      { id: "facture_elec_abo",   label: "Électricité — abonnement", type: "number", placeholder: "Ex: 1200", unit: "€/an" },
+      { id: "facture_elec_conso", label: "Électricité — consommation", type: "number", placeholder: "Ex: 8500", unit: "€/an" },
+      { id: "facture_elec_taxes", label: "Électricité — taxes (TICFE, CTA, CSPE, TVA)", type: "number", placeholder: "Ex: 1800", unit: "€/an" },
+      { id: "facture_gaz_abo",    label: "Gaz — abonnement", type: "number", placeholder: "Ex: 300", unit: "€/an" },
+      { id: "facture_gaz_conso",  label: "Gaz — consommation", type: "number", placeholder: "Ex: 4200", unit: "€/an" },
+      { id: "facture_gaz_taxes",  label: "Gaz — taxes (TICGN, CTA, TVA)", type: "number", placeholder: "Ex: 600", unit: "€/an" },
+      { id: "facture_res_abo",    label: "Réseau chaleur — abonnement", type: "number", placeholder: "Ex: 0", unit: "€/an" },
+      { id: "facture_res_conso",  label: "Réseau chaleur — consommation", type: "number", placeholder: "Ex: 0", unit: "€/an" },
+      { id: "facture_eau_conso",  label: "Eau — facture totale", type: "number", placeholder: "Ex: 650", unit: "€/an" },
+      { id: "facture_analyse",    label: "Analyse et leviers d'optimisation", type: "textarea", colSpan: 2, placeholder: "Optimisation contractuelle (tarifs réglementés vs offres de marché), effacement, capacité souscrite inadaptée, renouvellement tarif, récupération TICFE..." },
+    ],
+  },
+  {
+    titre: "14. Grille d'analyse & trajectoire DEET",
+    description: "Notation multicritère 1-4/4 + trajectoire de réduction Décret Tertiaire + étude d'opportunité certification",
+    fields: [
+      // Grille analyse — 6 axes notés 1-4
+      { id: "grille_bati",       label: "Bâti / enveloppe",     type: "select", options: ["1 — Critique", "2 — Dégradé", "3 — Correct", "4 — Performant"], help: "Évaluation globale de l'isolation, inertie, étanchéité à l'air" },
+      { id: "grille_chaud",      label: "Équipements chauffage", type: "select", options: ["1 — Critique", "2 — Dégradé", "3 — Correct", "4 — Performant"] },
+      { id: "grille_froid",      label: "Équipements froid",    type: "select", options: ["1 — Critique", "2 — Dégradé", "3 — Correct", "4 — Performant"] },
+      { id: "grille_ventilation",label: "Ventilation",          type: "select", options: ["1 — Critique", "2 — Dégradé", "3 — Correct", "4 — Performant"] },
+      { id: "grille_eclairage",  label: "Éclairage",            type: "select", options: ["1 — Critique", "2 — Dégradé", "3 — Correct", "4 — Performant"] },
+      { id: "grille_ecs",        label: "ECS",                  type: "select", options: ["1 — Critique", "2 — Dégradé", "3 — Correct", "4 — Performant"] },
+
+      // Trajectoire DEET
+      { id: "deet_applicable",   label: "Bâtiment soumis au Décret Tertiaire", type: "select", options: ["Oui — surface > 1000 m²", "Non — surface < 1000 m²", "Non — usage exclu"], help: "Décret n°2019-771 du 23 juillet 2019 (DEET)" },
+      { id: "deet_baseline_annee", label: "Année de référence", type: "number", placeholder: "Ex: 2019", help: "Choix libre entre 2010 et 2019 selon OPERAT" },
+      { id: "deet_baseline_kwh",   label: "Consommation de référence", type: "number", placeholder: "Ex: 280", unit: "kWhEF/m²·an" },
+      { id: "deet_target_2030",    label: "Objectif 2030",      type: "number", placeholder: "40", unit: "%", help: "Réduction minimale (-40% ou valeur absolue Cabs)" },
+      { id: "deet_target_2040",    label: "Objectif 2040",      type: "number", placeholder: "50", unit: "%" },
+      { id: "deet_target_2050",    label: "Objectif 2050",      type: "number", placeholder: "60", unit: "%" },
+      { id: "deet_projection",     label: "Projection après travaux", type: "number", placeholder: "Ex: 155", unit: "kWhEF/m²·an", help: "Consommation projetée avec le scénario recommandé" },
+      { id: "deet_commentaire",    label: "Stratégie de conformité DEET", type: "textarea", colSpan: 2, placeholder: "Jalons, actions mobilisées par horizon, suivi OPERAT, déclaration annuelle, modulations envisagées (Cabs, volume d'activité, conditions climatiques)..." },
+
+      // Certification
+      { id: "cert_referentiel",    label: "Référentiel de certification visé", type: "select", options: ["Aucun", "BREEAM In-Use", "HQE Exploitation", "ISO 50001 (SMé)", "Autre"] },
+      { id: "cert_niveau_actuel",  label: "Niveau actuel estimé", type: "text", placeholder: "Ex: Pass / Good / Bon" },
+      { id: "cert_niveau_cible",   label: "Niveau cible",         type: "text", placeholder: "Ex: Very Good / Très performant" },
+      { id: "cert_commentaire",    label: "Étude d'opportunité certification", type: "textarea", colSpan: 2, placeholder: "Atouts, écarts majeurs, coût de certification, bénéfices attendus (valorisation foncière, attractivité locative, alignement taxonomie UE)..." },
+    ],
+  },
 ];
 
 // ─── DPE visual constants (Arrêté 2021) ─────────────────────────
@@ -473,6 +533,12 @@ async function generatePDF(
     drawBeforeAfterComparison,
     drawExecutiveSummary,
     drawActionSheet,
+    drawSeasonalBalance,
+    drawFactureBreakdown,
+    drawRadarChart,
+    drawDeetRoadmap,
+    drawCertificationStudy,
+    drawKpiRow,
     computeDPEClass,
     computeGESClass,
     computeFinancialClass,
@@ -596,7 +662,7 @@ async function generatePDF(
 
     checkPage(30);
     tocEntries.push({ title: section.titre, page: doc.getNumberOfPages() - 1 });
-    y = drawSectionHeader(doc, section.titre, y, section.description);
+    y = drawSectionHeader(doc, section.titre, y, section.description, { number: sIdx + 1 });
 
     if (tableData.length > 0) {
       autoTable(doc, getDataTableConfig(y, tableData, contentWidth));
@@ -695,6 +761,115 @@ async function generatePDF(
       }
     }
 
+    // Section 13 (index 12) — STD 3 saisons + factures par vecteur
+    if (sIdx === 12) {
+      const stdHasData =
+        values.std_annuel_chauffage || values.std_annuel_froid ||
+        values.std_jour_froid_kwh || values.std_jour_chaud_kwh;
+      if (stdHasData) {
+        checkPage(50);
+        y = drawSeasonalBalance(doc, y + 2, {
+          annuel_chauffage:  values.std_annuel_chauffage ? parseFloat(values.std_annuel_chauffage) : undefined,
+          annuel_froid:      values.std_annuel_froid     ? parseFloat(values.std_annuel_froid)     : undefined,
+          besoin_chaud_jour: values.std_jour_froid_kwh   ? parseFloat(values.std_jour_froid_kwh)   : undefined,
+          besoin_froid_jour: values.std_jour_chaud_kwh   ? parseFloat(values.std_jour_chaud_kwh)   : undefined,
+          dju:               values.std_dju              ? parseFloat(values.std_dju)              : undefined,
+          periode:           values.std_periode || undefined,
+        });
+      }
+
+      const elecTotal = (parseFloat(values.facture_elec_abo || "0") + parseFloat(values.facture_elec_conso || "0") + parseFloat(values.facture_elec_taxes || "0"));
+      const gazTotal  = (parseFloat(values.facture_gaz_abo  || "0") + parseFloat(values.facture_gaz_conso  || "0") + parseFloat(values.facture_gaz_taxes  || "0"));
+      const resTotal  = (parseFloat(values.facture_res_abo  || "0") + parseFloat(values.facture_res_conso  || "0"));
+      const eauTotal  = parseFloat(values.facture_eau_conso || "0");
+      if (elecTotal + gazTotal + resTotal + eauTotal > 0) {
+        const vecteurs = [
+          { label: "Electricité",    abonnement: parseFloat(values.facture_elec_abo || "0"),  consommation: parseFloat(values.facture_elec_conso || "0"), taxes: parseFloat(values.facture_elec_taxes || "0"), color: [234, 179, 8]   as [number, number, number] },
+          { label: "Gaz naturel",    abonnement: parseFloat(values.facture_gaz_abo  || "0"),  consommation: parseFloat(values.facture_gaz_conso  || "0"), taxes: parseFloat(values.facture_gaz_taxes  || "0"), color: [239, 68, 68]   as [number, number, number] },
+          { label: "Réseau chaleur", abonnement: parseFloat(values.facture_res_abo  || "0"),  consommation: parseFloat(values.facture_res_conso  || "0"), taxes: 0,                                                color: [249, 115, 22]  as [number, number, number] },
+          { label: "Eau",            abonnement: 0,                                            consommation: parseFloat(values.facture_eau_conso  || "0"), taxes: 0,                                                color: [14, 165, 233]  as [number, number, number] },
+        ];
+        checkPage(60);
+        y = drawFactureBreakdown(doc, y + 2, vecteurs, { title: "Décomposition de la facture annuelle par vecteur" });
+
+        const totalFacture = elecTotal + gazTotal + resTotal + eauTotal;
+        const shab = parseFloat(values.surface_habitable || "0");
+        const euroM2 = shab > 0 ? totalFacture / shab : 0;
+        checkPage(25);
+        y = drawKpiRow(doc, y + 2, [
+          { label: "Total",       value: `${Math.round(totalFacture).toLocaleString("fr-FR")} EUR/an`, accent: [37, 99, 235] },
+          { label: "Ratio",       value: euroM2 > 0 ? `${euroM2.toFixed(1)} EUR/m².an` : "—", accent: [59, 130, 246] },
+          { label: "Electricité", value: `${Math.round(elecTotal).toLocaleString("fr-FR")} EUR`, hint: `${totalFacture > 0 ? ((elecTotal / totalFacture) * 100).toFixed(0) : 0}%`, accent: [234, 179, 8] },
+          { label: "Gaz",         value: `${Math.round(gazTotal).toLocaleString("fr-FR")} EUR`,  hint: `${totalFacture > 0 ? ((gazTotal  / totalFacture) * 100).toFixed(0) : 0}%`, accent: [239, 68, 68] },
+        ]);
+      }
+    }
+
+    // Section 14 (index 13) — Grille analyse radar + DEET roadmap + certification
+    if (sIdx === 13) {
+      // Grille d'analyse radar
+      const grilleAxes = [
+        { id: "grille_bati",        label: "Bâti" },
+        { id: "grille_chaud",       label: "Chauffage" },
+        { id: "grille_froid",       label: "Froid" },
+        { id: "grille_ventilation", label: "Ventilation" },
+        { id: "grille_eclairage",   label: "Éclairage" },
+        { id: "grille_ecs",         label: "ECS" },
+      ];
+      const parsed = grilleAxes.map((a) => {
+        const v = values[a.id] || "";
+        const num = parseInt(v.charAt(0), 10);
+        return { label: a.label, value: isNaN(num) ? 0 : num };
+      });
+      if (parsed.some((p) => p.value > 0)) {
+        checkPage(75);
+        const pw = doc.internal.pageSize.getWidth();
+        drawRadarChart(doc, pw / 2, y + 42, 30, parsed, {
+          scale: 4,
+          title: "Grille d'analyse multicritère (notation 1-4)",
+        });
+        y += 82;
+      }
+
+      // Trajectoire DEET
+      const baseKwh = parseFloat(values.deet_baseline_kwh || "0");
+      if (baseKwh > 0) {
+        checkPage(70);
+        y = drawDeetRoadmap(doc, y + 2, {
+          baselineYear:   parseInt(values.deet_baseline_annee || "2019", 10),
+          baselineKwhM2:  baseKwh,
+          target2030Pct:  parseFloat(values.deet_target_2030 || "40"),
+          target2040Pct:  parseFloat(values.deet_target_2040 || "50"),
+          target2050Pct:  parseFloat(values.deet_target_2050 || "60"),
+          currentKwhM2:   parseFloat(values.conso_par_m2 || "0") || undefined,
+          projectedKwhM2: parseFloat(values.deet_projection || "0") || undefined,
+        });
+      }
+
+      // Étude certification
+      if (values.cert_referentiel && values.cert_referentiel !== "Aucun") {
+        const ref = values.cert_referentiel as "BREEAM In-Use" | "HQE Exploitation" | "Autre";
+        // Thèmes seed à partir de la grille d'analyse quand disponible (mapping pragmatique)
+        const themes = parsed
+          .filter((p) => p.value > 0)
+          .map((p) => ({ label: p.label, note: p.value, max: 4 }));
+        checkPage(70);
+        y = drawCertificationStudy(doc, y + 4, {
+          referentiel:  (["BREEAM In-Use", "HQE Exploitation"].includes(values.cert_referentiel) ? ref : "Autre") as "BREEAM In-Use" | "HQE Exploitation" | "Autre",
+          scope:        "Partie bâtiment — évaluation initiale",
+          niveauActuel: values.cert_niveau_actuel || "À évaluer",
+          niveauCible:  values.cert_niveau_cible  || "À définir",
+          themes:       themes.length > 0 ? themes : [
+            { label: "Énergie",           note: 2, max: 4 },
+            { label: "Eau",               note: 2, max: 4 },
+            { label: "Matériaux",         note: 2, max: 4 },
+            { label: "Confort & santé",   note: 2, max: 4 },
+            { label: "Gestion",           note: 2, max: 4 },
+          ],
+        });
+      }
+    }
+
     // Photos de cette section
     const photos = sectionPhotos[sIdx] || [];
     if (photos.length > 0) {
@@ -717,28 +892,37 @@ async function generatePDF(
 
     // Matrice via autoTable
     const sorted = [...preconisations].sort((a, b) => (b.opportunite || 0) - (a.opportunite || 0));
-    const head = [["Code", "Famille", "Action", "★", "Horizon", "Economies €/an", "CO2 evite", "TRI"]];
+    const head = [["Code", "Action", "★", "Horizon", "Respons.", "€/an", "CO2", "TRI", "Cumac"]];
     const body = sorted.map((a) => [
       a.code,
-      a.famille,
-      a.titre,
+      `${a.titre}\n${a.famille}`,
       "★".repeat(Math.max(0, Math.min(5, a.opportunite || 0))),
       (a.horizon || "").replace(/\s*\(.*\)\s*$/, ""),
+      (a.responsabilite || "—").replace(" (annexe bail)", ""),
       a.economiesEuro ? `${Math.round(a.economiesEuro).toLocaleString("fr-FR")}` : "—",
       a.co2Evite ? `${Math.round(a.co2Evite).toLocaleString("fr-FR")} kg` : "—",
       a.tri ? `${a.tri.toFixed(1)} ans` : "—",
+      a.ceeCumac ? `${a.ceeCumac.toFixed(1)} MWh` : "—",
     ]);
     autoTable(doc, {
       ...getInfoTableConfig(y, head, body, contentWidth),
+      styles: {
+        fontSize: 8,
+        cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 },
+        textColor: PDF_COLORS.body,
+        lineColor: PDF_COLORS.border,
+        lineWidth: 0.15,
+      },
       columnStyles: {
-        0: { fontStyle: "bold", cellWidth: 20, textColor: PDF_COLORS.heading },
-        1: { cellWidth: 28 },
-        2: { cellWidth: 55 },
-        3: { cellWidth: 14, halign: "center", textColor: PDF_COLORS.blue, fontStyle: "bold" },
+        0: { fontStyle: "bold", cellWidth: 18, textColor: PDF_COLORS.heading },
+        1: { cellWidth: 52 },
+        2: { cellWidth: 16, halign: "center", textColor: PDF_COLORS.blue, fontStyle: "bold" },
+        3: { cellWidth: 20 },
         4: { cellWidth: 22 },
-        5: { cellWidth: 24, halign: "right" },
-        6: { cellWidth: 20, halign: "right" },
-        7: { cellWidth: 17, halign: "right" },
+        5: { cellWidth: 18, halign: "right" },
+        6: { cellWidth: 16, halign: "right" },
+        7: { cellWidth: 14, halign: "right" },
+        8: { cellWidth: 20, halign: "right" },
       },
     });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1145,6 +1329,28 @@ export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props
                               <option value="">—</option>
                               {PRECO_FAISABILITE.map((f) => <option key={f} value={f}>{f}</option>)}
                             </select>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium">Responsabilité</label>
+                            <select
+                              value={a.responsabilite || ""}
+                              onChange={(e) => updatePreco(idx, { responsabilite: e.target.value })}
+                              className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
+                            >
+                              <option value="">—</option>
+                              {PRECO_RESPONSABILITES.map((r) => <option key={r} value={r}>{r}</option>)}
+                            </select>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium">CEE cumac (MWh)</label>
+                            <input
+                              type="number"
+                              step="0.1"
+                              value={a.ceeCumac ?? ""}
+                              onChange={(e) => updatePreco(idx, { ceeCumac: e.target.value ? parseFloat(e.target.value) : undefined })}
+                              placeholder="Si éligible CEE tertiaire"
+                              className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
+                            />
                           </div>
                           <div className="space-y-1">
                             <label className="text-xs font-medium">Économies (€/an)</label>

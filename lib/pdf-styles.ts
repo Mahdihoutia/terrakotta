@@ -302,32 +302,50 @@ export function drawSectionHeader(
   title: string,
   y: number,
   description?: string,
+  opts: { number?: number; kicker?: string } = {},
 ): number {
   const margin  = PDF_LAYOUT.margin;
   const pw      = doc.internal.pageSize.getWidth();
+  resetTextState(doc);
 
-  // Blue left accent bar
-  doc.setFillColor(...PDF_COLORS.blue);
-  doc.rect(margin, y, 2, 8, "F");
+  // Kicker (petit label bleu above title, ex: "SECTION 03 · ENVELOPPE")
+  if (opts.kicker || opts.number !== undefined) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7);
+    doc.setTextColor(...PDF_COLORS.blue);
+    const kicker = opts.kicker
+      ?? (opts.number !== undefined ? `SECTION ${String(opts.number).padStart(2, "0")}` : "");
+    doc.text(sanitizePdfText(kicker.toUpperCase()), margin, y + 3);
+    y += 5;
+  }
 
+  // Titre principal en caps serrées
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
+  doc.setFontSize(14);
   doc.setTextColor(...PDF_COLORS.heading);
-  doc.text(title, margin + 6, y + 6);
-  y += 11;
+  const titleClean = sanitizePdfText(title.replace(/^\d+\.\s*/, "")); // retire "03. " si présent
+  doc.text(titleClean, margin, y + 5);
+  y += 8;
 
-  // Subtle underline
+  // Barre bleue épaisse sous le titre
+  doc.setFillColor(...PDF_COLORS.blue);
+  doc.rect(margin, y, 28, 1.4, "F");
+  // Filet gris discret jusqu'au bord droit
   doc.setDrawColor(...PDF_COLORS.border);
-  doc.setLineWidth(0.3);
-  doc.line(margin, y, pw - margin, y);
-  y += 4;
+  doc.setLineWidth(0.2);
+  doc.line(margin + 28, y + 0.7, pw - margin, y + 0.7);
+  y += 5;
 
   if (description) {
     doc.setFont("helvetica", "italic");
-    doc.setFontSize(8);
+    doc.setFontSize(8.5);
     doc.setTextColor(...PDF_COLORS.bodyLight);
-    doc.text(description, margin + 6, y + 2);
-    y += 7;
+    const lines = doc.splitTextToSize(sanitizePdfText(description), pw - margin * 2) as string[];
+    for (const line of lines) {
+      doc.text(line, margin, y + 2);
+      y += 4.3;
+    }
+    y += 3;
   }
 
   return y;
@@ -1505,8 +1523,9 @@ export interface PreconisationAction {
   famille:      string;              // Ex: "Chauffage"
   titre:        string;
   opportunite:  number;              // 1-5
-  horizon:      string;              // "Court terme" | "Moyen terme" | "Long terme"
+  horizon:      string;              // "Immédiat" | "Court terme" | "Moyen terme" | "Long terme"
   faisabilite?: string;              // "Facile" | "Moyenne" | "Difficile"
+  responsabilite?: string;           // "Propriétaire" | "Locataire" | "ADB (annexe bail)" | "Mixte"
   brief?:       string;
   economiesKwh?:   number;           // kWh/an
   economiesEuro?:  number;           // €/an
@@ -1514,6 +1533,7 @@ export interface PreconisationAction {
   coutTravaux?:    number;           // € TTC
   aides?:          number;           // €
   tri?:            number;           // années
+  ceeCumac?:       number;           // MWh cumac (pour tertiaire)
 }
 
 export const FAMILLE_COLORS: Record<string, [number, number, number]> = {
@@ -1634,15 +1654,17 @@ export function drawActionSheet(
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7);
   doc.setTextColor(...PDF_COLORS.bodyLight);
-  doc.text("HORIZON", margin + 3, y + 3.4);
-  doc.text("FAISABILITE", margin + 55, y + 3.4);
-  doc.text("OPPORTUNITE", pw - margin - 55, y + 3.4);
+  doc.text("HORIZON",         margin + 3,  y + 3.4);
+  doc.text("FAISABILITE",     margin + 48, y + 3.4);
+  doc.text("RESPONSABILITE",  margin + 93, y + 3.4);
+  doc.text("OPPORTUNITE",     pw - margin - 55, y + 3.4);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8);
   doc.setTextColor(...PDF_COLORS.heading);
-  doc.text(sanitizePdfText(action.horizon || "—"),                margin + 3,  y + 7);
-  doc.text(sanitizePdfText(action.faisabilite || "—"),            margin + 55, y + 7);
+  doc.text(sanitizePdfText(action.horizon || "—"),        margin + 3,  y + 7);
+  doc.text(sanitizePdfText(action.faisabilite || "—"),    margin + 48, y + 7);
+  doc.text(sanitizePdfText(action.responsabilite || "—"), margin + 93, y + 7);
 
   // Étoiles
   drawStars(doc, pw - margin - 30, y + 4.5, Math.max(0, Math.min(5, action.opportunite || 0)));
@@ -1707,6 +1729,537 @@ export function drawActionSheet(
   y += 5;
 
   return y;
+}
+
+// ─── KPI tile row (réutilisable, cohérent avec drawActionSheet) ─
+// N tiles de largeur égale, chacune avec accent coloré à gauche.
+
+export function drawKpiRow(
+  doc: jsPDF,
+  y: number,
+  kpis: Array<{
+    label:  string;
+    value:  string;
+    hint?:  string;
+    accent?: [number, number, number];
+  }>,
+): number {
+  const margin       = PDF_LAYOUT.margin;
+  const pw           = doc.internal.pageSize.getWidth();
+  const contentWidth = pw - margin * 2;
+  const n            = kpis.length;
+  if (n === 0) return y;
+  const gap          = 3;
+  const tileW        = (contentWidth - (n - 1) * gap) / n;
+  const tileH        = 20;
+
+  resetTextState(doc);
+  for (let i = 0; i < n; i++) {
+    const k = kpis[i];
+    const tx = margin + i * (tileW + gap);
+    const accent = k.accent ?? PDF_COLORS.blue;
+
+    doc.setFillColor(...PDF_COLORS.surface);
+    doc.roundedRect(tx, y, tileW, tileH, 1.5, 1.5, "F");
+    doc.setFillColor(...accent);
+    doc.rect(tx, y, 1.5, tileH, "F");
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.5);
+    doc.setTextColor(...PDF_COLORS.bodyLight);
+    doc.text(sanitizePdfText(k.label.toUpperCase()), tx + 4, y + 4.5);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(...PDF_COLORS.heading);
+    doc.text(sanitizePdfText(k.value), tx + 4, y + 12);
+
+    if (k.hint) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(6.5);
+      doc.setTextColor(...PDF_COLORS.bodyLight);
+      doc.text(sanitizePdfText(k.hint), tx + 4, y + 17);
+    }
+  }
+  return y + tileH + 4;
+}
+
+// ─── Radar chart (grille d'analyse / profil Uₜₕ) ────────────────
+// Style Sinteo : polygone 6-axes, notation 1 à `scale`.
+
+export function drawRadarChart(
+  doc: jsPDF,
+  cx: number, cy: number,
+  radius: number,
+  axes: Array<{ label: string; value: number; reference?: number }>,
+  opts: { scale?: number; title?: string } = {},
+): void {
+  const n = axes.length;
+  if (n < 3) return;
+  const scale = opts.scale ?? 4;
+
+  // Anneaux concentriques
+  doc.setDrawColor(...PDF_COLORS.border);
+  doc.setLineWidth(0.2);
+  for (let r = 1; r <= scale; r++) {
+    const rr = (radius * r) / scale;
+    const pts: number[][] = [];
+    for (let i = 0; i < n; i++) {
+      const a = -Math.PI / 2 + (i * 2 * Math.PI) / n;
+      pts.push([Math.cos(a) * rr, Math.sin(a) * rr]);
+    }
+    const segs: number[][] = [];
+    for (let i = 1; i < pts.length; i++) {
+      segs.push([pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]]);
+    }
+    segs.push([pts[0][0] - pts[pts.length - 1][0], pts[0][1] - pts[pts.length - 1][1]]);
+    doc.lines(segs, cx + pts[0][0], cy + pts[0][1], [1, 1], "S", true);
+  }
+
+  // Axes
+  for (let i = 0; i < n; i++) {
+    const a = -Math.PI / 2 + (i * 2 * Math.PI) / n;
+    doc.setDrawColor(...PDF_COLORS.border);
+    doc.setLineWidth(0.15);
+    doc.line(cx, cy, cx + Math.cos(a) * radius, cy + Math.sin(a) * radius);
+
+    // Label
+    const lx = cx + Math.cos(a) * (radius + 7);
+    const ly = cy + Math.sin(a) * (radius + 7);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7);
+    doc.setTextColor(...PDF_COLORS.heading);
+    const align: "center" | "left" | "right" =
+      Math.abs(Math.cos(a)) < 0.2 ? "center" : Math.cos(a) > 0 ? "left" : "right";
+    doc.text(sanitizePdfText(axes[i].label), lx, ly + 1.2, { align });
+  }
+
+  // Référence (polygone gris clair)
+  if (axes.some((a) => a.reference !== undefined)) {
+    const rpts: number[][] = [];
+    for (let i = 0; i < n; i++) {
+      const a = -Math.PI / 2 + (i * 2 * Math.PI) / n;
+      const v = Math.max(0, Math.min(scale, axes[i].reference ?? 0));
+      const r = (radius * v) / scale;
+      rpts.push([Math.cos(a) * r, Math.sin(a) * r]);
+    }
+    const rsegs: number[][] = [];
+    for (let i = 1; i < rpts.length; i++) {
+      rsegs.push([rpts[i][0] - rpts[i - 1][0], rpts[i][1] - rpts[i - 1][1]]);
+    }
+    rsegs.push([rpts[0][0] - rpts[rpts.length - 1][0], rpts[0][1] - rpts[rpts.length - 1][1]]);
+    doc.setDrawColor(...PDF_COLORS.bodyLight);
+    doc.setLineWidth(0.5);
+    doc.lines(rsegs, cx + rpts[0][0], cy + rpts[0][1], [1, 1], "S", true);
+  }
+
+  // Valeurs (polygone bleu rempli semi-transparent simulé via fond + contour)
+  const pts: number[][] = [];
+  for (let i = 0; i < n; i++) {
+    const a = -Math.PI / 2 + (i * 2 * Math.PI) / n;
+    const v = Math.max(0, Math.min(scale, axes[i].value));
+    const r = (radius * v) / scale;
+    pts.push([Math.cos(a) * r, Math.sin(a) * r]);
+  }
+  const segs: number[][] = [];
+  for (let i = 1; i < pts.length; i++) {
+    segs.push([pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]]);
+  }
+  segs.push([pts[0][0] - pts[pts.length - 1][0], pts[0][1] - pts[pts.length - 1][1]]);
+  doc.setFillColor(...PDF_COLORS.blueLight);
+  doc.setDrawColor(...PDF_COLORS.blue);
+  doc.setLineWidth(0.8);
+  doc.lines(segs, cx + pts[0][0], cy + pts[0][1], [1, 1], "FD", true);
+
+  // Points
+  for (const [px, py] of pts) {
+    doc.setFillColor(...PDF_COLORS.blue);
+    doc.circle(cx + px, cy + py, 0.9, "F");
+  }
+
+  // Titre
+  if (opts.title) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(...PDF_COLORS.heading);
+    doc.text(sanitizePdfText(opts.title), cx, cy - radius - 10, { align: "center" });
+  }
+}
+
+// ─── STD Bilan 3 saisons (Annuelle / Jour froid / Jour chaud) ──
+
+export function drawSeasonalBalance(
+  doc: jsPDF,
+  y: number,
+  data: {
+    annuel_chauffage?: number;   // MWh
+    annuel_froid?:     number;   // MWh
+    besoin_chaud_jour?: number;  // kWh (jour froid)
+    besoin_froid_jour?: number;  // kWh (jour chaud)
+    dju?:               number;
+    periode?:           string;
+  },
+): number {
+  const margin       = PDF_LAYOUT.margin;
+  const pw           = doc.internal.pageSize.getWidth();
+  const contentWidth = pw - margin * 2;
+  const colW = (contentWidth - 2 * 4) / 3;
+  const colH = 38;
+
+  const cols: Array<{
+    title:    string;
+    sub:      string;
+    lines:    Array<[string, string]>;
+    accent:   [number, number, number];
+    icon:     string;
+  }> = [
+    {
+      title: "SIMULATION ANNUELLE",
+      sub:   "Bilan thermique consolidé",
+      accent: [59, 130, 246],
+      icon:  "12 mois",
+      lines: [
+        ["Besoin chauffage",   data.annuel_chauffage !== undefined ? `${data.annuel_chauffage.toFixed(1)} MWh/an` : "—"],
+        ["Besoin froid",        data.annuel_froid     !== undefined ? `${data.annuel_froid.toFixed(1)} MWh/an`     : "—"],
+        ["DJU site (base 18)",  data.dju              !== undefined ? `${Math.round(data.dju)} DJU/an`             : "—"],
+      ],
+    },
+    {
+      title: "JOUR LE PLUS FROID",
+      sub:   "Dimensionnement chauffage",
+      accent: [14, 165, 233],
+      icon:  "Text ext. min.",
+      lines: [
+        ["Besoin de chauffage", data.besoin_chaud_jour !== undefined ? `${Math.round(data.besoin_chaud_jour)} kWh/j` : "—"],
+        ["Puissance crête",     data.besoin_chaud_jour !== undefined ? `${(data.besoin_chaud_jour / 24).toFixed(1)} kW` : "—"],
+        ["Periode",             data.periode || "—"],
+      ],
+    },
+    {
+      title: "JOUR LE PLUS CHAUD",
+      sub:   "Dimensionnement climatisation",
+      accent: [249, 115, 22],
+      icon:  "Text ext. max.",
+      lines: [
+        ["Besoin de froid",     data.besoin_froid_jour !== undefined ? `${Math.round(data.besoin_froid_jour)} kWh/j` : "—"],
+        ["Puissance crête",     data.besoin_froid_jour !== undefined ? `${(data.besoin_froid_jour / 24).toFixed(1)} kW` : "—"],
+        ["Periode",             data.periode || "—"],
+      ],
+    },
+  ];
+
+  resetTextState(doc);
+  for (let i = 0; i < cols.length; i++) {
+    const col = cols[i];
+    const x = margin + i * (colW + 4);
+
+    doc.setFillColor(...PDF_COLORS.surface);
+    doc.roundedRect(x, y, colW, colH, 2, 2, "F");
+    // Bandeau coloré en haut
+    doc.setFillColor(...col.accent);
+    doc.rect(x, y, colW, 6, "F");
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.5);
+    doc.setTextColor(...PDF_COLORS.white);
+    doc.text(col.title, x + 3, y + 4.3);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(...PDF_COLORS.bodyLight);
+    doc.text(col.sub, x + 3, y + 9.5);
+
+    let ly = y + 14;
+    for (const [label, val] of col.lines) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.setTextColor(...PDF_COLORS.bodyLight);
+      doc.text(label, x + 3, ly);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8.5);
+      doc.setTextColor(...PDF_COLORS.heading);
+      doc.text(sanitizePdfText(val), x + colW - 3, ly, { align: "right" });
+      ly += 7;
+    }
+  }
+  return y + colH + 4;
+}
+
+// ─── Décomposition facture par vecteur ──────────────────────────
+
+export interface FactureVecteur {
+  label:       string;                 // Électricité, Gaz, Réseau chaleur, Eau
+  abonnement:  number;                 // €/an (part fixe)
+  consommation: number;                // €/an (part variable)
+  taxes?:      number;                 // TICFE+CTA+CSPE+TVA €/an
+  color:       [number, number, number];
+}
+
+export function drawFactureBreakdown(
+  doc: jsPDF,
+  y: number,
+  vecteurs: FactureVecteur[],
+  opts: { title?: string } = {},
+): number {
+  const margin       = PDF_LAYOUT.margin;
+  const pw           = doc.internal.pageSize.getWidth();
+  const contentWidth = pw - margin * 2;
+
+  resetTextState(doc);
+  if (opts.title) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9.5);
+    doc.setTextColor(...PDF_COLORS.heading);
+    doc.text(sanitizePdfText(opts.title), margin, y + 4);
+    y += 8;
+  }
+
+  const active = vecteurs.filter((v) => v.abonnement + v.consommation + (v.taxes ?? 0) > 0);
+  if (active.length === 0) {
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(8);
+    doc.setTextColor(...PDF_COLORS.bodyLight);
+    doc.text("Aucune donnée de facture saisie.", margin, y + 4);
+    return y + 8;
+  }
+
+  const rowH = 13;
+  const labelW = 44;
+  const totalsW = 32;
+  const barMaxW = contentWidth - labelW - totalsW - 6;
+  const maxTotal = Math.max(...active.map((v) => v.abonnement + v.consommation + (v.taxes ?? 0)));
+
+  for (const v of active) {
+    const total = v.abonnement + v.consommation + (v.taxes ?? 0);
+    // Label vecteur
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8.5);
+    doc.setTextColor(...PDF_COLORS.heading);
+    doc.text(sanitizePdfText(v.label), margin, y + rowH / 2);
+
+    // Barre empilée : abonnement / conso / taxes
+    const bx = margin + labelW;
+    const totalW = (total / maxTotal) * barMaxW;
+    let cx = bx;
+    const segs: Array<{ w: number; color: [number, number, number]; label: string }> = [
+      { w: (v.abonnement / total) * totalW,      color: [...v.color.map((c) => Math.max(c - 40, 0))] as [number, number, number], label: "Abo." },
+      { w: (v.consommation / total) * totalW,    color: v.color,                                                                   label: "Conso." },
+      { w: ((v.taxes ?? 0) / total) * totalW,    color: [...v.color.map((c) => Math.min(c + 50, 255))] as [number, number, number], label: "Taxes" },
+    ];
+    for (const seg of segs) {
+      if (seg.w <= 0.5) continue;
+      doc.setFillColor(...seg.color);
+      doc.rect(cx, y + 2, seg.w, rowH - 4, "F");
+      cx += seg.w;
+    }
+    // Contour
+    doc.setDrawColor(...PDF_COLORS.border);
+    doc.setLineWidth(0.2);
+    doc.rect(bx, y + 2, totalW, rowH - 4, "S");
+
+    // Total €
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8.5);
+    doc.setTextColor(...PDF_COLORS.heading);
+    doc.text(
+      `${Math.round(total).toLocaleString("fr-FR")} EUR/an`,
+      margin + contentWidth, y + rowH / 2, { align: "right" },
+    );
+
+    y += rowH;
+  }
+
+  // Légende
+  y += 3;
+  const legend: Array<[string, [number, number, number]]> = [
+    ["Abonnement (part fixe)", [80, 80, 80]],
+    ["Consommation (part variable)", [59, 130, 246]],
+    ["Taxes et contributions", [180, 180, 180]],
+  ];
+  let lx = margin;
+  for (const [lab, col] of legend) {
+    doc.setFillColor(...col);
+    doc.rect(lx, y, 3, 3, "F");
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(...PDF_COLORS.bodyLight);
+    doc.text(lab, lx + 5, y + 2.5);
+    lx += doc.getTextWidth(lab) + 12;
+  }
+  return y + 8;
+}
+
+// ─── Roadmap Décret Tertiaire (cascade -40% / -50% / -60%) ─────
+
+export function drawDeetRoadmap(
+  doc: jsPDF,
+  y: number,
+  data: {
+    baselineYear:  number;
+    baselineKwhM2: number;   // conso absolue référence
+    target2030Pct: number;   // ex: 40
+    target2040Pct: number;   // ex: 50
+    target2050Pct: number;   // ex: 60
+    currentKwhM2?: number;
+    projectedKwhM2?: number;
+  },
+): number {
+  const margin       = PDF_LAYOUT.margin;
+  const pw           = doc.internal.pageSize.getWidth();
+  const contentWidth = pw - margin * 2;
+
+  resetTextState(doc);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9.5);
+  doc.setTextColor(...PDF_COLORS.heading);
+  doc.text("Trajectoire Décret Tertiaire (DEET)", margin, y + 4);
+  y += 9;
+
+  const base = Math.max(1, data.baselineKwhM2);
+  const t30  = base * (1 - data.target2030Pct / 100);
+  const t40  = base * (1 - data.target2040Pct / 100);
+  const t50  = base * (1 - data.target2050Pct / 100);
+
+  // 5 barres : baseline / actuel / 2030 / 2040 / 2050
+  const bars: Array<{ label: string; sub: string; val: number; color: [number, number, number] }> = [
+    { label: `Baseline`,     sub: `${data.baselineYear}`,                val: base, color: [100, 116, 139] },
+    { label: "Situation actuelle", sub: `${new Date().getFullYear()}`,   val: data.currentKwhM2 ?? base, color: [37, 99, 235] },
+    { label: "Objectif 2030", sub: `-${data.target2030Pct}%`, val: t30, color: [34, 197, 94] },
+    { label: "Objectif 2040", sub: `-${data.target2040Pct}%`, val: t40, color: [14, 165, 233] },
+    { label: "Objectif 2050", sub: `-${data.target2050Pct}%`, val: t50, color: [79, 70, 229] },
+  ];
+  const maxVal = Math.max(...bars.map((b) => b.val));
+  const barMaxH = 42;
+  const gap = 5;
+  const barW = (contentWidth - (bars.length - 1) * gap) / bars.length;
+  const baseY = y + barMaxH + 2;
+
+  for (let i = 0; i < bars.length; i++) {
+    const b = bars[i];
+    const bx = margin + i * (barW + gap);
+    const h = (b.val / maxVal) * barMaxH;
+    const by = baseY - h;
+
+    doc.setFillColor(...b.color);
+    doc.roundedRect(bx, by, barW, h, 1, 1, "F");
+
+    // Valeur
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(...PDF_COLORS.heading);
+    doc.text(`${Math.round(b.val)}`, bx + barW / 2, by - 1, { align: "center" });
+
+    // Label en dessous
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.5);
+    doc.setTextColor(...PDF_COLORS.heading);
+    doc.text(sanitizePdfText(b.label), bx + barW / 2, baseY + 4, { align: "center" });
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.5);
+    doc.setTextColor(...PDF_COLORS.bodyLight);
+    doc.text(sanitizePdfText(b.sub), bx + barW / 2, baseY + 8, { align: "center" });
+  }
+
+  // Projection si fournie — flèche de convergence
+  if (data.projectedKwhM2 !== undefined) {
+    const ok2030 = data.projectedKwhM2 <= t30;
+    const color: [number, number, number] = ok2030 ? [34, 197, 94] : [220, 38, 38];
+    const txt = ok2030
+      ? `Projection après travaux : ${Math.round(data.projectedKwhM2)} kWhEP/m².an — objectif 2030 ATTEINT`
+      : `Projection après travaux : ${Math.round(data.projectedKwhM2)} kWhEP/m².an — objectif 2030 NON atteint`;
+    const ly = baseY + 14;
+    doc.setFillColor(...color);
+    doc.roundedRect(margin, ly, contentWidth, 7, 1.5, 1.5, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(...PDF_COLORS.white);
+    doc.text(sanitizePdfText(txt), margin + 4, ly + 4.8);
+    return ly + 11;
+  }
+  return baseY + 12;
+}
+
+// ─── Étude d'opportunité certification (BREEAM / HQE — stub) ───
+
+export function drawCertificationStudy(
+  doc: jsPDF,
+  y: number,
+  data: {
+    referentiel:  "BREEAM In-Use" | "HQE Exploitation" | "Autre";
+    scope:        string;           // ex: "Partie 1 - Bâtiment"
+    niveauActuel: string;           // ex: "Good" / "Très performant"
+    niveauCible:  string;           // ex: "Very Good"
+    themes:       Array<{ label: string; note: number; max: number; commentaire?: string }>;
+  },
+): number {
+  const margin       = PDF_LAYOUT.margin;
+  const pw           = doc.internal.pageSize.getWidth();
+  const contentWidth = pw - margin * 2;
+
+  resetTextState(doc);
+  // Bandeau titre
+  doc.setFillColor(...PDF_COLORS.navy);
+  doc.roundedRect(margin, y, contentWidth, 10, 1.5, 1.5, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(...PDF_COLORS.white);
+  doc.text(sanitizePdfText(data.referentiel), margin + 4, y + 6.5);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.text(sanitizePdfText(data.scope), pw - margin - 4, y + 6.5, { align: "right" });
+  y += 14;
+
+  // Niveaux actuel / cible
+  const tileW = (contentWidth - 5) / 2;
+  const tileH = 18;
+  const pairs: Array<[string, string, [number, number, number]]> = [
+    ["Niveau actuel (sans actions)", data.niveauActuel, [107, 91, 80]],
+    ["Niveau cible (après actions)", data.niveauCible,  [34, 197, 94]],
+  ];
+  for (let i = 0; i < pairs.length; i++) {
+    const [lab, val, col] = pairs[i];
+    const tx = margin + i * (tileW + 5);
+    doc.setFillColor(...PDF_COLORS.surface);
+    doc.roundedRect(tx, y, tileW, tileH, 1.5, 1.5, "F");
+    doc.setFillColor(...col);
+    doc.rect(tx, y, 1.5, tileH, "F");
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(...PDF_COLORS.bodyLight);
+    doc.text(sanitizePdfText(lab.toUpperCase()), tx + 4, y + 5);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.setTextColor(...PDF_COLORS.heading);
+    doc.text(sanitizePdfText(val), tx + 4, y + 13);
+  }
+  y += tileH + 6;
+
+  // Thèmes : barres horizontales
+  for (const t of data.themes) {
+    const ratio = Math.max(0, Math.min(1, t.note / t.max));
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(...PDF_COLORS.heading);
+    doc.text(sanitizePdfText(t.label), margin, y + 3);
+    // Barre
+    const bx = margin + 70;
+    const bMaxW = contentWidth - 90;
+    doc.setFillColor(...PDF_COLORS.surface);
+    doc.rect(bx, y, bMaxW, 5, "F");
+    const fillColor: [number, number, number] =
+      ratio >= 0.75 ? [34, 197, 94] :
+      ratio >= 0.5  ? [59, 130, 246] :
+      ratio >= 0.25 ? [245, 158, 11] : [220, 38, 38];
+    doc.setFillColor(...fillColor);
+    doc.rect(bx, y, bMaxW * ratio, 5, "F");
+    // Score
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.5);
+    doc.setTextColor(...PDF_COLORS.heading);
+    doc.text(`${t.note} / ${t.max}`, margin + contentWidth, y + 3, { align: "right" });
+    y += 7;
+  }
+  return y + 4;
 }
 
 // ─── Page break check ───────────────────────────────────────────
