@@ -69,9 +69,13 @@ export function useContacts(): UseContactsReturn {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(contact),
       });
-      if (!res.ok) throw new Error("Erreur lors de la création");
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null);
+        throw new Error(payload?.error ?? `Erreur ${res.status}`);
+      }
       const newContact: Contact = await res.json();
       setContacts((prev) => [newContact, ...prev]);
+      setError(null);
       return newContact;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur inconnue");

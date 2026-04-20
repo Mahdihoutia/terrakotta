@@ -86,6 +86,7 @@ const EMPTY_FORM = {
 
 export default function ContactsPage() {
   const { contacts, loading, error, addContact, deleteContact } = useContacts();
+  const [formError, setFormError] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<string>("TOUS");
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
@@ -113,29 +114,44 @@ export default function ContactsPage() {
   });
 
   async function handleCreate() {
-    if (!form.nom.trim()) return;
+    setFormError(null);
+    if (!form.nom.trim()) {
+      setFormError("Le nom est requis.");
+      return;
+    }
+    const budget = form.budgetEstime.trim()
+      ? Number(form.budgetEstime)
+      : null;
+    if (budget !== null && Number.isNaN(budget)) {
+      setFormError("Budget estimé : valeur numérique invalide.");
+      return;
+    }
     setSubmitting(true);
-    await addContact({
-      nom: form.nom,
-      prenom: form.prenom || null,
-      email: form.email || null,
-      telephone: form.telephone || null,
-      adresse: form.adresse || null,
-      ville: form.ville || null,
-      codePostal: form.codePostal || null,
-      departement: form.departement || null,
-      raisonSociale: form.raisonSociale || null,
-      siret: form.siret || null,
-      fonction: form.fonction || null,
+    const created = await addContact({
+      nom: form.nom.trim(),
+      prenom: form.prenom.trim() || null,
+      email: form.email.trim() || null,
+      telephone: form.telephone.trim() || null,
+      adresse: form.adresse.trim() || null,
+      ville: form.ville.trim() || null,
+      codePostal: form.codePostal.trim() || null,
+      departement: form.departement.trim() || null,
+      raisonSociale: form.raisonSociale.trim() || null,
+      siret: form.siret.trim() || null,
+      fonction: form.fonction.trim() || null,
       type: form.type,
       source: form.source,
       statut: form.statut,
-      budgetEstime: form.budgetEstime ? Number(form.budgetEstime) : null,
-      notes: form.notes || null,
+      budgetEstime: budget,
+      notes: form.notes.trim() || null,
     });
+    setSubmitting(false);
+    if (!created) {
+      // error déjà posé par le hook — on garde le formulaire ouvert
+      return;
+    }
     setForm(EMPTY_FORM);
     setShowForm(false);
-    setSubmitting(false);
   }
 
   async function handleDelete(id: string, e: React.MouseEvent) {
@@ -331,6 +347,14 @@ export default function ContactsPage() {
                     className="w-full rounded-lg border border-tk-border bg-tk-surface px-3 py-2 text-sm text-tk-text resize-none" />
                 </div>
               </div>
+              {(formError || error) && (
+                <div
+                  role="alert"
+                  className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-400"
+                >
+                  {formError ?? error}
+                </div>
+              )}
               <div className="mt-4 flex gap-2">
                 <Button size="sm" onClick={handleCreate} disabled={submitting}>
                   {submitting ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Plus className="mr-2 h-3.5 w-3.5" />}

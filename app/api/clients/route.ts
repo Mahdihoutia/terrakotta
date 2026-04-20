@@ -43,58 +43,93 @@ export async function GET(request: Request) {
   return NextResponse.json(serialized);
 }
 
+// Helpers : accepte string | null | undefined | "" et renvoie string | null
+const nullableString = z
+  .string()
+  .nullish()
+  .transform((v) => (v && v.trim() !== "" ? v : null));
+
+const nullableEmail = z
+  .union([z.string().email("Email invalide"), z.literal(""), z.null()])
+  .nullish()
+  .transform((v) => (v && v !== "" ? v : null));
+
 const createClientSchema = z.object({
   nom: z.string().min(1, "Le nom est requis"),
-  prenom: z.string().optional(),
-  email: z.string().email("Email invalide").optional().or(z.literal("")),
-  telephone: z.string().optional(),
-  adresse: z.string().optional(),
-  ville: z.string().optional(),
-  codePostal: z.string().optional(),
-  departement: z.string().optional(),
-  raisonSociale: z.string().optional(),
-  siret: z.string().optional(),
-  fonction: z.string().optional(),
+  prenom: nullableString,
+  email: nullableEmail,
+  telephone: nullableString,
+  adresse: nullableString,
+  ville: nullableString,
+  codePostal: nullableString,
+  departement: nullableString,
+  raisonSociale: nullableString,
+  siret: nullableString,
+  fonction: nullableString,
   type: z.enum(["PARTICULIER", "PROFESSIONNEL", "COLLECTIVITE"]).default("PARTICULIER"),
   source: z.enum(["SITE_WEB", "RECOMMANDATION", "RESEAU", "DEMARCHAGE", "AUTRE"]).default("SITE_WEB"),
   statut: z.enum(["NOUVEAU", "CONTACTE", "QUALIFIE", "PROPOSITION", "GAGNE", "PERDU"]).default("NOUVEAU"),
-  budgetEstime: z.number().nullable().optional(),
-  notes: z.string().optional(),
+  budgetEstime: z.number().nullish(),
+  notes: nullableString,
 });
 
 /** POST /api/clients — Créer un nouveau client */
 export async function POST(request: Request) {
-  const body: unknown = await request.json();
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json(
+      { error: "JSON invalide" },
+      { status: 400 }
+    );
+  }
+
   const result = createClientSchema.safeParse(body);
 
   if (!result.success) {
+    const flat = result.error.flatten();
+    const firstFieldError = Object.values(flat.fieldErrors)[0]?.[0];
     return NextResponse.json(
-      { error: "Données invalides", details: result.error.flatten() },
+      {
+        error: firstFieldError ?? "Données invalides",
+        details: flat,
+      },
       { status: 400 }
     );
   }
 
   const data = result.data;
-  const client = await prisma.client.create({
-    data: {
-      nom: data.nom,
-      prenom: data.prenom || null,
-      email: data.email || null,
-      telephone: data.telephone || null,
-      adresse: data.adresse || null,
-      ville: data.ville || null,
-      codePostal: data.codePostal || null,
-      departement: data.departement || null,
-      raisonSociale: data.raisonSociale || null,
-      siret: data.siret || null,
-      fonction: data.fonction || null,
-      type: data.type,
-      source: data.source,
-      statut: data.statut,
-      budgetEstime: data.budgetEstime ?? null,
-      notes: data.notes || null,
-    },
-  });
+
+  let client;
+  try {
+    client = await prisma.client.create({
+      data: {
+        nom: data.nom,
+        prenom: data.prenom,
+        email: data.email,
+        telephone: data.telephone,
+        adresse: data.adresse,
+        ville: data.ville,
+        codePostal: data.codePostal,
+        departement: data.departement,
+        raisonSociale: data.raisonSociale,
+        siret: data.siret,
+        fonction: data.fonction,
+        type: data.type,
+        source: data.source,
+        statut: data.statut,
+        budgetEstime: data.budgetEstime ?? null,
+        notes: data.notes,
+      },
+    });
+  } catch (err) {
+    console.error("[POST /api/clients] prisma error", err);
+    return NextResponse.json(
+      { error: "Impossible de créer le contact" },
+      { status: 500 }
+    );
+  }
 
   return NextResponse.json(
     {
