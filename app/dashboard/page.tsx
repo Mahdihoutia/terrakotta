@@ -289,17 +289,14 @@ export default async function DashboardPage() {
     <div className="mx-auto w-full max-w-[1400px] space-y-8">
       {/* ── Hero ─────────────────────────────────────────────── */}
       <section className="relative overflow-hidden rounded-2xl border border-tk-border bg-tk-surface p-6 lg:p-8">
-        {/* Halo bleu top-right */}
+        {/* Halo bleu top-right (theme-aware) */}
         <div
-          className="pointer-events-none absolute -right-24 -top-24 h-[320px] w-[320px] rounded-full"
-          style={{
-            background:
-              "radial-gradient(circle, rgba(37,99,235,0.10) 0%, transparent 65%)",
-          }}
+          className="hero-halo pointer-events-none absolute -right-24 -top-24 h-[320px] w-[320px] rounded-full"
+          aria-hidden="true"
         />
         {/* Dot grid fond */}
         <div
-          className="pointer-events-none absolute inset-0 bg-dot-grid opacity-40"
+          className="pointer-events-none absolute inset-0 bg-dot-grid opacity-40 dark:opacity-25"
           aria-hidden="true"
         />
         <div className="relative flex flex-wrap items-start justify-between gap-4">

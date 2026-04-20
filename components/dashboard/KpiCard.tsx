@@ -81,20 +81,18 @@ export default function KpiCard({
       style={{ animationDelay: `${index * 50}ms`, animationFillMode: "both" }}
     >
       <div
-        className="card-premium group relative h-full p-5 transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-px"
+        className="card-premium kpi-shell group relative h-full p-5 transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-px"
         style={
           {
-            // Variable locale pour les effets hover
+            // Variables locales — lues par .kpi-shell pour adapter au dark
             ["--accent" as string]: accent,
           } as React.CSSProperties
         }
       >
-        {/* Halo subtil au hover */}
+        {/* Halo subtil au hover — géré en CSS pour s'adapter au dark */}
         <div
-          className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-          style={{
-            background: `radial-gradient(120% 80% at 100% 0%, ${accent}12, transparent 55%)`,
-          }}
+          className="kpi-halo pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+          aria-hidden="true"
         />
 
         {/* En-tête : icône + label */}
@@ -102,13 +100,7 @@ export default function KpiCard({
           <p className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-tk-text-muted">
             {label}
           </p>
-          <div
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-105"
-            style={{
-              background: `${accent}16`,
-              color: accent,
-            }}
-          >
+          <div className="kpi-tile flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-105">
             <Icon className="h-[15px] w-[15px]" />
           </div>
         </div>
@@ -144,10 +136,8 @@ export default function KpiCard({
 
         {/* Accent bottom line */}
         <div
-          className="absolute bottom-0 left-0 h-[2px] w-0 rounded-b-xl transition-all duration-300 group-hover:w-full"
-          style={{
-            background: `linear-gradient(90deg, ${accent}, transparent)`,
-          }}
+          className="kpi-accent absolute bottom-0 left-0 h-[2px] w-0 transition-all duration-300 group-hover:w-full"
+          aria-hidden="true"
         />
       </div>
     </div>
