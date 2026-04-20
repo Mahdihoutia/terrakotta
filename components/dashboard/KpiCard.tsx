@@ -13,6 +13,7 @@ import {
   CalendarCheck,
   CheckCircle2,
   Clock,
+  Minus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -38,18 +39,18 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   clock:      Clock,
 };
 
-// Icon background — terracotta / blue tones matching brand palette
-const ICON_COLORS: Record<string, { from: string; to: string }> = {
-  users:      { from: "#c2613a", to: "#8b4726" },
-  trending:   { from: "#2563eb", to: "#1d4ed8" },
-  bot:        { from: "#7c3aed", to: "#5b21b6" },
-  target:     { from: "#c2613a", to: "#a0522d" },
-  briefcase:  { from: "#c2613a", to: "#8b4726" },
-  filetext:   { from: "#d4845a", to: "#a0522d" },
-  handcoins:  { from: "#0d9488", to: "#0f766e" },
-  calendar:   { from: "#3b82f6", to: "#2563eb" },
-  check:      { from: "#16a34a", to: "#15803d" },
-  clock:      { from: "#d4845a", to: "#c2613a" },
+// Accent de la tuile — on garde cohérent mais plus subtil qu'avant.
+const ICON_ACCENT: Record<string, string> = {
+  users:      "#c2613a",
+  trending:   "#2563eb",
+  bot:        "#7c3aed",
+  target:     "#c2613a",
+  briefcase:  "#c2613a",
+  filetext:   "#d4845a",
+  handcoins:  "#0d9488",
+  calendar:   "#3b82f6",
+  check:      "#16a34a",
+  clock:      "#d4845a",
 };
 
 export default function KpiCard({
@@ -60,60 +61,81 @@ export default function KpiCard({
   icon,
   index = 0,
 }: Props) {
-  const Icon    = ICON_MAP[icon]  ?? Target;
-  const colors  = ICON_COLORS[icon] ?? { from: "#c2613a", to: "#8b4726" };
-  const isPositive = change !== undefined && change >= 0;
+  const Icon   = ICON_MAP[icon]  ?? Target;
+  const accent = ICON_ACCENT[icon] ?? "#2563eb";
+
+  const hasChange   = typeof change === "number";
+  const isFlat      = hasChange && Math.abs(change!) < 1;
+  const isPositive  = hasChange && change! > 0;
+  const changeClass = !hasChange
+    ? ""
+    : isFlat
+    ? "chip"
+    : isPositive
+    ? "chip chip-success chip-dot"
+    : "chip chip-danger chip-dot";
 
   return (
     <div
       className="animate-fade-in"
-      style={{ animationDelay: `${index * 70}ms`, animationFillMode: "both" }}
+      style={{ animationDelay: `${index * 50}ms`, animationFillMode: "both" }}
     >
-      <div className="glass group p-5 relative overflow-hidden transition-all duration-200 hover:border-tk-border-hover hover:shadow-lg hover:-translate-y-px">
-        {/* Top row */}
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <p className="text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-tk-text-faint">
-              {label}
-            </p>
-            <p
-              className="text-[2rem] font-bold leading-none tracking-tight text-tk-text"
-              style={{ fontFamily: "var(--font-body), system-ui, sans-serif" }}
-            >
-              {value}
-            </p>
-          </div>
+      <div
+        className="card-premium group relative h-full p-5 transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-px"
+        style={
+          {
+            // Variable locale pour les effets hover
+            ["--accent" as string]: accent,
+          } as React.CSSProperties
+        }
+      >
+        {/* Halo subtil au hover */}
+        <div
+          className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+          style={{
+            background: `radial-gradient(120% 80% at 100% 0%, ${accent}12, transparent 55%)`,
+          }}
+        />
 
-          {/* Icon circle */}
+        {/* En-tête : icône + label */}
+        <div className="relative flex items-center justify-between">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-tk-text-muted">
+            {label}
+          </p>
           <div
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-md transition-transform duration-200 group-hover:scale-105"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-105"
             style={{
-              background: `linear-gradient(135deg, ${colors.from}, ${colors.to})`,
-              boxShadow: `0 4px 12px ${colors.from}40`,
+              background: `${accent}16`,
+              color: accent,
             }}
           >
-            <Icon className="h-[18px] w-[18px] text-white" />
+            <Icon className="h-[15px] w-[15px]" />
           </div>
         </div>
 
-        {/* Bottom row — change indicator */}
-        {change !== undefined && (
-          <div className="mt-4 flex items-center gap-2">
-            <span
-              className={cn(
-                "inline-flex items-center gap-0.5 rounded-full px-2 py-[3px] text-[0.68rem] font-semibold",
-                isPositive
-                  ? "bg-blue-500/10 text-blue-500"
-                  : "bg-red-500/10 text-red-500"
+        {/* Valeur principale */}
+        <p
+          className="tabular relative mt-3 text-[1.85rem] font-bold leading-none tracking-tight text-tk-text"
+          style={{ fontFamily: "var(--font-body), system-ui, sans-serif" }}
+        >
+          {value}
+        </p>
+
+        {/* Variation */}
+        {hasChange && (
+          <div className="relative mt-3 flex items-center gap-2">
+            <span className={cn(changeClass, "!px-2 !py-[2px] !text-[0.66rem]")}>
+              {isFlat ? (
+                <Minus className="h-3 w-3" />
+              ) : isPositive ? (
+                <ArrowUpRight className="h-3 w-3" />
+              ) : (
+                <ArrowDownRight className="h-3 w-3" />
               )}
-            >
-              {isPositive
-                ? <ArrowUpRight className="h-3 w-3" />
-                : <ArrowDownRight className="h-3 w-3" />}
-              {isPositive ? "+" : ""}{change}%
+              {isFlat ? "Stable" : `${isPositive ? "+" : ""}${change}%`}
             </span>
             {changeLabel && (
-              <span className="text-[0.72rem] text-tk-text-faint">
+              <span className="text-[0.7rem] text-tk-text-faint">
                 {changeLabel}
               </span>
             )}
@@ -124,7 +146,7 @@ export default function KpiCard({
         <div
           className="absolute bottom-0 left-0 h-[2px] w-0 rounded-b-xl transition-all duration-300 group-hover:w-full"
           style={{
-            background: `linear-gradient(90deg, ${colors.from}60, transparent)`,
+            background: `linear-gradient(90deg, ${accent}, transparent)`,
           }}
         />
       </div>

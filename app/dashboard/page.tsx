@@ -1,7 +1,10 @@
+import Link from "next/link";
+import { ArrowUpRight, Sparkles } from "lucide-react";
 import KpiCard from "@/components/dashboard/KpiCard";
 import LeadsChart from "@/components/dashboard/LeadsChart";
 import RecentLeads from "@/components/dashboard/RecentLeads";
 import AgentStatusCard from "@/components/dashboard/AgentStatusCard";
+import SectionHeader from "@/components/dashboard/SectionHeader";
 import { prisma } from "@/lib/db";
 
 /** Formater un montant en euros français (ex: "12 500 €") */
@@ -38,14 +41,31 @@ const STATUT_LABELS: Record<string, string> = {
   ANNULE: "Annulé",
 };
 
-/** Couleurs de badge par statut */
-const STATUT_COLORS: Record<string, string> = {
-  EN_ATTENTE: "bg-yellow-500/15 text-yellow-400",
-  EN_COURS: "bg-blue-500/15 text-blue-400",
-  EN_PAUSE: "bg-orange-500/15 text-orange-400",
-  TERMINE: "bg-green-500/15 text-green-400",
-  ANNULE: "bg-red-500/15 text-red-400",
+/** Chip par statut projet */
+const STATUT_CHIP: Record<string, string> = {
+  EN_ATTENTE: "chip chip-warning chip-dot",
+  EN_COURS:   "chip chip-primary chip-dot",
+  EN_PAUSE:   "chip chip-warning chip-dot",
+  TERMINE:    "chip chip-success chip-dot",
+  ANNULE:     "chip chip-danger chip-dot",
 };
+
+/** Couleur d'accent par statut pour avatar */
+const STATUT_AVATAR: Record<string, string> = {
+  EN_ATTENTE: "#f59e0b",
+  EN_COURS:   "#2563eb",
+  EN_PAUSE:   "#f97316",
+  TERMINE:    "#16a34a",
+  ANNULE:     "#dc2626",
+};
+
+/** Initiales client pour avatar */
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
 
 async function fetchKpis() {
   const now = new Date();
@@ -266,74 +286,178 @@ export default async function DashboardPage() {
   const { row1, row2, projetsRecents } = await fetchKpis();
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-tk-text">Vue d&apos;ensemble</h1>
-        <p className="text-tk-text-faint">
-          Suivez vos indicateurs clés et l&apos;activité de votre bureau d&apos;étude
-        </p>
-      </div>
+    <div className="mx-auto w-full max-w-[1400px] space-y-8">
+      {/* ── Hero ─────────────────────────────────────────────── */}
+      <section className="relative overflow-hidden rounded-2xl border border-tk-border bg-tk-surface p-6 lg:p-8">
+        {/* Halo bleu top-right */}
+        <div
+          className="pointer-events-none absolute -right-24 -top-24 h-[320px] w-[320px] rounded-full"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(37,99,235,0.10) 0%, transparent 65%)",
+          }}
+        />
+        {/* Dot grid fond */}
+        <div
+          className="pointer-events-none absolute inset-0 bg-dot-grid opacity-40"
+          aria-hidden="true"
+        />
+        <div className="relative flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <span className="chip chip-primary mb-3">
+              <Sparkles className="h-3 w-3" />
+              Pilotage Kilowater
+            </span>
+            <h1 className="section-title text-[1.75rem] lg:text-[2rem]">
+              Vue d&apos;ensemble
+            </h1>
+            <p className="section-subtitle max-w-2xl">
+              Suivez vos indicateurs clés, l&apos;activité commerciale de votre
+              bureau d&apos;étude et l&apos;avancement de vos projets en
+              rénovation énergétique.
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <Link href="/dashboard/leads" className="btn-ghost focus-ring">
+              Leads
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </Link>
+            <Link href="/dashboard/stats" className="btn-ghost focus-ring">
+              Statistiques
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        </div>
+      </section>
 
-      {/* KPIs principaux */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {row1.map((kpi, i) => (
-          <KpiCard key={kpi.label} {...kpi} index={i} />
-        ))}
-      </div>
+      {/* ── KPIs principaux ─────────────────────────────────── */}
+      <section className="space-y-4">
+        <SectionHeader
+          kicker="Indicateurs · Mois en cours"
+          title="KPIs principaux"
+          subtitle="Projets, chiffre d'affaires, leads et activité terrain"
+        />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {row1.map((kpi, i) => (
+            <KpiCard key={kpi.label} {...kpi} index={i} />
+          ))}
+        </div>
+      </section>
 
-      {/* KPIs secondaires */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {row2.map((kpi, i) => (
-          <KpiCard key={kpi.label} {...kpi} index={i + 4} />
-        ))}
-      </div>
+      {/* ── KPIs secondaires ────────────────────────────────── */}
+      <section className="space-y-4">
+        <SectionHeader
+          kicker="Indicateurs · Secondaire"
+          title="Conversion & production"
+          subtitle="Taux de conversion, devis, aides et projets livrés"
+        />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {row2.map((kpi, i) => (
+            <KpiCard key={kpi.label} {...kpi} index={i + 4} />
+          ))}
+        </div>
+      </section>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      {/* ── Graphiques & Agents ─────────────────────────────── */}
+      <section className="grid gap-6 lg:grid-cols-2">
         <LeadsChart />
         <AgentStatusCard />
-      </div>
+      </section>
 
-      <RecentLeads />
+      {/* ── Derniers leads ──────────────────────────────────── */}
+      <section>
+        <RecentLeads />
+      </section>
 
-      {/* Projets récents */}
-      <div className="glass rounded-2xl p-6">
-        <h2 className="mb-4 text-lg font-semibold text-tk-text">
-          Projets récents
-        </h2>
-        {projetsRecents.length === 0 ? (
-          <p className="text-sm text-tk-text-faint">Aucun projet pour le moment.</p>
-        ) : (
-          <ul className="divide-y divide-white/5">
-            {projetsRecents.map((projet) => (
-              <li
-                key={projet.id}
-                className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
+      {/* ── Projets récents — liste enrichie ────────────────── */}
+      <section className="space-y-4">
+        <SectionHeader
+          kicker="Activité"
+          title="Projets récents"
+          subtitle="Les 5 derniers projets mis à jour"
+          action={
+            <Link
+              href="/dashboard/projets"
+              className="btn-ghost focus-ring"
+            >
+              Tous les projets
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </Link>
+          }
+        />
+        <div className="card-premium overflow-hidden p-0">
+          {projetsRecents.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-2 p-10 text-center">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-tk-hover text-tk-text-faint">
+                <Sparkles className="h-5 w-5" />
+              </div>
+              <p className="text-sm font-medium text-tk-text">
+                Aucun projet pour le moment
+              </p>
+              <p className="text-xs text-tk-text-faint">
+                Créez un projet pour suivre son avancement ici.
+              </p>
+              <Link
+                href="/dashboard/projets"
+                className="btn-ghost mt-2 focus-ring"
               >
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-tk-text">
-                    {projet.titre}
-                  </p>
-                  <p className="text-xs text-tk-text-faint">
-                    {projet.clientNom}
-                  </p>
-                </div>
-                <div className="ml-4 flex items-center gap-3">
-                  <span
-                    className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                      STATUT_COLORS[projet.statut] ?? "bg-gray-500/15 text-gray-400"
-                    }`}
+                Créer un projet
+              </Link>
+            </div>
+          ) : (
+            <ul role="list">
+              {projetsRecents.map((projet, i) => {
+                const clientNom = projet.clientNom || "—";
+                const accent    = STATUT_AVATAR[projet.statut] ?? "#6b5b50";
+                return (
+                  <li
+                    key={projet.id}
+                    className="row-in group flex items-center gap-4 border-b border-tk-border px-5 py-3.5 transition-colors last:border-0 hover:bg-tk-hover"
+                    style={{ animationDelay: `${i * 40}ms` }}
                   >
-                    {STATUT_LABELS[projet.statut] ?? projet.statut}
-                  </span>
-                  <span className="whitespace-nowrap text-xs text-tk-text-faint">
-                    {formatDateFr(projet.updatedAt)}
-                  </span>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+                    {/* Avatar initiales */}
+                    <div
+                      className="avatar-initials h-9 w-9"
+                      style={{
+                        background: `linear-gradient(135deg, ${accent}, ${accent}cc)`,
+                      }}
+                      aria-hidden="true"
+                    >
+                      {getInitials(clientNom)}
+                    </div>
+                    {/* Titre + client */}
+                    <div className="min-w-0 flex-1">
+                      <Link
+                        href={`/dashboard/projets/${projet.id}`}
+                        className="truncate text-sm font-semibold text-tk-text transition-colors group-hover:text-tk-primary"
+                      >
+                        {projet.titre}
+                      </Link>
+                      <p className="truncate text-xs text-tk-text-faint">
+                        {clientNom}
+                      </p>
+                    </div>
+                    {/* Statut + date */}
+                    <div className="hidden items-center gap-3 sm:flex">
+                      <span
+                        className={
+                          STATUT_CHIP[projet.statut] ?? "chip chip-dot"
+                        }
+                      >
+                        {STATUT_LABELS[projet.statut] ?? projet.statut}
+                      </span>
+                      <span className="tabular whitespace-nowrap text-xs text-tk-text-faint">
+                        {formatDateFr(projet.updatedAt)}
+                      </span>
+                    </div>
+                    <ArrowUpRight className="h-4 w-4 shrink-0 text-tk-text-faint opacity-0 transition-opacity group-hover:opacity-100" />
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </section>
     </div>
   );
 }
