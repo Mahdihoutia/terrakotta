@@ -15,7 +15,12 @@ import {
   X,
   ImagePlus,
   Loader2,
+  Plus,
+  Star,
+  Trash2,
+  Target,
 } from "lucide-react";
+import type { PreconisationAction } from "@/lib/pdf-styles";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -81,6 +86,33 @@ const PHOTO_CATEGORIES = [
   "Étiquette DPE existant",
   "Autre",
 ];
+
+// ─── Préconisations structurées (catalogue d'actions) ──────────
+
+const PRECO_FAMILLES: Array<{ key: string; prefix: string; label: string }> = [
+  { key: "Enveloppe",        prefix: "ENV", label: "Enveloppe (isolation, étanchéité)" },
+  { key: "Chauffage",        prefix: "CHA", label: "Chauffage" },
+  { key: "Climatisation",    prefix: "CLI", label: "Climatisation" },
+  { key: "Ventilation",      prefix: "VEN", label: "Ventilation" },
+  { key: "Eclairage",        prefix: "ECL", label: "Éclairage" },
+  { key: "ECS",              prefix: "ECS", label: "Eau chaude sanitaire" },
+  { key: "Regulation / GTB", prefix: "REG", label: "Régulation / GTB" },
+  { key: "ENR",              prefix: "ENR", label: "Énergies renouvelables" },
+  { key: "Comportemental",   prefix: "COM", label: "Comportemental / usages" },
+];
+
+const PRECO_HORIZONS = ["Court terme (< 1 an)", "Moyen terme (1 à 3 ans)", "Long terme (3+ ans)"];
+const PRECO_FAISABILITE = ["Facile", "Moyenne", "Difficile"];
+
+function nextPrecoCode(list: PreconisationAction[], famille: string): string {
+  const prefix = PRECO_FAMILLES.find((f) => f.key === famille)?.prefix ?? "ACT";
+  const existing = list.filter((a) => a.code.startsWith(prefix + "-"));
+  const nums = existing
+    .map((a) => parseInt(a.code.slice(prefix.length + 1), 10))
+    .filter((n) => !isNaN(n));
+  const n = nums.length === 0 ? 1 : Math.max(...nums) + 1;
+  return `${prefix}-${String(n).padStart(2, "0")}`;
+}
 
 // ─── Sections ───────────────────────────────────────────────────
 
@@ -420,7 +452,12 @@ function EnergyLabelUI({ kind, letter, value }: { kind: "DPE" | "GES"; letter: s
 
 // ─── PDF Generation ─────────────────────────────────────────────
 
-async function generatePDF(sections: QuestionSection[], values: FormValues, sectionPhotos: Record<number, PhotoItem[]>) {
+async function generatePDF(
+  sections: QuestionSection[],
+  values: FormValues,
+  sectionPhotos: Record<number, PhotoItem[]>,
+  preconisations: PreconisationAction[],
+) {
   const { default: jsPDF } = await import("jspdf");
   const { default: autoTable } = await import("jspdf-autotable");
   const {
@@ -434,8 +471,15 @@ async function generatePDF(sections: QuestionSection[], values: FormValues, sect
     drawConsoBreakdown,
     drawDeperditionsChart,
     drawBeforeAfterComparison,
+    drawExecutiveSummary,
+    drawActionSheet,
+    computeDPEClass,
+    computeGESClass,
+    computeFinancialClass,
     getDataTableConfig,
+    getInfoTableConfig,
     needsPageBreak,
+    PDF_COLORS,
     PDF_LAYOUT,
   } = await import("@/lib/pdf-styles");
 
@@ -466,14 +510,72 @@ async function generatePDF(sections: QuestionSection[], values: FormValues, sect
     reference,
   );
 
-  // ─── Page 2 : Sommaire (filled after content) ────────────
+  // ─── Page 2 : Synthèse exécutive ─────────────────────────
+  doc.addPage();
+  {
+    const shab = parseFloat(values.surface_habitable || "0");
+    const consoM2 = parseFloat(values.conso_par_m2 || "0");
+    const co2M2 = parseFloat(values.emissions_co2_m2 || "0");
+    const factureAn = parseFloat(values.facture_annuelle || "0");
+    const euroM2 = shab > 0 && factureAn > 0 ? factureAn / shab : 0;
+
+    const dpeLetter = consoM2 > 0 ? computeDPEClass(consoM2) : ((values.dpe_actuel || "G").charAt(0) || "G");
+    const gesLetter = co2M2 > 0 ? computeGESClass(co2M2) : ((values.ges_actuel || "G").charAt(0) || "G");
+    const finLetter = euroM2 > 0 ? computeFinancialClass(euroM2) : "G";
+
+    // Constats automatiques à partir des valeurs clés
+    const constats: string[] = [];
+    if (consoM2 > 0) constats.push(`Consommation de ${consoM2} kWhEP/m².an — classe energetique ${dpeLetter}.`);
+    if (co2M2 > 0)   constats.push(`Emissions de ${co2M2} kgCO2/m².an — classe environnementale ${gesLetter}.`);
+    if (euroM2 > 0)  constats.push(`Facture energetique de ${euroM2.toFixed(0)} EUR/m².an — classe financiere ${finLetter}.`);
+    if (values.annee_construction) constats.push(`Batiment construit en ${values.annee_construction}, structure ${values.type_structure || "non precisee"}.`);
+    if (values.chauffage_type && values.chauffage_annee) {
+      constats.push(`Generateur de chauffage ${values.chauffage_type} installe en ${values.chauffage_annee}.`);
+    }
+    if (values.ventilation_type && values.ventilation_type !== "Aucune") {
+      constats.push(`Ventilation ${values.ventilation_type}.`);
+    }
+    if (values.murs_isolation === "Non isolé") constats.push("Murs non isoles : poste majeur de deperdition.");
+    if (values.toiture_isolation === "Non isolé") constats.push("Toiture non isolee : priorite forte d'intervention.");
+
+    // Leviers à partir des préconisations (top 5 par opportunité)
+    const topActions = [...preconisations]
+      .sort((a, b) => (b.opportunite || 0) - (a.opportunite || 0))
+      .slice(0, 5);
+    const leviers: string[] = topActions.length > 0
+      ? topActions.map((a) => {
+          const euro = a.economiesEuro ? ` — ${Math.round(a.economiesEuro).toLocaleString("fr-FR")} EUR/an` : "";
+          const tri  = a.tri ? `, TRI ${a.tri.toFixed(1)} ans` : "";
+          return `${a.code} · ${a.titre}${euro}${tri}`;
+        })
+      : [
+          "Saisir le catalogue de preconisations pour alimenter cette synthese.",
+        ];
+
+    drawExecutiveSummary(doc, {
+      beneficiaire:      values.client_nom || "—",
+      adresse:           values.adresse || "—",
+      typeBatiment:      values.type_batiment || "—",
+      anneeConstruction: values.annee_construction || "—",
+      surface:           values.surface_habitable ? `${values.surface_habitable} m²` : "—",
+      energetique:       { letter: dpeLetter, value: consoM2 > 0 ? `${consoM2}` : "—" },
+      environnementale:  { letter: gesLetter, value: co2M2 > 0 ? `${co2M2}` : "—" },
+      financiere:        { letter: finLetter, value: euroM2 > 0 ? `${euroM2.toFixed(0)}` : "—" },
+      constats,
+      leviers,
+    });
+  }
+
+  // ─── Page 3 : Sommaire (filled after content) ────────────
   doc.addPage();
   const tocPageNum = doc.getNumberOfPages();
 
-  // ─── Page 3+ : Content ───────────────────────────────────
+  // ─── Page 4+ : Content ───────────────────────────────────
   doc.addPage();
   let y: number = PDF_LAYOUT.topMargin;
-  const tocEntries: { title: string; page: number }[] = [];
+  const tocEntries: { title: string; page: number }[] = [
+    { title: "Synthese executive", page: 1 }, // numérotation rebasée : page 2 du doc = page 1 du contenu
+  ];
 
   // ─── Sections ─────────────────────────────────────────────
   for (let sIdx = 0; sIdx < sections.length; sIdx++) {
@@ -605,6 +707,54 @@ async function generatePDF(sections: QuestionSection[], values: FormValues, sect
     y += PDF_LAYOUT.sectionGap - 6;
   }
 
+  // ─── Catalogue de préconisations structurées ─────────────
+  if (preconisations.length > 0) {
+    // Nouvelle page dédiée à la matrice
+    doc.addPage();
+    y = PDF_LAYOUT.topMargin;
+    tocEntries.push({ title: "Catalogue de préconisations", page: doc.getNumberOfPages() - 1 });
+    y = drawSectionHeader(doc, "Catalogue de préconisations", y, "Vue matricielle des actions priorisées — détail en fiches ci-après");
+
+    // Matrice via autoTable
+    const sorted = [...preconisations].sort((a, b) => (b.opportunite || 0) - (a.opportunite || 0));
+    const head = [["Code", "Famille", "Action", "★", "Horizon", "Economies €/an", "CO2 evite", "TRI"]];
+    const body = sorted.map((a) => [
+      a.code,
+      a.famille,
+      a.titre,
+      "★".repeat(Math.max(0, Math.min(5, a.opportunite || 0))),
+      (a.horizon || "").replace(/\s*\(.*\)\s*$/, ""),
+      a.economiesEuro ? `${Math.round(a.economiesEuro).toLocaleString("fr-FR")}` : "—",
+      a.co2Evite ? `${Math.round(a.co2Evite).toLocaleString("fr-FR")} kg` : "—",
+      a.tri ? `${a.tri.toFixed(1)} ans` : "—",
+    ]);
+    autoTable(doc, {
+      ...getInfoTableConfig(y, head, body, contentWidth),
+      columnStyles: {
+        0: { fontStyle: "bold", cellWidth: 20, textColor: PDF_COLORS.heading },
+        1: { cellWidth: 28 },
+        2: { cellWidth: 55 },
+        3: { cellWidth: 14, halign: "center", textColor: PDF_COLORS.blue, fontStyle: "bold" },
+        4: { cellWidth: 22 },
+        5: { cellWidth: 24, halign: "right" },
+        6: { cellWidth: 20, halign: "right" },
+        7: { cellWidth: 17, halign: "right" },
+      },
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    y = (doc as any).lastAutoTable.finalY + 10;
+
+    // Fiches action détaillées
+    doc.addPage();
+    y = PDF_LAYOUT.topMargin;
+    tocEntries.push({ title: "Fiches action détaillées", page: doc.getNumberOfPages() - 1 });
+    y = drawSectionHeader(doc, "Fiches action détaillées", y, "Descriptif par action avec KPI économiques et environnementaux");
+
+    for (const a of sorted) {
+      y = drawActionSheet(doc, y, a);
+    }
+  }
+
   // ─── Fill sommaire page ───────────────────────────────────
   doc.setPage(tocPageNum);
   drawSommaire(doc, tocEntries, "Audit energetique", reference);
@@ -628,10 +778,20 @@ export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props
       try {
         const parsed = JSON.parse(existingDoc.donnees);
         delete parsed._sectionPhotos;
+        delete parsed._preconisations;
         return parsed;
       } catch { return {}; }
     }
     return {};
+  });
+  const [preconisations, setPreconisations] = useState<PreconisationAction[]>(() => {
+    if (existingDoc?.donnees) {
+      try {
+        const parsed = JSON.parse(existingDoc.donnees);
+        if (Array.isArray(parsed._preconisations)) return parsed._preconisations as PreconisationAction[];
+      } catch { /* ignore */ }
+    }
+    return [];
   });
   const [docId, setDocId] = useState<string | null>(existingDoc?.id ?? null);
   const [saved, setSaved] = useState(false);
@@ -733,7 +893,11 @@ export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props
           photosToSave[Number(key)] = photos.map((p) => ({ id: p.id, preview: p.preview, legende: p.legende, categorie: p.categorie }));
         }
       }
-      const donnees = JSON.stringify({ ...values, _sectionPhotos: Object.keys(photosToSave).length > 0 ? photosToSave : undefined });
+      const donnees = JSON.stringify({
+        ...values,
+        _sectionPhotos:   Object.keys(photosToSave).length > 0 ? photosToSave : undefined,
+        _preconisations:  preconisations.length > 0 ? preconisations : undefined,
+      });
       if (docId) {
         const res = await fetch(`/api/documents/${docId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ titre, reference, clientNom: values.client_nom || null, donnees, statut: "EN_COURS" }) });
         if (res.ok) { setSaved(true); setTimeout(() => setSaved(false), 2000); onSaved?.(); }
@@ -767,13 +931,39 @@ export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props
   async function handleGeneratePDF() {
     setGenerating(true);
     try {
-      await generatePDF(SECTIONS, values, sectionPhotos);
+      await generatePDF(SECTIONS, values, sectionPhotos, preconisations);
       if (docId) { await fetch(`/api/documents/${docId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ statut: "TERMINE" }) }); onSaved?.(); }
       else { await handleSave(); }
     } finally { setGenerating(false); }
   }
 
+  const PRECO_IDX = SECTIONS.length; // index virtuel pour la nav
+  const isPrecoView = activeSection === PRECO_IDX;
   const currentSection = SECTIONS[activeSection];
+
+  function addPreconisation() {
+    const famille = PRECO_FAMILLES[0].key;
+    const code = nextPrecoCode(preconisations, famille);
+    setPreconisations((prev) => [
+      ...prev,
+      {
+        code, famille, titre: "",
+        opportunite: 3,
+        horizon: PRECO_HORIZONS[0],
+        faisabilite: PRECO_FAISABILITE[0],
+        brief: "",
+      },
+    ]);
+    setSaved(false);
+  }
+  function updatePreco(idx: number, patch: Partial<PreconisationAction>) {
+    setPreconisations((prev) => prev.map((a, i) => (i === idx ? { ...a, ...patch } : a)));
+    setSaved(false);
+  }
+  function removePreco(idx: number) {
+    setPreconisations((prev) => prev.filter((_, i) => i !== idx));
+    setSaved(false);
+  }
   const totalPhotos = Object.values(sectionPhotos).reduce((sum, arr) => sum + arr.length, 0);
   const allRequired = SECTIONS.flatMap((s) => s.fields.filter((f) => f.required));
   const filledRequired = allRequired.filter((f) => values[f.id]?.trim());
@@ -827,10 +1017,206 @@ export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props
               </button>
             );
           })}
+          <button
+            onClick={() => setActiveSection(PRECO_IDX)}
+            className={cn(
+              "flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm transition-colors",
+              isPrecoView ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+            )}
+          >
+            <Target className="h-4 w-4 shrink-0" />
+            <span className="truncate">{SECTIONS.length + 1}. Préconisations structurées</span>
+            {preconisations.length > 0 && (
+              <Badge variant="outline" className="ml-auto text-[10px]">{preconisations.length}</Badge>
+            )}
+          </button>
         </div>
 
         <AnimatePresence mode="wait">
-          {currentSection ? (
+          {isPrecoView ? (
+            <motion.div key="preco" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Target className="h-4 w-4 text-primary" />
+                    Catalogue de préconisations
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Actions structurées par famille — alimentent la matrice et les fiches détaillées du rapport PDF.
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Button variant="outline" size="sm" onClick={addPreconisation}>
+                    <Plus className="mr-1 h-4 w-4" /> Ajouter une action
+                  </Button>
+
+                  {preconisations.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      Aucune préconisation saisie. Cliquez sur « Ajouter une action » pour créer la première fiche.
+                    </p>
+                  )}
+
+                  <div className="space-y-4">
+                    {preconisations.map((a, idx) => (
+                      <div key={idx} className="rounded-lg border bg-background p-4 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="font-mono text-[11px]">{a.code}</Badge>
+                          <div className="flex items-center gap-0.5">
+                            {[1, 2, 3, 4, 5].map((n) => (
+                              <button
+                                key={n}
+                                type="button"
+                                onClick={() => updatePreco(idx, { opportunite: n })}
+                                className="p-0.5"
+                                aria-label={`Opportunité ${n} étoile${n > 1 ? "s" : ""}`}
+                              >
+                                <Star
+                                  className={cn(
+                                    "h-4 w-4",
+                                    n <= (a.opportunite || 0) ? "fill-primary text-primary" : "text-muted-foreground/40",
+                                  )}
+                                />
+                              </button>
+                            ))}
+                          </div>
+                          <Button variant="ghost" size="sm" className="ml-auto text-destructive hover:text-destructive" onClick={() => removePreco(idx)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium">Famille</label>
+                            <select
+                              value={a.famille}
+                              onChange={(e) => {
+                                const newFam = e.target.value;
+                                // régénère le code si préfixe différent
+                                const oldPrefix = a.code.split("-")[0];
+                                const newPrefix = PRECO_FAMILLES.find((f) => f.key === newFam)?.prefix ?? oldPrefix;
+                                const patch: Partial<PreconisationAction> = { famille: newFam };
+                                if (newPrefix !== oldPrefix) {
+                                  patch.code = nextPrecoCode(preconisations.filter((_, i) => i !== idx), newFam);
+                                }
+                                updatePreco(idx, patch);
+                              }}
+                              className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
+                            >
+                              {PRECO_FAMILLES.map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}
+                            </select>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium">Horizon</label>
+                            <select
+                              value={a.horizon}
+                              onChange={(e) => updatePreco(idx, { horizon: e.target.value })}
+                              className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
+                            >
+                              {PRECO_HORIZONS.map((h) => <option key={h} value={h}>{h}</option>)}
+                            </select>
+                          </div>
+                          <div className="space-y-1 sm:col-span-2">
+                            <label className="text-xs font-medium">Titre de l&apos;action</label>
+                            <input
+                              type="text"
+                              value={a.titre}
+                              onChange={(e) => updatePreco(idx, { titre: e.target.value })}
+                              placeholder="Ex : Isolation des combles perdus par soufflage ouate de cellulose R≥7"
+                              className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
+                            />
+                          </div>
+                          <div className="space-y-1 sm:col-span-2">
+                            <label className="text-xs font-medium">Brief technique / enjeu</label>
+                            <textarea
+                              value={a.brief || ""}
+                              onChange={(e) => updatePreco(idx, { brief: e.target.value })}
+                              rows={3}
+                              placeholder="Contexte, matériel préconisé, méthodologie, points d'attention..."
+                              className="w-full rounded-md border bg-background px-2 py-1.5 text-sm resize-none"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium">Faisabilité</label>
+                            <select
+                              value={a.faisabilite || ""}
+                              onChange={(e) => updatePreco(idx, { faisabilite: e.target.value })}
+                              className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
+                            >
+                              <option value="">—</option>
+                              {PRECO_FAISABILITE.map((f) => <option key={f} value={f}>{f}</option>)}
+                            </select>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium">Économies (€/an)</label>
+                            <input
+                              type="number"
+                              value={a.economiesEuro ?? ""}
+                              onChange={(e) => updatePreco(idx, { economiesEuro: e.target.value ? parseFloat(e.target.value) : undefined })}
+                              className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium">Économies énergie (kWh/an)</label>
+                            <input
+                              type="number"
+                              value={a.economiesKwh ?? ""}
+                              onChange={(e) => updatePreco(idx, { economiesKwh: e.target.value ? parseFloat(e.target.value) : undefined })}
+                              className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium">CO₂ évité (kg/an)</label>
+                            <input
+                              type="number"
+                              value={a.co2Evite ?? ""}
+                              onChange={(e) => updatePreco(idx, { co2Evite: e.target.value ? parseFloat(e.target.value) : undefined })}
+                              className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium">Coût travaux (€ TTC)</label>
+                            <input
+                              type="number"
+                              value={a.coutTravaux ?? ""}
+                              onChange={(e) => updatePreco(idx, { coutTravaux: e.target.value ? parseFloat(e.target.value) : undefined })}
+                              className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium">Aides mobilisables (€)</label>
+                            <input
+                              type="number"
+                              value={a.aides ?? ""}
+                              onChange={(e) => updatePreco(idx, { aides: e.target.value ? parseFloat(e.target.value) : undefined })}
+                              className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium">TRI (années)</label>
+                            <input
+                              type="number"
+                              step="0.1"
+                              value={a.tri ?? ""}
+                              onChange={(e) => updatePreco(idx, { tri: e.target.value ? parseFloat(e.target.value) : undefined })}
+                              className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex justify-between pt-4 border-t">
+                    <Button variant="outline" size="sm" onClick={() => setActiveSection(SECTIONS.length - 1)}>&larr; Précédent</Button>
+                    <Button size="sm" onClick={handleGeneratePDF} disabled={generating}>
+                      {generating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}
+                      {generating ? "Génération..." : "Générer le PDF"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ) : currentSection ? (
             <motion.div key={activeSection} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
               <Card>
                 <CardHeader>
@@ -935,14 +1321,7 @@ export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props
 
                   <div className="flex justify-between pt-4 border-t">
                     <Button variant="outline" size="sm" onClick={() => setActiveSection(Math.max(0, activeSection - 1))} disabled={activeSection === 0}>&larr; Précédent</Button>
-                    {activeSection < SECTIONS.length - 1 ? (
-                      <Button size="sm" onClick={() => setActiveSection(activeSection + 1)}>Suivant &rarr;</Button>
-                    ) : (
-                      <Button size="sm" onClick={handleGeneratePDF} disabled={generating}>
-                        {generating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}
-                        {generating ? "Génération..." : "Générer le PDF"}
-                      </Button>
-                    )}
+                    <Button size="sm" onClick={() => setActiveSection(activeSection + 1)}>Suivant &rarr;</Button>
                   </div>
                 </CardContent>
               </Card>

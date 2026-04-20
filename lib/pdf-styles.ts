@@ -1250,6 +1250,465 @@ export function drawBeforeAfterComparison(
   return y + cardH + 6;
 }
 
+// ─── Classe financière (€/m²/an) — barème interne Kilowater ─────
+// Indicatif, bureaux/tertiaire : reprend les paliers courants observés
+// sur le marché (≤10 €/m²·an = très performant, > 110 = dégradé).
+
+const FINANCIAL_RANGES: Array<[string, string]> = [
+  ["A", "≤ 10"],
+  ["B", "11 à 20"],
+  ["C", "21 à 35"],
+  ["D", "36 à 55"],
+  ["E", "56 à 80"],
+  ["F", "81 à 110"],
+  ["G", "> 110"],
+];
+
+export function computeFinancialClass(euroM2: number): string {
+  if (euroM2 <= 10) return "A";
+  if (euroM2 <= 20) return "B";
+  if (euroM2 <= 35) return "C";
+  if (euroM2 <= 55) return "D";
+  if (euroM2 <= 80) return "E";
+  if (euroM2 <= 110) return "F";
+  return "G";
+}
+
+// ─── Triple jauge A→G (Énergétique / Environnementale / Financière)
+// Style Sinteo : 3 barres verticales côte à côte, lettre active surlignée
+// et pointeur à droite. Réutilise DPE_COLORS pour l'ensemble (gradient
+// vert→rouge commun, lisibilité maximale).
+
+export function drawTripleGauge(
+  doc: jsPDF,
+  y: number,
+  gauges: {
+    energetique:      { letter: string; value: string };
+    environnementale: { letter: string; value: string };
+    financiere:       { letter: string; value: string };
+  },
+): number {
+  const margin       = PDF_LAYOUT.margin;
+  const pw           = doc.internal.pageSize.getWidth();
+  const contentWidth = pw - margin * 2;
+  const gap          = 6;
+  const gaugeW       = (contentWidth - 2 * gap) / 3;
+
+  const panes: Array<{
+    title:   string;
+    unit:    string;
+    data:    { letter: string; value: string };
+    ranges:  Array<[string, string]>;
+  }> = [
+    { title: "PERFORMANCE ENERGETIQUE",      unit: "kWhEP/m2.an",   data: gauges.energetique,      ranges: [["A","<=70"],["B","71-110"],["C","111-180"],["D","181-250"],["E","251-330"],["F","331-420"],["G","> 420"]] },
+    { title: "PERFORMANCE ENVIRONNEMENTALE", unit: "kgCO2/m2.an",   data: gauges.environnementale, ranges: [["A","<=6"],["B","7-11"],["C","12-30"],["D","31-50"],["E","51-70"],["F","71-100"],["G","> 100"]] },
+    { title: "PERFORMANCE FINANCIERE",       unit: "EUR/m2.an",     data: gauges.financiere,       ranges: FINANCIAL_RANGES },
+  ];
+
+  let maxY = y;
+
+  for (let i = 0; i < panes.length; i++) {
+    const pane = panes[i];
+    const gx   = margin + i * (gaugeW + gap);
+    let   cy   = y;
+
+    // Fond gris léger encadrant la jauge
+    const headerH = 18;
+    doc.setFillColor(...PDF_COLORS.surface);
+    doc.roundedRect(gx, cy, gaugeW, headerH, 1.5, 1.5, "F");
+    doc.setFillColor(...PDF_COLORS.blue);
+    doc.rect(gx, cy, 1.5, headerH, "F");
+
+    // Titre
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7);
+    doc.setTextColor(...PDF_COLORS.blue);
+    doc.text(pane.title, gx + 4, cy + 5);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.5);
+    doc.setTextColor(...PDF_COLORS.bodyLight);
+    doc.text(pane.unit, gx + 4, cy + 9);
+
+    // Valeur en grand
+    const activeColor = DPE_COLORS[pane.data.letter] ?? PDF_COLORS.heading;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.setTextColor(...activeColor);
+    doc.text(sanitizePdfText(pane.data.value), gx + 4, cy + 16);
+
+    cy += headerH + 3;
+
+    // Staircase A→G
+    const rowH    = 6.2;
+    const minBar  = gaugeW * 0.45;
+    const step    = (gaugeW * 0.95 - minBar) / 6;
+
+    for (let k = 0; k < pane.ranges.length; k++) {
+      const [letter, range] = pane.ranges[k];
+      const isActive = letter === pane.data.letter;
+      const barW     = minBar + k * step;
+      const color    = DPE_COLORS[letter];
+
+      doc.setFillColor(...color);
+      doc.rect(gx, cy, barW, rowH - 0.8, "F");
+
+      const darkBg = ["A", "B", "C", "G"].includes(letter);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7.5);
+      doc.setTextColor(...(darkBg ? PDF_COLORS.white : [33, 33, 33] as [number, number, number]));
+      doc.text(letter, gx + 2.2, cy + (rowH - 0.8) / 2 + 1);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(6.5);
+      doc.text(range, gx + 7, cy + (rowH - 0.8) / 2 + 1);
+
+      if (isActive) {
+        const tipX = gx + barW + 1.3;
+        const tipY = cy + (rowH - 0.8) / 2;
+        doc.setFillColor(...PDF_COLORS.heading);
+        doc.triangle(tipX, tipY, tipX + 3, tipY - 1.9, tipX + 3, tipY + 1.9, "F");
+        doc.setDrawColor(...PDF_COLORS.heading);
+        doc.setLineWidth(0.5);
+        doc.rect(gx - 0.3, cy - 0.3, barW + 0.6, rowH - 0.2, "S");
+      }
+      cy += rowH;
+    }
+    maxY = Math.max(maxY, cy);
+  }
+  return maxY + 4;
+}
+
+// ─── Synthèse exécutive (1 page dédiée) ─────────────────────────
+// Appelée après addPage() — dessine fond blanc + bandeau + carte info
+// bâtiment + triple jauge + constats + leviers.
+
+export function drawExecutiveSummary(
+  doc: jsPDF,
+  data: {
+    beneficiaire:      string;
+    adresse:           string;
+    typeBatiment:      string;
+    anneeConstruction: string;
+    surface:           string;
+    energetique:       { letter: string; value: string };
+    environnementale:  { letter: string; value: string };
+    financiere:        { letter: string; value: string };
+    constats:          string[];
+    leviers:           string[];
+  },
+): void {
+  const margin       = PDF_LAYOUT.margin;
+  const pw           = doc.internal.pageSize.getWidth();
+  const ph           = doc.internal.pageSize.getHeight();
+  const contentWidth = pw - margin * 2;
+  let y: number = PDF_LAYOUT.topMargin;
+
+  // Fond blanc
+  doc.setFillColor(...PDF_COLORS.background);
+  doc.rect(0, 0, pw, ph, "F");
+
+  // Titre
+  doc.setFillColor(...PDF_COLORS.blue);
+  doc.rect(margin, y, 2, 10, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(17);
+  doc.setTextColor(...PDF_COLORS.heading);
+  doc.text("SYNTHESE EXECUTIVE", margin + 6, y + 7);
+  y += 11;
+  doc.setDrawColor(...PDF_COLORS.border);
+  doc.setLineWidth(0.3);
+  doc.line(margin, y, pw - margin, y);
+
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(8.5);
+  doc.setTextColor(...PDF_COLORS.bodyLight);
+  doc.text(
+    "Vue d'ensemble en une page : etat initial, performance globale et leviers prioritaires.",
+    margin, y + 5,
+  );
+  y += 11;
+
+  // Carte info bâtiment
+  const rows: Array<[string, string]> = [
+    ["Beneficiaire",          data.beneficiaire],
+    ["Adresse",               data.adresse],
+    ["Type de batiment",      data.typeBatiment],
+    ["Annee de construction", data.anneeConstruction],
+    ["Surface",               data.surface],
+  ].filter(([, v]) => v && v.trim() && v !== "—") as Array<[string, string]>;
+
+  const cardH = rows.length * 6 + 8;
+  doc.setFillColor(...PDF_COLORS.surface);
+  doc.roundedRect(margin, y, contentWidth, cardH, 2, 2, "F");
+  doc.setFillColor(...PDF_COLORS.blue);
+  doc.rect(margin, y, 1.5, cardH, "F");
+  let iy = y + 6;
+  for (const [label, val] of rows) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.5);
+    doc.setTextColor(...PDF_COLORS.bodyLight);
+    doc.text(label, margin + 6, iy);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8.5);
+    doc.setTextColor(...PDF_COLORS.heading);
+    doc.text(sanitizePdfText(val), margin + 58, iy);
+    iy += 6;
+  }
+  y += cardH + 8;
+
+  // Triple jauge
+  y = drawTripleGauge(doc, y, {
+    energetique:      data.energetique,
+    environnementale: data.environnementale,
+    financiere:       data.financiere,
+  });
+  y += 4;
+
+  // Constats clés + leviers en 2 colonnes
+  const colW = (contentWidth - 8) / 2;
+  const colGap = 8;
+  const limitY = PDF_LAYOUT.footerY - 14;
+
+  function drawColumn(x: number, title: string, items: string[]): void {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(...PDF_COLORS.blue);
+    doc.text(title, x, y + 4);
+    doc.setDrawColor(...PDF_COLORS.blue);
+    doc.setLineWidth(0.6);
+    doc.line(x, y + 6, x + 18, y + 6);
+
+    let ly = y + 11;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.5);
+    doc.setTextColor(...PDF_COLORS.body);
+    for (const it of items) {
+      if (!it || !it.trim()) continue;
+      const lines = doc.splitTextToSize(sanitizePdfText(`• ${it.trim()}`), colW) as string[];
+      for (const line of lines) {
+        if (ly > limitY) return;
+        doc.text(line, x, ly);
+        ly += 4.3;
+      }
+      ly += 1.5;
+    }
+  }
+
+  drawColumn(margin,                       "CONSTATS CLES",       data.constats);
+  drawColumn(margin + colW + colGap,       "LEVIERS PRIORITAIRES", data.leviers);
+}
+
+// ─── Préconisations structurées — catalogue d'actions ───────────
+
+export interface PreconisationAction {
+  code:         string;              // Ex: "CHA-01"
+  famille:      string;              // Ex: "Chauffage"
+  titre:        string;
+  opportunite:  number;              // 1-5
+  horizon:      string;              // "Court terme" | "Moyen terme" | "Long terme"
+  faisabilite?: string;              // "Facile" | "Moyenne" | "Difficile"
+  brief?:       string;
+  economiesKwh?:   number;           // kWh/an
+  economiesEuro?:  number;           // €/an
+  co2Evite?:       number;           // kgCO2/an
+  coutTravaux?:    number;           // € TTC
+  aides?:          number;           // €
+  tri?:            number;           // années
+}
+
+export const FAMILLE_COLORS: Record<string, [number, number, number]> = {
+  "Enveloppe":         [59, 130, 246],
+  "Chauffage":         [220, 38, 38],
+  "Climatisation":     [14, 165, 233],
+  "Ventilation":       [139, 92, 246],
+  "Eclairage":         [245, 158, 11],
+  "ECS":               [249, 115, 22],
+  "Regulation / GTB":  [107, 91, 80],
+  "ENR":               [34, 197, 94],
+  "Comportemental":    [100, 116, 139],
+  "Autre":             [100, 116, 139],
+};
+
+function drawStars(
+  doc: jsPDF,
+  x: number, y: number,
+  count: number,
+  max: number = 5,
+  size: number = 3,
+): void {
+  const gap = 0.8;
+  for (let i = 0; i < max; i++) {
+    const cx = x + i * (size * 2 + gap) + size;
+    const filled = i < count;
+    doc.setFillColor(...(filled ? PDF_COLORS.blue : PDF_COLORS.border));
+    // Étoile 5 branches approchée par pentagone étoilé (triangles)
+    const outer = size;
+    const inner = size * 0.45;
+    const pts: [number, number][] = [];
+    for (let k = 0; k < 10; k++) {
+      const r = k % 2 === 0 ? outer : inner;
+      const a = -Math.PI / 2 + (k * Math.PI) / 5;
+      pts.push([cx + Math.cos(a) * r, y + Math.sin(a) * r]);
+    }
+    const segs: number[][] = [];
+    for (let k = 1; k < pts.length; k++) {
+      segs.push([pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]]);
+    }
+    doc.lines(segs, pts[0][0], pts[0][1], [1, 1], "F", true);
+  }
+}
+
+function formatEuro(n: number | undefined): string {
+  if (n === undefined || n === null || !isFinite(n)) return "—";
+  return `${Math.round(n).toLocaleString("fr-FR")} EUR`;
+}
+function formatKwh(n: number | undefined): string {
+  if (n === undefined || n === null || !isFinite(n)) return "—";
+  return `${Math.round(n).toLocaleString("fr-FR")} kWh/an`;
+}
+function formatCo2(n: number | undefined): string {
+  if (n === undefined || n === null || !isFinite(n)) return "—";
+  return `${Math.round(n).toLocaleString("fr-FR")} kgCO2/an`;
+}
+
+/**
+ * Dessine une fiche action complète pour une préconisation.
+ * Structure : bandeau couleur famille (code + titre) · méta (horizon, faisabilité, étoiles) ·
+ * brief · grille 4 KPI · ligne coûts/aides/reste à charge.
+ */
+export function drawActionSheet(
+  doc: jsPDF,
+  y: number,
+  action: PreconisationAction,
+): number {
+  const margin       = PDF_LAYOUT.margin;
+  const pw           = doc.internal.pageSize.getWidth();
+  const contentWidth = pw - margin * 2;
+  const limitY       = PDF_LAYOUT.footerY - 14;
+
+  // Hauteur estimée — si ça ne tient pas, saute de page
+  const briefLines = action.brief
+    ? (doc.splitTextToSize(sanitizePdfText(action.brief), contentWidth - 10) as string[]).length
+    : 0;
+  const estH = 14 + 10 + (briefLines * 4 + 4) + 22 + 10;
+  if (y + estH > limitY) {
+    doc.addPage();
+    y = PDF_LAYOUT.topMargin;
+  }
+
+  const familleColor = FAMILLE_COLORS[action.famille] ?? FAMILLE_COLORS["Autre"];
+
+  // ── Bandeau ──────────────────────────────────────────────
+  const bandH = 10;
+  doc.setFillColor(...familleColor);
+  doc.roundedRect(margin, y, contentWidth, bandH, 1.5, 1.5, "F");
+  // Rectangle gris du dessous pour éviter coins arrondis en bas du bandeau
+  doc.setFillColor(...familleColor);
+  doc.rect(margin, y + bandH - 2, contentWidth, 2, "F");
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(...PDF_COLORS.white);
+  doc.text(action.code, margin + 4, y + 6.5);
+  doc.setFontSize(9.5);
+  doc.text(
+    sanitizePdfText(action.titre),
+    margin + 4 + doc.getTextWidth(action.code) + 5, y + 6.5,
+  );
+
+  // Famille à droite
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+  doc.setTextColor(...PDF_COLORS.white);
+  doc.text(
+    sanitizePdfText(action.famille.toUpperCase()),
+    pw - margin - 4, y + 6.5, { align: "right" },
+  );
+  y += bandH;
+
+  // ── Bandeau méta (horizon, faisabilité, étoiles) ────────
+  const metaH = 8;
+  doc.setFillColor(...PDF_COLORS.surface);
+  doc.rect(margin, y, contentWidth, metaH, "F");
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+  doc.setTextColor(...PDF_COLORS.bodyLight);
+  doc.text("HORIZON", margin + 3, y + 3.4);
+  doc.text("FAISABILITE", margin + 55, y + 3.4);
+  doc.text("OPPORTUNITE", pw - margin - 55, y + 3.4);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(...PDF_COLORS.heading);
+  doc.text(sanitizePdfText(action.horizon || "—"),                margin + 3,  y + 7);
+  doc.text(sanitizePdfText(action.faisabilite || "—"),            margin + 55, y + 7);
+
+  // Étoiles
+  drawStars(doc, pw - margin - 30, y + 4.5, Math.max(0, Math.min(5, action.opportunite || 0)));
+  y += metaH + 4;
+
+  // ── Brief ────────────────────────────────────────────────
+  if (action.brief && action.brief.trim()) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.5);
+    doc.setTextColor(...PDF_COLORS.body);
+    const lines = doc.splitTextToSize(sanitizePdfText(action.brief), contentWidth) as string[];
+    for (const line of lines) {
+      doc.text(line, margin, y);
+      y += 4;
+    }
+    y += 2;
+  }
+
+  // ── KPI grid (4 cases) ──────────────────────────────────
+  const tileW = (contentWidth - 3 * 3) / 4;
+  const tileH = 16;
+  const tiles: Array<{ label: string; value: string; accent: [number, number, number] }> = [
+    { label: "Economies",     value: formatEuro(action.economiesEuro), accent: [34, 197, 94] },
+    { label: "Gain energie",  value: formatKwh(action.economiesKwh),   accent: [59, 130, 246] },
+    { label: "CO2 evite",     value: formatCo2(action.co2Evite),       accent: [14, 165, 233] },
+    { label: "Retour invest.", value: action.tri ? `${action.tri.toFixed(1)} ans` : "—", accent: [245, 158, 11] },
+  ];
+  for (let i = 0; i < tiles.length; i++) {
+    const tx = margin + i * (tileW + 3);
+    doc.setFillColor(...PDF_COLORS.surface);
+    doc.roundedRect(tx, y, tileW, tileH, 1.2, 1.2, "F");
+    doc.setFillColor(...tiles[i].accent);
+    doc.rect(tx, y, 1.2, tileH, "F");
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.5);
+    doc.setTextColor(...PDF_COLORS.bodyLight);
+    doc.text(tiles[i].label.toUpperCase(), tx + 4, y + 4);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(...PDF_COLORS.heading);
+    doc.text(sanitizePdfText(tiles[i].value), tx + 4, y + 11);
+  }
+  y += tileH + 4;
+
+  // ── Coûts ────────────────────────────────────────────────
+  const reste = action.coutTravaux !== undefined
+    ? action.coutTravaux - (action.aides ?? 0)
+    : undefined;
+  const costLine = `Cout travaux : ${formatEuro(action.coutTravaux)}   |   Aides mobilisables : ${formatEuro(action.aides)}   |   Reste a charge : ${formatEuro(reste)}`;
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(8);
+  doc.setTextColor(...PDF_COLORS.body);
+  doc.text(sanitizePdfText(costLine), margin, y);
+  y += 6;
+
+  // Filet séparateur
+  doc.setDrawColor(...PDF_COLORS.border);
+  doc.setLineWidth(0.2);
+  doc.line(margin, y, pw - margin, y);
+  y += 5;
+
+  return y;
+}
+
 // ─── Page break check ───────────────────────────────────────────
 
 export function needsPageBreak(y: number, needed: number): boolean {
