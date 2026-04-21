@@ -21,6 +21,8 @@ import {
   FileText,
   Briefcase,
   BadgeEuro,
+  Plus,
+  AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -209,6 +211,14 @@ export default function ProjetDetailPage({ params }: Props) {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Jalons UI state
+  const [newJalonTitre, setNewJalonTitre] = useState("");
+  const [newJalonDate, setNewJalonDate] = useState("");
+  const [jalonCreating, setJalonCreating] = useState(false);
+  const [jalonError, setJalonError] = useState<string | null>(null);
+  const [jalonBusyId, setJalonBusyId] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     titre: "",
@@ -258,35 +268,166 @@ export default function ProjetDetailPage({ params }: Props) {
   }
 
   async function handleSave() {
-    if (!form.titre.trim() || !form.clientId) return;
+    setSaveError(null);
+    if (!form.titre.trim()) {
+      setSaveError("Le titre est requis.");
+      return;
+    }
+    if (!form.clientId) {
+      setSaveError("Sélectionnez un client.");
+      return;
+    }
+    const budgetPrevu = form.budgetPrevu.trim() ? Number(form.budgetPrevu) : null;
+    const budgetDepense = form.budgetDepense.trim() ? Number(form.budgetDepense) : null;
+    if (budgetPrevu !== null && Number.isNaN(budgetPrevu)) {
+      setSaveError("Budget prévu : valeur numérique invalide.");
+      return;
+    }
+    if (budgetDepense !== null && Number.isNaN(budgetDepense)) {
+      setSaveError("Budget dépensé : valeur numérique invalide.");
+      return;
+    }
+
     setSaving(true);
     try {
       const res = await fetch(`/api/projets/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          titre: form.titre,
-          description: form.description || null,
+          titre: form.titre.trim(),
+          description: form.description.trim() || null,
           statut: form.statut,
           typeClient: form.typeClient,
-          typeTravaux: form.typeTravaux || null,
-          adresseChantier: form.adresseChantier || null,
-          budgetPrevu: form.budgetPrevu ? Number(form.budgetPrevu) : null,
-          budgetDepense: form.budgetDepense ? Number(form.budgetDepense) : null,
+          typeTravaux: form.typeTravaux.trim() || null,
+          adresseChantier: form.adresseChantier.trim() || null,
+          budgetPrevu,
+          budgetDepense,
           dateDebut: form.dateDebut ? new Date(form.dateDebut).toISOString() : null,
           dateFin: form.dateFin ? new Date(form.dateFin).toISOString() : null,
           clientId: form.clientId,
         }),
       });
-      if (!res.ok) throw new Error("Erreur lors de la sauvegarde");
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null);
+        throw new Error(payload?.error ?? `Erreur ${res.status}`);
+      }
       const updated: ProjetDetail = await res.json();
       setProjet(updated);
       populateForm(updated);
       setEditing(false);
-    } catch {
-      setError("Erreur lors de la sauvegarde");
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Erreur inconnue");
     } finally {
       setSaving(false);
+    }
+  }
+
+  /* ─── Jalons : create / toggle / delete ───────────────── */
+
+  async function handleCreateJalon() {
+    setJalonError(null);
+    if (!newJalonTitre.trim()) {
+      setJalonError("Titre requis.");
+      return;
+    }
+    if (!newJalonDate) {
+      setJalonError("Échéance requise.");
+      return;
+    }
+    setJalonCreating(true);
+    try {
+      const res = await fetch(`/api/projets/${id}/jalons`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          titre: newJalonTitre.trim(),
+          echeance: new Date(newJalonDate).toISOString(),
+        }),
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null);
+        throw new Error(payload?.error ?? `Erreur ${res.status}`);
+      }
+      const created: Jalon = await res.json();
+      setProjet((prev) =>
+        prev
+          ? {
+              ...prev,
+              jalons: [...prev.jalons, created].sort(
+                (a, b) => +new Date(a.echeance) - +new Date(b.echeance)
+              ),
+            }
+          : prev
+      );
+      setNewJalonTitre("");
+      setNewJalonDate("");
+    } catch (err) {
+      setJalonError(err instanceof Error ? err.message : "Erreur inconnue");
+    } finally {
+      setJalonCreating(false);
+    }
+  }
+
+  async function handleToggleJalon(jalon: Jalon) {
+    setJalonError(null);
+    setJalonBusyId(jalon.id);
+    // Optimistic update
+    setProjet((prev) =>
+      prev
+        ? {
+            ...prev,
+            jalons: prev.jalons.map((j) =>
+              j.id === jalon.id ? { ...j, fait: !j.fait } : j
+            ),
+          }
+        : prev
+    );
+    try {
+      const res = await fetch(`/api/jalons/${jalon.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fait: !jalon.fait }),
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null);
+        throw new Error(payload?.error ?? `Erreur ${res.status}`);
+      }
+    } catch (err) {
+      // Rollback
+      setProjet((prev) =>
+        prev
+          ? {
+              ...prev,
+              jalons: prev.jalons.map((j) =>
+                j.id === jalon.id ? { ...j, fait: jalon.fait } : j
+              ),
+            }
+          : prev
+      );
+      setJalonError(err instanceof Error ? err.message : "Erreur inconnue");
+    } finally {
+      setJalonBusyId(null);
+    }
+  }
+
+  async function handleDeleteJalon(jalonId: string) {
+    setJalonError(null);
+    setJalonBusyId(jalonId);
+    try {
+      const res = await fetch(`/api/jalons/${jalonId}`, { method: "DELETE" });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null);
+        throw new Error(payload?.error ?? `Erreur ${res.status}`);
+      }
+      setProjet((prev) =>
+        prev
+          ? { ...prev, jalons: prev.jalons.filter((j) => j.id !== jalonId) }
+          : prev
+      );
+    } catch (err) {
+      setJalonError(err instanceof Error ? err.message : "Erreur inconnue");
+    } finally {
+      setJalonBusyId(null);
     }
   }
 
@@ -304,6 +445,7 @@ export default function ProjetDetailPage({ params }: Props) {
 
   function handleCancel() {
     if (projet) populateForm(projet);
+    setSaveError(null);
     setEditing(false);
   }
 
@@ -596,6 +738,16 @@ export default function ProjetDetailPage({ params }: Props) {
               />
             </div>
           </div>
+
+          {saveError && (
+            <div
+              role="alert"
+              className="mt-5 flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-400"
+            >
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span>{saveError}</span>
+            </div>
+          )}
         </motion.div>
       ) : (
         /* ─── Mode lecture ─────────────────────────────── */
@@ -649,31 +801,111 @@ export default function ProjetDetailPage({ params }: Props) {
                   </span>
                 )}
               </h2>
+
               {projet.jalons.length === 0 ? (
                 <p className="text-sm text-tk-text-faint">Aucun jalon pour ce projet.</p>
               ) : (
-                <div className="space-y-2">
-                  {projet.jalons.map((jalon) => (
-                    <div
-                      key={jalon.id}
-                      className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-tk-hover/50 transition-colors"
-                    >
-                      {jalon.fait ? (
-                        <CheckCircle2 className="h-4 w-4 text-emerald-400 flex-shrink-0" />
-                      ) : (
-                        <Circle className="h-4 w-4 text-tk-text-faint flex-shrink-0" />
-                      )}
-                      <span
-                        className={cn(
-                          "text-sm flex-1",
-                          jalon.fait ? "text-tk-text-faint line-through" : "text-tk-text-secondary"
-                        )}
+                <div className="space-y-1">
+                  {projet.jalons.map((jalon) => {
+                    const busy = jalonBusyId === jalon.id;
+                    return (
+                      <div
+                        key={jalon.id}
+                        className="group flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-tk-hover/50"
                       >
-                        {jalon.titre}
-                      </span>
-                      <span className="text-xs text-tk-text-faint">{formatDate(jalon.echeance)}</span>
-                    </div>
-                  ))}
+                        <button
+                          type="button"
+                          onClick={() => handleToggleJalon(jalon)}
+                          disabled={busy}
+                          aria-label={jalon.fait ? "Marquer comme non fait" : "Marquer comme fait"}
+                          className="focus-ring shrink-0 rounded-full p-0.5 text-tk-text-faint transition-colors hover:text-emerald-400 disabled:opacity-50"
+                        >
+                          {busy ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : jalon.fait ? (
+                            <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                          ) : (
+                            <Circle className="h-4 w-4" />
+                          )}
+                        </button>
+                        <span
+                          className={cn(
+                            "flex-1 text-sm transition-colors",
+                            jalon.fait
+                              ? "text-tk-text-faint line-through"
+                              : "text-tk-text-secondary"
+                          )}
+                        >
+                          {jalon.titre}
+                        </span>
+                        <span className="shrink-0 text-xs text-tk-text-faint tabular-nums">
+                          {formatDate(jalon.echeance)}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteJalon(jalon.id)}
+                          disabled={busy}
+                          aria-label="Supprimer ce jalon"
+                          className="focus-ring shrink-0 rounded-md p-1 text-tk-text-faint opacity-0 transition-opacity hover:text-red-400 group-hover:opacity-100 disabled:opacity-50"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Formulaire de création */}
+              <div className="mt-4 flex flex-col gap-2 rounded-lg border border-tk-border/50 bg-tk-surface/40 p-3 sm:flex-row sm:items-end">
+                <div className="flex-1">
+                  <label className="mb-1 block text-[10px] uppercase tracking-wider text-tk-text-faint">
+                    Nouveau jalon
+                  </label>
+                  <input
+                    type="text"
+                    value={newJalonTitre}
+                    onChange={(e) => setNewJalonTitre(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !jalonCreating) handleCreateJalon();
+                    }}
+                    placeholder="Ex: Validation devis, réception chantier…"
+                    className={inputClass}
+                  />
+                </div>
+                <div className="sm:w-40">
+                  <label className="mb-1 block text-[10px] uppercase tracking-wider text-tk-text-faint">
+                    Échéance
+                  </label>
+                  <input
+                    type="date"
+                    value={newJalonDate}
+                    onChange={(e) => setNewJalonDate(e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+                <Button
+                  size="sm"
+                  onClick={handleCreateJalon}
+                  disabled={jalonCreating}
+                  className="sm:mb-0"
+                >
+                  {jalonCreating ? (
+                    <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Plus className="mr-2 h-3.5 w-3.5" />
+                  )}
+                  Ajouter
+                </Button>
+              </div>
+
+              {jalonError && (
+                <div
+                  role="alert"
+                  className="mt-3 flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-400"
+                >
+                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span>{jalonError}</span>
                 </div>
               )}
             </div>
