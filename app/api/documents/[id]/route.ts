@@ -12,6 +12,7 @@ const updateDocumentSchema = z.object({
   statut: z.enum(["BROUILLON", "EN_COURS", "TERMINE", "ENVOYE"]).optional(),
   clientNom: z.string().nullable().optional(),
   donnees: z.string().nullable().optional(),
+  projetId: z.string().nullable().optional(),
 });
 
 function serialize(d: {
@@ -22,6 +23,7 @@ function serialize(d: {
   statut: string;
   clientNom: string | null;
   donnees: string | null;
+  projetId: string | null;
   createdAt: Date;
   updatedAt: Date;
 }) {
@@ -33,6 +35,7 @@ function serialize(d: {
     statut: d.statut,
     clientNom: d.clientNom,
     donnees: d.donnees,
+    projetId: d.projetId,
     createdAt: d.createdAt.toISOString(),
     updatedAt: d.updatedAt.toISOString(),
   };
@@ -69,12 +72,28 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
     }
 
     const data = parsed.data;
+
+    // Verify projet exists if being set
+    if (data.projetId) {
+      const projet = await prisma.projet.findUnique({
+        where: { id: data.projetId },
+        select: { id: true },
+      });
+      if (!projet) {
+        return NextResponse.json(
+          { error: "Projet introuvable pour ce document" },
+          { status: 400 }
+        );
+      }
+    }
+
     const updateData: Record<string, unknown> = {};
     if (data.titre !== undefined) updateData.titre = data.titre;
     if (data.reference !== undefined) updateData.reference = data.reference;
     if (data.statut !== undefined) updateData.statut = data.statut;
     if (data.clientNom !== undefined) updateData.clientNom = data.clientNom;
     if (data.donnees !== undefined) updateData.donnees = data.donnees;
+    if (data.projetId !== undefined) updateData.projetId = data.projetId;
 
     const doc = await prisma.document.update({
       where: { id },

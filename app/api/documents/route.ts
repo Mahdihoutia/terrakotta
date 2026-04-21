@@ -9,6 +9,7 @@ const createDocumentSchema = z.object({
   statut: z.enum(["BROUILLON", "EN_COURS", "TERMINE", "ENVOYE"]).optional(),
   clientNom: z.string().nullable().optional(),
   donnees: z.string().nullable().optional(),
+  projetId: z.string().nullable().optional(),
 });
 
 // ─── GET /api/documents ────────────────────────────────────────
@@ -64,6 +65,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Un document avec cette référence existe déjà" }, { status: 409 });
     }
 
+    // Verify projet exists if provided
+    if (data.projetId) {
+      const projet = await prisma.projet.findUnique({
+        where: { id: data.projetId },
+        select: { id: true },
+      });
+      if (!projet) {
+        return NextResponse.json(
+          { error: "Projet introuvable pour ce document" },
+          { status: 400 }
+        );
+      }
+    }
+
     const doc = await prisma.document.create({
       data: {
         titre: data.titre,
@@ -72,6 +87,7 @@ export async function POST(req: NextRequest) {
         statut: data.statut ?? "BROUILLON",
         clientNom: data.clientNom ?? null,
         donnees: data.donnees ?? null,
+        projetId: data.projetId ?? null,
       },
     });
 
@@ -83,6 +99,7 @@ export async function POST(req: NextRequest) {
       statut: doc.statut,
       clientNom: doc.clientNom,
       donnees: doc.donnees,
+      projetId: doc.projetId,
       createdAt: doc.createdAt.toISOString(),
       updatedAt: doc.updatedAt.toISOString(),
     }, { status: 201 });

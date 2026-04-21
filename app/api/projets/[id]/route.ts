@@ -64,6 +64,16 @@ function serializeProjetDetail(p: {
     dateAccord: Date | null;
     notes: string | null;
   }[];
+  documents: {
+    id: string;
+    titre: string;
+    reference: string;
+    type: string;
+    statut: string;
+    clientNom: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+  }[];
   createdAt: Date;
   updatedAt: Date;
 }) {
@@ -116,6 +126,16 @@ function serializeProjetDetail(p: {
       dateDepot: a.dateDepot ? a.dateDepot.toISOString() : null,
       dateAccord: a.dateAccord ? a.dateAccord.toISOString() : null,
       notes: a.notes,
+    })),
+    documents: p.documents.map((d) => ({
+      id: d.id,
+      titre: d.titre,
+      reference: d.reference,
+      type: d.type,
+      statut: d.statut,
+      clientNom: d.clientNom,
+      createdAt: d.createdAt.toISOString(),
+      updatedAt: d.updatedAt.toISOString(),
     })),
     createdAt: p.createdAt.toISOString(),
     updatedAt: p.updatedAt.toISOString(),
@@ -175,6 +195,19 @@ const includeDetailRelations = {
       notes: true,
     },
     orderBy: { createdAt: "desc" as const },
+  },
+  documents: {
+    select: {
+      id: true,
+      titre: true,
+      reference: true,
+      type: true,
+      statut: true,
+      clientNom: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+    orderBy: { updatedAt: "desc" as const },
   },
 };
 

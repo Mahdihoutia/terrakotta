@@ -23,6 +23,12 @@ import {
   BadgeEuro,
   Plus,
   AlertTriangle,
+  Paperclip,
+  ExternalLink,
+  Link2Off,
+  ClipboardCheck,
+  Calculator,
+  Ruler,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -75,6 +81,20 @@ interface Aide {
   notes: string | null;
 }
 
+type DocumentType = "RAPPORT_VISITE" | "NOTE_DIMENSIONNEMENT" | "DEVIS" | "AUDIT";
+type DocumentStatut = "BROUILLON" | "EN_COURS" | "TERMINE" | "ENVOYE";
+
+interface ProjetDocument {
+  id: string;
+  titre: string;
+  reference: string;
+  type: DocumentType;
+  statut: DocumentStatut;
+  clientNom: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface ProjetDetail {
   id: string;
   titre: string;
@@ -99,9 +119,47 @@ interface ProjetDetail {
   jalons: Jalon[];
   devis: Devis[];
   aides: Aide[];
+  documents: ProjetDocument[];
   createdAt: string;
   updatedAt: string;
 }
+
+interface AvailableDocument {
+  id: string;
+  titre: string;
+  reference: string;
+  type: DocumentType;
+  statut: DocumentStatut;
+  projetId: string | null;
+}
+
+const DOC_TYPE_LABEL: Record<DocumentType, string> = {
+  RAPPORT_VISITE: "Rapport de visite",
+  NOTE_DIMENSIONNEMENT: "Note de dimensionnement",
+  DEVIS: "Devis",
+  AUDIT: "Audit énergétique",
+};
+
+const DOC_TYPE_ICON: Record<DocumentType, React.ComponentType<{ className?: string }>> = {
+  RAPPORT_VISITE: ClipboardCheck,
+  NOTE_DIMENSIONNEMENT: Ruler,
+  DEVIS: Calculator,
+  AUDIT: FileText,
+};
+
+const DOC_STATUT_COLORS: Record<DocumentStatut, string> = {
+  BROUILLON: "bg-slate-500/15 text-slate-400 border-slate-500/20",
+  EN_COURS: "bg-blue-500/15 text-blue-400 border-blue-500/20",
+  TERMINE: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20",
+  ENVOYE: "bg-violet-500/15 text-violet-400 border-violet-500/20",
+};
+
+const DOC_STATUT_LABEL: Record<DocumentStatut, string> = {
+  BROUILLON: "Brouillon",
+  EN_COURS: "En cours",
+  TERMINE: "Terminé",
+  ENVOYE: "Envoyé",
+};
 
 interface ClientOption {
   id: string;
@@ -219,6 +277,14 @@ export default function ProjetDetailPage({ params }: Props) {
   const [jalonCreating, setJalonCreating] = useState(false);
   const [jalonError, setJalonError] = useState<string | null>(null);
   const [jalonBusyId, setJalonBusyId] = useState<string | null>(null);
+
+  // Documents UI state
+  const [availableDocs, setAvailableDocs] = useState<AvailableDocument[]>([]);
+  const [docsAvailableLoading, setDocsAvailableLoading] = useState(false);
+  const [selectedDocToAttach, setSelectedDocToAttach] = useState("");
+  const [docBusyId, setDocBusyId] = useState<string | null>(null);
+  const [docAttaching, setDocAttaching] = useState(false);
+  const [docError, setDocError] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     titre: "",
@@ -407,6 +473,95 @@ export default function ProjetDetailPage({ params }: Props) {
       setJalonError(err instanceof Error ? err.message : "Erreur inconnue");
     } finally {
       setJalonBusyId(null);
+    }
+  }
+
+  /* ─── Documents : attach / detach ─────────────────────── */
+
+  async function loadAvailableDocuments() {
+    setDocsAvailableLoading(true);
+    try {
+      const res = await fetch("/api/documents");
+      if (!res.ok) throw new Error(`Erreur ${res.status}`);
+      const data: AvailableDocument[] = await res.json();
+      setAvailableDocs(data);
+    } catch (err) {
+      setDocError(err instanceof Error ? err.message : "Erreur chargement documents");
+    } finally {
+      setDocsAvailableLoading(false);
+    }
+  }
+
+  async function handleAttachDocument() {
+    if (!selectedDocToAttach) return;
+    setDocError(null);
+    setDocAttaching(true);
+    try {
+      const res = await fetch(`/api/documents/${selectedDocToAttach}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projetId: id }),
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null);
+        throw new Error(payload?.error ?? `Erreur ${res.status}`);
+      }
+      const attached = availableDocs.find((d) => d.id === selectedDocToAttach);
+      if (attached && projet) {
+        const now = new Date().toISOString();
+        setProjet({
+          ...projet,
+          documents: [
+            {
+              id: attached.id,
+              titre: attached.titre,
+              reference: attached.reference,
+              type: attached.type,
+              statut: attached.statut,
+              clientNom: null,
+              createdAt: now,
+              updatedAt: now,
+            },
+            ...projet.documents,
+          ],
+        });
+        setAvailableDocs((prev) =>
+          prev.map((d) => (d.id === attached.id ? { ...d, projetId: id } : d))
+        );
+      }
+      setSelectedDocToAttach("");
+    } catch (err) {
+      setDocError(err instanceof Error ? err.message : "Erreur inconnue");
+    } finally {
+      setDocAttaching(false);
+    }
+  }
+
+  async function handleDetachDocument(docId: string) {
+    setDocError(null);
+    setDocBusyId(docId);
+    try {
+      const res = await fetch(`/api/documents/${docId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projetId: null }),
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null);
+        throw new Error(payload?.error ?? `Erreur ${res.status}`);
+      }
+      setProjet((prev) =>
+        prev
+          ? { ...prev, documents: prev.documents.filter((d) => d.id !== docId) }
+          : prev
+      );
+      setAvailableDocs((prev) =>
+        prev.map((d) => (d.id === docId ? { ...d, projetId: null } : d))
+      );
+    } catch (err) {
+      setDocError(err instanceof Error ? err.message : "Erreur inconnue");
+    } finally {
+      setDocBusyId(null);
     }
   }
 
@@ -988,6 +1143,145 @@ export default function ProjetDetailPage({ params }: Props) {
                       })}
                     </tbody>
                   </table>
+                </div>
+              )}
+            </div>
+
+            {/* Documents joints */}
+            <div className="glass rounded-2xl p-6">
+              <h2 className="text-sm font-semibold text-tk-text mb-4 flex items-center gap-2">
+                <Paperclip className="h-4 w-4 text-tk-text-faint" />
+                Documents joints
+                {projet.documents.length > 0 && (
+                  <span className="text-xs text-tk-text-faint font-normal ml-auto">
+                    {projet.documents.length} document(s)
+                  </span>
+                )}
+              </h2>
+
+              {projet.documents.length === 0 ? (
+                <p className="text-sm text-tk-text-faint mb-4">
+                  Aucun document rattaché à ce projet.
+                </p>
+              ) : (
+                <div className="space-y-2 mb-4">
+                  {projet.documents.map((doc) => {
+                    const DocIcon = DOC_TYPE_ICON[doc.type] ?? FileText;
+                    const busy = docBusyId === doc.id;
+                    return (
+                      <div
+                        key={doc.id}
+                        className="group flex items-center gap-3 rounded-lg border border-tk-border/50 bg-tk-surface/40 px-3 py-2.5 transition-colors hover:border-tk-border"
+                      >
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/10">
+                          <DocIcon className="h-4 w-4 text-blue-400" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <Link
+                            href={`/dashboard/documents?doc=${doc.id}`}
+                            className="block truncate text-sm text-tk-text-secondary transition-colors hover:text-blue-400"
+                          >
+                            {doc.titre}
+                          </Link>
+                          <p className="truncate text-[11px] text-tk-text-faint">
+                            {DOC_TYPE_LABEL[doc.type]} · {doc.reference}
+                          </p>
+                        </div>
+                        <span
+                          className={cn(
+                            "shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium",
+                            DOC_STATUT_COLORS[doc.statut]
+                          )}
+                        >
+                          {DOC_STATUT_LABEL[doc.statut]}
+                        </span>
+                        <Link
+                          href={`/dashboard/documents?doc=${doc.id}`}
+                          aria-label="Ouvrir le document"
+                          className="focus-ring shrink-0 rounded-md p-1.5 text-tk-text-faint transition-colors hover:text-blue-400"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => handleDetachDocument(doc.id)}
+                          disabled={busy}
+                          aria-label="Détacher ce document"
+                          title="Détacher ce document du projet"
+                          className="focus-ring shrink-0 rounded-md p-1.5 text-tk-text-faint opacity-0 transition-opacity hover:text-red-400 group-hover:opacity-100 disabled:opacity-50"
+                        >
+                          {busy ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Link2Off className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Rattacher un document existant */}
+              <div className="flex flex-col gap-2 rounded-lg border border-tk-border/50 bg-tk-surface/40 p-3 sm:flex-row sm:items-end">
+                <div className="flex-1">
+                  <label className="mb-1 block text-[10px] uppercase tracking-wider text-tk-text-faint">
+                    Rattacher un document existant
+                  </label>
+                  <select
+                    value={selectedDocToAttach}
+                    onChange={(e) => setSelectedDocToAttach(e.target.value)}
+                    onFocus={() => {
+                      if (availableDocs.length === 0) loadAvailableDocuments();
+                    }}
+                    className={inputClass}
+                  >
+                    <option value="">
+                      {docsAvailableLoading
+                        ? "Chargement…"
+                        : "Sélectionner un document…"}
+                    </option>
+                    {availableDocs
+                      .filter((d) => d.projetId !== id)
+                      .map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {DOC_TYPE_LABEL[d.type]} · {d.titre} ({d.reference})
+                          {d.projetId ? " — déjà rattaché à un autre projet" : ""}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={handleAttachDocument}
+                  disabled={!selectedDocToAttach || docAttaching}
+                >
+                  {docAttaching ? (
+                    <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Paperclip className="mr-2 h-3.5 w-3.5" />
+                  )}
+                  Rattacher
+                </Button>
+                <Link href="/dashboard/documents">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-tk-border bg-tk-surface text-tk-text-secondary hover:bg-tk-hover"
+                  >
+                    <Plus className="mr-2 h-3.5 w-3.5" />
+                    Nouveau
+                  </Button>
+                </Link>
+              </div>
+
+              {docError && (
+                <div
+                  role="alert"
+                  className="mt-3 flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-400"
+                >
+                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span>{docError}</span>
                 </div>
               )}
             </div>
