@@ -2637,10 +2637,10 @@ function calculer134(v: FormValues): Calcul134Result | null {
   if (heuresPonderees === 0) return null;
   const copMoyenApres = copPondereApres / heuresPonderees;
 
-  // Gains
-  const ratioGain = 1 - (copMoyenAvant / copMoyenApres);
+  // Gains — bornés à 0 si COP_après ≤ COP_avant (pas de gain physique)
+  const ratioGain = copMoyenApres > copMoyenAvant ? 1 - (copMoyenAvant / copMoyenApres) : 0;
   const consoApres = consoAvant * (1 - ratioGain);
-  const gainMwh = consoAvant - consoApres;
+  const gainMwh = Math.max(0, consoAvant - consoApres);
   const gainPct = ratioGain * 100;
   const economiEuros = gainMwh * 1000 * PRIX_ELEC_KWH;
 
@@ -2832,8 +2832,9 @@ function calculer142(v: FormValues): Calcul142Result | null {
   const reductionGradient = gradientAvant - gradientApres;
   if (reductionGradient <= 0) return null;
 
-  // Règle usuelle : 3% d'économie de chauffage par °C de gradient réduit
-  const gainBrutPct = reductionGradient * 3;
+  // Règle usuelle : 3% d'économie de chauffage par °C de gradient réduit.
+  // Plafond physique à 30 % (au-delà la règle linéaire n'est plus valable).
+  const gainBrutPct = Math.min(30, reductionGradient * 3);
   const economieBrute = consoAvant * (gainBrutPct / 100);
 
   // Surconsommation des déstratificateurs
@@ -2951,6 +2952,437 @@ function calculer139(v: FormValues): Calcul139Result | null {
   ].join("\n");
 
   return { chaleurRejetee, chaleurRecuperee, consoEvitee, gainPct, reductionCo2, economiEuros, dureeRetour, detailMethode };
+}
+
+// ─── Helpers communs aux fiches résidentielles ─────────────────
+
+/**
+ * Coefficient de déperditions volumiques G estimé (W/m³.K) selon l'année
+ * de construction — approche RT/DPE pour logements existants sans audit complet.
+ */
+function coeffGFromAnnee(annee: number): number {
+  if (!Number.isFinite(annee) || annee <= 0) return 1.4;
+  if (annee < 1948) return 1.8;            // maçonnerie ancienne non isolée
+  if (annee < 1975) return 1.5;            // pré première réglementation
+  if (annee < 1989) return 1.1;            // RT 1974
+  if (annee < 2001) return 0.85;           // RT 1988
+  if (annee < 2013) return 0.65;           // RT 2000 / 2005
+  return 0.45;                             // RT 2012+ / RE2020
+}
+
+/** Rendement global d'émission+distribution selon le type d'émetteurs. */
+function rendementEmetteursFrom(type: string | undefined): number {
+  if (!type) return 0.90;
+  const t = type.toLowerCase();
+  if (t.includes("plancher chauffant")) return 0.98;
+  if (t.includes("basse temp")) return 0.95;
+  if (t.includes("moyenne temp")) return 0.92;
+  if (t.includes("haute temp")) return 0.88;
+  if (t.includes("ventilo")) return 0.93;
+  return 0.90;
+}
+
+// ─── Calculs BAR-TH-171 — PAC air/eau résidentiel ──────────────
+
+interface Calcul171Result {
+  besoinChauffage: number;   // MWh/an
+  consoAvant: number;        // MWh/an
+  consoApres: number;        // MWh/an
+  gainMwh: number;
+  gainPct: number;
+  reductionCo2: number;      // t/an
+  economiEuros: number;
+  dureeRetour: number | null;
+  cumacKWh: number;
+  detailMethode: string;
+}
+
+function calculer171(v: FormValues): Calcul171Result | null {
+  const surface = parseFloat(v.surface_habitable || "0");
+  const zone = v.zone_climatique;
+  const zoneData = zone ? ZONE_CLIMATIQUE_DATA[zone] : null;
+  const annee = parseFloat(v.annee_construction || "0");
+  const scop = parseFloat(v.scop || v.cop || "0");
+  if (surface <= 0 || !zoneData || scop <= 0) return null;
+
+  const hsp = parseFloat(v.hauteur_plafond || "2.5");
+  const volume = surface * hsp;
+  const G = coeffGFromAnnee(annee);
+  // Besoin brut (kWh/an) = G × V × DJU × 24 / 1000
+  const besoinBrutKwh = (G * volume * zoneData.dju * 24) / 1000;
+  // Apports gratuits résidentiel : 15 %
+  const besoinKwh = besoinBrutKwh * 0.85;
+  const besoinMwh = besoinKwh / 1000;
+
+  const energieExistante = v.energie_existante || "Gaz naturel";
+  const typeGen = v.type_chauffage_existant || "Chaudière standard";
+  const rendGen = RENDEMENTS_GENERATEURS[typeGen] || 0.85;
+  const rendEmet = rendementEmetteursFrom(v.emetteurs_existants);
+  const rendExistant = rendGen * rendEmet;
+
+  const consoAvantKwh = besoinKwh / rendExistant;
+  // PAC : SCOP appliqué aux besoins (émission supposée adaptée ≈ 1.0)
+  const consoApresKwh = besoinKwh / scop;
+
+  const consoAvant = consoAvantKwh / 1000;
+  const consoApres = consoApresKwh / 1000;
+  const gainMwh = consoAvant - consoApres;
+  const gainPct = consoAvant > 0 ? (gainMwh / consoAvant) * 100 : 0;
+
+  // CO₂
+  const facteurCo2Avant = FACTEUR_CO2[energieExistante] || 0.200;
+  const facteurCo2Apres = FACTEUR_CO2_ELEC_CHAUFFAGE;
+  const reductionCo2 = (consoAvantKwh * facteurCo2Avant - consoApresKwh * facteurCo2Apres) / 1000;
+
+  // Coûts
+  const prixAvant = prixEnergie(energieExistante);
+  const coutAvant = consoAvantKwh * prixAvant;
+  const coutApres = consoApresKwh * PRIX_ELEC_KWH;
+  const economiEuros = coutAvant - coutApres;
+
+  const coutInvest = parseFloat(v.cout_investissement || "0");
+  const dureeRetour = coutInvest > 0 && economiEuros > 0 ? coutInvest / economiEuros : null;
+
+  const cumac = computeCumac("BAR-TH-171", gainMwh);
+  const cumacKWh = cumac?.cumacKWh ?? 0;
+
+  const detailMethode = [
+    `Méthode DJU × déperditions (G × V × DJU) — Zone ${zone}`,
+    `Surface: ${surface} m² · HSP: ${hsp} m · Volume: ${volume.toFixed(0)} m³`,
+    `Année construction: ${Number.isFinite(annee) && annee > 0 ? annee : "?"} → G estimé: ${G.toFixed(2)} W/m³.K`,
+    `DJU base 18°C zone ${zone}: ${zoneData.dju}`,
+    "",
+    `Besoin brut = G × V × DJU × 24 / 1000 = ${G.toFixed(2)} × ${volume.toFixed(0)} × ${zoneData.dju} × 24 / 1000 = ${besoinBrutKwh.toFixed(0)} kWh/an`,
+    `Apports gratuits (solaire + internes) : 15 % → besoin net = ${besoinKwh.toFixed(0)} kWh/an (${besoinMwh.toFixed(1)} MWh/an)`,
+    "",
+    `Situation AVANT: énergie ${energieExistante}, générateur "${typeGen}" (η=${rendGen.toFixed(2)}), émetteurs "${v.emetteurs_existants ?? "?"}" (η=${rendEmet.toFixed(2)}) → η global=${rendExistant.toFixed(2)}`,
+    `  Conso AVANT = ${besoinKwh.toFixed(0)} / ${rendExistant.toFixed(2)} = ${consoAvantKwh.toFixed(0)} kWh/an (${consoAvant.toFixed(1)} MWh/an)`,
+    "",
+    `Situation APRÈS: PAC air/eau — SCOP = ${scop.toFixed(2)}`,
+    `  Conso APRÈS = ${besoinKwh.toFixed(0)} / ${scop.toFixed(2)} = ${consoApresKwh.toFixed(0)} kWh/an (${consoApres.toFixed(1)} MWh/an)`,
+    "",
+    `Gain énergétique = ${gainMwh.toFixed(1)} MWh/an (${gainPct.toFixed(1)} %)`,
+    `Réduction CO₂ = ${reductionCo2.toFixed(2)} tCO₂e/an (facteurs : ${facteurCo2Avant} → ${facteurCo2Apres} kgCO₂e/kWh)`,
+    `Économie = ${Math.round(coutAvant)} € (avant) − ${Math.round(coutApres)} € (après) = ${Math.round(economiEuros)} €/an`,
+    cumac ? `Volume CEE = ${gainMwh.toFixed(1)} MWh × ${cumac.duree} ans × ${cumac.coefActu.toFixed(3)} = ${cumac.cumacMWh.toFixed(0)} MWh cumac` : "",
+  ].filter(Boolean).join("\n");
+
+  return { besoinChauffage: besoinMwh, consoAvant, consoApres, gainMwh, gainPct, reductionCo2, economiEuros, dureeRetour, cumacKWh, detailMethode };
+}
+
+// ─── Calculs BAR-TH-159 — PAC hybride résidentiel ──────────────
+
+interface Calcul159Result {
+  besoinChauffage: number;
+  partPac: number;           // fraction couverte par la PAC
+  consoAvant: number;
+  consoApres: number;
+  gainMwh: number;
+  gainPct: number;
+  reductionCo2: number;
+  economiEuros: number;
+  dureeRetour: number | null;
+  cumacKWh: number;
+  detailMethode: string;
+}
+
+function calculer159(v: FormValues): Calcul159Result | null {
+  const surface = parseFloat(v.surface_habitable || "0");
+  const zone = v.zone_climatique;
+  const zoneData = zone ? ZONE_CLIMATIQUE_DATA[zone] : null;
+  const annee = parseFloat(v.annee_construction || "0");
+  const cop = parseFloat(v.cop || "0");
+  if (surface <= 0 || !zoneData || cop <= 0) return null;
+
+  const hsp = 2.5;
+  const volume = surface * hsp;
+  const G = coeffGFromAnnee(annee);
+  const besoinBrutKwh = (G * volume * zoneData.dju * 24) / 1000;
+  const besoinKwh = besoinBrutKwh * 0.85;
+  const besoinMwh = besoinKwh / 1000;
+
+  // Part des heures sous T° de bascule → relais chaudière
+  const tBascule = parseFloat(v.temp_bascule || "-2");
+  let heuresChaud = 0;
+  let heuresPac = 0;
+  for (const bin of zoneData.bins) {
+    if (bin.tExt >= 18) continue; // hors chauffage
+    if (bin.tExt < tBascule) heuresChaud += bin.heures;
+    else heuresPac += bin.heures;
+  }
+  const heuresChauffage = heuresChaud + heuresPac;
+  const partPac = heuresChauffage > 0 ? heuresPac / heuresChauffage : 0.8;
+
+  const besoinPac = besoinKwh * partPac;
+  const besoinChaud = besoinKwh * (1 - partPac);
+
+  // SCOP effectif estimé = COP × 0.85 (correction saisonnière)
+  const scopEff = cop * 0.85;
+  const rendCondens = 0.95;
+
+  const energieExistante = v.energie_existante || "Gaz naturel";
+  const typeGen = v.type_chauffage_existant || "Chaudière standard";
+  const rendGenAvant = RENDEMENTS_GENERATEURS[typeGen] || 0.85;
+  const rendEmet = rendementEmetteursFrom(v.emetteurs_existants);
+  const rendAvant = rendGenAvant * rendEmet;
+
+  const consoAvantKwh = besoinKwh / rendAvant;
+  // Conso après = part PAC (élec) + part chaudière condensation (gaz)
+  const consoPacKwh = besoinPac / scopEff;
+  const consoChaudKwh = besoinChaud / rendCondens;
+  // Énergie finale après (en kWh, même unité même si vecteurs différents)
+  const consoApresKwh = consoPacKwh + consoChaudKwh;
+
+  const consoAvant = consoAvantKwh / 1000;
+  const consoApres = consoApresKwh / 1000;
+  const gainMwh = consoAvant - consoApres;
+  const gainPct = consoAvant > 0 ? (gainMwh / consoAvant) * 100 : 0;
+
+  // CO₂
+  const facteurCo2Avant = FACTEUR_CO2[energieExistante] || 0.200;
+  const facteurCo2Gaz = FACTEUR_CO2["Gaz naturel"];
+  const co2Avant = consoAvantKwh * facteurCo2Avant;
+  const co2Apres = consoPacKwh * FACTEUR_CO2_ELEC_CHAUFFAGE + consoChaudKwh * facteurCo2Gaz;
+  const reductionCo2 = (co2Avant - co2Apres) / 1000;
+
+  // Coûts
+  const prixAvant = prixEnergie(energieExistante);
+  const coutAvant = consoAvantKwh * prixAvant;
+  const coutApres = consoPacKwh * PRIX_ELEC_KWH + consoChaudKwh * PRIX_GAZ_KWH;
+  const economiEuros = coutAvant - coutApres;
+
+  const coutInvest = parseFloat(v.cout_investissement || "0");
+  const dureeRetour = coutInvest > 0 && economiEuros > 0 ? coutInvest / economiEuros : null;
+
+  const cumac = computeCumac("BAR-TH-159", gainMwh);
+  const cumacKWh = cumac?.cumacKWh ?? 0;
+
+  const detailMethode = [
+    `Méthode DJU × déperditions + répartition PAC/chaudière par bins — Zone ${zone}`,
+    `Surface: ${surface} m² · Volume estimé: ${volume.toFixed(0)} m³`,
+    `G estimé (année ${Number.isFinite(annee) && annee > 0 ? annee : "?"}) = ${G.toFixed(2)} W/m³.K · DJU = ${zoneData.dju}`,
+    "",
+    `Besoin brut = ${besoinBrutKwh.toFixed(0)} kWh/an · Apports 15 % → besoin net = ${besoinKwh.toFixed(0)} kWh/an (${besoinMwh.toFixed(1)} MWh/an)`,
+    "",
+    `Répartition PAC ↔ chaudière (bascule à ${tBascule}°C) :`,
+    `  Heures PAC (T°ext ≥ ${tBascule}°C) : ${heuresPac} h → part PAC = ${(partPac * 100).toFixed(0)} %`,
+    `  Heures chaudière (T°ext < ${tBascule}°C) : ${heuresChaud} h → part chaud. = ${((1 - partPac) * 100).toFixed(0)} %`,
+    "",
+    `Situation AVANT: ${energieExistante} · "${typeGen}" (η=${rendGenAvant.toFixed(2)}) · émetteurs η=${rendEmet.toFixed(2)} → η global=${rendAvant.toFixed(2)}`,
+    `  Conso AVANT = ${besoinKwh.toFixed(0)} / ${rendAvant.toFixed(2)} = ${consoAvantKwh.toFixed(0)} kWh/an`,
+    "",
+    `Situation APRÈS:`,
+    `  PAC: ${besoinPac.toFixed(0)} kWh / SCOP ${scopEff.toFixed(2)} = ${consoPacKwh.toFixed(0)} kWh élec`,
+    `  Chaudière condensation: ${besoinChaud.toFixed(0)} kWh / ${rendCondens} = ${consoChaudKwh.toFixed(0)} kWh gaz`,
+    `  Total = ${consoApresKwh.toFixed(0)} kWh/an (${consoApres.toFixed(1)} MWh/an)`,
+    "",
+    `Gain = ${gainMwh.toFixed(1)} MWh/an (${gainPct.toFixed(1)} %)`,
+    `Réduction CO₂ = ${reductionCo2.toFixed(2)} tCO₂e/an`,
+    `Économie = ${Math.round(coutAvant)} − ${Math.round(coutApres)} = ${Math.round(economiEuros)} €/an`,
+    cumac ? `Volume CEE = ${cumac.cumacMWh.toFixed(0)} MWh cumac (${cumac.duree} ans · coef ${cumac.coefActu.toFixed(3)})` : "",
+  ].filter(Boolean).join("\n");
+
+  return { besoinChauffage: besoinMwh, partPac, consoAvant, consoApres, gainMwh, gainPct, reductionCo2, economiEuros, dureeRetour, cumacKWh, detailMethode };
+}
+
+// ─── Calculs BAR-EN-101/102/103 — Isolations résidentielles ────
+
+interface CalculIsolationResult {
+  uAvant: number;
+  uApres: number;
+  deltaU: number;
+  surface: number;
+  deperditionsEviteesKwh: number;  // kWh/an énergie finale
+  gainMwh: number;
+  gainPct: number;
+  reductionCo2: number;
+  economiEuros: number;
+  dureeRetour: number | null;
+  cumacKWh: number;
+  detailMethode: string;
+}
+
+/**
+ * Calcul générique d'une opération d'isolation (BAR-EN-101/102/103) :
+ * Gain (kWh/an) = ΔU × S × DJU × 24 / (η_installation × 1000)
+ * avec ΔU = U_avant − U_après (W/m².K).
+ */
+function calculerIsolation(
+  v: FormValues,
+  ficheId: "BAR-EN-101" | "BAR-EN-102" | "BAR-EN-103",
+  surfaceField: string,
+  defaults: { uAvantDefaut: number; uApresDefaut: number; paroi: string },
+): CalculIsolationResult | null {
+  const surface = parseFloat(v[surfaceField] || "0");
+  const zone = v.zone_climatique;
+  const zoneData = zone ? ZONE_CLIMATIQUE_DATA[zone] : null;
+  const rApres = parseFloat(v.r_thermique || "0");
+  if (surface <= 0 || !zoneData || rApres <= 0) return null;
+
+  const rAvantSaisi = parseFloat(v.r_actuel || "0");
+  const rAvant = rAvantSaisi > 0 ? rAvantSaisi : (1 / defaults.uAvantDefaut);
+  const uAvant = 1 / rAvant;
+  const uApres = 1 / rApres;
+  const deltaU = uAvant - uApres;
+  if (deltaU <= 0) return null;
+
+  // Rendement installation chauffage (émetteurs + générateur) — forfait 0.85
+  const rendementInstallation = 0.85;
+  const dju = zoneData.dju;
+  // Gain (kWh/an) = ΔU × S × DJU × 24 / (η × 1000)
+  const deperditionsEviteesKwh = (deltaU * surface * dju * 24) / (rendementInstallation * 1000);
+  const gainMwh = deperditionsEviteesKwh / 1000;
+
+  // Estimer conso avant (pour le %) : déperditions avant via U_avant sur la paroi
+  const consoAvantKwh = (uAvant * surface * dju * 24) / (rendementInstallation * 1000);
+  const gainPct = consoAvantKwh > 0 ? (deperditionsEviteesKwh / consoAvantKwh) * 100 : 0;
+
+  // Énergie existante (prix + CO₂) : on prend les champs déjà collectés si présents
+  const energieExistante = v.energie_existante || "Gaz naturel";
+  const facteur = FACTEUR_CO2[energieExistante] || 0.200;
+  const reductionCo2 = (deperditionsEviteesKwh * facteur) / 1000;
+
+  const prix = prixEnergie(energieExistante);
+  const economiEuros = deperditionsEviteesKwh * prix;
+
+  const coutInvest = parseFloat(v.cout_investissement || "0");
+  const dureeRetour = coutInvest > 0 && economiEuros > 0 ? coutInvest / economiEuros : null;
+
+  const cumac = computeCumac(ficheId, gainMwh);
+  const cumacKWh = cumac?.cumacKWh ?? 0;
+
+  const detailMethode = [
+    `Méthode ΔU × S × DJU × 24 / η — ${defaults.paroi} — Zone ${zone}`,
+    `DJU base 18°C: ${dju}`,
+    "",
+    `Résistance thermique AVANT: ${rAvantSaisi > 0 ? `${rAvantSaisi.toFixed(2)} m².K/W (saisie)` : `défaut ${(1/defaults.uAvantDefaut).toFixed(2)} m².K/W (U_avant=${defaults.uAvantDefaut})`} → U_avant = ${uAvant.toFixed(2)} W/m².K`,
+    `Résistance thermique APRÈS: R = ${rApres.toFixed(2)} m².K/W → U_après = ${uApres.toFixed(2)} W/m².K`,
+    `ΔU = ${uAvant.toFixed(2)} − ${uApres.toFixed(2)} = ${deltaU.toFixed(2)} W/m².K`,
+    "",
+    `Surface concernée: ${surface} m²`,
+    `Rendement installation de chauffage (forfait): ${rendementInstallation}`,
+    "",
+    `Gain = ΔU × S × DJU × 24 / (η × 1000)`,
+    `     = ${deltaU.toFixed(2)} × ${surface} × ${dju} × 24 / (${rendementInstallation} × 1000)`,
+    `     = ${deperditionsEviteesKwh.toFixed(0)} kWh EF/an (${gainMwh.toFixed(1)} MWh/an)`,
+    `Conso de référence estimée sur la paroi: ${consoAvantKwh.toFixed(0)} kWh/an → gain ≈ ${gainPct.toFixed(1)} % sur ce poste`,
+    "",
+    `Énergie substituée: ${energieExistante} (prix ${prix} €/kWh · CO₂ ${facteur} kgCO₂e/kWh)`,
+    `Réduction CO₂ = ${reductionCo2.toFixed(2)} tCO₂e/an`,
+    `Économie = ${Math.round(economiEuros)} €/an`,
+    cumac ? `Volume CEE = ${cumac.cumacMWh.toFixed(0)} MWh cumac (${cumac.duree} ans · coef ${cumac.coefActu.toFixed(3)})` : "",
+  ].filter(Boolean).join("\n");
+
+  return { uAvant, uApres, deltaU, surface, deperditionsEviteesKwh, gainMwh, gainPct, reductionCo2, economiEuros, dureeRetour, cumacKWh, detailMethode };
+}
+
+function calculer101(v: FormValues): CalculIsolationResult | null {
+  // Combles perdus non isolés : U ~ 3.0 ; après ~ 1/7 = 0.14
+  return calculerIsolation(v, "BAR-EN-101", "surface_isolee",
+    { uAvantDefaut: 3.0, uApresDefaut: 0.14, paroi: "Combles / toiture" });
+}
+
+function calculer102(v: FormValues): CalculIsolationResult | null {
+  // Mur non isolé : U ~ 2.0 ; après ~ 1/3.7 = 0.27
+  return calculerIsolation(v, "BAR-EN-102", "surface_murs",
+    { uAvantDefaut: 2.0, uApresDefaut: 0.27, paroi: "Murs" });
+}
+
+function calculer103(v: FormValues): CalculIsolationResult | null {
+  // Plancher bas non isolé : U ~ 2.0 ; après ~ 1/3 = 0.33
+  return calculerIsolation(v, "BAR-EN-103", "surface_plancher",
+    { uAvantDefaut: 2.0, uApresDefaut: 0.33, paroi: "Plancher bas" });
+}
+
+// ─── Calculs BAT-TH-116 — GTB tertiaire ────────────────────────
+
+interface Calcul116Result {
+  classe: "A" | "B";
+  surface: number;
+  consoAvantChauffKwh: number;
+  consoAvantClimKwh: number;
+  gainChauffKwh: number;
+  gainClimKwh: number;
+  gainMwh: number;
+  gainPct: number;
+  reductionCo2: number;
+  economiEuros: number;
+  dureeRetour: number | null;
+  cumacKWh: number;
+  detailMethode: string;
+}
+
+/**
+ * Facteurs de réduction forfaitaires par classe GTB — NF EN ISO 52120-1.
+ * (Chauffage, Climatisation)
+ */
+function calculer116(v: FormValues): Calcul116Result | null {
+  const surface = parseFloat(v.surface_batiment || "0");
+  const zone = v.zone_climatique;
+  const zoneData = zone ? ZONE_CLIMATIQUE_DATA[zone] : null;
+  if (surface <= 0 || !zoneData) return null;
+
+  const classeRaw = v.classe_gtb || "";
+  const classe: "A" | "B" = classeRaw.includes("A") ? "A" : "B";
+
+  // Facteurs usuels EN 15232 / ISO 52120-1 (tertiaire bureau de référence = classe C = 1)
+  const facteurs = classe === "A"
+    ? { chauff: 0.30, clim: 0.20 }
+    : { chauff: 0.18, clim: 0.14 };
+
+  // Consommations spécifiques moyennes tertiaire (kWh EF/m².an) — ADEME/CEREN
+  const ratioChauff = 110; // kWh/m².an chauffage tertiaire moyen
+  const hasClim = !!v.regulation_clim_existante && !v.regulation_clim_existante.includes("Aucune climatisation");
+  const ratioClim = hasClim ? 25 : 0;  // kWh/m².an climatisation si présente
+
+  const consoAvantChauffKwh = surface * ratioChauff;
+  const consoAvantClimKwh = surface * ratioClim;
+
+  const gainChauffKwh = consoAvantChauffKwh * facteurs.chauff;
+  const gainClimKwh = consoAvantClimKwh * facteurs.clim;
+  const gainTotalKwh = gainChauffKwh + gainClimKwh;
+  const gainMwh = gainTotalKwh / 1000;
+
+  const consoTotaleAvantKwh = consoAvantChauffKwh + consoAvantClimKwh;
+  const gainPct = consoTotaleAvantKwh > 0 ? (gainTotalKwh / consoTotaleAvantKwh) * 100 : 0;
+
+  // CO₂ : chauffage = gaz naturel par défaut ; clim = électricité
+  const facteurCo2Chauff = FACTEUR_CO2["Gaz naturel"];
+  const facteurCo2Clim = FACTEUR_CO2_ELEC_CHAUFFAGE;
+  const reductionCo2 = (gainChauffKwh * facteurCo2Chauff + gainClimKwh * facteurCo2Clim) / 1000;
+
+  const economiEuros = gainChauffKwh * PRIX_GAZ_KWH + gainClimKwh * PRIX_ELEC_KWH;
+
+  const coutInvest = parseFloat(v.cout_investissement || "0");
+  const dureeRetour = coutInvest > 0 && economiEuros > 0 ? coutInvest / economiEuros : null;
+
+  const cumac = computeCumac("BAT-TH-116", gainMwh);
+  const cumacKWh = cumac?.cumacKWh ?? 0;
+
+  const detailMethode = [
+    `Méthode forfaitaire NF EN ISO 52120-1 / EN 15232 — Classe ${classe}`,
+    `Bâtiment: ${v.type_batiment ?? "?"} · Surface: ${surface} m² · Zone climatique: ${zone}`,
+    "",
+    `Consommations de référence (tertiaire moyen, base classe C = 1) :`,
+    `  Chauffage: ${ratioChauff} kWh/m².an × ${surface} m² = ${consoAvantChauffKwh.toFixed(0)} kWh/an`,
+    `  Climatisation: ${ratioClim} kWh/m².an × ${surface} m² = ${consoAvantClimKwh.toFixed(0)} kWh/an ${hasClim ? "" : "(pas de clim déclarée)"}`,
+    "",
+    `Facteurs de réduction classe ${classe} (EN 15232) :`,
+    `  Chauffage: ${(facteurs.chauff * 100).toFixed(0)} % → gain chauffage = ${gainChauffKwh.toFixed(0)} kWh/an`,
+    `  Climatisation: ${(facteurs.clim * 100).toFixed(0)} % → gain clim = ${gainClimKwh.toFixed(0)} kWh/an`,
+    "",
+    `Gain total = ${gainTotalKwh.toFixed(0)} kWh/an (${gainMwh.toFixed(1)} MWh/an) · soit ${gainPct.toFixed(1)} % de la conso de référence`,
+    `Réduction CO₂ = ${reductionCo2.toFixed(2)} tCO₂e/an`,
+    `Économie = gaz ${Math.round(gainChauffKwh * PRIX_GAZ_KWH)} € + élec ${Math.round(gainClimKwh * PRIX_ELEC_KWH)} € = ${Math.round(economiEuros)} €/an`,
+    cumac ? `Volume CEE = ${cumac.cumacMWh.toFixed(0)} MWh cumac (${cumac.duree} ans · coef ${cumac.coefActu.toFixed(3)})` : "",
+  ].filter(Boolean).join("\n");
+
+  return {
+    classe, surface,
+    consoAvantChauffKwh, consoAvantClimKwh,
+    gainChauffKwh, gainClimKwh,
+    gainMwh, gainPct, reductionCo2, economiEuros, dureeRetour, cumacKWh, detailMethode,
+  };
 }
 
 // ─── Textes par défaut pour 3 champs rédactionnels ──────────────
@@ -3304,12 +3736,12 @@ async function generatePDF(
         doc.setFont("helvetica", "bold");
         doc.setFontSize(9);
         doc.setTextColor(30, 60, 120);
-        doc.text("Volume CEE calcule automatiquement", margin + 3, boxY + 5);
+        doc.text("Volume CEE calculé automatiquement", margin + 3, boxY + 5);
         doc.setFont("helvetica", "normal");
         doc.setFontSize(8);
         doc.setTextColor(40, 40, 40);
-        const line1 = `Gain annuel : ${gainMWh.toFixed(1)} MWh/an  |  Duree de vie conv. : ${cumac.duree} ans  |  Coef. actualisation 4% : ${cumac.coefActu.toFixed(3)}`;
-        const line2 = `Volume CEE : ${cumac.cumacMWh.toFixed(0)} MWh cumac   (${Math.round(cumac.cumacKWh).toLocaleString("fr-FR")} kWh cumac)`;
+        const line1 = `Gain annuel : ${gainMWh.toFixed(1)} MWh/an  |  Durée de vie conv. : ${cumac.duree} ans  |  Coef. actualisation 4% : ${cumac.coefActu.toFixed(3)}`;
+        const line2 = `Volume CEE : ${cumac.cumacMWh.toFixed(0)} MWh cumac   (${Math.round(cumac.cumacKWh).toLocaleString("fr-FR").replace(/[\u00A0\u202F]/g, " ")} kWh cumac)`;
         doc.text(line1, margin + 3, boxY + 11);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(30, 60, 120);
@@ -3449,6 +3881,14 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
 
   // ─── Auto-calcul BAT-TH-139 ──────────────────────────────────
   const calcul139 = selectedFiche === "BAT-TH-139" ? calculer139(values) : null;
+
+  // ─── Auto-calcul BAR-TH-171 / 159 / EN-101 / EN-102 / EN-103 / BAT-TH-116 ──
+  const calcul171 = selectedFiche === "BAR-TH-171" ? calculer171(values) : null;
+  const calcul159 = selectedFiche === "BAR-TH-159" ? calculer159(values) : null;
+  const calcul101 = selectedFiche === "BAR-EN-101" ? calculer101(values) : null;
+  const calcul102 = selectedFiche === "BAR-EN-102" ? calculer102(values) : null;
+  const calcul103 = selectedFiche === "BAR-EN-103" ? calculer103(values) : null;
+  const calcul116 = selectedFiche === "BAT-TH-116" ? calculer116(values) : null;
 
   // ─── Pré-remplissage auto section "Calcul gains" BAT-TH-134 ──
   // Étape 1 : pré-remplir les champs d'entrée de la section 5 à partir des sections précédentes
@@ -3683,6 +4123,120 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
     setSaved(false);
   }, [selectedFiche, activeSection, calcul139]);
 
+  // ─── Pré-remplissage auto section 5 BAR-TH-171 ──
+  const prevCalcul171Ref = useRef<string | null>(null);
+  useEffect(() => {
+    if (selectedFiche !== "BAR-TH-171" || activeSection !== 4 || !calcul171) return;
+    const sig = `${calcul171.gainMwh.toFixed(1)}|${calcul171.gainPct.toFixed(1)}|${Math.round(calcul171.economiEuros)}|${calcul171.dureeRetour?.toFixed(1) ?? ""}|${Math.round(calcul171.cumacKWh)}`;
+    if (prevCalcul171Ref.current === sig) return;
+    prevCalcul171Ref.current = sig;
+    setValues((prev) => ({
+      ...prev,
+      gain_energetique_pct: calcul171.gainPct.toFixed(1),
+      gain_energetique_mwh: calcul171.gainMwh.toFixed(1),
+      economie_euros: String(Math.round(calcul171.economiEuros)),
+      economie_cee_cumac: (calcul171.cumacKWh / 1000).toFixed(0),
+      ...(calcul171.dureeRetour ? { duree_retour: calcul171.dureeRetour.toFixed(1) } : {}),
+      detail_calcul: calcul171.detailMethode,
+    }));
+    setSaved(false);
+  }, [selectedFiche, activeSection, calcul171]);
+
+  // ─── Pré-remplissage auto section 5 BAR-TH-159 ──
+  const prevCalcul159Ref = useRef<string | null>(null);
+  useEffect(() => {
+    if (selectedFiche !== "BAR-TH-159" || activeSection !== 4 || !calcul159) return;
+    const sig = `${calcul159.gainMwh.toFixed(1)}|${calcul159.gainPct.toFixed(1)}|${Math.round(calcul159.economiEuros)}|${calcul159.dureeRetour?.toFixed(1) ?? ""}|${Math.round(calcul159.cumacKWh)}`;
+    if (prevCalcul159Ref.current === sig) return;
+    prevCalcul159Ref.current = sig;
+    setValues((prev) => ({
+      ...prev,
+      gain_energetique_pct: calcul159.gainPct.toFixed(1),
+      gain_energetique_mwh: calcul159.gainMwh.toFixed(1),
+      economie_euros: String(Math.round(calcul159.economiEuros)),
+      economie_cee_cumac: (calcul159.cumacKWh / 1000).toFixed(0),
+      ...(calcul159.dureeRetour ? { duree_retour: calcul159.dureeRetour.toFixed(1) } : {}),
+      detail_calcul: calcul159.detailMethode,
+    }));
+    setSaved(false);
+  }, [selectedFiche, activeSection, calcul159]);
+
+  // ─── Pré-remplissage auto section 5 BAR-EN-101 ──
+  const prevCalcul101Ref = useRef<string | null>(null);
+  useEffect(() => {
+    if (selectedFiche !== "BAR-EN-101" || activeSection !== 4 || !calcul101) return;
+    const sig = `${calcul101.gainMwh.toFixed(1)}|${calcul101.gainPct.toFixed(1)}|${Math.round(calcul101.economiEuros)}|${calcul101.dureeRetour?.toFixed(1) ?? ""}|${Math.round(calcul101.cumacKWh)}`;
+    if (prevCalcul101Ref.current === sig) return;
+    prevCalcul101Ref.current = sig;
+    setValues((prev) => ({
+      ...prev,
+      gain_energetique_pct: calcul101.gainPct.toFixed(1),
+      gain_energetique_mwh: calcul101.gainMwh.toFixed(1),
+      economie_euros: String(Math.round(calcul101.economiEuros)),
+      economie_cee_cumac: (calcul101.cumacKWh / 1000).toFixed(0),
+      ...(calcul101.dureeRetour ? { duree_retour: calcul101.dureeRetour.toFixed(1) } : {}),
+      detail_calcul: calcul101.detailMethode,
+    }));
+    setSaved(false);
+  }, [selectedFiche, activeSection, calcul101]);
+
+  // ─── Pré-remplissage auto section 5 BAR-EN-102 ──
+  const prevCalcul102Ref = useRef<string | null>(null);
+  useEffect(() => {
+    if (selectedFiche !== "BAR-EN-102" || activeSection !== 4 || !calcul102) return;
+    const sig = `${calcul102.gainMwh.toFixed(1)}|${calcul102.gainPct.toFixed(1)}|${Math.round(calcul102.economiEuros)}|${calcul102.dureeRetour?.toFixed(1) ?? ""}|${Math.round(calcul102.cumacKWh)}`;
+    if (prevCalcul102Ref.current === sig) return;
+    prevCalcul102Ref.current = sig;
+    setValues((prev) => ({
+      ...prev,
+      gain_energetique_pct: calcul102.gainPct.toFixed(1),
+      gain_energetique_mwh: calcul102.gainMwh.toFixed(1),
+      economie_euros: String(Math.round(calcul102.economiEuros)),
+      economie_cee_cumac: (calcul102.cumacKWh / 1000).toFixed(0),
+      ...(calcul102.dureeRetour ? { duree_retour: calcul102.dureeRetour.toFixed(1) } : {}),
+      detail_calcul: calcul102.detailMethode,
+    }));
+    setSaved(false);
+  }, [selectedFiche, activeSection, calcul102]);
+
+  // ─── Pré-remplissage auto section 5 BAR-EN-103 ──
+  const prevCalcul103Ref = useRef<string | null>(null);
+  useEffect(() => {
+    if (selectedFiche !== "BAR-EN-103" || activeSection !== 4 || !calcul103) return;
+    const sig = `${calcul103.gainMwh.toFixed(1)}|${calcul103.gainPct.toFixed(1)}|${Math.round(calcul103.economiEuros)}|${calcul103.dureeRetour?.toFixed(1) ?? ""}|${Math.round(calcul103.cumacKWh)}`;
+    if (prevCalcul103Ref.current === sig) return;
+    prevCalcul103Ref.current = sig;
+    setValues((prev) => ({
+      ...prev,
+      gain_energetique_pct: calcul103.gainPct.toFixed(1),
+      gain_energetique_mwh: calcul103.gainMwh.toFixed(1),
+      economie_euros: String(Math.round(calcul103.economiEuros)),
+      economie_cee_cumac: (calcul103.cumacKWh / 1000).toFixed(0),
+      ...(calcul103.dureeRetour ? { duree_retour: calcul103.dureeRetour.toFixed(1) } : {}),
+      detail_calcul: calcul103.detailMethode,
+    }));
+    setSaved(false);
+  }, [selectedFiche, activeSection, calcul103]);
+
+  // ─── Pré-remplissage auto section 5 BAT-TH-116 ──
+  const prevCalcul116Ref = useRef<string | null>(null);
+  useEffect(() => {
+    if (selectedFiche !== "BAT-TH-116" || activeSection !== 4 || !calcul116) return;
+    const sig = `${calcul116.gainMwh.toFixed(1)}|${calcul116.gainPct.toFixed(1)}|${Math.round(calcul116.economiEuros)}|${calcul116.dureeRetour?.toFixed(1) ?? ""}|${Math.round(calcul116.cumacKWh)}`;
+    if (prevCalcul116Ref.current === sig) return;
+    prevCalcul116Ref.current = sig;
+    setValues((prev) => ({
+      ...prev,
+      gain_energetique_pct: calcul116.gainPct.toFixed(1),
+      gain_energetique_mwh: calcul116.gainMwh.toFixed(1),
+      economie_euros: String(Math.round(calcul116.economiEuros)),
+      economie_cee_cumac: (calcul116.cumacKWh / 1000).toFixed(0),
+      ...(calcul116.dureeRetour ? { duree_retour: calcul116.dureeRetour.toFixed(1) } : {}),
+      detail_calcul: calcul116.detailMethode,
+    }));
+    setSaved(false);
+  }, [selectedFiche, activeSection, calcul116]);
+
   async function handleSave() {
     if (!selectedFiche) return;
     setSaving(true);
@@ -3863,6 +4417,12 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
                   prevCalcul142Ref.current = null;
                   didPrefill139Ref.current = false;
                   prevCalcul139Ref.current = null;
+                  prevCalcul171Ref.current = null;
+                  prevCalcul159Ref.current = null;
+                  prevCalcul101Ref.current = null;
+                  prevCalcul102Ref.current = null;
+                  prevCalcul103Ref.current = null;
+                  prevCalcul116Ref.current = null;
                 }}
               >
                 <CardContent className="p-6 space-y-3">
@@ -4288,6 +4848,191 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
                             updateValue("detail_calcul", calcul139.detailMethode);
                           }}
                         >
+                          <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+                          Appliquer les résultats aux champs du formulaire
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ─── Résultats calculés BAR-TH-171 ─── */}
+                  {selectedFiche === "BAR-TH-171" && currentSection.titre.includes("5.") && calcul171 && (
+                    <div className="border-t pt-4 space-y-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                        <h4 className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">Résultats calculés automatiquement</h4>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        {[
+                          { label: "Besoin chauffage", value: `${calcul171.besoinChauffage.toFixed(1)} MWh/an`, sub: `${calcul171.consoAvant.toFixed(1)} → ${calcul171.consoApres.toFixed(1)} MWh` },
+                          { label: "Gain énergétique", value: `${calcul171.gainPct.toFixed(1)}%`, sub: `${calcul171.gainMwh.toFixed(1)} MWh/an` },
+                          { label: "Réduction CO₂", value: `${calcul171.reductionCo2.toFixed(1)} t/an`, sub: `Volume CEE: ${(calcul171.cumacKWh / 1000).toFixed(0)} MWh cumac` },
+                          { label: "Économie annuelle", value: `${Math.round(calcul171.economiEuros).toLocaleString("fr-FR")} €`, sub: calcul171.dureeRetour ? `Retour: ${calcul171.dureeRetour.toFixed(1)} ans` : "" },
+                        ].map((kpi) => (
+                          <div key={kpi.label} className="rounded-xl border border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/30 p-3 text-center">
+                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{kpi.label}</p>
+                            <p className="text-xl font-bold text-emerald-700 dark:text-emerald-400">{kpi.value}</p>
+                            {kpi.sub && <p className="text-[11px] text-muted-foreground">{kpi.sub}</p>}
+                          </div>
+                        ))}
+                      </div>
+                      <details className="rounded-lg border bg-muted/30 p-3">
+                        <summary className="text-xs font-medium cursor-pointer">Méthode de calcul détaillée</summary>
+                        <pre className="mt-2 text-[11px] whitespace-pre-wrap font-mono leading-relaxed">{calcul171.detailMethode}</pre>
+                      </details>
+                      <div className="flex gap-2">
+                        <Button type="button" variant="outline" size="sm" className="text-emerald-700 border-emerald-300 hover:bg-emerald-50"
+                          onClick={() => {
+                            if (!calcul171) return;
+                            updateValue("gain_energetique_pct", calcul171.gainPct.toFixed(1));
+                            updateValue("gain_energetique_mwh", calcul171.gainMwh.toFixed(1));
+                            updateValue("economie_euros", String(Math.round(calcul171.economiEuros)));
+                            updateValue("economie_cee_cumac", (calcul171.cumacKWh / 1000).toFixed(0));
+                            if (calcul171.dureeRetour) updateValue("duree_retour", calcul171.dureeRetour.toFixed(1));
+                            updateValue("detail_calcul", calcul171.detailMethode);
+                          }}>
+                          <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+                          Appliquer les résultats aux champs du formulaire
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ─── Résultats calculés BAR-TH-159 ─── */}
+                  {selectedFiche === "BAR-TH-159" && currentSection.titre.includes("5.") && calcul159 && (
+                    <div className="border-t pt-4 space-y-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="h-2 w-2 rounded-full bg-cyan-500 animate-pulse" />
+                        <h4 className="text-sm font-semibold text-cyan-700 dark:text-cyan-400">Résultats calculés automatiquement</h4>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        {[
+                          { label: "Part PAC", value: `${(calcul159.partPac * 100).toFixed(0)}%`, sub: `Besoin: ${calcul159.besoinChauffage.toFixed(1)} MWh/an` },
+                          { label: "Gain énergétique", value: `${calcul159.gainPct.toFixed(1)}%`, sub: `${calcul159.gainMwh.toFixed(1)} MWh/an` },
+                          { label: "Réduction CO₂", value: `${calcul159.reductionCo2.toFixed(1)} t/an`, sub: `CEE: ${(calcul159.cumacKWh / 1000).toFixed(0)} MWh cumac` },
+                          { label: "Économie annuelle", value: `${Math.round(calcul159.economiEuros).toLocaleString("fr-FR")} €`, sub: calcul159.dureeRetour ? `Retour: ${calcul159.dureeRetour.toFixed(1)} ans` : "" },
+                        ].map((kpi) => (
+                          <div key={kpi.label} className="rounded-xl border border-cyan-200 bg-cyan-50 dark:border-cyan-800 dark:bg-cyan-950/30 p-3 text-center">
+                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{kpi.label}</p>
+                            <p className="text-xl font-bold text-cyan-700 dark:text-cyan-400">{kpi.value}</p>
+                            {kpi.sub && <p className="text-[11px] text-muted-foreground">{kpi.sub}</p>}
+                          </div>
+                        ))}
+                      </div>
+                      <details className="rounded-lg border bg-muted/30 p-3">
+                        <summary className="text-xs font-medium cursor-pointer">Méthode de calcul détaillée</summary>
+                        <pre className="mt-2 text-[11px] whitespace-pre-wrap font-mono leading-relaxed">{calcul159.detailMethode}</pre>
+                      </details>
+                      <div className="flex gap-2">
+                        <Button type="button" variant="outline" size="sm" className="text-cyan-700 border-cyan-300 hover:bg-cyan-50"
+                          onClick={() => {
+                            if (!calcul159) return;
+                            updateValue("gain_energetique_pct", calcul159.gainPct.toFixed(1));
+                            updateValue("gain_energetique_mwh", calcul159.gainMwh.toFixed(1));
+                            updateValue("economie_euros", String(Math.round(calcul159.economiEuros)));
+                            updateValue("economie_cee_cumac", (calcul159.cumacKWh / 1000).toFixed(0));
+                            if (calcul159.dureeRetour) updateValue("duree_retour", calcul159.dureeRetour.toFixed(1));
+                            updateValue("detail_calcul", calcul159.detailMethode);
+                          }}>
+                          <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+                          Appliquer les résultats aux champs du formulaire
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ─── Résultats calculés BAR-EN-101 / 102 / 103 (isolations) ─── */}
+                  {(selectedFiche === "BAR-EN-101" || selectedFiche === "BAR-EN-102" || selectedFiche === "BAR-EN-103") && currentSection.titre.includes("5.") && (() => {
+                    const calc = selectedFiche === "BAR-EN-101" ? calcul101
+                               : selectedFiche === "BAR-EN-102" ? calcul102
+                               : calcul103;
+                    if (!calc) return null;
+                    const palette = selectedFiche === "BAR-EN-101" ? "sky"
+                                  : selectedFiche === "BAR-EN-102" ? "indigo"
+                                  : "violet";
+                    const border = palette === "sky" ? "border-sky-200 dark:border-sky-800" : palette === "indigo" ? "border-indigo-200 dark:border-indigo-800" : "border-violet-200 dark:border-violet-800";
+                    const bg = palette === "sky" ? "bg-sky-50 dark:bg-sky-950/30" : palette === "indigo" ? "bg-indigo-50 dark:bg-indigo-950/30" : "bg-violet-50 dark:bg-violet-950/30";
+                    const text = palette === "sky" ? "text-sky-700 dark:text-sky-400" : palette === "indigo" ? "text-indigo-700 dark:text-indigo-400" : "text-violet-700 dark:text-violet-400";
+                    const dot = palette === "sky" ? "bg-sky-500" : palette === "indigo" ? "bg-indigo-500" : "bg-violet-500";
+                    const btn = palette === "sky" ? "text-sky-700 border-sky-300 hover:bg-sky-50" : palette === "indigo" ? "text-indigo-700 border-indigo-300 hover:bg-indigo-50" : "text-violet-700 border-violet-300 hover:bg-violet-50";
+                    return (
+                      <div className="border-t pt-4 space-y-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className={cn("h-2 w-2 rounded-full animate-pulse", dot)} />
+                          <h4 className={cn("text-sm font-semibold", text)}>Résultats calculés automatiquement</h4>
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                          {[
+                            { label: "ΔU", value: `${calc.deltaU.toFixed(2)} W/m².K`, sub: `U_av ${calc.uAvant.toFixed(2)} → U_ap ${calc.uApres.toFixed(2)}` },
+                            { label: "Surface traitée", value: `${calc.surface.toFixed(0)} m²`, sub: `Gain poste: ${calc.gainPct.toFixed(1)}%` },
+                            { label: "Gain énergétique", value: `${calc.gainMwh.toFixed(1)} MWh/an`, sub: `CEE: ${(calc.cumacKWh / 1000).toFixed(0)} MWh cumac` },
+                            { label: "Économie annuelle", value: `${Math.round(calc.economiEuros).toLocaleString("fr-FR")} €`, sub: calc.dureeRetour ? `Retour: ${calc.dureeRetour.toFixed(1)} ans` : `CO₂: -${calc.reductionCo2.toFixed(1)} t/an` },
+                          ].map((kpi) => (
+                            <div key={kpi.label} className={cn("rounded-xl border p-3 text-center", border, bg)}>
+                              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{kpi.label}</p>
+                              <p className={cn("text-xl font-bold", text)}>{kpi.value}</p>
+                              {kpi.sub && <p className="text-[11px] text-muted-foreground">{kpi.sub}</p>}
+                            </div>
+                          ))}
+                        </div>
+                        <details className="rounded-lg border bg-muted/30 p-3">
+                          <summary className="text-xs font-medium cursor-pointer">Méthode de calcul détaillée</summary>
+                          <pre className="mt-2 text-[11px] whitespace-pre-wrap font-mono leading-relaxed">{calc.detailMethode}</pre>
+                        </details>
+                        <div className="flex gap-2">
+                          <Button type="button" variant="outline" size="sm" className={btn}
+                            onClick={() => {
+                              updateValue("gain_energetique_pct", calc.gainPct.toFixed(1));
+                              updateValue("gain_energetique_mwh", calc.gainMwh.toFixed(1));
+                              updateValue("economie_euros", String(Math.round(calc.economiEuros)));
+                              updateValue("economie_cee_cumac", (calc.cumacKWh / 1000).toFixed(0));
+                              if (calc.dureeRetour) updateValue("duree_retour", calc.dureeRetour.toFixed(1));
+                              updateValue("detail_calcul", calc.detailMethode);
+                            }}>
+                            <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+                            Appliquer les résultats aux champs du formulaire
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* ─── Résultats calculés BAT-TH-116 ─── */}
+                  {selectedFiche === "BAT-TH-116" && currentSection.titre.includes("5.") && calcul116 && (
+                    <div className="border-t pt-4 space-y-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
+                        <h4 className="text-sm font-semibold text-rose-700 dark:text-rose-400">Résultats calculés automatiquement — Classe {calcul116.classe}</h4>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        {[
+                          { label: "Gain chauffage", value: `${(calcul116.gainChauffKwh / 1000).toFixed(1)} MWh/an`, sub: `sur ${(calcul116.consoAvantChauffKwh / 1000).toFixed(0)} MWh` },
+                          { label: "Gain climatisation", value: `${(calcul116.gainClimKwh / 1000).toFixed(1)} MWh/an`, sub: calcul116.consoAvantClimKwh > 0 ? `sur ${(calcul116.consoAvantClimKwh / 1000).toFixed(0)} MWh` : "pas de clim" },
+                          { label: "Gain total", value: `${calcul116.gainPct.toFixed(1)}%`, sub: `${calcul116.gainMwh.toFixed(1)} MWh/an · CEE ${(calcul116.cumacKWh / 1000).toFixed(0)} MWh cumac` },
+                          { label: "Économie annuelle", value: `${Math.round(calcul116.economiEuros).toLocaleString("fr-FR")} €`, sub: calcul116.dureeRetour ? `Retour: ${calcul116.dureeRetour.toFixed(1)} ans` : `CO₂: -${calcul116.reductionCo2.toFixed(1)} t/an` },
+                        ].map((kpi) => (
+                          <div key={kpi.label} className="rounded-xl border border-rose-200 bg-rose-50 dark:border-rose-800 dark:bg-rose-950/30 p-3 text-center">
+                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{kpi.label}</p>
+                            <p className="text-xl font-bold text-rose-700 dark:text-rose-400">{kpi.value}</p>
+                            {kpi.sub && <p className="text-[11px] text-muted-foreground">{kpi.sub}</p>}
+                          </div>
+                        ))}
+                      </div>
+                      <details className="rounded-lg border bg-muted/30 p-3">
+                        <summary className="text-xs font-medium cursor-pointer">Méthode de calcul détaillée</summary>
+                        <pre className="mt-2 text-[11px] whitespace-pre-wrap font-mono leading-relaxed">{calcul116.detailMethode}</pre>
+                      </details>
+                      <div className="flex gap-2">
+                        <Button type="button" variant="outline" size="sm" className="text-rose-700 border-rose-300 hover:bg-rose-50"
+                          onClick={() => {
+                            if (!calcul116) return;
+                            updateValue("gain_energetique_pct", calcul116.gainPct.toFixed(1));
+                            updateValue("gain_energetique_mwh", calcul116.gainMwh.toFixed(1));
+                            updateValue("economie_euros", String(Math.round(calcul116.economiEuros)));
+                            updateValue("economie_cee_cumac", (calcul116.cumacKWh / 1000).toFixed(0));
+                            if (calcul116.dureeRetour) updateValue("duree_retour", calcul116.dureeRetour.toFixed(1));
+                            updateValue("detail_calcul", calcul116.detailMethode);
+                          }}>
                           <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
                           Appliquer les résultats aux champs du formulaire
                         </Button>

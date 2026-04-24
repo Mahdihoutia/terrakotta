@@ -244,7 +244,7 @@ async function generatePDF(
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(...PDF_COLORS.bodyLight);
-  doc.text("Bureau d'etude en renovation energetique", margin, y + 4.5);
+  doc.text("Bureau d'étude en rénovation énergétique", margin, y + 4.5);
 
   // Type + référence à droite
   doc.setFont("helvetica", "bold");
@@ -340,7 +340,7 @@ async function generatePDF(
   // ─── Aides section ────────────────────────────────────────
   const aidesData: string[][] = [];
   if (values.maprimereno && values.maprimereno !== "Non applicable") {
-    aidesData.push(["MaPrimeRenov'", `${values.maprimereno}${values.maprimereno_montant ? ` — ${values.maprimereno_montant} \u20AC` : ""}`]);
+    aidesData.push(["MaPrimeRénov'", `${values.maprimereno}${values.maprimereno_montant ? ` — ${values.maprimereno_montant} \u20AC` : ""}`]);
   }
   if (values.cee_montant && parseFloat(values.cee_montant) > 0) {
     aidesData.push(["Prime CEE", `${values.cee_montant} \u20AC`]);
@@ -349,12 +349,12 @@ async function generatePDF(
     aidesData.push(["Autres aides", values.autres_aides]);
   }
   if (values.reste_a_charge && parseFloat(values.reste_a_charge) > 0) {
-    aidesData.push(["Reste a charge estime", `${values.reste_a_charge} \u20AC`]);
+    aidesData.push(["Reste à charge estimé", `${values.reste_a_charge} \u20AC`]);
   }
 
   if (aidesData.length > 0) {
     checkPage(30);
-    y = drawSectionHeader(doc, "Aides financieres mobilisables", y);
+    y = drawSectionHeader(doc, "Aides financières mobilisables", y);
     autoTable(doc, getDataTableConfig(y, aidesData, contentWidth));
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     y = (doc as any).lastAutoTable.finalY + PDF_LAYOUT.sectionGap;

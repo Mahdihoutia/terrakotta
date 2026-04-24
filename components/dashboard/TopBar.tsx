@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Bell, Sun, Moon, Zap, Search, ChevronRight } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { useSearch } from "./SearchProvider";
+import NotificationPopover from "./NotificationPopover";
 
 // Libellés lisibles pour les segments de URL (fallback = capitalize)
 const SEGMENT_LABELS: Record<string, string> = {
@@ -40,6 +41,7 @@ export default function TopBar() {
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
   const { openSearch } = useSearch();
+  const [notifOpen, setNotifOpen] = useState(false);
 
   const greeting = getGreeting();
 
@@ -161,7 +163,11 @@ export default function TopBar() {
 
         {/* Notifications */}
         <button
+          type="button"
+          data-notification-trigger
           aria-label="Notifications"
+          aria-expanded={notifOpen}
+          onClick={() => setNotifOpen((v) => !v)}
           className="focus-ring relative flex h-8 w-8 items-center justify-center rounded-lg border border-tk-border bg-tk-surface text-tk-text-muted transition-all hover:border-tk-border-hover hover:text-tk-text"
         >
           <Bell className="h-[15px] w-[15px]" />
@@ -171,6 +177,8 @@ export default function TopBar() {
           </span>
         </button>
       </div>
+
+      <NotificationPopover open={notifOpen} onClose={() => setNotifOpen(false)} />
     </header>
   );
 }

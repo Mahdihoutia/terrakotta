@@ -546,6 +546,7 @@ async function generatePDF(
     getInfoTableConfig,
     needsPageBreak,
     resetTextState,
+    formatNumberPdf,
     PDF_COLORS,
     PDF_LAYOUT,
   } = await import("@/lib/pdf-styles");
@@ -564,7 +565,7 @@ async function generatePDF(
   // ─── Page 1 : Cover ──────────────────────────────────────
   drawCoverPage(
     doc,
-    "Audit energetique",
+    "Audit énergétique",
     "Diagnostic complet et scenarios de renovation",
     [
       ["Reference",    reference],
@@ -592,18 +593,18 @@ async function generatePDF(
 
     // Constats automatiques à partir des valeurs clés
     const constats: string[] = [];
-    if (consoM2 > 0) constats.push(`Consommation de ${consoM2} kWhEP/m².an — classe energetique ${dpeLetter}.`);
-    if (co2M2 > 0)   constats.push(`Emissions de ${co2M2} kgCO2/m².an — classe environnementale ${gesLetter}.`);
-    if (euroM2 > 0)  constats.push(`Facture energetique de ${euroM2.toFixed(0)} EUR/m².an — classe financiere ${finLetter}.`);
-    if (values.annee_construction) constats.push(`Batiment construit en ${values.annee_construction}, structure ${values.type_structure || "non precisee"}.`);
+    if (consoM2 > 0) constats.push(`Consommation de ${consoM2} kWhEP/m\u00B2.an — classe énergétique ${dpeLetter}.`);
+    if (co2M2 > 0)   constats.push(`Émissions de ${co2M2} kgCO\u00B2/m\u00B2.an — classe environnementale ${gesLetter}.`);
+    if (euroM2 > 0)  constats.push(`Facture énergétique de ${euroM2.toFixed(0)} \u20AC/m\u00B2.an — classe financière ${finLetter}.`);
+    if (values.annee_construction) constats.push(`Bâtiment construit en ${values.annee_construction}, structure ${values.type_structure || "non précisée"}.`);
     if (values.chauffage_type && values.chauffage_annee) {
-      constats.push(`Generateur de chauffage ${values.chauffage_type} installe en ${values.chauffage_annee}.`);
+      constats.push(`Générateur de chauffage ${values.chauffage_type} installé en ${values.chauffage_annee}.`);
     }
     if (values.ventilation_type && values.ventilation_type !== "Aucune") {
       constats.push(`Ventilation ${values.ventilation_type}.`);
     }
-    if (values.murs_isolation === "Non isolé") constats.push("Murs non isoles : poste majeur de deperdition.");
-    if (values.toiture_isolation === "Non isolé") constats.push("Toiture non isolee : priorite forte d'intervention.");
+    if (values.murs_isolation === "Non isolé") constats.push("Murs non isolés : poste majeur de déperdition.");
+    if (values.toiture_isolation === "Non isolé") constats.push("Toiture non isolée : priorité forte d'intervention.");
 
     // Leviers à partir des préconisations (top 5 par opportunité)
     const topActions = [...preconisations]
@@ -611,7 +612,7 @@ async function generatePDF(
       .slice(0, 5);
     const leviers: string[] = topActions.length > 0
       ? topActions.map((a) => {
-          const euro = a.economiesEuro ? ` — ${Math.round(a.economiesEuro).toLocaleString("fr-FR")} EUR/an` : "";
+          const euro = a.economiesEuro ? ` — ${formatNumberPdf(Math.round(a.economiesEuro))} \u20AC/an` : "";
           const tri  = a.tri ? `, TRI ${a.tri.toFixed(1)} ans` : "";
           return `${a.code} · ${a.titre}${euro}${tri}`;
         })
@@ -894,18 +895,26 @@ async function generatePDF(
 
     // Matrice via autoTable
     const sorted = [...preconisations].sort((a, b) => (b.opportunite || 0) - (a.opportunite || 0));
-    const head = [["Code", "Action", "★", "Horizon", "Respons.", "€/an", "CO2", "TRI", "Cumac"]];
+    const head = [["Code", "Action", "\u2605", "Horizon", "Resp.", "\u20AC/an", "CO\u00B2", "TRI", "Cumac"]];
+    const fmt = (n: number) => formatNumberPdf(Math.round(n));
     const body = sorted.map((a) => [
       a.code,
       `${a.titre}\n${a.famille}`,
-      "★".repeat(Math.max(0, Math.min(5, a.opportunite || 0))),
+      "\u2605".repeat(Math.max(0, Math.min(5, a.opportunite || 0))),
       (a.horizon || "").replace(/\s*\(.*\)\s*$/, ""),
-      (a.responsabilite || "—").replace(" (annexe bail)", ""),
-      a.economiesEuro ? `${Math.round(a.economiesEuro).toLocaleString("fr-FR")}` : "—",
-      a.co2Evite ? `${Math.round(a.co2Evite).toLocaleString("fr-FR")} kg` : "—",
+      // Abrégé court pour tenir dans la colonne sans wrap : Loc / Prop / ADB
+      (a.responsabilite || "—")
+        .replace(" (annexe bail)", "")
+        .replace(/Propriétaire/i, "Prop.")
+        .replace(/Locataire/i, "Loc.")
+        .replace(/Copropriété/i, "Copro."),
+      a.economiesEuro ? fmt(a.economiesEuro) : "—",
+      a.co2Evite ? `${fmt(a.co2Evite)} kg` : "—",
       a.tri ? `${a.tri.toFixed(1)} ans` : "—",
       a.ceeCumac ? `${a.ceeCumac.toFixed(1)} MWh` : "—",
     ]);
+    // Total des largeurs = 166mm (contentWidth typique A4 portrait = 170mm avec margin 20).
+    // Répartition ajustée pour que "Horizon", "Resp." et "€/an" tiennent sans wrap.
     autoTable(doc, {
       ...getInfoTableConfig(y, head, body, contentWidth),
       styles: {
@@ -914,17 +923,19 @@ async function generatePDF(
         textColor: PDF_COLORS.body,
         lineColor: PDF_COLORS.border,
         lineWidth: 0.15,
+        overflow: "linebreak",
+        valign: "middle",
       },
       columnStyles: {
-        0: { fontStyle: "bold", cellWidth: 15, textColor: PDF_COLORS.heading },
-        1: { cellWidth: 44 },
+        0: { fontStyle: "bold", cellWidth: 14, textColor: PDF_COLORS.heading },
+        1: { cellWidth: 42 },
         2: { cellWidth: 14, halign: "center", textColor: PDF_COLORS.blue, fontStyle: "bold" },
-        3: { cellWidth: 17 },
-        4: { cellWidth: 18 },
-        5: { cellWidth: 16, halign: "right" },
-        6: { cellWidth: 14, halign: "right" },
-        7: { cellWidth: 12, halign: "right" },
-        8: { cellWidth: 16, halign: "right" },
+        3: { cellWidth: 18 },
+        4: { cellWidth: 16, halign: "center" },
+        5: { cellWidth: 18, halign: "right" },
+        6: { cellWidth: 16, halign: "right" },
+        7: { cellWidth: 14, halign: "right" },
+        8: { cellWidth: 18, halign: "right" },
       },
     });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -944,14 +955,14 @@ async function generatePDF(
 
   // ─── Fill sommaire page ───────────────────────────────────
   doc.setPage(tocPageNum);
-  drawSommaire(doc, tocEntries, "Audit energetique", reference);
+  drawSommaire(doc, tocEntries, "Audit énergétique", reference);
 
   // ─── Footers (skip page 1 = dark cover) ──────────────────
   const totalPages = doc.getNumberOfPages();
   const contentPages = totalPages - 1;
   for (let i = 2; i <= totalPages; i++) {
     doc.setPage(i);
-    drawFooter(doc, "Audit energetique", reference, i - 1, contentPages);
+    drawFooter(doc, "Audit énergétique", reference, i - 1, contentPages);
   }
   doc.save(`Audit_Energetique_${values.ref_audit || "DRAFT"}_${new Date().toISOString().slice(0, 10)}.pdf`);
 }

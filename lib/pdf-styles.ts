@@ -110,6 +110,9 @@ export function drawCoverPage(
   const pw = doc.internal.pageSize.getWidth();
   const ph = doc.internal.pageSize.getHeight();
 
+  // Reset charSpace pour éviter héritage de appels autoTable précédents
+  doc.setCharSpace?.(0);
+
   // ── Background blanc ────────────────────────────────────────
   doc.setFillColor(...PDF_COLORS.white);
   doc.rect(0, 0, pw, ph, "F");
@@ -130,7 +133,7 @@ export function drawCoverPage(
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
   doc.setTextColor(...PDF_COLORS.bodyLight);
-  doc.text("Bureau d'etude en renovation energetique", pw / 2, 97, { align: "center" });
+  doc.text("Bureau d'étude en rénovation énergétique", pw / 2, 97, { align: "center" });
 
   // ── Filet horizontal ────────────────────────────────────────
   doc.setDrawColor(...PDF_COLORS.border);
@@ -217,6 +220,9 @@ export function drawSommaire(
   const ph     = doc.internal.pageSize.getHeight();
   const margin = PDF_LAYOUT.margin;
   let y = PDF_LAYOUT.topMargin;
+
+  // Reset charSpace pour éviter héritage de autoTable
+  doc.setCharSpace?.(0);
 
   // Cream background
   doc.setFillColor(...PDF_COLORS.background);
@@ -512,6 +518,9 @@ export function drawFooter(
   const margin  = PDF_LAYOUT.margin;
   const footerY = PDF_LAYOUT.footerY;
 
+  // Reset charSpace avant rendu du footer (évite "1 / 2" en "1   /   2")
+  doc.setCharSpace?.(0);
+
   // Separator line
   doc.setDrawColor(...PDF_COLORS.border);
   doc.setLineWidth(0.3);
@@ -739,7 +748,29 @@ export function sanitizePdfText(input: string): string {
     .replace(/…/g, "...")
     .replace(/“|”/g, '"')
     .replace(/‘|’/g, "'")
-    .replace(/\u00A0/g, " ");  // NBSP → espace normale
+    // Normalisation de tous les espaces unicode exotiques vers une espace ASCII.
+    // En particulier U+202F (narrow NBSP) utilisé par Intl fr-FR comme séparateur
+    // de milliers, que WinAnsi ne gère pas → rendu cassé ("1 0 / 0 7 8 k g").
+    // Également U+00A0 (NBSP), U+2009 (thin space), U+2007 (figure space),
+    // U+2008 (punctuation space), U+2006, U+2005, U+2004, U+2003 (em), U+2002 (en).
+    .replace(/[\u00A0\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200A\u202F\u205F]/g, " ")
+    // CO₂, m² : les indices/exposants ne sont pas gérés en WinAnsi
+    .replace(/₂/g, "2")
+    .replace(/²/g, "\u00B2")
+    .replace(/³/g, "\u00B3")
+    // Guillemets français chevrons : OK en WinAnsi (\u00AB, \u00BB) — on laisse.
+    // Apostrophe typographique → apostrophe droite (déjà traitée plus haut).
+    // Tirets déjà traités.
+    ;
+}
+
+/**
+ * Helper : formate un nombre en locale fr-FR MAIS avec une espace ASCII
+ * comme séparateur de milliers, directement compatible avec jsPDF WinAnsi.
+ * À utiliser partout où le résultat sera rendu dans un PDF.
+ */
+export function formatNumberPdf(n: number, opts: Intl.NumberFormatOptions = {}): string {
+  return n.toLocaleString("fr-FR", opts).replace(/[\u00A0\u202F\u2009]/g, " ");
 }
 
 // Réinitialise l'état texte (certains plugins comme autoTable laissent
@@ -1582,15 +1613,15 @@ function drawStars(
 
 function formatEuro(n: number | undefined): string {
   if (n === undefined || n === null || !isFinite(n)) return "—";
-  return `${Math.round(n).toLocaleString("fr-FR")} EUR`;
+  return `${formatNumberPdf(Math.round(n))} \u20AC`;
 }
 function formatKwh(n: number | undefined): string {
   if (n === undefined || n === null || !isFinite(n)) return "—";
-  return `${Math.round(n).toLocaleString("fr-FR")} kWh/an`;
+  return `${formatNumberPdf(Math.round(n))} kWh/an`;
 }
 function formatCo2(n: number | undefined): string {
   if (n === undefined || n === null || !isFinite(n)) return "—";
-  return `${Math.round(n).toLocaleString("fr-FR")} kgCO2/an`;
+  return `${formatNumberPdf(Math.round(n))} kgCO\u00B2/an`;
 }
 
 /**
@@ -1607,6 +1638,10 @@ export function drawActionSheet(
   const pw           = doc.internal.pageSize.getWidth();
   const contentWidth = pw - margin * 2;
   const limitY       = PDF_LAYOUT.safeBottom;
+
+  // Reset charSpace : autoTable laisse parfois un charSpace non-nul
+  // qui étire l'interlettrage du texte suivant ("1 0 / 0 7 8 k g")
+  resetTextState(doc);
 
   // Hauteur estimée — si ça ne tient pas, saute de page
   const briefLines = action.brief
@@ -1657,10 +1692,10 @@ export function drawActionSheet(
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7);
   doc.setTextColor(...PDF_COLORS.bodyLight);
-  doc.text("HORIZON",         margin + 3,  y + 3.4);
-  doc.text("FAISABILITE",     margin + 48, y + 3.4);
-  doc.text("RESPONSABILITE",  margin + 93, y + 3.4);
-  doc.text("OPPORTUNITE",     pw - margin - 55, y + 3.4);
+  doc.text("HORIZON",          margin + 3,  y + 3.4);
+  doc.text("FAISABILITÉ",      margin + 48, y + 3.4);
+  doc.text("RESPONSABILITÉ",   margin + 93, y + 3.4);
+  doc.text("OPPORTUNITÉ",      pw - margin - 55, y + 3.4);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8);
@@ -1690,9 +1725,9 @@ export function drawActionSheet(
   const tileW = (contentWidth - 3 * 3) / 4;
   const tileH = 16;
   const tiles: Array<{ label: string; value: string; accent: [number, number, number] }> = [
-    { label: "Economies",     value: formatEuro(action.economiesEuro), accent: [34, 197, 94] },
-    { label: "Gain energie",  value: formatKwh(action.economiesKwh),   accent: [59, 130, 246] },
-    { label: "CO2 evite",     value: formatCo2(action.co2Evite),       accent: [14, 165, 233] },
+    { label: "Économies",      value: formatEuro(action.economiesEuro), accent: [34, 197, 94] },
+    { label: "Gain énergie",   value: formatKwh(action.economiesKwh),   accent: [59, 130, 246] },
+    { label: "CO\u00B2 évité", value: formatCo2(action.co2Evite),       accent: [14, 165, 233] },
     { label: "Retour invest.", value: action.tri ? `${action.tri.toFixed(1)} ans` : "—", accent: [245, 158, 11] },
   ];
   for (let i = 0; i < tiles.length; i++) {
@@ -1718,7 +1753,7 @@ export function drawActionSheet(
   const reste = action.coutTravaux !== undefined
     ? action.coutTravaux - (action.aides ?? 0)
     : undefined;
-  const costLine = `Cout travaux : ${formatEuro(action.coutTravaux)}   |   Aides mobilisables : ${formatEuro(action.aides)}   |   Reste a charge : ${formatEuro(reste)}`;
+  const costLine = `Coût travaux : ${formatEuro(action.coutTravaux)}   |   Aides mobilisables : ${formatEuro(action.aides)}   |   Reste à charge : ${formatEuro(reste)}`;
   doc.setFont("helvetica", "italic");
   doc.setFontSize(8);
   doc.setTextColor(...PDF_COLORS.body);
@@ -2065,7 +2100,7 @@ export function drawFactureBreakdown(
     doc.setFontSize(8.5);
     doc.setTextColor(...PDF_COLORS.heading);
     doc.text(
-      `${Math.round(total).toLocaleString("fr-FR")} EUR/an`,
+      `${formatNumberPdf(Math.round(total))} \u20AC/an`,
       margin + contentWidth, y + rowH / 2, { align: "right" },
     );
 
