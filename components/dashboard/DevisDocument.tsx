@@ -429,12 +429,13 @@ async function generatePDF(
     ];
   });
 
+  // Largeurs calibrées pour contentWidth ~160mm (margin 25). Désignation flexible.
   const colNumW = 12;
-  const colDesignW = 78;
-  const colUniteW = 18;
+  const colUniteW = 16;
   const colQteW = 18;
-  const colPuW = 22;
-  const colTotalW = contentWidth - colNumW - colDesignW - colUniteW - colQteW - colPuW;
+  const colPuW = 26;
+  const colTotalW = 30;
+  const colDesignW = contentWidth - colNumW - colUniteW - colQteW - colPuW - colTotalW;
 
   autoTable(doc, {
     startY: y,
