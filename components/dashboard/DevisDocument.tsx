@@ -397,7 +397,7 @@ async function generatePDF(
       doc.setCharSpace?.(0);
 
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(9.5);
+      doc.setFontSize(10);
       doc.setTextColor(...PDF_COLORS.heading);
       doc.text(cardWrapped[i], cx + 4, y + 10);
     }
@@ -442,8 +442,8 @@ async function generatePDF(
     body: lignesData,
     margin: { left: margin, right: margin },
     styles: {
-      fontSize: 9,
-      cellPadding: { top: 3.5, bottom: 3.5, left: 4, right: 4 },
+      fontSize: 9.5,
+      cellPadding: { top: 4, bottom: 4, left: 5, right: 5 },
       overflow: "linebreak",
       textColor: PDF_COLORS.body,
       lineColor: PDF_COLORS.border,
@@ -453,14 +453,14 @@ async function generatePDF(
       fillColor: PDF_COLORS.surface,
       textColor: PDF_COLORS.heading,
       fontStyle: "bold",
-      fontSize: 7.5,
-      cellPadding: { top: 3, bottom: 3, left: 4, right: 4 },
+      fontSize: 8,
+      cellPadding: { top: 4, bottom: 4, left: 5, right: 5 },
       lineColor: PDF_COLORS.border,
       lineWidth: 0.15,
     },
     alternateRowStyles: { fillColor: [252, 253, 254] as [number, number, number] },
     columnStyles: {
-      0: { cellWidth: colNumW, textColor: PDF_COLORS.bodyLight, fontSize: 8 },
+      0: { cellWidth: colNumW, textColor: PDF_COLORS.bodyLight, fontSize: 8.5 },
       1: { cellWidth: colDesignW, textColor: PDF_COLORS.heading },
       2: { cellWidth: colUniteW, halign: "center" },
       3: { cellWidth: colQteW, halign: "right" },
@@ -474,10 +474,10 @@ async function generatePDF(
 
   // ─── E. Bloc des totaux à droite ───────────────────────────
   checkPage(38);
-  const totalsW = 78;
+  const totalsW = 82;
   const totalsX = pageWidth - margin - totalsW;
   const rowH = 7;
-  const ttcH = 11;
+  const ttcH = 13;
   const totalsH = rowH * 2 + ttcH;
 
   doc.setDrawColor(...PDF_COLORS.border);
@@ -502,11 +502,11 @@ async function generatePDF(
   doc.roundedRect(totalsX, ttcY, totalsW, ttcH, 1.5, 1.5, "F");
   doc.rect(totalsX, ttcY, totalsW, 2, "F");
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
+  doc.setFontSize(9.5);
   doc.setTextColor(...PDF_COLORS.coverText);
-  doc.text("TOTAL TTC", totalsX + 5, ttcY + 7);
-  doc.setFontSize(13);
-  doc.text(fmtEur(totalTTC), totalsX + totalsW - 5, ttcY + 7.2, { align: "right" });
+  doc.text("TOTAL TTC", totalsX + 5, ttcY + 8);
+  doc.setFontSize(15);
+  doc.text(fmtEur(totalTTC), totalsX + totalsW - 5, ttcY + 8.4, { align: "right" });
 
   y += totalsH + PDF_LAYOUT.sectionGap;
   resetTextState(doc);

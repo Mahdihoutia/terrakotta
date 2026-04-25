@@ -31,12 +31,12 @@ export const PDF_COLORS = {
 } as const;
 
 export const PDF_LAYOUT = {
-  margin:        22,
+  margin:        28,
   topMargin:     26,
   footerY:       282,
   safeBottom:    270,   // contenu doit rester au-dessus — laisse 12mm de respiration jusqu'au footer
   headerHeight:  40,
-  sectionGap:    10,
+  sectionGap:    12,
   lineHeight:    5,
 } as const;
 

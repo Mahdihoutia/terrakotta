@@ -89,22 +89,30 @@ async function generateDevisPDF(devis: DevisDetail) {
   const { default: jsPDF } = await import("jspdf");
   const { default: autoTable } = await import("jspdf-autotable");
   const {
-    drawCoverPage,
-    drawSectionHeader,
     drawFooter,
     drawSignatureBlock,
-    getDevisTableConfig,
-    getTotalsTableConfig,
-    getDataTableConfig,
     needsPageBreak,
+    resetTextState,
+    sanitizePdfText,
+    formatNumberPdf,
+    formatDateFrPdf,
     PDF_LAYOUT,
     PDF_COLORS,
+    COMPANY,
   } = await import("@/lib/pdf-styles");
 
   const doc = new jsPDF("p", "mm", "a4");
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = PDF_LAYOUT.margin;
   const contentWidth = pageWidth - margin * 2;
+
+  // ─── Helpers locaux ───────────────────────
+  const fmtEur = (n: number) =>
+    `${formatNumberPdf(n, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+  const txt = (s: string | undefined | null) => sanitizePdfText((s ?? "").trim());
+  const has = (s: string | undefined | null) => !!(s && s.trim());
+
+  let y: number = PDF_LAYOUT.topMargin;
 
   function checkPage(needed: number) {
     if (needsPageBreak(y, needed)) {
@@ -117,91 +125,271 @@ async function generateDevisPDF(devis: DevisDetail) {
     ? `${devis.client.prenom} ${devis.client.nom}`
     : devis.client.nom;
 
-  // ─── Page 1 : Cover ──────────────────────────────────────
-  const infoRows: [string, string][] = [
-    ["Reference",       devis.numero],
-    ["Client",          clientName],
-    ["Objet",           devis.objet || ""],
-    ["Date d'emission", formatDate(devis.dateEmis)],
-    ["Date validite",   formatDate(devis.dateValide)],
-  ];
-  if (devis.projet) {
-    infoRows.push(["Projet", devis.projet.titre]);
+  // ─── A. EN-TÊTE ─ DEVIS prominent + bloc émetteur ─────────
+  resetTextState(doc);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(30);
+  doc.setTextColor(...PDF_COLORS.heading);
+  doc.text("DEVIS", margin, y + 9);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.5);
+  doc.setTextColor(...PDF_COLORS.bodyLight);
+  let metaY = y + 14;
+  doc.text(`N° ${txt(devis.numero)}`, margin, metaY);
+  metaY += 4;
+  if (devis.dateEmis) {
+    doc.text(`Émis le ${formatDateFrPdf(devis.dateEmis)}`, margin, metaY);
+    metaY += 4;
+  }
+  if (devis.dateValide) {
+    doc.text(`Valable jusqu'au ${formatDateFrPdf(devis.dateValide)}`, margin, metaY);
+    metaY += 4;
   }
 
-  drawCoverPage(doc, "Devis", devis.objet || "Devis", infoRows, devis.numero);
+  const emetteurNom = COMPANY.name;
+  const emetteurAdresse = COMPANY.address;
+  const emetteurTel = COMPANY.phone;
+  const emetteurEmail = COMPANY.email;
 
-  // ─── Page 2+ : Content ───────────────────────────────────
-  doc.addPage();
-  let y: number = PDF_LAYOUT.topMargin;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(...PDF_COLORS.heading);
+  doc.text(emetteurNom, pageWidth - margin, y + 5, { align: "right" });
 
-  // ─── Client info ─────────────────────────────────────────
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.5);
+  doc.setTextColor(...PDF_COLORS.bodyLight);
+  let emY = y + 10;
+  for (const line of [emetteurAdresse, emetteurTel, emetteurEmail].filter(Boolean)) {
+    doc.text(line, pageWidth - margin, emY, { align: "right" });
+    emY += 3.8;
+  }
+
+  y = Math.max(metaY, emY) + 4;
+
+  doc.setDrawColor(...PDF_COLORS.border);
+  doc.setLineWidth(0.3);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 7;
+
+  // ─── B. Émetteur / Destinataire en deux colonnes ─────────
+  const colW = (contentWidth - 8) / 2;
+  const colLeftX = margin;
+  const colRightX = margin + colW + 8;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7.5);
+  doc.setTextColor(...PDF_COLORS.bodyLight);
+  doc.setCharSpace?.(0.6);
+  doc.text("ÉMETTEUR", colLeftX, y);
+  doc.text("DESTINATAIRE", colRightX, y);
+  doc.setCharSpace?.(0);
+  y += 5;
+
+  let leftY = y;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(...PDF_COLORS.heading);
+  const emNomLines = doc.splitTextToSize(emetteurNom, colW) as string[];
+  doc.text(emNomLines, colLeftX, leftY);
+  leftY += emNomLines.length * 4.4;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(...PDF_COLORS.body);
+  for (const line of [emetteurAdresse, emetteurTel, emetteurEmail].filter(Boolean)) {
+    const wrapped = doc.splitTextToSize(line, colW) as string[];
+    doc.text(wrapped, colLeftX, leftY);
+    leftY += wrapped.length * 3.9;
+  }
+
+  let rightY = y;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(...PDF_COLORS.heading);
+  const clNomLines = doc.splitTextToSize(txt(clientName) || "Client", colW) as string[];
+  doc.text(clNomLines, colRightX, rightY);
+  rightY += clNomLines.length * 4.4;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(...PDF_COLORS.body);
+  const destLines = [
+    txt(devis.client.email),
+    txt(devis.client.telephone),
+  ].filter(Boolean);
+  for (const line of destLines) {
+    const wrapped = doc.splitTextToSize(line, colW) as string[];
+    doc.text(wrapped, colRightX, rightY);
+    rightY += wrapped.length * 3.9;
+  }
+
+  y = Math.max(leftY, rightY) + 6;
+
+  // ─── C. Micro-cartes : Objet / Projet / Validité ─────────
+  const cards: Array<{ label: string; value: string }> = [];
+  if (has(devis.objet)) cards.push({ label: "OBJET", value: txt(devis.objet) });
+  if (devis.projet?.titre) cards.push({ label: "PROJET LIÉ", value: txt(devis.projet.titre) });
+  if (devis.dateValide) cards.push({ label: "VALABLE JUSQU'AU", value: formatDateFrPdf(devis.dateValide) });
+
+  if (cards.length > 0) {
+    const cardCount = cards.length;
+    const gap = 4;
+    const cardW = (contentWidth - gap * (cardCount - 1)) / cardCount;
+    const cardWrapped: string[][] = cards.map((c) =>
+      doc.splitTextToSize(c.value, cardW - 8) as string[],
+    );
+    const maxLines = cardWrapped.reduce((m, w) => Math.max(m, w.length), 1);
+    const cardH = 9 + maxLines * 4.4;
+
+    checkPage(cardH + 4);
+    for (let i = 0; i < cardCount; i++) {
+      const cx = margin + i * (cardW + gap);
+      doc.setFillColor(...PDF_COLORS.surface);
+      doc.setDrawColor(...PDF_COLORS.border);
+      doc.setLineWidth(0.2);
+      doc.roundedRect(cx, y, cardW, cardH, 1.5, 1.5, "FD");
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7.5);
+      doc.setTextColor(...PDF_COLORS.bodyLight);
+      doc.setCharSpace?.(0.5);
+      doc.text(cards[i].label, cx + 4, y + 5);
+      doc.setCharSpace?.(0);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(...PDF_COLORS.heading);
+      doc.text(cardWrapped[i], cx + 4, y + 10);
+    }
+    y += cardH + 8;
+  }
+
+  // ─── D. Tableau des postes ───────────────────
   checkPage(30);
-  y = drawSectionHeader(doc, "Informations client", y);
 
-  const clientData: string[][] = [];
-  clientData.push(["Nom", clientName]);
-  if (devis.client.email) clientData.push(["Email", devis.client.email]);
-  if (devis.client.telephone) clientData.push(["Telephone", devis.client.telephone]);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(...PDF_COLORS.bodyLight);
+  doc.setCharSpace?.(0.6);
+  doc.text("POSTES DE TRAVAUX", margin, y);
+  doc.setCharSpace?.(0);
+  y += 3;
 
-  if (clientData.length > 0) {
-    autoTable(doc, getDataTableConfig(y, clientData, contentWidth));
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    y = (doc as any).lastAutoTable.finalY + PDF_LAYOUT.sectionGap;
-  }
-
-  // ─── Ligne items table ────────────────────────────────────
-  checkPage(40);
-  y = drawSectionHeader(doc, "Designation des travaux", y);
-
-  const lignesData = devis.lignes.map((l) => {
-    const totalHT = l.quantite * l.prixUnitHT;
+  const lignesData = devis.lignes.map((l, idx) => {
+    const lt = l.quantite * l.prixUnitHT;
     return [
-      l.designation || "",
-      l.unite || "",
-      l.quantite.toFixed(2),
-      `${l.prixUnitHT.toFixed(2)} \u20AC`,
-      `${totalHT.toFixed(2)} \u20AC`,
+      `#${String(idx + 1).padStart(2, "0")}`,
+      txt(l.designation) || "-",
+      txt(l.unite) || "-",
+      formatNumberPdf(l.quantite, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      fmtEur(l.prixUnitHT),
+      fmtEur(lt),
     ];
   });
 
-  autoTable(doc, getDevisTableConfig(
-    y,
-    [["Designation", "Unite", "Quantite", "P.U. HT", "Total HT"]],
-    lignesData,
-  ));
+  const colNumW = 12;
+  const colDesignW = 78;
+  const colUniteW = 18;
+  const colQteW = 18;
+  const colPuW = 22;
+  const colTotalW = contentWidth - colNumW - colDesignW - colUniteW - colQteW - colPuW;
+
+  autoTable(doc, {
+    startY: y,
+    head: [["#", "Désignation", "Unité", "Qté", "P.U. HT", "Total HT"]],
+    body: lignesData,
+    margin: { left: margin, right: margin },
+    styles: {
+      fontSize: 9.5,
+      cellPadding: { top: 4, bottom: 4, left: 5, right: 5 },
+      overflow: "linebreak",
+      textColor: PDF_COLORS.body,
+      lineColor: PDF_COLORS.border,
+      lineWidth: 0.15,
+    },
+    headStyles: {
+      fillColor: PDF_COLORS.surface,
+      textColor: PDF_COLORS.heading,
+      fontStyle: "bold",
+      fontSize: 8,
+      cellPadding: { top: 4, bottom: 4, left: 5, right: 5 },
+      lineColor: PDF_COLORS.border,
+      lineWidth: 0.15,
+    },
+    alternateRowStyles: { fillColor: [252, 253, 254] as [number, number, number] },
+    columnStyles: {
+      0: { cellWidth: colNumW, textColor: PDF_COLORS.bodyLight, fontSize: 8.5 },
+      1: { cellWidth: colDesignW, textColor: PDF_COLORS.heading },
+      2: { cellWidth: colUniteW, halign: "center" },
+      3: { cellWidth: colQteW, halign: "right" },
+      4: { cellWidth: colPuW, halign: "right" },
+      5: { cellWidth: colTotalW, halign: "right", fontStyle: "bold", textColor: PDF_COLORS.heading },
+    },
+  });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   y = (doc as any).lastAutoTable.finalY + 6;
+  resetTextState(doc);
 
-  // Totals
+  // ─── E. Bloc des totaux à droite ────────────────
+  checkPage(38);
   const totalHT = devis.montantHT;
   const tvaRate = devis.tauxTVA;
   const totalTVA = totalHT * (tvaRate / 100);
   const totalTTC = devis.montantTTC;
 
-  autoTable(doc, getTotalsTableConfig(
-    y,
-    [
-      ["Total HT", `${totalHT.toFixed(2)} \u20AC`],
-      [`TVA (${tvaRate}%)`, `${totalTVA.toFixed(2)} \u20AC`],
-      ["Total TTC", `${totalTTC.toFixed(2)} \u20AC`],
-    ],
-    contentWidth,
-    true,
-  ));
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  y = (doc as any).lastAutoTable.finalY + PDF_LAYOUT.sectionGap;
+  const totalsW = 82;
+  const totalsX = pageWidth - margin - totalsW;
+  const rowH = 7;
+  const ttcH = 13;
+  const totalsH = rowH * 2 + ttcH;
 
-  // ─── Signature ────────────────────────────────────────────
+  doc.setDrawColor(...PDF_COLORS.border);
+  doc.setLineWidth(0.2);
+  doc.setFillColor(...PDF_COLORS.surface);
+  doc.roundedRect(totalsX, y, totalsW, totalsH, 1.5, 1.5, "FD");
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(...PDF_COLORS.bodyLight);
+  doc.text("Total HT", totalsX + 5, y + 4.6);
+  doc.setTextColor(...PDF_COLORS.heading);
+  doc.text(fmtEur(totalHT), totalsX + totalsW - 5, y + 4.6, { align: "right" });
+
+  doc.setTextColor(...PDF_COLORS.bodyLight);
+  doc.text(
+    `TVA (${formatNumberPdf(tvaRate, { maximumFractionDigits: 1 })}%)`,
+    totalsX + 5,
+    y + 4.6 + rowH,
+  );
+  doc.setTextColor(...PDF_COLORS.heading);
+  doc.text(fmtEur(totalTVA), totalsX + totalsW - 5, y + 4.6 + rowH, { align: "right" });
+
+  const ttcY = y + rowH * 2;
+  doc.setFillColor(...PDF_COLORS.navy);
+  doc.roundedRect(totalsX, ttcY, totalsW, ttcH, 1.5, 1.5, "F");
+  doc.rect(totalsX, ttcY, totalsW, 2, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9.5);
+  doc.setTextColor(...PDF_COLORS.coverText);
+  doc.text("TOTAL TTC", totalsX + 5, ttcY + 8);
+  doc.setFontSize(15);
+  doc.text(fmtEur(totalTTC), totalsX + totalsW - 5, ttcY + 8.4, { align: "right" });
+
+  y += totalsH + PDF_LAYOUT.sectionGap;
+  resetTextState(doc);
+
+  // ─── F. Signature ────────────────────────
   checkPage(50);
   drawSignatureBlock(doc, y);
 
-  // ─── Footers (skip page 1 = dark cover) ──────────────────
+  // ─── G. Footers ──────────────────────────
   const totalPages = doc.getNumberOfPages();
-  const contentPages = totalPages - 1;
-  for (let i = 2; i <= totalPages; i++) {
+  for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
-    drawFooter(doc, "Devis", devis.numero, i - 1, contentPages);
+    drawFooter(doc, "Devis", devis.numero, i, totalPages);
   }
 
   const filename = `Devis_${devis.numero}_${new Date().toISOString().slice(0, 10)}.pdf`;
