@@ -202,23 +202,30 @@ async function generatePDF(
   const { default: jsPDF } = await import("jspdf");
   const { default: autoTable } = await import("jspdf-autotable");
   const {
-    drawSectionHeader,
     drawFooter,
     drawSignatureBlock,
     drawPhotoEntry,
-    getDevisTableConfig,
-    getTotalsTableConfig,
-    getDataTableConfig,
+    drawSectionHeader,
     needsPageBreak,
     resetTextState,
+    sanitizePdfText,
+    formatNumberPdf,
+    formatDateFrPdf,
     PDF_LAYOUT,
     PDF_COLORS,
+    COMPANY,
   } = await import("@/lib/pdf-styles");
 
   const doc = new jsPDF("p", "mm", "a4");
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = PDF_LAYOUT.margin;
   const contentWidth = pageWidth - margin * 2;
+
+  // ─── Helpers locaux ─────────────────────────────────────────
+  const fmtEur = (n: number) =>
+    `${formatNumberPdf(n, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+  const txt = (s: string | undefined | null) => sanitizePdfText((s ?? "").trim());
+  const has = (s: string | undefined | null) => !!(s && s.trim());
 
   function checkPage(needed: number) {
     if (needsPageBreak(y, needed)) {
@@ -227,219 +234,456 @@ async function generatePDF(
     }
   }
 
-  const reference = values.ref_devis || "Ref. non definie";
+  const reference = txt(values.ref_devis) || "DV-DRAFT";
+  const dateEmission = txt(values.date_emission);
+  const dateValidite = txt(values.date_validite);
 
-  // ─── Entête de document (remplace la page de garde) ─────
   let y: number = PDF_LAYOUT.topMargin;
 
-  // Bandeau bleu + wordmark
-  doc.setFillColor(...PDF_COLORS.blue);
-  doc.rect(0, 0, pageWidth, 3, "F");
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.setTextColor(...PDF_COLORS.heading);
-  doc.text("KILOWATER", margin, y);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(...PDF_COLORS.bodyLight);
-  doc.text("Bureau d'étude en rénovation énergétique", margin, y + 4.5);
-
-  // Type + référence à droite
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
-  doc.setTextColor(...PDF_COLORS.blue);
-  doc.text("DEVIS", pageWidth - margin, y, { align: "right" });
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(...PDF_COLORS.bodyLight);
-  doc.text(`Ref. ${reference}`, pageWidth - margin, y + 4.5, { align: "right" });
-
-  y += 10;
-  doc.setDrawColor(...PDF_COLORS.border);
-  doc.setLineWidth(0.3);
-  doc.line(margin, y, pageWidth - margin, y);
-  y += 8;
-
-  // Bloc info compact (client / dates)
-  const infoRows: [string, string][] = [
-    ["Client",          values.client_nom      || "—"],
-    ["Adresse chantier",values.adresse_chantier || values.client_adresse || "—"],
-    ["Date d'emission", values.date_emission    || "—"],
-    ["Date validite",   values.date_validite    || "—"],
-    ["Delai execution", values.delai_execution  || "—"],
-    ["Objet",           values.objet            || "Travaux de renovation energetique"],
-  ].filter(([, v]) => v && v !== "—") as [string, string][];
-
-  doc.setFontSize(9);
-  for (const [label, val] of infoRows) {
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(...PDF_COLORS.bodyLight);
-    doc.text(label, margin, y);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...PDF_COLORS.heading);
-    const wrapped = doc.splitTextToSize(val, contentWidth - 55) as string[];
-    doc.text(wrapped, margin + 55, y);
-    y += Math.max(5, wrapped.length * 4.5);
-  }
-  y += 6;
-
-  // ─── Ligne items table ────────────────────────────────────
-  checkPage(40);
-  y = drawSectionHeader(doc, "Designation des travaux", y);
-
-  const lignesData = lignes.map((l) => {
-    const qty = parseFloat(l.quantite) || 0;
-    const prix = parseFloat(l.prixUnitaire) || 0;
-    const totalHT = qty * prix;
-    return [
-      l.designation || "—",
-      l.unite || "—",
-      qty.toFixed(2),
-      `${prix.toFixed(2)} \u20AC`,
-      `${totalHT.toFixed(2)} \u20AC`,
-    ];
-  });
-
-  // Totals calculation
-  const totalHT = lignes.reduce((sum, l) => {
-    return sum + (parseFloat(l.quantite) || 0) * (parseFloat(l.prixUnitaire) || 0);
-  }, 0);
-
-  const tvaRate = values.tva_applicable?.includes("5,5") ? 5.5
-    : values.tva_applicable?.includes("10%") ? 10
+  // ─── Totaux préparés ───────────────────────────────────────
+  const totalHT = lignes.reduce(
+    (sum, l) => sum + (parseFloat(l.quantite) || 0) * (parseFloat(l.prixUnitaire) || 0),
+    0,
+  );
+  const tvaRate = values.tva_applicable?.includes("5,5")
+    ? 5.5
+    : values.tva_applicable?.includes("10%")
+    ? 10
     : 20;
   const totalTVA = totalHT * (tvaRate / 100);
   const totalTTC = totalHT + totalTVA;
 
-  autoTable(doc, getDevisTableConfig(
-    y,
-    [["Designation", "Unite", "Quantite", "P.U. HT", "Total HT"]],
-    lignesData,
-  ));
+  // ─── A. EN-TÊTE — DEVIS prominent + bloc émetteur ─────────
+  resetTextState(doc);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(30);
+  doc.setTextColor(...PDF_COLORS.heading);
+  doc.text("DEVIS", margin, y + 9);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(...PDF_COLORS.bodyLight);
+  let metaY = y + 14;
+  doc.text(`N° ${reference}`, margin, metaY);
+  metaY += 4;
+  if (dateEmission) {
+    doc.text(`Émis le ${formatDateFrPdf(dateEmission)}`, margin, metaY);
+    metaY += 4;
+  }
+  if (dateValidite) {
+    doc.text(`Valable jusqu'au ${formatDateFrPdf(dateValidite)}`, margin, metaY);
+    metaY += 4;
+  }
+
+  const emetteurNom = txt(values.entreprise_nom) || COMPANY.name;
+  const emetteurAdresse = txt(values.entreprise_adresse) || COMPANY.address;
+  const emetteurTel = txt(values.entreprise_telephone) || COMPANY.phone;
+  const emetteurEmail = txt(values.entreprise_email) || COMPANY.email;
+  const emetteurSiretRge = [
+    has(values.entreprise_siret) ? `SIRET ${txt(values.entreprise_siret)}` : "",
+    has(values.entreprise_rge) ? `RGE ${txt(values.entreprise_rge)}` : "",
+  ]
+    .filter(Boolean)
+    .join("  ·  ");
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(...PDF_COLORS.heading);
+  doc.text(emetteurNom, pageWidth - margin, y + 5, { align: "right" });
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.5);
+  doc.setTextColor(...PDF_COLORS.bodyLight);
+  let emY = y + 10;
+  if (emetteurAdresse) { doc.text(emetteurAdresse, pageWidth - margin, emY, { align: "right" }); emY += 3.8; }
+  if (emetteurTel) { doc.text(emetteurTel, pageWidth - margin, emY, { align: "right" }); emY += 3.8; }
+  if (emetteurEmail) { doc.text(emetteurEmail, pageWidth - margin, emY, { align: "right" }); emY += 3.8; }
+  if (emetteurSiretRge) { doc.text(emetteurSiretRge, pageWidth - margin, emY, { align: "right" }); emY += 3.8; }
+
+  y = Math.max(metaY, emY) + 4;
+
+  doc.setDrawColor(...PDF_COLORS.border);
+  doc.setLineWidth(0.3);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 7;
+
+  // ─── B. From / Bill to en deux colonnes ───────────────────
+  const colW = (contentWidth - 8) / 2;
+  const colLeftX = margin;
+  const colRightX = margin + colW + 8;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7.5);
+  doc.setTextColor(...PDF_COLORS.bodyLight);
+  doc.setCharSpace?.(0.6);
+  doc.text("ÉMETTEUR", colLeftX, y);
+  doc.text("DESTINATAIRE", colRightX, y);
+  doc.setCharSpace?.(0);
+  y += 5;
+
+  let leftY = y;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(...PDF_COLORS.heading);
+  const emNomLines = doc.splitTextToSize(emetteurNom, colW) as string[];
+  doc.text(emNomLines, colLeftX, leftY);
+  leftY += emNomLines.length * 4.4;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.5);
+  doc.setTextColor(...PDF_COLORS.body);
+  for (const line of [emetteurAdresse, emetteurTel, emetteurEmail, emetteurSiretRge].filter(Boolean)) {
+    const wrapped = doc.splitTextToSize(line, colW) as string[];
+    doc.text(wrapped, colLeftX, leftY);
+    leftY += wrapped.length * 3.8;
+  }
+
+  let rightY = y;
+  const clientNom = txt(values.client_nom) || "Client non renseigne";
+  const clientType = txt(values.client_type);
+  const clientAdresse = txt(values.client_adresse);
+  const clientTel = txt(values.client_telephone);
+  const clientEmail = txt(values.client_email);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(...PDF_COLORS.heading);
+  const clNomLines = doc.splitTextToSize(clientNom, colW) as string[];
+  doc.text(clNomLines, colRightX, rightY);
+  rightY += clNomLines.length * 4.4;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.5);
+  doc.setTextColor(...PDF_COLORS.body);
+  for (const line of [clientType, clientAdresse, clientTel, clientEmail].filter(Boolean)) {
+    const wrapped = doc.splitTextToSize(line, colW) as string[];
+    doc.text(wrapped, colRightX, rightY);
+    rightY += wrapped.length * 3.8;
+  }
+
+  y = Math.max(leftY, rightY) + 6;
+
+  // ─── C. Trois micro-cartes : Objet / Chantier / Délai ─────
+  const cards: Array<{ label: string; value: string }> = [];
+  if (has(values.objet)) cards.push({ label: "OBJET", value: txt(values.objet) });
+  const chantier = txt(values.adresse_chantier) || clientAdresse;
+  if (chantier) cards.push({ label: "ADRESSE CHANTIER", value: chantier });
+  if (has(values.delai_execution)) cards.push({ label: "DÉLAI D'EXÉCUTION", value: txt(values.delai_execution) });
+
+  if (cards.length > 0) {
+    const cardCount = cards.length;
+    const gap = 4;
+    const cardW = (contentWidth - gap * (cardCount - 1)) / cardCount;
+    const cardWrapped: string[][] = cards.map((c) =>
+      doc.splitTextToSize(c.value, cardW - 8) as string[],
+    );
+    const maxLines = cardWrapped.reduce((m, w) => Math.max(m, w.length), 1);
+    const cardH = 9 + maxLines * 4.2;
+
+    checkPage(cardH + 4);
+    for (let i = 0; i < cardCount; i++) {
+      const cx = margin + i * (cardW + gap);
+      doc.setFillColor(...PDF_COLORS.surface);
+      doc.setDrawColor(...PDF_COLORS.border);
+      doc.setLineWidth(0.2);
+      doc.roundedRect(cx, y, cardW, cardH, 1.5, 1.5, "FD");
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7);
+      doc.setTextColor(...PDF_COLORS.bodyLight);
+      doc.setCharSpace?.(0.5);
+      doc.text(cards[i].label, cx + 4, y + 5);
+      doc.setCharSpace?.(0);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9.5);
+      doc.setTextColor(...PDF_COLORS.heading);
+      doc.text(cardWrapped[i], cx + 4, y + 10);
+    }
+    y += cardH + 8;
+  }
+
+  // ─── D. Tableau des postes ─────────────────────────────────
+  checkPage(30);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(...PDF_COLORS.bodyLight);
+  doc.setCharSpace?.(0.6);
+  doc.text("POSTES DE TRAVAUX", margin, y);
+  doc.setCharSpace?.(0);
+  y += 3;
+
+  const lignesData = lignes.map((l, idx) => {
+    const qty = parseFloat(l.quantite) || 0;
+    const prix = parseFloat(l.prixUnitaire) || 0;
+    const lt = qty * prix;
+    return [
+      `#${String(idx + 1).padStart(2, "0")}`,
+      txt(l.designation) || "-",
+      txt(l.unite) || "-",
+      formatNumberPdf(qty, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      fmtEur(prix),
+      fmtEur(lt),
+    ];
+  });
+
+  const colNumW = 12;
+  const colDesignW = 78;
+  const colUniteW = 18;
+  const colQteW = 18;
+  const colPuW = 22;
+  const colTotalW = contentWidth - colNumW - colDesignW - colUniteW - colQteW - colPuW;
+
+  autoTable(doc, {
+    startY: y,
+    head: [["#", "Désignation", "Unité", "Qté", "P.U. HT", "Total HT"]],
+    body: lignesData,
+    margin: { left: margin, right: margin },
+    styles: {
+      fontSize: 9,
+      cellPadding: { top: 3.5, bottom: 3.5, left: 4, right: 4 },
+      overflow: "linebreak",
+      textColor: PDF_COLORS.body,
+      lineColor: PDF_COLORS.border,
+      lineWidth: 0.15,
+    },
+    headStyles: {
+      fillColor: PDF_COLORS.surface,
+      textColor: PDF_COLORS.heading,
+      fontStyle: "bold",
+      fontSize: 7.5,
+      cellPadding: { top: 3, bottom: 3, left: 4, right: 4 },
+      lineColor: PDF_COLORS.border,
+      lineWidth: 0.15,
+    },
+    alternateRowStyles: { fillColor: [252, 253, 254] as [number, number, number] },
+    columnStyles: {
+      0: { cellWidth: colNumW, textColor: PDF_COLORS.bodyLight, fontSize: 8 },
+      1: { cellWidth: colDesignW, textColor: PDF_COLORS.heading },
+      2: { cellWidth: colUniteW, halign: "center" },
+      3: { cellWidth: colQteW, halign: "right" },
+      4: { cellWidth: colPuW, halign: "right" },
+      5: { cellWidth: colTotalW, halign: "right", fontStyle: "bold", textColor: PDF_COLORS.heading },
+    },
+  });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   y = (doc as any).lastAutoTable.finalY + 6;
   resetTextState(doc);
 
-  // Totals box
-  autoTable(doc, getTotalsTableConfig(
-    y,
-    [
-      ["Total HT", `${totalHT.toFixed(2)} \u20AC`],
-      [`TVA (${tvaRate}%)`, `${totalTVA.toFixed(2)} \u20AC`],
-      ["Total TTC", `${totalTTC.toFixed(2)} \u20AC`],
-    ],
-    contentWidth,
-    true,
-  ));
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  y = (doc as any).lastAutoTable.finalY + PDF_LAYOUT.sectionGap;
+  // ─── E. Bloc des totaux à droite ───────────────────────────
+  checkPage(38);
+  const totalsW = 78;
+  const totalsX = pageWidth - margin - totalsW;
+  const rowH = 7;
+  const ttcH = 11;
+  const totalsH = rowH * 2 + ttcH;
+
+  doc.setDrawColor(...PDF_COLORS.border);
+  doc.setLineWidth(0.2);
+  doc.setFillColor(...PDF_COLORS.surface);
+  doc.roundedRect(totalsX, y, totalsW, totalsH, 1.5, 1.5, "FD");
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(...PDF_COLORS.bodyLight);
+  doc.text("Total HT", totalsX + 5, y + 4.6);
+  doc.setTextColor(...PDF_COLORS.heading);
+  doc.text(fmtEur(totalHT), totalsX + totalsW - 5, y + 4.6, { align: "right" });
+
+  doc.setTextColor(...PDF_COLORS.bodyLight);
+  doc.text(`TVA (${formatNumberPdf(tvaRate, { maximumFractionDigits: 1 })}%)`, totalsX + 5, y + 4.6 + rowH);
+  doc.setTextColor(...PDF_COLORS.heading);
+  doc.text(fmtEur(totalTVA), totalsX + totalsW - 5, y + 4.6 + rowH, { align: "right" });
+
+  const ttcY = y + rowH * 2;
+  doc.setFillColor(...PDF_COLORS.navy);
+  doc.roundedRect(totalsX, ttcY, totalsW, ttcH, 1.5, 1.5, "F");
+  doc.rect(totalsX, ttcY, totalsW, 2, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(...PDF_COLORS.coverText);
+  doc.text("TOTAL TTC", totalsX + 5, ttcY + 7);
+  doc.setFontSize(13);
+  doc.text(fmtEur(totalTTC), totalsX + totalsW - 5, ttcY + 7.2, { align: "right" });
+
+  y += totalsH + PDF_LAYOUT.sectionGap;
   resetTextState(doc);
 
-  // ─── Aides section ────────────────────────────────────────
-  const aidesData: string[][] = [];
-  if (values.maprimereno && values.maprimereno !== "Non applicable") {
-    aidesData.push(["MaPrimeRénov'", `${values.maprimereno}${values.maprimereno_montant ? ` — ${values.maprimereno_montant} \u20AC` : ""}`]);
+  // ─── F. Bloc aides financières (carte verte) ───────────────
+  const aidesItems: string[] = [];
+  if (values.maprimereno && values.maprimereno !== "Non applicable" && has(values.maprimereno)) {
+    const mt = has(values.maprimereno_montant)
+      ? ` — ${fmtEur(parseFloat(values.maprimereno_montant) || 0)}`
+      : "";
+    aidesItems.push(`MaPrimeRénov' (${txt(values.maprimereno)})${mt}`);
   }
-  if (values.cee_montant && parseFloat(values.cee_montant) > 0) {
-    aidesData.push(["Prime CEE", `${values.cee_montant} \u20AC`]);
+  if (has(values.cee_montant) && parseFloat(values.cee_montant) > 0) {
+    aidesItems.push(`Prime CEE — ${fmtEur(parseFloat(values.cee_montant) || 0)}`);
   }
-  if (values.autres_aides) {
-    aidesData.push(["Autres aides", values.autres_aides]);
+  if (has(values.autres_aides)) {
+    aidesItems.push(`Autres aides : ${txt(values.autres_aides)}`);
   }
-  if (values.reste_a_charge && parseFloat(values.reste_a_charge) > 0) {
-    aidesData.push(["Reste à charge estimé", `${values.reste_a_charge} \u20AC`]);
-  }
+  const resteACharge = has(values.reste_a_charge) ? parseFloat(values.reste_a_charge) || 0 : null;
 
-  if (aidesData.length > 0) {
-    checkPage(30);
-    y = drawSectionHeader(doc, "Aides financières mobilisables", y);
-    autoTable(doc, getDataTableConfig(y, aidesData, contentWidth));
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    y = (doc as any).lastAutoTable.finalY + PDF_LAYOUT.sectionGap;
+  if (aidesItems.length > 0 || resteACharge !== null) {
+    const padX = 7;
+    const padY = 6;
+    const titleH = 5;
+    const itemH = 4.6;
+    const resteH = resteACharge !== null ? 9 : 0;
+    const noteLines = has(values.notes_aides)
+      ? (doc.splitTextToSize(txt(values.notes_aides), contentWidth - padX * 2) as string[])
+      : [];
+    const noteH = noteLines.length > 0 ? 3 + noteLines.length * 3.6 : 0;
+    const boxH = padY * 2 + titleH + 2 + aidesItems.length * itemH + resteH + noteH;
+
+    checkPage(boxH + 4);
+
+    doc.setFillColor(...PDF_COLORS.successSoft);
+    doc.setDrawColor(...PDF_COLORS.successBorder);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(margin, y, contentWidth, boxH, 2, 2, "FD");
+
+    doc.setFillColor(...PDF_COLORS.success);
+    doc.rect(margin, y, 1.5, boxH, "F");
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(...PDF_COLORS.success);
+    doc.text("AIDES FINANCIÈRES MOBILISABLES", margin + padX, y + padY + 2);
+
+    let itY = y + padY + titleH + 4;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(...PDF_COLORS.heading);
+    for (const item of aidesItems) {
+      doc.setFillColor(...PDF_COLORS.success);
+      doc.circle(margin + padX + 1, itY - 1.3, 0.7, "F");
+      doc.text(item, margin + padX + 4, itY);
+      itY += itemH;
+    }
+
+    if (resteACharge !== null) {
+      itY += 1;
+      doc.setDrawColor(...PDF_COLORS.successBorder);
+      doc.setLineWidth(0.2);
+      doc.line(margin + padX, itY - 1, margin + contentWidth - padX, itY - 1);
+      itY += 4;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(...PDF_COLORS.heading);
+      doc.text("Reste à charge estimé", margin + padX, itY);
+      doc.setTextColor(...PDF_COLORS.success);
+      doc.text(fmtEur(resteACharge), margin + contentWidth - padX, itY, { align: "right" });
+      itY += 4;
+    }
+
+    if (noteLines.length > 0) {
+      itY += 2;
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(8);
+      doc.setTextColor(...PDF_COLORS.body);
+      doc.text(noteLines, margin + padX, itY);
+    }
+
+    y += boxH + PDF_LAYOUT.sectionGap;
     resetTextState(doc);
   }
 
-  // ─── Photos des premières sections (entreprise, client, devis) ─
-  for (let sIdx = 0; sIdx < 3; sIdx++) {
-    const photos = sectionPhotos[sIdx] || [];
-    if (photos.length > 0) {
+  // ─── G. Conditions / mentions légales ─────────────────────
+  const conditionsParts: Array<{ label: string; value: string }> = [];
+  if (has(values.modalite_paiement)) conditionsParts.push({ label: "Modalités de paiement", value: txt(values.modalite_paiement) });
+  if (has(values.garantie)) conditionsParts.push({ label: "Garantie", value: txt(values.garantie) });
+  if (has(values.assurance_rc)) conditionsParts.push({ label: "Assurance RC Pro", value: txt(values.assurance_rc) });
+  if (has(values.tva_applicable)) conditionsParts.push({ label: "TVA applicable", value: txt(values.tva_applicable) });
+
+  if (conditionsParts.length > 0 || has(values.observations)) {
+    checkPage(20);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(...PDF_COLORS.bodyLight);
+    doc.setCharSpace?.(0.6);
+    doc.text("CONDITIONS & MENTIONS LÉGALES", margin, y);
+    doc.setCharSpace?.(0);
+    y += 5;
+
+    doc.setFontSize(8);
+    for (const part of conditionsParts) {
+      checkPage(6);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...PDF_COLORS.heading);
+      const labelStr = `${part.label} `;
+      doc.text(labelStr, margin, y);
+      const labelW = doc.getTextWidth(labelStr);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...PDF_COLORS.body);
+      const firstLineMaxW = contentWidth - labelW;
+      const valueWrapped = doc.splitTextToSize(`— ${part.value}`, firstLineMaxW) as string[];
+      doc.text(valueWrapped[0], margin + labelW, y);
+      y += 4.2;
+      for (let i = 1; i < valueWrapped.length; i++) {
+        checkPage(5);
+        doc.text(valueWrapped[i], margin, y);
+        y += 3.8;
+      }
+    }
+
+    if (has(values.observations)) {
+      y += 2;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.setTextColor(...PDF_COLORS.heading);
+      doc.text("Observations", margin, y);
+      y += 4;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(...PDF_COLORS.body);
+      const obsLines = doc.splitTextToSize(txt(values.observations), contentWidth) as string[];
+      for (const line of obsLines) {
+        checkPage(5);
+        doc.text(line, margin, y);
+        y += 3.8;
+      }
+    }
+    y += PDF_LAYOUT.sectionGap;
+  }
+
+  // ─── Annexe photos ────────────────────────────────────────
+  const allPhotoSections = Object.entries(sectionPhotos)
+    .map(([k, v]) => ({ idx: Number(k), photos: v }))
+    .filter((s) => s.photos && s.photos.length > 0);
+
+  if (allPhotoSections.length > 0) {
+    checkPage(20);
+    y = drawSectionHeader(doc, "Annexe photographique", y);
+    for (const { photos } of allPhotoSections) {
       for (let i = 0; i < photos.length; i++) {
         checkPage(85);
         y = await drawPhotoEntry(doc, i, photos[i].preview, photos[i].categorie, photos[i].legende, y);
       }
-      y += PDF_LAYOUT.sectionGap;
     }
   }
 
-  // ─── Remaining sections (conditions, aides) with photos ───
-  for (let sIdx = 3; sIdx < sections.length; sIdx++) {
-    const section = sections[sIdx];
-    const tableData: string[][] = [];
-    for (const field of section.fields) {
-      const val = values[field.id] || "—";
-      if (val !== "—") {
-        const label = field.unit ? `${field.label} (${field.unit})` : field.label;
-        tableData.push([label, val]);
-      }
-    }
-
-    if (tableData.length === 0 && !(sectionPhotos[sIdx]?.length > 0)) continue;
-
-    checkPage(30);
-    y = drawSectionHeader(doc, section.titre, y);
-
-    if (tableData.length > 0) {
-      autoTable(doc, {
-        startY: y,
-        body: tableData,
-        margin: { left: margin, right: margin },
-        styles: {
-          fontSize: 9,
-          cellPadding: { top: 2, bottom: 2, left: 3, right: 3 },
-          overflow: "linebreak",
-          textColor: PDF_COLORS.body,
-          lineColor: PDF_COLORS.border,
-          lineWidth: 0.2,
-        },
-        columnStyles: {
-          0: { fontStyle: "bold", cellWidth: 60, textColor: PDF_COLORS.heading },
-          1: { cellWidth: contentWidth - 60 },
-        },
-        alternateRowStyles: { fillColor: PDF_COLORS.background },
-      });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      y = (doc as any).lastAutoTable.finalY + 6;
-      resetTextState(doc);
-    }
-
-    // Photos de cette section
-    const photos = sectionPhotos[sIdx] || [];
-    if (photos.length > 0) {
-      for (let i = 0; i < photos.length; i++) {
-        checkPage(85);
-        y = await drawPhotoEntry(doc, i, photos[i].preview, photos[i].categorie, photos[i].legende, y);
-      }
-    }
-
-    y += PDF_LAYOUT.sectionGap - 6;
-  }
-
-  // ─── Signature ────────────────────────────────────────────
+  // ─── H. Signature ─────────────────────────────────────────
   checkPage(50);
   drawSignatureBlock(doc, y);
 
-  // ─── Footers (toutes les pages, plus de cover) ───────────
+  // ─── I. Footers ───────────────────────────────────────────
   const totalPages = doc.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
     drawFooter(doc, "Devis", reference, i, totalPages);
   }
 
+  // Conserve `sections` pour compat de signature externe
+  void sections;
+
   const filename = `Devis_${values.ref_devis || "DRAFT"}_${new Date().toISOString().slice(0, 10)}.pdf`;
   doc.save(filename);
 }
+
 
 // ─── Component ──────────────────────────────────────────────────
 

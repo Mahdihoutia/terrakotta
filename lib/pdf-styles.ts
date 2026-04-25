@@ -24,6 +24,10 @@ export const PDF_COLORS = {
   placeholder: [195, 185, 175] as [number, number, number],
   coverText:   [245, 250, 255] as [number, number, number],  // near-white on dark
   coverMuted:  [148, 163, 184] as [number, number, number],  // #94A3B8
+  // Accents sémantiques (utilisés notamment dans le devis)
+  success:     [22,  163, 74]  as [number, number, number],  // #16A34A — vert sapin sobre
+  successSoft: [240, 253, 244] as [number, number, number],  // #F0FDF4 — fond carte aides
+  successBorder:[187, 247, 208]as [number, number, number],  // #BBF7D0
 } as const;
 
 export const PDF_LAYOUT = {
