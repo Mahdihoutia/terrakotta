@@ -58,6 +58,54 @@ export interface Devis {
 export interface DevisDetail extends Omit<Devis, "client" | "lignesCount"> {
   client: DevisClientDetail
   lignes: LigneDevis[]
+  factureGeneree: { id: string; numero: string } | null
+}
+
+export type FactureStatut =
+  | "BROUILLON"
+  | "EMISE"
+  | "PAYEE_PARTIELLEMENT"
+  | "PAYEE"
+  | "EN_RETARD"
+  | "ANNULEE"
+
+export interface LigneFacture {
+  id?: string
+  designation: string
+  unite: string
+  quantite: number
+  prixUnitHT: number
+  tauxTVA: number
+  ordre: number
+}
+
+export interface Facture {
+  id: string
+  numero: string
+  objet: string | null
+  statut: FactureStatut
+  montantHT: number
+  tauxTVA: number
+  montantTTC: number
+  dateEmis: string
+  dateEcheance: string | null
+  datePaiement: string | null
+  modePaiement: string | null
+  reference: string | null
+  clientId: string
+  client: DevisClient
+  projetId: string | null
+  projet: DevisProjet | null
+  devisOrigineId: string | null
+  devisOrigine: { id: string; numero: string } | null
+  lignesCount: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface FactureDetail extends Omit<Facture, "client" | "lignesCount"> {
+  client: DevisClientDetail
+  lignes: LigneFacture[]
 }
 
 export type AgentStatus = "ACTIF" | "EN_PAUSE" | "ERREUR" | "INACTIF"

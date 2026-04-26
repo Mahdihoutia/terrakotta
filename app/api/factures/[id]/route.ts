@@ -1,18 +1,17 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { z } from "zod";
 import {
   DESTRUCTIVE_ROLES,
   MUTATION_ROLES,
   ensureRole,
 } from "@/lib/auth-helpers";
+import { updateFactureSchema } from "@/lib/validations/facture";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
-/** Serialize a detailed Devis row for JSON responses */
-function serializeDevisDetail(d: {
+interface FactureDetailRow {
   id: string;
   numero: string;
   objet: string | null;
@@ -20,7 +19,10 @@ function serializeDevisDetail(d: {
   montantHT: unknown;
   tauxTVA: unknown;
   dateEmis: Date;
-  dateValide: Date | null;
+  dateEcheance: Date | null;
+  datePaiement: Date | null;
+  modePaiement: string | null;
+  reference: string | null;
   clientId: string;
   client: {
     id: string;
@@ -32,7 +34,8 @@ function serializeDevisDetail(d: {
   };
   projetId: string | null;
   projet: { id: string; titre: string; statut: string } | null;
-  factureGeneree: { id: string; numero: string } | null;
+  devisOrigineId: string | null;
+  devisOrigine: { id: string; numero: string } | null;
   lignes: {
     id: string;
     designation: string;
@@ -44,26 +47,32 @@ function serializeDevisDetail(d: {
   }[];
   createdAt: Date;
   updatedAt: Date;
-}) {
-  const montantHT = Number(d.montantHT);
-  const tauxTVA = Number(d.tauxTVA);
+}
+
+function serializeFactureDetail(f: FactureDetailRow) {
+  const montantHT = Number(f.montantHT);
+  const tauxTVA = Number(f.tauxTVA);
 
   return {
-    id: d.id,
-    numero: d.numero,
-    objet: d.objet,
-    statut: d.statut,
+    id: f.id,
+    numero: f.numero,
+    objet: f.objet,
+    statut: f.statut,
     montantHT,
     tauxTVA,
     montantTTC: montantHT * (1 + tauxTVA / 100),
-    dateEmis: d.dateEmis.toISOString(),
-    dateValide: d.dateValide ? d.dateValide.toISOString() : null,
-    clientId: d.clientId,
-    client: d.client,
-    projetId: d.projetId,
-    projet: d.projet,
-    factureGeneree: d.factureGeneree,
-    lignes: d.lignes.map((l) => ({
+    dateEmis: f.dateEmis.toISOString(),
+    dateEcheance: f.dateEcheance ? f.dateEcheance.toISOString() : null,
+    datePaiement: f.datePaiement ? f.datePaiement.toISOString() : null,
+    modePaiement: f.modePaiement,
+    reference: f.reference,
+    clientId: f.clientId,
+    client: f.client,
+    projetId: f.projetId,
+    projet: f.projet,
+    devisOrigineId: f.devisOrigineId,
+    devisOrigine: f.devisOrigine,
+    lignes: f.lignes.map((l) => ({
       id: l.id,
       designation: l.designation,
       unite: l.unite,
@@ -72,8 +81,8 @@ function serializeDevisDetail(d: {
       tauxTVA: Number(l.tauxTVA),
       ordre: l.ordre,
     })),
-    createdAt: d.createdAt.toISOString(),
-    updatedAt: d.updatedAt.toISOString(),
+    createdAt: f.createdAt.toISOString(),
+    updatedAt: f.updatedAt.toISOString(),
   };
 }
 
@@ -89,7 +98,7 @@ const includeDetailRelations = {
     },
   },
   projet: { select: { id: true, titre: true, statut: true } },
-  factureGeneree: { select: { id: true, numero: true } },
+  devisOrigine: { select: { id: true, numero: true } },
   lignes: {
     select: {
       id: true,
@@ -104,42 +113,21 @@ const includeDetailRelations = {
   },
 };
 
-/** GET /api/devis/[id] — Détail d'un devis avec relations complètes */
+/** GET /api/factures/[id] — Détail d'une facture. */
 export async function GET(_request: Request, context: RouteContext) {
   const { id } = await context.params;
-  const devis = await prisma.devis.findFirst({
+  const facture = await prisma.facture.findFirst({
     where: { id, deletedAt: null },
     include: includeDetailRelations,
   });
 
-  if (!devis) {
-    return NextResponse.json({ error: "Devis introuvable" }, { status: 404 });
+  if (!facture) {
+    return NextResponse.json({ error: "Facture introuvable" }, { status: 404 });
   }
-
-  return NextResponse.json(serializeDevisDetail(devis));
+  return NextResponse.json(serializeFactureDetail(facture));
 }
 
-const ligneSchema = z.object({
-  designation: z.string().min(1, "La désignation est requise"),
-  unite: z.string().default("U"),
-  quantite: z.number().default(1),
-  prixUnitHT: z.number().min(0, "Le prix unitaire doit être positif"),
-  tauxTVA: z.number().default(20),
-  ordre: z.number().int().default(0),
-});
-
-const updateDevisSchema = z.object({
-  objet: z.string().nullable().optional(),
-  montantHT: z.number().min(0).optional(),
-  tauxTVA: z.number().optional(),
-  statut: z.enum(["BROUILLON", "ENVOYE", "ACCEPTE", "REFUSE"]).optional(),
-  clientId: z.string().min(1).optional(),
-  projetId: z.string().nullable().optional(),
-  dateValide: z.string().datetime({ offset: true }).nullable().optional(),
-  lignes: z.array(ligneSchema).optional(),
-});
-
-/** PATCH /api/devis/[id] — Mettre à jour un devis */
+/** PATCH /api/factures/[id] — Mise à jour d'une facture. */
 export async function PATCH(request: Request, context: RouteContext) {
   const guard = await ensureRole(MUTATION_ROLES);
   if (guard) return guard;
@@ -151,8 +139,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   } catch {
     return NextResponse.json({ error: "JSON invalide" }, { status: 400 });
   }
-  const result = updateDevisSchema.safeParse(body);
-
+  const result = updateFactureSchema.safeParse(body);
   if (!result.success) {
     return NextResponse.json(
       { error: "ValidationError", issues: result.error.issues },
@@ -160,67 +147,53 @@ export async function PATCH(request: Request, context: RouteContext) {
     );
   }
 
-  // Vérifier que le devis n'est pas dans la corbeille
-  const existing = await prisma.devis.findFirst({
+  const existing = await prisma.facture.findFirst({
     where: { id, deletedAt: null },
     select: { id: true },
   });
   if (!existing) {
-    return NextResponse.json({ error: "Devis introuvable" }, { status: 404 });
+    return NextResponse.json({ error: "Facture introuvable" }, { status: 404 });
   }
 
   const { lignes, ...data } = result.data;
 
-  // If clientId is being changed, verify the new client exists
   if (data.clientId) {
-    const clientExists = await prisma.client.findUnique({
+    const ok = await prisma.client.findUnique({
       where: { id: data.clientId },
       select: { id: true },
     });
-    if (!clientExists) {
-      return NextResponse.json(
-        { error: "Client introuvable" },
-        { status: 400 }
-      );
+    if (!ok) {
+      return NextResponse.json({ error: "Client introuvable" }, { status: 400 });
     }
   }
-
-  // If projetId is being changed, verify the new projet exists
   if (data.projetId) {
-    const projetExists = await prisma.projet.findUnique({
+    const ok = await prisma.projet.findUnique({
       where: { id: data.projetId },
       select: { id: true },
     });
-    if (!projetExists) {
-      return NextResponse.json(
-        { error: "Projet introuvable" },
-        { status: 400 }
-      );
+    if (!ok) {
+      return NextResponse.json({ error: "Projet introuvable" }, { status: 400 });
     }
   }
 
-  // Build Prisma update data
   const prismaData: Record<string, unknown> = { ...data };
-  if (data.dateValide !== undefined) {
-    prismaData.dateValide = data.dateValide ? new Date(data.dateValide) : null;
+  if (data.dateEcheance !== undefined) {
+    prismaData.dateEcheance = data.dateEcheance ? new Date(data.dateEcheance) : null;
+  }
+  if (data.datePaiement !== undefined) {
+    prismaData.datePaiement = data.datePaiement ? new Date(data.datePaiement) : null;
   }
 
   try {
-    const devis = await prisma.$transaction(async (tx) => {
-      // Update devis fields
-      await tx.devis.update({
-        where: { id },
-        data: prismaData,
-      });
+    const facture = await prisma.$transaction(async (tx) => {
+      await tx.facture.update({ where: { id }, data: prismaData });
 
-      // Replace lignes if provided
       if (lignes !== undefined) {
-        await tx.ligneDevis.deleteMany({ where: { devisId: id } });
-
+        await tx.ligneFacture.deleteMany({ where: { factureId: id } });
         if (lignes.length > 0) {
-          await tx.ligneDevis.createMany({
+          await tx.ligneFacture.createMany({
             data: lignes.map((l, index) => ({
-              devisId: id,
+              factureId: id,
               designation: l.designation,
               unite: l.unite,
               quantite: l.quantite,
@@ -232,31 +205,31 @@ export async function PATCH(request: Request, context: RouteContext) {
         }
       }
 
-      return tx.devis.findUniqueOrThrow({
+      return tx.facture.findUniqueOrThrow({
         where: { id },
         include: includeDetailRelations,
       });
     });
 
-    return NextResponse.json(serializeDevisDetail(devis));
+    return NextResponse.json(serializeFactureDetail(facture));
   } catch {
-    return NextResponse.json({ error: "Devis introuvable" }, { status: 404 });
+    return NextResponse.json({ error: "Facture introuvable" }, { status: 404 });
   }
 }
 
-/** DELETE /api/devis/[id] — Soft delete (corbeille) */
+/** DELETE /api/factures/[id] — Soft delete (corbeille). */
 export async function DELETE(_request: Request, context: RouteContext) {
   const guard = await ensureRole(DESTRUCTIVE_ROLES);
   if (guard) return guard;
 
   const { id } = await context.params;
   try {
-    await prisma.devis.update({
+    await prisma.facture.update({
       where: { id },
       data: { deletedAt: new Date() },
     });
     return NextResponse.json({ success: true });
   } catch {
-    return NextResponse.json({ error: "Devis introuvable" }, { status: 404 });
+    return NextResponse.json({ error: "Facture introuvable" }, { status: 404 });
   }
 }

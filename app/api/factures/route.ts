@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { z } from "zod";
 import { MUTATION_ROLES, ensureRole } from "@/lib/auth-helpers";
-import { generateDevisNumero } from "@/lib/numerotation";
+import { generateFactureNumero } from "@/lib/numerotation";
+import { createFactureSchema } from "@/lib/validations/facture";
 
-/** Serialize a Devis row for JSON responses */
-function serializeDevis(d: {
+interface FactureRow {
   id: string;
   numero: string;
   objet: string | null;
@@ -13,92 +12,78 @@ function serializeDevis(d: {
   montantHT: unknown;
   tauxTVA: unknown;
   dateEmis: Date;
-  dateValide: Date | null;
+  dateEcheance: Date | null;
+  datePaiement: Date | null;
+  modePaiement: string | null;
+  reference: string | null;
   clientId: string;
   client: { id: string; nom: string; prenom: string | null; type: string };
   projetId: string | null;
   projet: { id: string; titre: string; statut: string } | null;
+  devisOrigineId: string | null;
+  devisOrigine: { id: string; numero: string } | null;
   lignes: { id: string }[];
   createdAt: Date;
   updatedAt: Date;
-}) {
-  const montantHT = Number(d.montantHT);
-  const tauxTVA = Number(d.tauxTVA);
+}
+
+/** Sérialise une facture pour réponse JSON. */
+function serializeFacture(f: FactureRow) {
+  const montantHT = Number(f.montantHT);
+  const tauxTVA = Number(f.tauxTVA);
 
   return {
-    id: d.id,
-    numero: d.numero,
-    objet: d.objet,
-    statut: d.statut,
+    id: f.id,
+    numero: f.numero,
+    objet: f.objet,
+    statut: f.statut,
     montantHT,
     tauxTVA,
     montantTTC: montantHT * (1 + tauxTVA / 100),
-    dateEmis: d.dateEmis.toISOString(),
-    dateValide: d.dateValide ? d.dateValide.toISOString() : null,
-    clientId: d.clientId,
-    client: d.client,
-    projetId: d.projetId,
-    projet: d.projet,
-    lignesCount: d.lignes.length,
-    createdAt: d.createdAt.toISOString(),
-    updatedAt: d.updatedAt.toISOString(),
+    dateEmis: f.dateEmis.toISOString(),
+    dateEcheance: f.dateEcheance ? f.dateEcheance.toISOString() : null,
+    datePaiement: f.datePaiement ? f.datePaiement.toISOString() : null,
+    modePaiement: f.modePaiement,
+    reference: f.reference,
+    clientId: f.clientId,
+    client: f.client,
+    projetId: f.projetId,
+    projet: f.projet,
+    devisOrigineId: f.devisOrigineId,
+    devisOrigine: f.devisOrigine,
+    lignesCount: f.lignes.length,
+    createdAt: f.createdAt.toISOString(),
+    updatedAt: f.updatedAt.toISOString(),
   };
 }
 
 const includeRelations = {
   client: { select: { id: true, nom: true, prenom: true, type: true } },
   projet: { select: { id: true, titre: true, statut: true } },
+  devisOrigine: { select: { id: true, numero: true } },
   lignes: { select: { id: true } },
 };
 
-/** GET /api/devis — Liste tous les devis avec filtrage optionnel */
+/** GET /api/factures — Liste les factures actives avec filtres optionnels. */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const statut = searchParams.get("statut");
   const clientId = searchParams.get("clientId");
 
   const where: Record<string, unknown> = { deletedAt: null };
-  if (statut && statut !== "TOUS") {
-    where.statut = statut;
-  }
-  if (clientId) {
-    where.clientId = clientId;
-  }
+  if (statut && statut !== "TOUS") where.statut = statut;
+  if (clientId) where.clientId = clientId;
 
-  const devis = await prisma.devis.findMany({
+  const factures = await prisma.facture.findMany({
     where,
     include: includeRelations,
     orderBy: { dateEmis: "desc" },
   });
 
-  const serialized = devis.map(serializeDevis);
-
-  return NextResponse.json(serialized);
+  return NextResponse.json(factures.map(serializeFacture));
 }
 
-const ligneSchema = z.object({
-  designation: z.string().min(1, "La désignation est requise"),
-  unite: z.string().default("U"),
-  quantite: z.number().default(1),
-  prixUnitHT: z.number().min(0, "Le prix unitaire doit être positif"),
-  tauxTVA: z.number().default(20),
-  ordre: z.number().int().default(0),
-});
-
-const createDevisSchema = z.object({
-  objet: z.string().optional(),
-  montantHT: z.number().min(0, "Le montant HT doit être positif"),
-  tauxTVA: z.number().default(20),
-  statut: z
-    .enum(["BROUILLON", "ENVOYE", "ACCEPTE", "REFUSE"])
-    .default("BROUILLON"),
-  clientId: z.string().min(1, "Le client est requis"),
-  projetId: z.string().optional(),
-  dateValide: z.string().datetime({ offset: true }).nullable().optional(),
-  lignes: z.array(ligneSchema).optional(),
-});
-
-/** POST /api/devis — Créer un nouveau devis */
+/** POST /api/factures — Création manuelle d'une facture. */
 export async function POST(request: Request) {
   const guard = await ensureRole(MUTATION_ROLES);
   if (guard) return guard;
@@ -109,64 +94,57 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: "JSON invalide" }, { status: 400 });
   }
-  const result = createDevisSchema.safeParse(body);
 
+  const result = createFactureSchema.safeParse(body);
   if (!result.success) {
     return NextResponse.json(
       { error: "ValidationError", issues: result.error.issues },
       { status: 422 }
     );
   }
-
   const data = result.data;
 
-  // Verify client exists
   const clientExists = await prisma.client.findFirst({
     where: { id: data.clientId, deletedAt: null },
     select: { id: true },
   });
-
   if (!clientExists) {
-    return NextResponse.json(
-      { error: "Client introuvable" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Client introuvable" }, { status: 400 });
   }
 
-  // Verify projet exists if provided
   if (data.projetId) {
     const projetExists = await prisma.projet.findFirst({
       where: { id: data.projetId, deletedAt: null },
       select: { id: true },
     });
     if (!projetExists) {
-      return NextResponse.json(
-        { error: "Projet introuvable" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Projet introuvable" }, { status: 400 });
     }
   }
 
-  const numero = await generateDevisNumero();
+  const numero = await generateFactureNumero();
 
-  const devis = await prisma.$transaction(async (tx) => {
-    const created = await tx.devis.create({
+  const facture = await prisma.$transaction(async (tx) => {
+    const created = await tx.facture.create({
       data: {
         numero,
         objet: data.objet || null,
         statut: data.statut,
         montantHT: data.montantHT,
         tauxTVA: data.tauxTVA,
-        dateValide: data.dateValide ? new Date(data.dateValide) : null,
+        dateEcheance: data.dateEcheance ? new Date(data.dateEcheance) : null,
+        datePaiement: data.datePaiement ? new Date(data.datePaiement) : null,
+        modePaiement: data.modePaiement ?? null,
+        reference: data.reference ?? null,
         clientId: data.clientId,
         projetId: data.projetId || null,
       },
     });
 
     if (data.lignes && data.lignes.length > 0) {
-      await tx.ligneDevis.createMany({
+      await tx.ligneFacture.createMany({
         data: data.lignes.map((l, index) => ({
-          devisId: created.id,
+          factureId: created.id,
           designation: l.designation,
           unite: l.unite,
           quantite: l.quantite,
@@ -177,11 +155,11 @@ export async function POST(request: Request) {
       });
     }
 
-    return tx.devis.findUniqueOrThrow({
+    return tx.facture.findUniqueOrThrow({
       where: { id: created.id },
       include: includeRelations,
     });
   });
 
-  return NextResponse.json(serializeDevis(devis), { status: 201 });
+  return NextResponse.json(serializeFacture(facture), { status: 201 });
 }

@@ -10,7 +10,7 @@ export async function GET() {
   const guard = await ensureRole(MUTATION_ROLES);
   if (guard) return guard;
 
-  const [clients, leads, projets, devis, documents, evenements] = await Promise.all([
+  const [clients, leads, projets, devis, factures, documents, evenements] = await Promise.all([
     prisma.client.findMany({
       where: { deletedAt: { not: null } },
       select: { id: true, nom: true, prenom: true, type: true, deletedAt: true },
@@ -27,6 +27,11 @@ export async function GET() {
       orderBy: { deletedAt: "desc" },
     }),
     prisma.devis.findMany({
+      where: { deletedAt: { not: null } },
+      select: { id: true, numero: true, objet: true, statut: true, deletedAt: true },
+      orderBy: { deletedAt: "desc" },
+    }),
+    prisma.facture.findMany({
       where: { deletedAt: { not: null } },
       select: { id: true, numero: true, objet: true, statut: true, deletedAt: true },
       orderBy: { deletedAt: "desc" },
@@ -48,6 +53,7 @@ export async function GET() {
     leads: leads.map((l) => ({ ...l, deletedAt: l.deletedAt?.toISOString() ?? null })),
     projets: projets.map((p) => ({ ...p, deletedAt: p.deletedAt?.toISOString() ?? null })),
     devis: devis.map((d) => ({ ...d, deletedAt: d.deletedAt?.toISOString() ?? null })),
+    factures: factures.map((f) => ({ ...f, deletedAt: f.deletedAt?.toISOString() ?? null })),
     documents: documents.map((d) => ({ ...d, deletedAt: d.deletedAt?.toISOString() ?? null })),
     evenements: evenements.map((e) => ({
       ...e,

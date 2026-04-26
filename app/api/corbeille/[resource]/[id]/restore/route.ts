@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { ensureRole, MUTATION_ROLES } from "@/lib/auth-helpers";
 
-type Resource = "clients" | "leads" | "projets" | "devis" | "documents" | "evenements";
+type Resource = "clients" | "leads" | "projets" | "devis" | "factures" | "documents" | "evenements";
 
-const ALLOWED: Resource[] = ["clients", "leads", "projets", "devis", "documents", "evenements"];
+const ALLOWED: Resource[] = ["clients", "leads", "projets", "devis", "factures", "documents", "evenements"];
 
 /**
  * POST /api/corbeille/{resource}/{id}/restore
@@ -36,6 +36,9 @@ export async function POST(
         break;
       case "devis":
         await prisma.devis.update({ where: { id }, data });
+        break;
+      case "factures":
+        await prisma.facture.update({ where: { id }, data });
         break;
       case "documents":
         await prisma.document.update({ where: { id }, data });

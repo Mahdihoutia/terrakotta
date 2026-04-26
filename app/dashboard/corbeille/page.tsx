@@ -18,13 +18,14 @@ import {
   FolderKanban,
   Receipt,
   FileText,
+  ReceiptText,
   CalendarDays,
 } from "lucide-react";
 import { toast } from "sonner";
 import { showApiError, showNetworkError } from "@/lib/api-errors";
 import { cn } from "@/lib/utils";
 
-type ResourceKey = "clients" | "leads" | "projets" | "devis" | "documents" | "evenements";
+type ResourceKey = "clients" | "leads" | "projets" | "devis" | "factures" | "documents" | "evenements";
 
 interface CorbeilleItem {
   id: string;
@@ -38,6 +39,7 @@ interface CorbeilleData {
   leads: Array<{ id: string; nom: string; prenom: string | null; email: string; deletedAt: string | null }>;
   projets: Array<{ id: string; titre: string; statut: string; deletedAt: string | null }>;
   devis: Array<{ id: string; numero: string; objet: string | null; statut: string; deletedAt: string | null }>;
+  factures: Array<{ id: string; numero: string; objet: string | null; statut: string; deletedAt: string | null }>;
   documents: Array<{ id: string; titre: string; reference: string; type: string; deletedAt: string | null }>;
   evenements: Array<{ id: string; titre: string; date: string; type: string; deletedAt: string | null }>;
 }
@@ -47,6 +49,7 @@ const RESOURCE_META: Record<ResourceKey, { label: string; icon: React.ComponentT
   clients:    { label: "Contacts",   icon: ContactIcon,  tone: "text-violet-600 bg-violet-50" },
   projets:    { label: "Projets",    icon: FolderKanban, tone: "text-emerald-600 bg-emerald-50" },
   devis:      { label: "Devis",      icon: Receipt,      tone: "text-amber-600 bg-amber-50" },
+  factures:   { label: "Factures",   icon: ReceiptText,  tone: "text-orange-600 bg-orange-50" },
   documents:  { label: "Documents",  icon: FileText,     tone: "text-zinc-600 bg-zinc-100" },
   evenements: { label: "Événements", icon: CalendarDays, tone: "text-pink-600 bg-pink-50" },
 };
@@ -141,6 +144,15 @@ export default function CorbeillePage() {
             label: d.objet || d.numero,
             meta: `${d.numero} · ${d.statut}`,
             deletedAt: d.deletedAt,
+          })),
+        },
+        {
+          key: "factures",
+          items: data.factures.map((f) => ({
+            id: f.id,
+            label: f.objet || f.numero,
+            meta: `${f.numero} · ${f.statut}`,
+            deletedAt: f.deletedAt,
           })),
         },
         {

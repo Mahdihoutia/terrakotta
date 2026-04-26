@@ -54,6 +54,7 @@ model Client {
   deletedAt     DateTime?   @map("deleted_at")
   projets       Projet[]
   devis         Devis[]
+  factures      Facture[]
   evenements    Evenement[]
 
   @@index([deletedAt])
@@ -112,6 +113,7 @@ model Projet {
   client         Client         @relation(fields: [clientId], references: [id])
   jalons         Jalon[]
   devis          Devis[]
+  factures       Facture[]
   aides          Aide[]
   documents      Document[]
   createdAt      DateTime       @default(now()) @map("created_at")
@@ -151,6 +153,7 @@ model Devis {
   projetId   String?     @map("projet_id")
   projet     Projet?     @relation(fields: [projetId], references: [id])
   lignes     LigneDevis[]
+  factureGeneree Facture? @relation("DevisToFacture")
   createdAt  DateTime    @default(now()) @map("created_at")
   updatedAt  DateTime    @updatedAt @map("updated_at")
   deletedAt  DateTime?   @map("deleted_at")
@@ -173,6 +176,50 @@ model LigneDevis {
   devis       Devis   @relation(fields: [devisId], references: [id], onDelete: Cascade)
 
   @@map("lignes_devis")
+}
+
+// ─── Facture ────────────────────────────────────────────────────
+
+model Facture {
+  id             String         @id @default(cuid())
+  numero         String         @unique
+  objet          String?
+  statut         FactureStatut  @default(BROUILLON)
+  montantHT      Decimal        @map("montant_ht")
+  tauxTVA        Decimal        @default(20) @map("taux_tva")
+  dateEmis       DateTime       @default(now()) @map("date_emis")
+  dateEcheance   DateTime?      @map("date_echeance")
+  datePaiement   DateTime?      @map("date_paiement")
+  modePaiement   String?        @map("mode_paiement")
+  reference      String?
+  clientId       String         @map("client_id")
+  client         Client         @relation(fields: [clientId], references: [id])
+  projetId       String?        @map("projet_id")
+  projet         Projet?        @relation(fields: [projetId], references: [id])
+  devisOrigineId String?        @unique @map("devis_origine_id")
+  devisOrigine   Devis?         @relation("DevisToFacture", fields: [devisOrigineId], references: [id])
+  lignes         LigneFacture[]
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+  deletedAt      DateTime?      @map("deleted_at")
+
+  @@index([deletedAt])
+  @@index([clientId])
+  @@map("factures")
+}
+
+model LigneFacture {
+  id          String  @id @default(cuid())
+  factureId   String  @map("facture_id")
+  designation String
+  unite       String  @default("U")
+  quantite    Decimal @default(1)
+  prixUnitHT  Decimal @map("prix_unit_ht")
+  tauxTVA     Decimal @default(20) @map("taux_tva")
+  ordre       Int     @default(0)
+  facture     Facture @relation(fields: [factureId], references: [id], onDelete: Cascade)
+
+  @@map("lignes_factures")
 }
 
 // ─── Aide financière ───────────────────────────────────────────
@@ -322,6 +369,15 @@ enum DevisStatut {
   ENVOYE
   ACCEPTE
   REFUSE
+}
+
+enum FactureStatut {
+  BROUILLON
+  EMISE
+  PAYEE_PARTIELLEMENT
+  PAYEE
+  EN_RETARD
+  ANNULEE
 }
 
 enum EvenementType {

@@ -30,6 +30,8 @@ import {
   FileText,
   Download,
   Mail,
+  ReceiptText,
+  ArrowRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { showApiError, showNetworkError } from "@/lib/api-errors";
@@ -419,6 +421,7 @@ export default function DevisDetailPage({ params }: Props) {
   const [updatingStatut, setUpdatingStatut] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [generatingPDF, setGeneratingPDF] = useState(false);
+  const [converting, setConverting] = useState(false);
 
   // Edit form state
   const [formObjet, setFormObjet] = useState("");
@@ -587,6 +590,25 @@ export default function DevisDetailPage({ params }: Props) {
     setEditing(false);
   }
 
+  async function handleConvertToFacture() {
+    if (!devis) return;
+    setConverting(true);
+    try {
+      const res = await fetch(`/api/devis/${id}/convert-to-facture`, { method: "POST" });
+      if (!res.ok) {
+        await showApiError(res, "Conversion en facture impossible");
+        return;
+      }
+      const data = (await res.json()) as { id: string; numero: string };
+      toast.success(`Facture ${data.numero} créée`);
+      router.push(`/dashboard/factures/${data.id}`);
+    } catch (err) {
+      showNetworkError(err, "Conversion en facture impossible");
+    } finally {
+      setConverting(false);
+    }
+  }
+
   async function handleDownloadPDF() {
     if (!devis) return;
     setGeneratingPDF(true);
@@ -745,6 +767,34 @@ export default function DevisDetailPage({ params }: Props) {
                 )}
                 Télécharger PDF
               </Button>
+              {devis.statut === "ACCEPTE" && !devis.factureGeneree && (
+                <Button
+                  size="sm"
+                  onClick={handleConvertToFacture}
+                  disabled={converting}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                >
+                  {converting ? (
+                    <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <ReceiptText className="mr-2 h-3.5 w-3.5" />
+                  )}
+                  Convertir en facture
+                </Button>
+              )}
+              {devis.factureGeneree && (
+                <Link href={`/dashboard/factures/${devis.factureGeneree.id}`}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-emerald-500/30 bg-emerald-500/5 text-emerald-500 hover:bg-emerald-500/10"
+                  >
+                    <ReceiptText className="mr-2 h-3.5 w-3.5" />
+                    Voir la facture {devis.factureGeneree.numero}
+                    <ArrowRight className="ml-1.5 h-3 w-3" />
+                  </Button>
+                </Link>
+              )}
               {devis.statut === "ENVOYE" && devis.client.email && (
                 <a
                   href={(() => {

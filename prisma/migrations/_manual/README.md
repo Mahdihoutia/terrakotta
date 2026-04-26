@@ -30,3 +30,7 @@ npx prisma migrate resolve --applied <nom_de_la_migration>
 - `2026_04_25_add_roles_and_soft_delete.sql` — ajoute `users.role` (enum `Role`)
   et la colonne `deleted_at` (+ index) sur `clients`, `leads`, `projets`,
   `devis`, `documents`, `evenements`.
+- `2026_04_26_add_factures.sql` — item #11 : ajoute l'enum `FactureStatut` et
+  les tables `factures` / `lignes_factures` (FK vers `clients`, `projets`,
+  `devis`). La colonne `factures.devis_origine_id` est unique pour garantir
+  une seule facture par devis.
