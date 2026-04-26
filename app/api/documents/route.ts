@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { MUTATION_ROLES, ensureRole } from "@/lib/auth-helpers";
 
 const createDocumentSchema = z.object({
   titre: z.string().min(1, "Le titre est requis"),
@@ -19,7 +20,7 @@ export async function GET(req: NextRequest) {
     const type = searchParams.get("type");
     const statut = searchParams.get("statut");
 
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { deletedAt: null };
     if (type) where.type = type;
     if (statut) where.statut = statut;
 
@@ -50,11 +51,22 @@ export async function GET(req: NextRequest) {
 
 // ─── POST /api/documents ───────────────────────────────────────
 export async function POST(req: NextRequest) {
+  const guard = await ensureRole(MUTATION_ROLES);
+  if (guard) return guard;
+
   try {
-    const body = await req.json();
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ error: "JSON invalide" }, { status: 400 });
+    }
     const parsed = createDocumentSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.flatten().fieldErrors }, { status: 400 });
+      return NextResponse.json(
+        { error: "ValidationError", issues: parsed.error.issues },
+        { status: 422 }
+      );
     }
 
     const data = parsed.data;

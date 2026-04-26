@@ -28,6 +28,7 @@ import {
   MapPin,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLocalStorage } from "@/lib/hooks/useLocalStorage";
 import { useLeads } from "@/lib/hooks/use-leads";
 import { exportToExcel, exportToPdf } from "@/lib/export-leads";
 import type { LeadStatus, LeadSource, ClientType } from "@/types";
@@ -77,7 +78,10 @@ export default function LeadsPage() {
   const { leads, loading, error, addLead, deleteLead, convertToContact } = useLeads();
   const [converting, setConverting] = useState<string | null>(null);
 
-  const [filterStatut, setFilterStatut] = useState<string>("TOUS");
+  const [filterStatut, setFilterStatut] = useLocalStorage<string>(
+    "terrakotta:leads:filterStatut",
+    "TOUS"
+  );
   const [showForm, setShowForm] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);

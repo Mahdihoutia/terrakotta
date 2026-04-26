@@ -31,6 +31,8 @@ import {
   Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { showApiError, showNetworkError } from "@/lib/api-errors";
+import { toast } from "sonner";
 import type { DevisDetail, DevisStatut, LigneDevis } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -522,13 +524,17 @@ export default function DevisDetailPage({ params }: Props) {
           lignes,
         }),
       });
-      if (!res.ok) throw new Error("Erreur lors de la sauvegarde");
+      if (!res.ok) {
+        await showApiError(res, "Impossible d'enregistrer le devis");
+        return;
+      }
       const updated: DevisDetail = await res.json();
       setDevis(updated);
       populateForm(updated);
       setEditing(false);
-    } catch {
-      setError("Erreur lors de la sauvegarde");
+      toast.success("Devis enregistré");
+    } catch (err) {
+      showNetworkError(err, "Impossible d'enregistrer le devis");
     } finally {
       setSaving(false);
     }
@@ -538,10 +544,15 @@ export default function DevisDetailPage({ params }: Props) {
     setDeleting(true);
     try {
       const res = await fetch(`/api/devis/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Erreur lors de la suppression");
+      if (!res.ok) {
+        await showApiError(res, "Impossible de supprimer le devis");
+        setDeleting(false);
+        return;
+      }
+      toast.success("Devis déplacé dans la corbeille");
       router.push("/dashboard/devis");
-    } catch {
-      setError("Erreur lors de la suppression");
+    } catch (err) {
+      showNetworkError(err, "Impossible de supprimer le devis");
       setDeleting(false);
     }
   }
@@ -555,12 +566,16 @@ export default function DevisDetailPage({ params }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ statut: newStatut }),
       });
-      if (!res.ok) throw new Error("Erreur");
+      if (!res.ok) {
+        await showApiError(res, "Mise à jour du statut impossible");
+        return;
+      }
       const updated: DevisDetail = await res.json();
       setDevis(updated);
       populateForm(updated);
-    } catch {
-      setError("Erreur lors de la mise a jour du statut");
+      toast.success("Statut mis à jour");
+    } catch (err) {
+      showNetworkError(err, "Mise à jour du statut impossible");
     } finally {
       setUpdatingStatut(false);
     }

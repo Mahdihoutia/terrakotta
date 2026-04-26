@@ -24,6 +24,8 @@ import {
   Hash,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { showApiError, showNetworkError } from "@/lib/api-errors";
+import { toast } from "sonner";
 import type { ClientType, LeadStatus, LeadSource } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -175,12 +177,16 @@ export default function ContactDetailPage({ params }: Props) {
           notes: form.notes || null,
         }),
       });
-      if (!res.ok) throw new Error("Erreur lors de la sauvegarde");
+      if (!res.ok) {
+        await showApiError(res, "Impossible d'enregistrer le contact");
+        return;
+      }
       const updated: ContactDetail = await res.json();
       setContact(updated);
       setEditing(false);
-    } catch {
-      setError("Erreur lors de la sauvegarde");
+      toast.success("Contact mis à jour");
+    } catch (err) {
+      showNetworkError(err, "Impossible d'enregistrer le contact");
     } finally {
       setSaving(false);
     }
@@ -190,10 +196,15 @@ export default function ContactDetailPage({ params }: Props) {
     setDeleting(true);
     try {
       const res = await fetch(`/api/clients/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Erreur lors de la suppression");
+      if (!res.ok) {
+        await showApiError(res, "Impossible de supprimer le contact");
+        setDeleting(false);
+        return;
+      }
+      toast.success("Contact déplacé dans la corbeille");
       router.push("/dashboard/contacts");
-    } catch {
-      setError("Erreur lors de la suppression");
+    } catch (err) {
+      showNetworkError(err, "Impossible de supprimer le contact");
       setDeleting(false);
     }
   }

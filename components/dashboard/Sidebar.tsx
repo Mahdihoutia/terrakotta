@@ -16,6 +16,7 @@ import {
   FolderKanban,
   Receipt,
   Radar,
+  Trash2,
   LogOut,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
@@ -42,7 +43,8 @@ const TOP_ITEMS: NavItem[] = [
 ];
 
 const BOTTOM_ITEMS: NavItem[] = [
-  { label: "Paramètres", href: "/dashboard/settings", icon: Settings },
+  { label: "Corbeille",   href: "/dashboard/corbeille", icon: Trash2 },
+  { label: "Paramètres",  href: "/dashboard/settings",  icon: Settings },
 ];
 
 export default function Sidebar() {

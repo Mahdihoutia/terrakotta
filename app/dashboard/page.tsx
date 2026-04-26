@@ -188,6 +188,7 @@ async function fetchKpis() {
     // ── Projets récents ────────────────────────────────────────
 
     const projetsRecents = await prisma.projet.findMany({
+      where: { deletedAt: null },
       orderBy: { updatedAt: "desc" },
       take: 5,
       include: { client: { select: { nom: true, prenom: true } } },

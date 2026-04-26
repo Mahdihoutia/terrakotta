@@ -21,6 +21,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLocalStorage } from "@/lib/hooks/useLocalStorage";
 import type { Devis, DevisStatut, DevisClient, DevisProjet } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -88,7 +89,10 @@ export default function DevisListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [filterStatut, setFilterStatut] = useState<DevisStatutFilter>("TOUS");
+  const [filterStatut, setFilterStatut] = useLocalStorage<DevisStatutFilter>(
+    "terrakotta:devis:filterStatut",
+    "TOUS"
+  );
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 

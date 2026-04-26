@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { MUTATION_ROLES, ensureRole } from "@/lib/auth-helpers";
 
 /** Serialize a Projet row for JSON responses */
 function serializeProjet(p: {
@@ -48,7 +49,7 @@ function serializeProjet(p: {
 const includeRelations = {
   client: { select: { id: true, nom: true, prenom: true, type: true } },
   jalons: { select: { id: true } },
-  devis: { select: { id: true } },
+  devis: { where: { deletedAt: null }, select: { id: true } },
   aides: { select: { id: true } },
 };
 
@@ -58,7 +59,10 @@ export async function GET(request: Request) {
   const statut = searchParams.get("statut");
 
   const projets = await prisma.projet.findMany({
-    where: statut && statut !== "TOUS" ? { statut: statut as never } : undefined,
+    where: {
+      deletedAt: null,
+      ...(statut && statut !== "TOUS" ? { statut: statut as never } : {}),
+    },
     include: includeRelations,
     orderBy: { updatedAt: "desc" },
   });
@@ -97,21 +101,29 @@ const createProjetSchema = z.object({
 
 /** POST /api/projets — Créer un nouveau projet */
 export async function POST(request: Request) {
-  const body: unknown = await request.json();
+  const guard = await ensureRole(MUTATION_ROLES);
+  if (guard) return guard;
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "JSON invalide" }, { status: 400 });
+  }
   const result = createProjetSchema.safeParse(body);
 
   if (!result.success) {
     return NextResponse.json(
-      { error: "Données invalides", details: result.error.flatten() },
-      { status: 400 }
+      { error: "ValidationError", issues: result.error.issues },
+      { status: 422 }
     );
   }
 
   const data = result.data;
 
   // Verify client exists
-  const clientExists = await prisma.client.findUnique({
-    where: { id: data.clientId },
+  const clientExists = await prisma.client.findFirst({
+    where: { id: data.clientId, deletedAt: null },
     select: { id: true },
   });
 

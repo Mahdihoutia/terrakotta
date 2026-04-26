@@ -23,6 +23,8 @@ import {
   MapPin,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { showApiError, showNetworkError } from "@/lib/api-errors";
+import { toast } from "sonner";
 import type { Lead, LeadStatus, LeadSource, ClientType } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -156,12 +158,16 @@ export default function LeadDetailPage({ params }: Props) {
           departement: form.departement || null,
         }),
       });
-      if (!res.ok) throw new Error("Erreur lors de la sauvegarde");
+      if (!res.ok) {
+        await showApiError(res, "Impossible d'enregistrer le lead");
+        return;
+      }
       const updated: Lead = await res.json();
       setLead(updated);
       setEditing(false);
-    } catch {
-      setError("Erreur lors de la sauvegarde");
+      toast.success("Lead mis à jour");
+    } catch (err) {
+      showNetworkError(err, "Impossible d'enregistrer le lead");
     } finally {
       setSaving(false);
     }
@@ -171,10 +177,15 @@ export default function LeadDetailPage({ params }: Props) {
     setDeleting(true);
     try {
       const res = await fetch(`/api/leads/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Erreur lors de la suppression");
+      if (!res.ok) {
+        await showApiError(res, "Impossible de supprimer le lead");
+        setDeleting(false);
+        return;
+      }
+      toast.success("Lead déplacé dans la corbeille");
       router.push("/dashboard/leads");
-    } catch {
-      setError("Erreur lors de la suppression");
+    } catch (err) {
+      showNetworkError(err, "Impossible de supprimer le lead");
       setDeleting(false);
     }
   }
@@ -183,11 +194,16 @@ export default function LeadDetailPage({ params }: Props) {
     setConverting(true);
     try {
       const res = await fetch(`/api/leads/${id}/convert`, { method: "POST" });
-      if (!res.ok) throw new Error("Erreur lors de la conversion");
+      if (!res.ok) {
+        await showApiError(res, "Conversion impossible");
+        setConverting(false);
+        return;
+      }
       const data = await res.json();
+      toast.success("Lead converti en contact");
       router.push(`/dashboard/contacts/${data.clientId}`);
-    } catch {
-      setError("Erreur lors de la conversion");
+    } catch (err) {
+      showNetworkError(err, "Conversion impossible");
       setConverting(false);
     }
   }

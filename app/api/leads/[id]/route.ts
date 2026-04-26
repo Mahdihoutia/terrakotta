@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import {
+  DESTRUCTIVE_ROLES,
+  MUTATION_ROLES,
+  ensureRole,
+} from "@/lib/auth-helpers";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -10,7 +15,7 @@ interface RouteContext {
 export async function GET(_request: Request, context: RouteContext) {
   const { id } = await context.params;
 
-  const lead = await prisma.lead.findUnique({ where: { id } });
+  const lead = await prisma.lead.findFirst({ where: { id, deletedAt: null } });
   if (!lead) {
     return NextResponse.json({ error: "Lead introuvable" }, { status: 404 });
   }
@@ -49,15 +54,31 @@ const updateLeadSchema = z.object({
 
 /** PATCH /api/leads/[id] — Mettre à jour un lead */
 export async function PATCH(request: Request, context: RouteContext) {
+  const guard = await ensureRole(MUTATION_ROLES);
+  if (guard) return guard;
+
   const { id } = await context.params;
-  const body: unknown = await request.json();
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "JSON invalide" }, { status: 400 });
+  }
   const result = updateLeadSchema.safeParse(body);
 
   if (!result.success) {
     return NextResponse.json(
-      { error: "Données invalides", details: result.error.flatten() },
-      { status: 400 }
+      { error: "ValidationError", issues: result.error.issues },
+      { status: 422 }
     );
+  }
+
+  const existing = await prisma.lead.findFirst({
+    where: { id, deletedAt: null },
+    select: { id: true },
+  });
+  if (!existing) {
+    return NextResponse.json({ error: "Lead introuvable" }, { status: 404 });
   }
 
   try {
@@ -78,12 +99,18 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 }
 
-/** DELETE /api/leads/[id] — Supprimer un lead */
+/** DELETE /api/leads/[id] — Soft delete (corbeille) */
 export async function DELETE(_request: Request, context: RouteContext) {
+  const guard = await ensureRole(DESTRUCTIVE_ROLES);
+  if (guard) return guard;
+
   const { id } = await context.params;
 
   try {
-    await prisma.lead.delete({ where: { id } });
+    await prisma.lead.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Lead introuvable" }, { status: 404 });

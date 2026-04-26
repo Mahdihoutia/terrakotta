@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import {
+  DESTRUCTIVE_ROLES,
+  MUTATION_ROLES,
+  ensureRole,
+} from "@/lib/auth-helpers";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -99,8 +104,8 @@ const includeDetailRelations = {
 /** GET /api/devis/[id] — Détail d'un devis avec relations complètes */
 export async function GET(_request: Request, context: RouteContext) {
   const { id } = await context.params;
-  const devis = await prisma.devis.findUnique({
-    where: { id },
+  const devis = await prisma.devis.findFirst({
+    where: { id, deletedAt: null },
     include: includeDetailRelations,
   });
 
@@ -133,15 +138,32 @@ const updateDevisSchema = z.object({
 
 /** PATCH /api/devis/[id] — Mettre à jour un devis */
 export async function PATCH(request: Request, context: RouteContext) {
+  const guard = await ensureRole(MUTATION_ROLES);
+  if (guard) return guard;
+
   const { id } = await context.params;
-  const body: unknown = await request.json();
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "JSON invalide" }, { status: 400 });
+  }
   const result = updateDevisSchema.safeParse(body);
 
   if (!result.success) {
     return NextResponse.json(
-      { error: "Données invalides", details: result.error.flatten() },
-      { status: 400 }
+      { error: "ValidationError", issues: result.error.issues },
+      { status: 422 }
     );
+  }
+
+  // Vérifier que le devis n'est pas dans la corbeille
+  const existing = await prisma.devis.findFirst({
+    where: { id, deletedAt: null },
+    select: { id: true },
+  });
+  if (!existing) {
+    return NextResponse.json({ error: "Devis introuvable" }, { status: 404 });
   }
 
   const { lignes, ...data } = result.data;
@@ -219,11 +241,17 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 }
 
-/** DELETE /api/devis/[id] — Supprimer un devis (lignes supprimées en cascade) */
+/** DELETE /api/devis/[id] — Soft delete (corbeille) */
 export async function DELETE(_request: Request, context: RouteContext) {
+  const guard = await ensureRole(DESTRUCTIVE_ROLES);
+  if (guard) return guard;
+
   const { id } = await context.params;
   try {
-    await prisma.devis.delete({ where: { id } });
+    await prisma.devis.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Devis introuvable" }, { status: 404 });

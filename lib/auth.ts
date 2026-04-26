@@ -1,7 +1,20 @@
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
+import { Role } from "@prisma/client";
 
 import type { AuthOptions } from "next-auth";
+
+/**
+ * Détermine le rôle de l'utilisateur mono-compte.
+ * Configurable via la variable d'env `ADMIN_ROLE` (ADMIN | COLLABORATEUR | LECTURE_SEULE).
+ * Par défaut : ADMIN.
+ */
+function resolveAdminRole(): Role {
+  const raw = process.env.ADMIN_ROLE?.toUpperCase();
+  if (raw === "COLLABORATEUR") return Role.COLLABORATEUR;
+  if (raw === "LECTURE_SEULE") return Role.LECTURE_SEULE;
+  return Role.ADMIN;
+}
 
 /**
  * NextAuth.js v4 configuration for Kilowater dashboard.
@@ -72,6 +85,7 @@ export const authOptions: AuthOptions = {
           id: "admin",
           email: adminEmail,
           name: "Administrateur",
+          role: resolveAdminRole(),
         };
       },
     }),
@@ -90,13 +104,16 @@ export const authOptions: AuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        if (user.role) token.role = user.role;
       }
+      if (!token.role) token.role = resolveAdminRole();
       return token;
     },
 
     async session({ session, token }) {
       if (session.user && typeof token.id === "string") {
         session.user.id = token.id;
+        session.user.role = (token.role ?? resolveAdminRole()) as Role;
       }
       return session;
     },

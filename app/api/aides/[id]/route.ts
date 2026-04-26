@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import {
+  DESTRUCTIVE_ROLES,
+  MUTATION_ROLES,
+  ensureRole,
+} from "@/lib/auth-helpers";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -87,12 +92,23 @@ export async function GET(_req: NextRequest, ctx: RouteContext) {
 
 // ─── PATCH /api/aides/[id] ────────────────────────────────────
 export async function PATCH(req: NextRequest, ctx: RouteContext) {
+  const guard = await ensureRole(MUTATION_ROLES);
+  if (guard) return guard;
+
   try {
     const { id } = await ctx.params;
-    const body = await req.json();
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ error: "JSON invalide" }, { status: 400 });
+    }
     const parsed = updateAideSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.flatten().fieldErrors }, { status: 400 });
+      return NextResponse.json(
+        { error: "ValidationError", issues: parsed.error.issues },
+        { status: 422 }
+      );
     }
 
     const existing = await prisma.aide.findUnique({ where: { id } });
@@ -125,8 +141,11 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
   }
 }
 
-// ─── DELETE /api/aides/[id] ───────────────────────────────────
+// ─── DELETE /api/aides/[id] ───────── hard delete (sub-entity) ─
 export async function DELETE(_req: NextRequest, ctx: RouteContext) {
+  const guard = await ensureRole(DESTRUCTIVE_ROLES);
+  if (guard) return guard;
+
   try {
     const { id } = await ctx.params;
 

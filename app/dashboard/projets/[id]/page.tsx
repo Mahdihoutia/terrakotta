@@ -31,6 +31,8 @@ import {
   Ruler,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { showApiError, showNetworkError } from "@/lib/api-errors";
+import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 
 /* ─── Types ────────────────────────────────────────────── */
@@ -381,8 +383,11 @@ export default function ProjetDetailPage({ params }: Props) {
       setProjet(updated);
       populateForm(updated);
       setEditing(false);
+      toast.success("Projet enregistré");
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : "Erreur inconnue");
+      const msg = err instanceof Error ? err.message : "Erreur inconnue";
+      setSaveError(msg);
+      toast.error("Impossible d'enregistrer le projet", { description: msg });
     } finally {
       setSaving(false);
     }
@@ -590,10 +595,15 @@ export default function ProjetDetailPage({ params }: Props) {
     setDeleting(true);
     try {
       const res = await fetch(`/api/projets/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Erreur lors de la suppression");
+      if (!res.ok) {
+        await showApiError(res, "Impossible de supprimer le projet");
+        setDeleting(false);
+        return;
+      }
+      toast.success("Projet déplacé dans la corbeille");
       router.push("/dashboard/projets");
-    } catch {
-      setError("Erreur lors de la suppression");
+    } catch (err) {
+      showNetworkError(err, "Impossible de supprimer le projet");
       setDeleting(false);
     }
   }

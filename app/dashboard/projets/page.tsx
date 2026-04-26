@@ -25,6 +25,7 @@ import {
   Calculator,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLocalStorage } from "@/lib/hooks/useLocalStorage";
 import { motion, AnimatePresence } from "framer-motion";
 
 type ProjetStatut = "EN_ATTENTE" | "EN_COURS" | "EN_PAUSE" | "TERMINE" | "ANNULE";
@@ -159,7 +160,10 @@ export default function ProjetsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [filterStatut, setFilterStatut] = useState<string>("TOUS");
+  const [filterStatut, setFilterStatut] = useLocalStorage<string>(
+    "terrakotta:projets:filterStatut",
+    "TOUS"
+  );
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);

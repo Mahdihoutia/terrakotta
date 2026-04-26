@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { MUTATION_ROLES, ensureRole } from "@/lib/auth-helpers";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -19,6 +20,9 @@ const createJalonSchema = z.object({
 
 /** POST /api/projets/[id]/jalons — Créer un jalon pour un projet */
 export async function POST(request: Request, context: RouteContext) {
+  const guard = await ensureRole(MUTATION_ROLES);
+  if (guard) return guard;
+
   const { id } = await context.params;
 
   let body: unknown;
@@ -30,17 +34,15 @@ export async function POST(request: Request, context: RouteContext) {
 
   const parsed = createJalonSchema.safeParse(body);
   if (!parsed.success) {
-    const flat = parsed.error.flatten();
-    const first = Object.values(flat.fieldErrors)[0]?.[0];
     return NextResponse.json(
-      { error: first ?? "Données invalides", details: flat },
-      { status: 400 }
+      { error: "ValidationError", issues: parsed.error.issues },
+      { status: 422 }
     );
   }
 
-  // Vérifier que le projet existe
-  const projet = await prisma.projet.findUnique({
-    where: { id },
+  // Vérifier que le projet existe (et n'est pas en corbeille)
+  const projet = await prisma.projet.findFirst({
+    where: { id, deletedAt: null },
     select: { id: true },
   });
   if (!projet) {

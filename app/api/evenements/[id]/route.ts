@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import {
+  DESTRUCTIVE_ROLES,
+  MUTATION_ROLES,
+  ensureRole,
+} from "@/lib/auth-helpers";
 
 const updateSchema = z.object({
   titre: z.string().min(1).optional(),
@@ -20,8 +25,8 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const evenement = await prisma.evenement.findUnique({
-      where: { id },
+    const evenement = await prisma.evenement.findFirst({
+      where: { id, deletedAt: null },
       include: {
         client: { select: { id: true, nom: true, prenom: true, type: true } },
         lead: { select: { id: true, nom: true, prenom: true, type: true } },
@@ -43,15 +48,23 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const guard = await ensureRole(MUTATION_ROLES);
+  if (guard) return guard;
+
   try {
     const { id } = await params;
-    const body = await req.json();
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ error: "JSON invalide" }, { status: 400 });
+    }
     const parsed = updateSchema.safeParse(body);
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Données invalides", details: parsed.error.flatten() },
-        { status: 400 }
+        { error: "ValidationError", issues: parsed.error.issues },
+        { status: 422 }
       );
     }
 
@@ -79,9 +92,15 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const guard = await ensureRole(DESTRUCTIVE_ROLES);
+  if (guard) return guard;
+
   try {
     const { id } = await params;
-    await prisma.evenement.delete({ where: { id } });
+    await prisma.evenement.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("DELETE /api/evenements/[id] error:", error);

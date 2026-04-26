@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { MUTATION_ROLES, ensureRole } from "@/lib/auth-helpers";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -7,10 +8,13 @@ interface RouteContext {
 
 /** POST /api/leads/[id]/convert — Convertir un lead en contact */
 export async function POST(_request: Request, context: RouteContext) {
+  const guard = await ensureRole(MUTATION_ROLES);
+  if (guard) return guard;
+
   const { id } = await context.params;
 
   try {
-    const lead = await prisma.lead.findUnique({ where: { id } });
+    const lead = await prisma.lead.findFirst({ where: { id, deletedAt: null } });
     if (!lead) {
       return NextResponse.json({ error: "Lead introuvable" }, { status: 404 });
     }
@@ -33,8 +37,11 @@ export async function POST(_request: Request, context: RouteContext) {
       },
     });
 
-    // Supprimer le lead après conversion
-    await prisma.lead.delete({ where: { id } });
+    // Soft-delete du lead après conversion (corbeille)
+    await prisma.lead.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
 
     return NextResponse.json({
       success: true,

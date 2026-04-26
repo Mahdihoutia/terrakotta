@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import {
+  DESTRUCTIVE_ROLES,
+  MUTATION_ROLES,
+  ensureRole,
+} from "@/lib/auth-helpers";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -45,7 +50,7 @@ function serialize(d: {
 export async function GET(_req: NextRequest, ctx: RouteContext) {
   try {
     const { id } = await ctx.params;
-    const doc = await prisma.document.findUnique({ where: { id } });
+    const doc = await prisma.document.findFirst({ where: { id, deletedAt: null } });
     if (!doc) {
       return NextResponse.json({ error: "Document non trouvé" }, { status: 404 });
     }
@@ -58,15 +63,26 @@ export async function GET(_req: NextRequest, ctx: RouteContext) {
 
 // ─── PATCH /api/documents/[id] ────────────────────────────────
 export async function PATCH(req: NextRequest, ctx: RouteContext) {
+  const guard = await ensureRole(MUTATION_ROLES);
+  if (guard) return guard;
+
   try {
     const { id } = await ctx.params;
-    const body = await req.json();
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ error: "JSON invalide" }, { status: 400 });
+    }
     const parsed = updateDocumentSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.flatten().fieldErrors }, { status: 400 });
+      return NextResponse.json(
+        { error: "ValidationError", issues: parsed.error.issues },
+        { status: 422 }
+      );
     }
 
-    const existing = await prisma.document.findUnique({ where: { id } });
+    const existing = await prisma.document.findFirst({ where: { id, deletedAt: null } });
     if (!existing) {
       return NextResponse.json({ error: "Document non trouvé" }, { status: 404 });
     }
@@ -75,8 +91,8 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
 
     // Verify projet exists if being set
     if (data.projetId) {
-      const projet = await prisma.projet.findUnique({
-        where: { id: data.projetId },
+      const projet = await prisma.projet.findFirst({
+        where: { id: data.projetId, deletedAt: null },
         select: { id: true },
       });
       if (!projet) {
@@ -111,15 +127,21 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
   }
 }
 
-// ─── DELETE /api/documents/[id] ───────────────────────────────
+// ─── DELETE /api/documents/[id] ───── soft delete ─────────────
 export async function DELETE(_req: NextRequest, ctx: RouteContext) {
+  const guard = await ensureRole(DESTRUCTIVE_ROLES);
+  if (guard) return guard;
+
   try {
     const { id } = await ctx.params;
-    const existing = await prisma.document.findUnique({ where: { id } });
+    const existing = await prisma.document.findFirst({ where: { id, deletedAt: null } });
     if (!existing) {
       return NextResponse.json({ error: "Document non trouvé" }, { status: 404 });
     }
-    await prisma.document.delete({ where: { id } });
+    await prisma.document.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("[DELETE /api/documents/[id]]", err);

@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import {
+  DESTRUCTIVE_ROLES,
+  MUTATION_ROLES,
+  ensureRole,
+} from "@/lib/auth-helpers";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -19,6 +24,9 @@ const updateJalonSchema = z.object({
 
 /** PATCH /api/jalons/[id] — Mettre à jour un jalon (toggle fait, renommer, etc.) */
 export async function PATCH(request: Request, context: RouteContext) {
+  const guard = await ensureRole(MUTATION_ROLES);
+  if (guard) return guard;
+
   const { id } = await context.params;
 
   let body: unknown;
@@ -30,11 +38,9 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const parsed = updateJalonSchema.safeParse(body);
   if (!parsed.success) {
-    const flat = parsed.error.flatten();
-    const first = Object.values(flat.fieldErrors)[0]?.[0];
     return NextResponse.json(
-      { error: first ?? "Données invalides", details: flat },
-      { status: 400 }
+      { error: "ValidationError", issues: parsed.error.issues },
+      { status: 422 }
     );
   }
 
@@ -60,8 +66,11 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 }
 
-/** DELETE /api/jalons/[id] — Supprimer un jalon */
+/** DELETE /api/jalons/[id] — Supprimer un jalon (hard delete, sub-entité) */
 export async function DELETE(_request: Request, context: RouteContext) {
+  const guard = await ensureRole(DESTRUCTIVE_ROLES);
+  if (guard) return guard;
+
   const { id } = await context.params;
   try {
     await prisma.jalon.delete({ where: { id } });

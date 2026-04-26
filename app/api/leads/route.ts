@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { MUTATION_ROLES, ensureRole } from "@/lib/auth-helpers";
 
 /** GET /api/leads — Liste tous les leads */
 export async function GET(request: Request) {
@@ -9,7 +10,10 @@ export async function GET(request: Request) {
     const statut = searchParams.get("statut");
 
     const leads = await prisma.lead.findMany({
-      where: statut && statut !== "TOUS" ? { statut: statut as never } : undefined,
+      where: {
+        deletedAt: null,
+        ...(statut && statut !== "TOUS" ? { statut: statut as never } : {}),
+      },
       orderBy: { dateCreation: "desc" },
     });
 
@@ -57,13 +61,21 @@ const createLeadSchema = z.object({
 
 /** POST /api/leads — Créer un nouveau lead */
 export async function POST(request: Request) {
-  const body: unknown = await request.json();
+  const guard = await ensureRole(MUTATION_ROLES);
+  if (guard) return guard;
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "JSON invalide" }, { status: 400 });
+  }
   const result = createLeadSchema.safeParse(body);
 
   if (!result.success) {
     return NextResponse.json(
-      { error: "Données invalides", details: result.error.flatten() },
-      { status: 400 }
+      { error: "ValidationError", issues: result.error.issues },
+      { status: 422 }
     );
   }
 

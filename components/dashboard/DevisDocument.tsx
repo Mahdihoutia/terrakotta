@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,9 @@ import {
   ImagePlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { showApiError, showNetworkError } from "@/lib/api-errors";
+import { toast } from "sonner";
+import { useDebouncedAutosave } from "@/lib/hooks/useDebouncedAutosave";
 import { motion, AnimatePresence } from "framer-motion";
 
 // ─── Types ──────────────────────────────────────────────────────
@@ -686,6 +689,50 @@ async function generatePDF(
 }
 
 
+// ─── Autosave indicator ─────────────────────────────────────────
+
+function AutosaveIndicator({
+  status,
+  lastSavedAt,
+}: {
+  status: "idle" | "saving" | "saved" | "error";
+  lastSavedAt: Date | null;
+}) {
+  const [, setTick] = useState(0);
+  // Re-render every 30s pour rafraîchir le "il y a Xs"
+  useEffect(() => {
+    const i = setInterval(() => setTick((n) => n + 1), 30000);
+    return () => clearInterval(i);
+  }, []);
+
+  if (status === "saving") {
+    return (
+      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+        <Loader2 className="h-3 w-3 animate-spin" />
+        Enregistrement…
+      </span>
+    );
+  }
+  if (status === "error") {
+    return (
+      <span className="text-xs text-rose-600">Échec d&apos;enregistrement</span>
+    );
+  }
+  if (lastSavedAt) {
+    const diff = Math.max(0, Math.round((Date.now() - lastSavedAt.getTime()) / 1000));
+    const label =
+      diff < 5
+        ? "Enregistré à l'instant"
+        : diff < 60
+        ? `Enregistré il y a ${diff}s`
+        : diff < 3600
+        ? `Enregistré il y a ${Math.round(diff / 60)} min`
+        : `Enregistré à ${lastSavedAt.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}`;
+    return <span className="text-xs text-muted-foreground">{label}</span>;
+  }
+  return null;
+}
+
 // ─── Component ──────────────────────────────────────────────────
 
 export default function DevisDocument({ onBack, onSaved, existingDoc }: Props) {
@@ -711,8 +758,10 @@ export default function DevisDocument({ onBack, onSaved, existingDoc }: Props) {
     return [createLigne()];
   });
   const [docId, setDocId] = useState<string | null>(existingDoc?.id ?? null);
-  const [saved, setSaved] = useState(false);
+  // `saved` reste pour la compat ascendante (anciens callsites onSaved) — l'indicateur est maintenant fourni par AutosaveIndicator
+  const [, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [generating, setGenerating] = useState(false);
   const [showLignes, setShowLignes] = useState(false);
   const [sectionPhotos, setSectionPhotos] = useState<Record<number, PhotoItem[]>>(() => {
@@ -800,8 +849,30 @@ export default function DevisDocument({ onBack, onSaved, existingDoc }: Props) {
   const totalTVA = totalHT * (tvaRate / 100);
   const totalTTC = totalHT + totalTVA;
 
+  // ─── Autosave (debounced 800ms) ────────────────────────────
+  // On surveille values + lignes + sectionPhotos via une signature légère.
+  const autosaveSignature = JSON.stringify({
+    v: values,
+    l: lignes,
+    p: Object.fromEntries(
+      Object.entries(sectionPhotos).map(([k, arr]) => [
+        k,
+        arr.map((ph) => ({ id: ph.id, legende: ph.legende, categorie: ph.categorie })),
+      ])
+    ),
+  });
+
+  const autosave = useDebouncedAutosave(
+    autosaveSignature,
+    async () => {
+      await handleSave({ silent: true });
+    },
+    { delayMs: 800, enabled: true }
+  );
+
   // ─── Save ───────────────────────────────────────────────────
-  async function handleSave() {
+  async function handleSave(opts: { silent?: boolean } = {}) {
+    const { silent = false } = opts;
     setSaving(true);
     try {
       const titre = values.objet
@@ -830,8 +901,13 @@ export default function DevisDocument({ onBack, onSaved, existingDoc }: Props) {
         });
         if (res.ok) {
           setSaved(true);
+          setLastSavedAt(new Date());
           setTimeout(() => setSaved(false), 2000);
           onSaved?.();
+          if (!silent) toast.success("Devis enregistré");
+        } else {
+          await showApiError(res, "Enregistrement du devis impossible");
+          throw new Error(`HTTP ${res.status}`);
         }
       } else {
         const res = await fetch("/api/documents", {
@@ -850,12 +926,18 @@ export default function DevisDocument({ onBack, onSaved, existingDoc }: Props) {
           const created = await res.json();
           setDocId(created.id);
           setSaved(true);
+          setLastSavedAt(new Date());
           setTimeout(() => setSaved(false), 2000);
           onSaved?.();
+          if (!silent) toast.success("Devis créé");
+        } else {
+          await showApiError(res, "Création du devis impossible");
+          throw new Error(`HTTP ${res.status}`);
         }
       }
-    } catch {
-      // silently fail
+    } catch (err) {
+      if (!silent) showNetworkError(err, "Enregistrement impossible");
+      throw err;
     } finally {
       setSaving(false);
     }
@@ -916,20 +998,18 @@ export default function DevisDocument({ onBack, onSaved, existingDoc }: Props) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <AnimatePresence>
-            {saved && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex items-center gap-1 text-emerald-600 text-sm"
-              >
-                <CheckCircle2 className="h-4 w-4" />
-                Sauvegardé
-              </motion.div>
-            )}
-          </AnimatePresence>
-          <Button variant="outline" size="sm" onClick={handleSave} disabled={saving}>
+          <AutosaveIndicator
+            status={autosave.status}
+            lastSavedAt={autosave.lastSavedAt ?? lastSavedAt}
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              void autosave.flush();
+            }}
+            disabled={saving}
+          >
             {saving ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Save className="mr-1 h-3.5 w-3.5" />}
             Sauvegarder
           </Button>

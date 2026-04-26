@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { MUTATION_ROLES, ensureRole } from "@/lib/auth-helpers";
 
 /** GET /api/clients — Liste tous les clients */
 export async function GET(request: Request) {
@@ -8,10 +9,13 @@ export async function GET(request: Request) {
   const type = searchParams.get("type");
 
   const clients = await prisma.client.findMany({
-    where: type && type !== "TOUS" ? { type: type as never } : undefined,
+    where: {
+      deletedAt: null,
+      ...(type && type !== "TOUS" ? { type: type as never } : {}),
+    },
     include: {
-      projets: { select: { id: true } },
-      devis: { select: { id: true } },
+      projets: { where: { deletedAt: null }, select: { id: true } },
+      devis: { where: { deletedAt: null }, select: { id: true } },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -75,6 +79,9 @@ const createClientSchema = z.object({
 
 /** POST /api/clients — Créer un nouveau client */
 export async function POST(request: Request) {
+  const guard = await ensureRole(MUTATION_ROLES);
+  if (guard) return guard;
+
   let body: unknown;
   try {
     body = await request.json();
@@ -88,14 +95,9 @@ export async function POST(request: Request) {
   const result = createClientSchema.safeParse(body);
 
   if (!result.success) {
-    const flat = result.error.flatten();
-    const firstFieldError = Object.values(flat.fieldErrors)[0]?.[0];
     return NextResponse.json(
-      {
-        error: firstFieldError ?? "Données invalides",
-        details: flat,
-      },
-      { status: 400 }
+      { error: "ValidationError", issues: result.error.issues },
+      { status: 422 }
     );
   }
 

@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useContacts } from "@/lib/hooks/use-contacts";
+import { useLocalStorage } from "@/lib/hooks/useLocalStorage";
 import { exportToExcel, exportToPdf } from "@/lib/export-leads";
 import type { ClientType, LeadStatus, LeadSource, Lead } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
@@ -87,14 +88,23 @@ const EMPTY_FORM = {
 export default function ContactsPage() {
   const { contacts, loading, error, addContact, deleteContact } = useContacts();
   const [formError, setFormError] = useState<string | null>(null);
-  const [filterType, setFilterType] = useState<string>("TOUS");
-  const [search, setSearch] = useState("");
+  const [filterType, setFilterType] = useLocalStorage<string>(
+    "terrakotta:contacts:filterType",
+    "TOUS"
+  );
+  const [search, setSearch] = useLocalStorage<string>(
+    "terrakotta:contacts:search",
+    ""
+  );
   const [showForm, setShowForm] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
 
-  const [filterStatut, setFilterStatut] = useState<string>("TOUS");
+  const [filterStatut, setFilterStatut] = useLocalStorage<string>(
+    "terrakotta:contacts:filterStatut",
+    "TOUS"
+  );
 
   const filtered = contacts.filter((c) => {
     const matchType = filterType === "TOUS" || c.type === filterType;

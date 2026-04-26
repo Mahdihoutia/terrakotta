@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import {
+  DESTRUCTIVE_ROLES,
+  MUTATION_ROLES,
+  ensureRole,
+} from "@/lib/auth-helpers";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -214,8 +219,8 @@ const includeDetailRelations = {
 /** GET /api/projets/[id] — Détail d'un projet avec relations complètes */
 export async function GET(_request: Request, context: RouteContext) {
   const { id } = await context.params;
-  const projet = await prisma.projet.findUnique({
-    where: { id },
+  const projet = await prisma.projet.findFirst({
+    where: { id, deletedAt: null },
     include: includeDetailRelations,
   });
 
@@ -246,23 +251,40 @@ const updateProjetSchema = z.object({
 
 /** PATCH /api/projets/[id] — Mettre à jour un projet */
 export async function PATCH(request: Request, context: RouteContext) {
+  const guard = await ensureRole(MUTATION_ROLES);
+  if (guard) return guard;
+
   const { id } = await context.params;
-  const body: unknown = await request.json();
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "JSON invalide" }, { status: 400 });
+  }
   const result = updateProjetSchema.safeParse(body);
 
   if (!result.success) {
     return NextResponse.json(
-      { error: "Données invalides", details: result.error.flatten() },
-      { status: 400 }
+      { error: "ValidationError", issues: result.error.issues },
+      { status: 422 }
     );
   }
 
   const data = result.data;
 
+  // Vérifier que le projet n'est pas dans la corbeille
+  const existing = await prisma.projet.findFirst({
+    where: { id, deletedAt: null },
+    select: { id: true },
+  });
+  if (!existing) {
+    return NextResponse.json({ error: "Projet introuvable" }, { status: 404 });
+  }
+
   // If clientId is being changed, verify the new client exists
   if (data.clientId) {
-    const clientExists = await prisma.client.findUnique({
-      where: { id: data.clientId },
+    const clientExists = await prisma.client.findFirst({
+      where: { id: data.clientId, deletedAt: null },
       select: { id: true },
     });
     if (!clientExists) {
@@ -294,11 +316,17 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 }
 
-/** DELETE /api/projets/[id] — Supprimer un projet */
+/** DELETE /api/projets/[id] — Soft delete (corbeille) */
 export async function DELETE(_request: Request, context: RouteContext) {
+  const guard = await ensureRole(DESTRUCTIVE_ROLES);
+  if (guard) return guard;
+
   const { id } = await context.params;
   try {
-    await prisma.projet.delete({ where: { id } });
+    await prisma.projet.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Projet introuvable" }, { status: 404 });

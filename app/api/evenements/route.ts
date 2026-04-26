@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { MUTATION_ROLES, ensureRole } from "@/lib/auth-helpers";
 
 const createSchema = z.object({
   titre: z.string().min(1, "Titre requis"),
@@ -19,7 +20,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const mois = searchParams.get("mois"); // format: "2026-04"
 
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { deletedAt: null };
     if (mois) {
       const [year, month] = mois.split("-").map(Number);
       where.date = {
@@ -45,14 +46,22 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const guard = await ensureRole(MUTATION_ROLES);
+  if (guard) return guard;
+
   try {
-    const body = await req.json();
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ error: "JSON invalide" }, { status: 400 });
+    }
     const parsed = createSchema.safeParse(body);
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Données invalides", details: parsed.error.flatten() },
-        { status: 400 }
+        { error: "ValidationError", issues: parsed.error.issues },
+        { status: 422 }
       );
     }
 
