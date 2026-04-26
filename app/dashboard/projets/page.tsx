@@ -23,10 +23,13 @@ import {
   FileText,
   Sparkles,
   Calculator,
+  LayoutGrid,
+  List as ListIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLocalStorage } from "@/lib/hooks/useLocalStorage";
 import { motion, AnimatePresence } from "framer-motion";
+import ProjetsKanban from "@/components/dashboard/ProjetsKanban";
 
 type ProjetStatut = "EN_ATTENTE" | "EN_COURS" | "EN_PAUSE" | "TERMINE" | "ANNULE";
 type ClientType = "PARTICULIER" | "PROFESSIONNEL" | "COLLECTIVITE";
@@ -163,6 +166,10 @@ export default function ProjetsPage() {
   const [filterStatut, setFilterStatut] = useLocalStorage<string>(
     "terrakotta:projets:filterStatut",
     "TOUS"
+  );
+  const [viewMode, setViewMode] = useLocalStorage<"liste" | "kanban">(
+    "terrakotta:projets:viewMode",
+    "liste"
   );
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -628,31 +635,88 @@ export default function ProjetsPage() {
         )}
       </AnimatePresence>
 
-      {/* Filters */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1">
-        <Filter className="h-4 w-4 shrink-0 text-tk-text-faint" />
-        <div className="flex gap-1">
-          {statuts.map((s) => (
-            <Button
-              key={s}
-              variant={filterStatut === s ? "default" : "outline"}
-              size="sm"
-              onClick={() => setFilterStatut(s)}
-              className={cn(
-                "text-xs whitespace-nowrap",
-                filterStatut !== s &&
-                  "border-tk-border bg-tk-surface text-tk-text-muted hover:bg-tk-hover hover:text-tk-text-secondary"
-              )}
-            >
-              {s === "TOUS"
-                ? `Tous (${projets.length})`
-                : STATUT_LABELS[s as ProjetStatut]}
-            </Button>
-          ))}
+      {/* Filters + view toggle */}
+      <div className="flex items-center justify-between gap-3 overflow-x-auto pb-1">
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4 shrink-0 text-tk-text-faint" />
+          <div className="flex gap-1">
+            {statuts.map((s) => (
+              <Button
+                key={s}
+                variant={filterStatut === s ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilterStatut(s)}
+                className={cn(
+                  "text-xs whitespace-nowrap",
+                  filterStatut !== s &&
+                    "border-tk-border bg-tk-surface text-tk-text-muted hover:bg-tk-hover hover:text-tk-text-secondary"
+                )}
+              >
+                {s === "TOUS"
+                  ? `Tous (${projets.length})`
+                  : STATUT_LABELS[s as ProjetStatut]}
+              </Button>
+            ))}
+          </div>
+        </div>
+        <div className="inline-flex shrink-0 rounded-lg border border-tk-border bg-tk-surface p-0.5">
+          <button
+            type="button"
+            onClick={() => setViewMode("liste")}
+            aria-pressed={viewMode === "liste"}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
+              viewMode === "liste"
+                ? "bg-tk-hover text-tk-text"
+                : "text-tk-text-muted hover:text-tk-text"
+            )}
+          >
+            <ListIcon className="h-3.5 w-3.5" />
+            Liste
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode("kanban")}
+            aria-pressed={viewMode === "kanban"}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
+              viewMode === "kanban"
+                ? "bg-tk-hover text-tk-text"
+                : "text-tk-text-muted hover:text-tk-text"
+            )}
+          >
+            <LayoutGrid className="h-3.5 w-3.5" />
+            Kanban
+          </button>
         </div>
       </div>
 
+      {/* Kanban view */}
+      {viewMode === "kanban" && (
+        <ProjetsKanban
+          projets={filteredProjets.map((p) => ({
+            id: p.id,
+            titre: p.titre,
+            statut: p.statut,
+            typeTravaux: p.typeTravaux,
+            budgetPrevu: p.budgetPrevu,
+            updatedAt: p.updatedAt,
+            client: {
+              id: p.client.id,
+              nom: p.client.nom,
+              prenom: p.client.prenom,
+            },
+          }))}
+          onStatutChange={(id, statut) =>
+            setProjets((prev) =>
+              prev.map((p) => (p.id === id ? { ...p, statut } : p))
+            )
+          }
+        />
+      )}
+
       {/* Table */}
+      {viewMode === "liste" && (
       <div className="glass rounded-2xl overflow-hidden">
         <Table>
           <TableHeader>
@@ -777,6 +841,7 @@ export default function ProjetsPage() {
           </TableBody>
         </Table>
       </div>
+      )}
     </div>
   );
 }

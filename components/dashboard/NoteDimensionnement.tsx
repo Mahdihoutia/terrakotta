@@ -19,9 +19,16 @@ import {
   Loader2,
   Plus,
   Trash2,
+  HelpCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -4588,6 +4595,22 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
                           {field.unit && (
                             <span className="text-xs text-muted-foreground font-normal">({field.unit})</span>
                           )}
+                          {field.help && (
+                            <TooltipProvider delay={150}>
+                              <Tooltip>
+                                <TooltipTrigger
+                                  type="button"
+                                  className="ml-0.5 inline-flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                                  aria-label={`Aide : ${field.label}`}
+                                >
+                                  <HelpCircle className="h-3.5 w-3.5" />
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs text-left leading-snug">
+                                  {field.help}
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
                         </label>
 
                         {field.type === "select" ? (
@@ -4617,12 +4640,6 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
                             placeholder={field.placeholder}
                             className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
                           />
-                        )}
-
-                        {field.help && (
-                          <p className="text-[11px] text-muted-foreground leading-snug">
-                            {field.help}
-                          </p>
                         )}
                       </div>
                     ))}
@@ -5107,6 +5124,22 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
                                         {field.unit && (
                                           <span className="text-xs text-muted-foreground font-normal">({field.unit})</span>
                                         )}
+                                        {field.help && (
+                                          <TooltipProvider delay={150}>
+                                            <Tooltip>
+                                              <TooltipTrigger
+                                                type="button"
+                                                className="ml-0.5 inline-flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                                                aria-label={`Aide : ${field.label}`}
+                                              >
+                                                <HelpCircle className="h-3.5 w-3.5" />
+                                              </TooltipTrigger>
+                                              <TooltipContent className="max-w-xs text-left leading-snug">
+                                                {field.help}
+                                              </TooltipContent>
+                                            </Tooltip>
+                                          </TooltipProvider>
+                                        )}
                                       </label>
 
                                       {field.type === "select" ? (
@@ -5136,12 +5169,6 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
                                           placeholder={field.placeholder}
                                           className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
                                         />
-                                      )}
-
-                                      {field.help && (
-                                        <p className="text-[11px] text-muted-foreground leading-snug">
-                                          {field.help}
-                                        </p>
                                       )}
                                     </div>
                                   );

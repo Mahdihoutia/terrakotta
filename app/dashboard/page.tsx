@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRight, Sparkles } from "lucide-react";
 import KpiCard from "@/components/dashboard/KpiCard";
+import TodayWidget from "@/components/dashboard/TodayWidget";
 import LeadsChart from "@/components/dashboard/LeadsChart";
 import RecentLeads from "@/components/dashboard/RecentLeads";
 import AgentStatusCard from "@/components/dashboard/AgentStatusCard";
@@ -326,6 +327,16 @@ export default async function DashboardPage() {
             </Link>
           </div>
         </div>
+      </section>
+
+      {/* ── À faire aujourd'hui ─────────────────────────────── */}
+      <section className="space-y-4">
+        <SectionHeader
+          kicker="Aujourd'hui"
+          title="Ce qu'il vous reste à faire"
+          subtitle="Jalons, devis, rendez-vous et leads à traiter en priorité"
+        />
+        <TodayWidget />
       </section>
 
       {/* ── KPIs principaux ─────────────────────────────────── */}

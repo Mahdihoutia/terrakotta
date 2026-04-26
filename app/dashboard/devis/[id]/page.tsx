@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   ArrowLeft,
   Save,
@@ -29,6 +29,7 @@ import {
   XCircle,
   FileText,
   Download,
+  Mail,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { showApiError, showNetworkError } from "@/lib/api-errors";
@@ -744,6 +745,32 @@ export default function DevisDetailPage({ params }: Props) {
                 )}
                 Télécharger PDF
               </Button>
+              {devis.statut === "ENVOYE" && devis.client.email && (
+                <a
+                  href={(() => {
+                    const prenom = devis.client.prenom ?? "";
+                    const nom = devis.client.nom;
+                    const subject = `Relance devis ${devis.numero}`;
+                    const dateStr = formatDate(devis.dateEmis);
+                    const body =
+                      `Bonjour ${prenom} ${nom},\n\n` +
+                      `Je reviens vers vous concernant le devis ${devis.numero} ` +
+                      `du ${dateStr}` +
+                      (devis.objet ? ` pour ${devis.objet}` : "") +
+                      `.\n\nReste disponible pour toute question.\n\nCordialement,\nKilowater`;
+                    return `mailto:${devis.client.email}?subject=${encodeURIComponent(
+                      subject
+                    )}&body=${encodeURIComponent(body)}`;
+                  })()}
+                  className={cn(
+                    buttonVariants({ variant: "outline", size: "sm" }),
+                    "border-orange-500/30 bg-orange-500/5 text-orange-500 hover:bg-orange-500/10"
+                  )}
+                >
+                  <Mail className="mr-2 h-3.5 w-3.5" />
+                  Relancer par email
+                </a>
+              )}
               <Button
                 variant="outline"
                 size="sm"

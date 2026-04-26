@@ -82,6 +82,15 @@ function formatDate(dateStr: string): string {
   }).format(new Date(dateStr));
 }
 
+const RELANCE_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** Un devis ENVOYE non touché depuis > 7j est candidat à la relance. */
+function needsRelance(d: Devis): boolean {
+  if (d.statut !== "ENVOYE") return false;
+  const updated = new Date(d.updatedAt).getTime();
+  return Date.now() - updated > RELANCE_THRESHOLD_MS;
+}
+
 export default function DevisListPage() {
   const [devisList, setDevisList] = useState<Devis[]>([]);
   const [clients, setClients] = useState<SimpleClient[]>([]);
@@ -527,14 +536,24 @@ export default function DevisListPage() {
                   {formatCurrency(devis.montantTTC)}
                 </TableCell>
                 <TableCell>
-                  <span
-                    className={cn(
-                      "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
-                      STATUT_STYLES[devis.statut]
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={cn(
+                        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
+                        STATUT_STYLES[devis.statut]
+                      )}
+                    >
+                      {STATUT_LABELS[devis.statut]}
+                    </span>
+                    {needsRelance(devis) && (
+                      <span
+                        className="inline-flex items-center rounded-full border border-orange-500/30 bg-orange-500/10 px-1.5 py-0.5 text-[10px] font-medium text-orange-500"
+                        title="Envoyé il y a plus de 7 jours sans retour"
+                      >
+                        À relancer
+                      </span>
                     )}
-                  >
-                    {STATUT_LABELS[devis.statut]}
-                  </span>
+                  </div>
                 </TableCell>
                 <TableCell className="text-xs text-tk-text-faint">
                   {formatDate(devis.dateEmis)}
