@@ -34,3 +34,10 @@ npx prisma migrate resolve --applied <nom_de_la_migration>
   les tables `factures` / `lignes_factures` (FK vers `clients`, `projets`,
   `devis`). La colonne `factures.devis_origine_id` est unique pour garantir
   une seule facture par devis.
+- `2026_04_26_add_postes_catalogue.sql` — Feature A (#19) : crée la table
+  `postes_catalogue` (modèles réutilisables de lignes de devis), avec
+  soft-delete (`deleted_at`) et index sur `categorie`.
+- `2026_04_26_extend_aides_and_lead_source.sql` — Features C (#18) et B (#15) :
+  ajoute `updated_at` / `deleted_at` (+ index) à la table `aides` pour le
+  module Suivi de prime, et ajoute la valeur `SIMULATEUR_AIDES` à l'enum
+  `LeadSource` pour les leads issus du simulateur public.

@@ -222,6 +222,26 @@ model LigneFacture {
   @@map("lignes_factures")
 }
 
+// ─── Poste catalogue (modèles de lignes de devis) ──────────────
+
+model PosteCatalogue {
+  id           String    @id @default(cuid())
+  designation  String
+  categorie    String?
+  unite        String    @default("U")
+  prixUnitHT   Decimal   @map("prix_unit_ht")
+  tauxTVA      Decimal   @default(20) @map("taux_tva")
+  description  String?
+  ordre        Int       @default(0)
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  @@index([deletedAt])
+  @@index([categorie])
+  @@map("postes_catalogue")
+}
+
 // ─── Aide financière ───────────────────────────────────────────
 
 model Aide {
@@ -241,7 +261,11 @@ model Aide {
   notes         String?
   projet        Projet     @relation(fields: [projetId], references: [id], onDelete: Cascade)
   createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @default(now()) @updatedAt @map("updated_at")
+  deletedAt     DateTime?  @map("deleted_at")
 
+  @@index([deletedAt])
+  @@index([projetId])
   @@map("aides")
 }
 
@@ -353,6 +377,7 @@ enum LeadSource {
   CADASTRE_DVF
   FRANCE_TRAVAIL
   ANNONCES_LEGALES
+  SIMULATEUR_AIDES
   AUTRE
 }
 

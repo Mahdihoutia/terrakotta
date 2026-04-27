@@ -108,6 +108,19 @@ export interface FactureDetail extends Omit<Facture, "client" | "lignesCount"> {
   lignes: LigneFacture[]
 }
 
+export interface PosteCatalogue {
+  id: string
+  designation: string
+  categorie: string | null
+  unite: string
+  prixUnitHT: number
+  tauxTVA: number
+  description: string | null
+  ordre: number
+  createdAt: string
+  updatedAt: string
+}
+
 export type AgentStatus = "ACTIF" | "EN_PAUSE" | "ERREUR" | "INACTIF"
 
 export interface Lead {
