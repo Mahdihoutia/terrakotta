@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -97,11 +98,30 @@ function formatDateFr(dateStr: string): string {
 }
 
 export default function DocumentsPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center py-12"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>}>
+      <DocumentsPageInner />
+    </Suspense>
+  );
+}
+
+function DocumentsPageInner() {
+  const searchParams = useSearchParams();
   const [selectedType, setSelectedType] = useState<DocumentType | null>(null);
   const [editingDoc, setEditingDoc] = useState<DocumentRecord | null>(null);
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(true);
   const [activeTab, setActiveTab] = useState("generate");
+
+  // ─── Auto-sélection depuis l'audit (?create=note) ─────────────
+  useEffect(() => {
+    const create = searchParams.get("create");
+    if (create === "note") {
+      setSelectedType("NOTE_DIMENSIONNEMENT");
+      setEditingDoc(null);
+      setActiveTab("generate");
+    }
+  }, [searchParams]);
 
   // ─── Fetch documents ─────────────────────────────────────
   const fetchDocuments = useCallback(async () => {

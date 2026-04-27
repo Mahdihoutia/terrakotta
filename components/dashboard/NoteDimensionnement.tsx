@@ -3809,6 +3809,27 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
     }
     return {};
   });
+
+  // ─── Pré-remplissage depuis l'audit (C3) ───────────────────────
+  // Si l'utilisateur arrive via « Créer la note CEE associée » depuis
+  // l'audit, on charge la fiche choisie et le payload de valeurs
+  // mappées (audit → questionnaire de note), puis on purge le storage.
+  useEffect(() => {
+    if (existingDoc) return;
+    try {
+      const raw = typeof window !== "undefined"
+        ? localStorage.getItem("terrakotta:audit-to-note-prefill")
+        : null;
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { fiche?: FicheId; values?: Record<string, string>; ref?: string | null };
+      if (parsed.fiche) setSelectedFiche(parsed.fiche);
+      if (parsed.values) {
+        setValues((prev) => ({ ...parsed.values, ...prev }));
+      }
+      localStorage.removeItem("terrakotta:audit-to-note-prefill");
+    } catch { /* ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [docId, setDocId] = useState<string | null>(existingDoc?.id ?? null);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);

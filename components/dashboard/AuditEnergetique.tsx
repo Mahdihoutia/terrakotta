@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +20,23 @@ import {
   Star,
   Trash2,
   Target,
+  Building2,
+  Sparkles,
 } from "lucide-react";
+import ValidationBanner, { type ValidationItem } from "./audit/ValidationBanner";
+import SuggestionsPanel from "./audit/SuggestionsPanel";
+import BatimentTypePicker from "./audit/BatimentTypePicker";
+import FicheChoiceDialog from "./audit/FicheChoiceDialog";
+import {
+  detectFichesCandidates,
+  mapAuditToNote,
+  type FicheCandidate,
+} from "@/lib/thermal/audit-to-note-mapping";
+import {
+  computeSuggestions,
+  getFieldIssue,
+  type Suggestion,
+} from "@/lib/thermal";
 import type { PreconisationAction } from "@/lib/pdf-styles";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -1227,7 +1244,11 @@ function ApplyButton({ onClick, label = "Appliquer ces valeurs" }: ApplyButtonPr
 // ─── Component ──────────────────────────────────────────────────
 
 export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props) {
+  const router = useRouter();
   const [activeSection, setActiveSection] = useState(0);
+  const [showBatimentPicker, setShowBatimentPicker] = useState(false);
+  const [ficheCandidates, setFicheCandidates] = useState<FicheCandidate[]>([]);
+  const [showFicheChoice, setShowFicheChoice] = useState(false);
   const [values, setValues] = useState<FormValues>(() => {
     if (existingDoc?.donnees) {
       try {
@@ -1352,6 +1373,114 @@ export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props
     return checkEcartFactureCalc(consoFromFacture, calc);
   }, [values, thermal.besoins]);
 
+  // ─── C1 — Bandeau global d'alertes (validations enrichies) ─────
+  const fieldIssueCtx = useMemo(
+    () => ({
+      dpeCalcule: thermal.dpe?.classe_dpe,
+      consoTotaleCalculee: thermal.dpe?.cep_kwh,
+    }),
+    [thermal.dpe],
+  );
+  const validationItems = useMemo<ValidationItem[]>(() => {
+    const items: ValidationItem[] = [];
+    if (issueDeperditions) {
+      items.push({
+        ...issueDeperditions,
+        id: "deperditions-sum",
+        titre: "Somme des déperditions",
+        sectionIdx: 7,
+      });
+    }
+    if (issueUMurs) {
+      items.push({
+        ...issueUMurs,
+        id: "u-murs",
+        titre: "Cohérence U / isolation murs",
+        sectionIdx: 2,
+      });
+    }
+    if (issueEcart) {
+      items.push({
+        ...issueEcart,
+        id: "ecart-facture",
+        titre: "Écart facture / calcul",
+        sectionIdx: 5,
+      });
+    }
+    const probes: Array<[string, string, number]> = [
+      ["n50", "Étanchéité à l'air vs année de construction", 3],
+      ["dpe_actuel", "DPE saisi vs DPE calculé", 5],
+      ["surface_plancher", "Cohérence des surfaces", 1],
+      ["toiture_r", "Cohérence U / isolation toiture", 2],
+      ["conso_totale", "Σ usages vs conso totale", 5],
+    ];
+    for (const [fieldId, titre, sectionIdx] of probes) {
+      const issue = getFieldIssue(fieldId, values, fieldIssueCtx);
+      if (issue) {
+        items.push({ ...issue, id: `field-${fieldId}`, titre, sectionIdx });
+      }
+    }
+    return items;
+  }, [issueDeperditions, issueUMurs, issueEcart, values, fieldIssueCtx]);
+
+  // ─── C2 — Suggestions intelligentes ───────────────────────────
+  const suggestions = useMemo<Suggestion[]>(
+    () => computeSuggestions(values, thermal),
+    [values, thermal],
+  );
+
+  function applySuggestion(s: Suggestion) {
+    updateValue(s.fieldId, s.value);
+  }
+
+  // ─── C3 — Création note CEE depuis l'audit ────────────────────
+  function handleCreateNoteFromAudit() {
+    const candidates = detectFichesCandidates(values);
+    if (candidates.length === 0) {
+      // Note vierge : on redirige sans payload.
+      router.push("/dashboard/documents");
+      return;
+    }
+    if (candidates.length === 1) {
+      const fiche = candidates[0].id;
+      const prefill = mapAuditToNote(values, fiche);
+      try {
+        localStorage.setItem(
+          "terrakotta:audit-to-note-prefill",
+          JSON.stringify({ fiche, values: prefill, ref: values.ref_audit || null }),
+        );
+      } catch { /* localStorage unavailable */ }
+      router.push("/dashboard/documents?create=note&prefilled=1");
+      return;
+    }
+    setFicheCandidates(candidates);
+    setShowFicheChoice(true);
+  }
+
+  function pickFiche(fiche: FicheCandidate["id"]) {
+    const prefill = mapAuditToNote(values, fiche);
+    try {
+      localStorage.setItem(
+        "terrakotta:audit-to-note-prefill",
+        JSON.stringify({ fiche, values: prefill, ref: values.ref_audit || null }),
+      );
+    } catch { /* localStorage unavailable */ }
+    setShowFicheChoice(false);
+    router.push("/dashboard/documents?create=note&prefilled=1");
+  }
+
+  // ─── C4 — Chargement d'un bâtiment-type ───────────────────────
+  function loadBatimentTemplate(tplValues: Record<string, string>) {
+    setValues((prev) => ({ ...prev, ...tplValues }));
+    setSaved(false);
+    setActiveSection(0);
+  }
+
+  const hasExistingValues = useMemo(
+    () => Object.values(values).some((v) => v && v.trim().length > 0),
+    [values],
+  );
+
   async function handleSave() {
     setSaving(true);
     try {
@@ -1450,7 +1579,15 @@ export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props
             <p className="text-sm text-muted-foreground">{completionPct}% complété — {filledRequired.length}/{allRequired.length} champs obligatoires{totalPhotos > 0 && ` — ${totalPhotos} photo${totalPhotos > 1 ? "s" : ""}`}</p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" size="sm" onClick={() => setShowBatimentPicker(true)}>
+            <Building2 className="mr-2 h-4 w-4" />
+            Charger un bâtiment type
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleCreateNoteFromAudit} disabled={!hasExistingValues}>
+            <Sparkles className="mr-2 h-4 w-4" />
+            Créer la note CEE associée
+          </Button>
           <Button variant="outline" size="sm" onClick={handleSave} disabled={saving}>
             {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : saved ? <CheckCircle2 className="mr-2 h-4 w-4 text-emerald-500" /> : <Save className="mr-2 h-4 w-4" />}
             {saving ? "Sauvegarde..." : saved ? "Sauvegardé" : "Sauvegarder"}
@@ -1461,6 +1598,28 @@ export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props
           </Button>
         </div>
       </div>
+
+      <BatimentTypePicker
+        open={showBatimentPicker}
+        onOpenChange={setShowBatimentPicker}
+        hasExistingValues={hasExistingValues}
+        onSelect={(tpl) => loadBatimentTemplate(tpl.values)}
+      />
+
+      <FicheChoiceDialog
+        open={showFicheChoice}
+        onOpenChange={setShowFicheChoice}
+        candidates={ficheCandidates}
+        onSelect={pickFiche}
+        onCreateBlank={() => {
+          setShowFicheChoice(false);
+          router.push("/dashboard/documents");
+        }}
+      />
+
+      {hasExistingValues && (
+        <ValidationBanner issues={validationItems} onGoTo={setActiveSection} />
+      )}
 
       <div className="h-1.5 rounded-full bg-muted overflow-hidden">
         <motion.div className="h-full rounded-full bg-primary" initial={{ width: 0 }} animate={{ width: `${completionPct}%` }} transition={{ duration: 0.4 }} />
@@ -1732,8 +1891,30 @@ export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props
                     </div>
                   )}
 
+                  <SuggestionsPanel
+                    suggestions={suggestions.filter((s) =>
+                      currentSection.fields.some((f) => f.id === s.fieldId),
+                    )}
+                    onApply={applySuggestion}
+                    onApplyAll={() => {
+                      const ids = new Set(currentSection.fields.map((f) => f.id));
+                      setValues((prev) => {
+                        const next = { ...prev };
+                        for (const s of suggestions) {
+                          if (ids.has(s.fieldId) && (!next[s.fieldId] || !next[s.fieldId].trim())) {
+                            next[s.fieldId] = s.value;
+                          }
+                        }
+                        return next;
+                      });
+                      setSaved(false);
+                    }}
+                  />
+
                   <div className="grid gap-4 sm:grid-cols-2">
-                    {currentSection.fields.map((field) => (
+                    {currentSection.fields.map((field) => {
+                      const fieldIssue = getFieldIssue(field.id, values, fieldIssueCtx);
+                      return (
                       <div key={field.id} className={cn("space-y-1.5", field.colSpan === 2 && "sm:col-span-2")}>
                         <label className="text-sm font-medium flex items-center gap-1">
                           {field.label}{field.required && <span className="text-destructive">*</span>}
@@ -1749,9 +1930,16 @@ export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props
                         ) : (
                           <input type={field.type} value={values[field.id] || ""} onChange={(e) => updateValue(field.id, e.target.value)} placeholder={field.placeholder} className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none" />
                         )}
+                        {fieldIssue && (
+                          <p className="text-[11px] text-amber-700 flex items-start gap-1 leading-snug">
+                            <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" />
+                            <span>{fieldIssue.message}</span>
+                          </p>
+                        )}
                         {field.help && <p className="text-[11px] text-muted-foreground leading-snug">{field.help}</p>}
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
 
                   {/* Blocs de calcul thermique (sections 3, 4, 6, 7, 8). */}

@@ -20,3 +20,4 @@ export * from "./apports-solaires";
 export * from "./besoins-chauffage";
 export * from "./dpe";
 export * from "./validation";
+export * from "./suggestions";
