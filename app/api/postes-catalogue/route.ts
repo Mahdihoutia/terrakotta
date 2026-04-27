@@ -46,12 +46,35 @@ export async function GET(request: Request) {
     ];
   }
 
-  const postes = await prisma.posteCatalogue.findMany({
-    where,
-    orderBy: [{ categorie: "asc" }, { ordre: "asc" }, { designation: "asc" }],
-  });
-
-  return NextResponse.json(postes.map(serializePoste));
+  try {
+    const postes = await prisma.posteCatalogue.findMany({
+      where,
+      orderBy: [{ categorie: "asc" }, { ordre: "asc" }, { designation: "asc" }],
+    });
+    return NextResponse.json(postes.map(serializePoste));
+  } catch (err) {
+    // Cas typique : table postes_catalogue absente (migration pas encore passée).
+    const message = err instanceof Error ? err.message : "Erreur inconnue";
+    const isMissingTable =
+      message.includes("postes_catalogue") ||
+      message.includes("does not exist") ||
+      message.includes("relation") ||
+      message.includes("P2021");
+    if (isMissingTable) {
+      return NextResponse.json(
+        {
+          error: "MigrationPending",
+          message:
+            "La table postes_catalogue n'existe pas encore. Exécute la migration SQL dans Supabase (voir prisma/migrations/_manual/2026_04_26_add_postes_catalogue.sql).",
+        },
+        { status: 503 },
+      );
+    }
+    return NextResponse.json(
+      { error: "ServerError", message },
+      { status: 500 },
+    );
+  }
 }
 
 /** POST /api/postes-catalogue — Création d'un poste catalogue. */

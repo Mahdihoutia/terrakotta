@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -20,40 +21,112 @@ import {
   Radar,
   Trash2,
   LogOut,
+  ChevronDown,
+  UserSquare2,
+  FileSpreadsheet,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { useSearch } from "./SearchProvider";
 
-interface NavItem {
+type IconType = React.ComponentType<{ className?: string }>;
+
+interface NavLink {
+  kind: "link";
   label: string;
   href: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: IconType;
 }
 
+interface NavGroup {
+  kind: "group";
+  label: string;
+  icon: IconType;
+  /** Préfixe d'URL utilisé pour détecter "active" (et auto-ouvrir au load). */
+  matchPrefix: string;
+  children: NavLink[];
+}
+
+type NavItem = NavLink | NavGroup;
+
 const TOP_ITEMS: NavItem[] = [
-  { label: "Vue d'ensemble", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Leads",          href: "/dashboard/leads",      icon: Users },
-  { label: "Contacts",       href: "/dashboard/contacts",   icon: Contact },
-  { label: "Projets",        href: "/dashboard/projets",    icon: FolderKanban },
-  { label: "Devis",          href: "/dashboard/devis",      icon: Receipt },
-  { label: "Factures",       href: "/dashboard/factures",   icon: ReceiptText },
-  { label: "Catalogue",      href: "/dashboard/catalogue",  icon: BookMarked },
-  { label: "Prospection",     href: "/dashboard/prospection", icon: Radar },
-  { label: "AI Agents",      href: "/dashboard/agents",     icon: Bot },
-  { label: "Calendrier",     href: "/dashboard/calendrier", icon: CalendarDays },
-  { label: "Documents",      href: "/dashboard/documents",  icon: FileText },
-  { label: "Statistiques",   href: "/dashboard/stats",      icon: BarChart3 },
+  { kind: "link", label: "Vue d'ensemble", href: "/dashboard", icon: LayoutDashboard },
+  {
+    kind: "group",
+    label: "Contact",
+    icon: UserSquare2,
+    matchPrefix: "/dashboard/contact-group",
+    children: [
+      { kind: "link", label: "Contacts",    href: "/dashboard/contacts",    icon: Contact },
+      { kind: "link", label: "Leads",       href: "/dashboard/leads",       icon: Users },
+      { kind: "link", label: "Prospection", href: "/dashboard/prospection", icon: Radar },
+    ],
+  },
+  { kind: "link", label: "Projets",     href: "/dashboard/projets",     icon: FolderKanban },
+  {
+    kind: "group",
+    label: "Facturation",
+    icon: FileSpreadsheet,
+    matchPrefix: "/dashboard/billing-group",
+    children: [
+      { kind: "link", label: "Devis",     href: "/dashboard/devis",     icon: Receipt },
+      { kind: "link", label: "Factures",  href: "/dashboard/factures",  icon: ReceiptText },
+      { kind: "link", label: "Catalogue", href: "/dashboard/catalogue", icon: BookMarked },
+    ],
+  },
+  { kind: "link", label: "AI Agents",    href: "/dashboard/agents",     icon: Bot },
+  { kind: "link", label: "Calendrier",   href: "/dashboard/calendrier", icon: CalendarDays },
+  { kind: "link", label: "Documents",    href: "/dashboard/documents",  icon: FileText },
+  { kind: "link", label: "Statistiques", href: "/dashboard/stats",      icon: BarChart3 },
 ];
 
-const BOTTOM_ITEMS: NavItem[] = [
-  { label: "Corbeille",   href: "/dashboard/corbeille", icon: Trash2 },
-  { label: "Paramètres",  href: "/dashboard/settings",  icon: Settings },
+const BOTTOM_ITEMS: NavLink[] = [
+  { kind: "link", label: "Corbeille",  href: "/dashboard/corbeille", icon: Trash2 },
+  { kind: "link", label: "Paramètres", href: "/dashboard/settings",  icon: Settings },
 ];
+
+/** Set des hrefs enfants d'un groupe — utilisé pour décider si le groupe est actif. */
+function groupChildHrefs(g: NavGroup): string[] {
+  return g.children.map((c) => c.href);
+}
+
+function isPathActive(href: string, pathname: string): boolean {
+  if (href === "/dashboard") return pathname === "/dashboard";
+  return pathname.startsWith(href);
+}
 
 export default function Sidebar() {
-  const pathname  = usePathname();
+  const pathname = usePathname();
   const { openSearch } = useSearch();
+
+  // État ouvert/fermé des groupes — auto-ouvert si une route enfant est active.
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    for (const item of TOP_ITEMS) {
+      if (item.kind === "group") {
+        initial[item.label] = false;
+      }
+    }
+    return initial;
+  });
+
+  // Auto-ouvre le groupe contenant la route active.
+  useEffect(() => {
+    setOpenGroups((prev) => {
+      const next = { ...prev };
+      for (const item of TOP_ITEMS) {
+        if (item.kind === "group") {
+          const childActive = groupChildHrefs(item).some((href) => isPathActive(href, pathname));
+          if (childActive) next[item.label] = true;
+        }
+      }
+      return next;
+    });
+  }, [pathname]);
+
+  function toggleGroup(label: string) {
+    setOpenGroups((prev) => ({ ...prev, [label]: !prev[label] }));
+  }
 
   return (
     <aside
@@ -64,24 +137,27 @@ export default function Sidebar() {
         width: "72px",
         transition: "width 300ms cubic-bezier(0.4, 0, 0.2, 1)",
       }}
-      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.width = "240px"; }}
-      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.width = "72px"; }}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLElement).style.width = "240px";
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLElement).style.width = "72px";
+      }}
     >
-      {/* ── Subtle gradient overlay ────────────────────────────── */}
+      {/* Subtle gradient overlay */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
-          background: "linear-gradient(180deg, rgba(59,130,246,0.04) 0%, transparent 50%, rgba(59,130,246,0.03) 100%)",
+          background:
+            "linear-gradient(180deg, rgba(59,130,246,0.04) 0%, transparent 50%, rgba(59,130,246,0.03) 100%)",
         }}
       />
-      {/* Halo bleu — bas */}
       <div
         className="pointer-events-none absolute -bottom-24 -right-24 h-[320px] w-[320px] rounded-full"
         style={{
           background: "radial-gradient(circle, rgba(59,130,246,0.20) 0%, transparent 70%)",
         }}
       />
-      {/* Halo bleu — haut */}
       <div
         className="pointer-events-none absolute -top-20 -left-20 h-[260px] w-[260px] rounded-full"
         style={{
@@ -89,10 +165,12 @@ export default function Sidebar() {
         }}
       />
 
-      {/* ── Logo ──────────────────────────────────────────────── */}
-      <div className="relative z-10 mb-7 flex items-center gap-3 px-[14px]">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
-          style={{ background: "rgba(59,130,246,0.12)" }}>
+      {/* Logo */}
+      <div className="relative z-10 mb-6 flex items-center gap-3 px-[14px]">
+        <div
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+          style={{ background: "rgba(59,130,246,0.12)" }}
+        >
           <Zap
             className="h-6 w-6 rotate-12"
             style={{
@@ -102,140 +180,155 @@ export default function Sidebar() {
             }}
           />
         </div>
-        <div className="overflow-hidden" style={{ opacity: 0, transition: "opacity 250ms ease 60ms" }}
-          ref={(el) => {
-            if (!el) return;
-            const aside = el.closest("aside");
-            if (!aside) return;
-            const show = () => { el.style.opacity = "1"; };
-            const hide = () => { el.style.opacity = "0"; };
-            aside.addEventListener("mouseenter", show);
-            aside.addEventListener("mouseleave", hide);
-          }}
-        >
+        <FadeLabel>
           <span
             className="block whitespace-nowrap text-[1.05rem] font-bold tracking-[0.10em] text-white"
             style={{ fontFamily: "var(--font-display), Georgia, serif" }}
           >
             KILOWATER
           </span>
-          <span className="block text-[0.6rem] uppercase tracking-[0.18em]"
-            style={{ color: "rgba(148,163,184,0.55)" }}>
+          <span
+            className="block text-[0.6rem] uppercase tracking-[0.18em]"
+            style={{ color: "rgba(148,163,184,0.55)" }}
+          >
             Tableau de bord
           </span>
-        </div>
+        </FadeLabel>
       </div>
 
-      {/* ── Main nav ──────────────────────────────────────────── */}
-      <nav className="relative z-10 flex flex-1 flex-col gap-0.5 px-[10px]">
+      {/* Main nav */}
+      <nav className="relative z-10 flex flex-1 flex-col gap-0.5 overflow-y-auto px-[10px] no-scrollbar">
         {TOP_ITEMS.map((item) => {
-          const isActive =
-            item.href === "/dashboard"
-              ? pathname === "/dashboard"
-              : pathname.startsWith(item.href);
-          const Icon = item.icon;
-
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn("sk-item", isActive ? "sk-item-active" : "")}
-            >
-              <Icon className="h-[17px] w-[17px] shrink-0" />
-              <span
-                className="whitespace-nowrap text-[0.82rem] font-medium overflow-hidden"
-                style={{ opacity: 0, transition: "opacity 220ms ease 50ms" }}
-                ref={(el) => {
-                  if (!el) return;
-                  const aside = el.closest("aside");
-                  if (!aside) return;
-                  const show = () => { el.style.opacity = "1"; };
-                  const hide = () => { el.style.opacity = "0"; };
-                  aside.addEventListener("mouseenter", show);
-                  aside.addEventListener("mouseleave", hide);
-                }}
+          if (item.kind === "link") {
+            const active = isPathActive(item.href, pathname);
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn("sk-item", active ? "sk-item-active" : "")}
               >
-                {item.label}
-              </span>
-            </Link>
+                <Icon className="h-[17px] w-[17px] shrink-0" />
+                <FadeLabel>
+                  <span className="whitespace-nowrap text-[0.82rem] font-medium">
+                    {item.label}
+                  </span>
+                </FadeLabel>
+              </Link>
+            );
+          }
+
+          // Group
+          const Icon = item.icon;
+          const childHrefs = groupChildHrefs(item);
+          const groupActive = childHrefs.some((href) => isPathActive(href, pathname));
+          const isOpen = openGroups[item.label] ?? false;
+          return (
+            <div key={item.label}>
+              <button
+                type="button"
+                onClick={() => toggleGroup(item.label)}
+                className={cn(
+                  "sk-item w-full text-left",
+                  groupActive ? "sk-item-active" : "",
+                )}
+                aria-expanded={isOpen}
+              >
+                <Icon className="h-[17px] w-[17px] shrink-0" />
+                <FadeLabel className="flex-1">
+                  <span className="whitespace-nowrap text-[0.82rem] font-medium">
+                    {item.label}
+                  </span>
+                </FadeLabel>
+                <FadeLabel>
+                  <ChevronDown
+                    className={cn(
+                      "h-3.5 w-3.5 shrink-0 transition-transform duration-200",
+                      isOpen ? "rotate-0" : "-rotate-90",
+                    )}
+                    style={{ color: "rgba(148,163,184,0.7)" }}
+                  />
+                </FadeLabel>
+              </button>
+
+              {/* Children — visibles uniquement si groupe ouvert ET sidebar étendu */}
+              <div
+                className={cn(
+                  "overflow-hidden transition-[max-height,opacity] duration-200 ease-out",
+                  isOpen ? "max-h-64 opacity-100" : "max-h-0 opacity-0",
+                )}
+              >
+                <div className="ml-[10px] mt-0.5 flex flex-col gap-0.5 border-l border-white/[0.06] pl-2">
+                  {item.children.map((child) => {
+                    const ChildIcon = child.icon;
+                    const childActive = isPathActive(child.href, pathname);
+                    return (
+                      <Link
+                        key={child.href}
+                        href={child.href}
+                        className={cn(
+                          "sk-item sk-subitem",
+                          childActive ? "sk-item-active" : "",
+                        )}
+                      >
+                        <ChildIcon className="h-[15px] w-[15px] shrink-0" />
+                        <FadeLabel>
+                          <span className="whitespace-nowrap text-[0.78rem] font-medium">
+                            {child.label}
+                          </span>
+                        </FadeLabel>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
           );
         })}
       </nav>
 
-      {/* ── Divider ───────────────────────────────────────────── */}
-      <div className="relative z-10 mx-[14px] my-3"
-        style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }} />
+      {/* Divider */}
+      <div
+        className="relative z-10 mx-[14px] my-3"
+        style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}
+      />
 
-      {/* ── Bottom nav ────────────────────────────────────────── */}
+      {/* Bottom nav */}
       <div className="relative z-10 flex flex-col gap-0.5 px-[10px]">
-
-        {/* Recherche */}
         <button onClick={openSearch} className="sk-item w-full text-left">
           <Search className="h-[17px] w-[17px] shrink-0" />
-          <span
-            className="whitespace-nowrap text-[0.82rem] font-medium"
-            style={{ opacity: 0, transition: "opacity 220ms ease 50ms" }}
-            ref={(el) => {
-              if (!el) return;
-              const aside = el.closest("aside");
-              if (!aside) return;
-              const show = () => { el.style.opacity = "1"; };
-              const hide = () => { el.style.opacity = "0"; };
-              aside.addEventListener("mouseenter", show);
-              aside.addEventListener("mouseleave", hide);
-            }}
-          >
-            Recherche
-          </span>
+          <FadeLabel>
+            <span className="whitespace-nowrap text-[0.82rem] font-medium">Recherche</span>
+          </FadeLabel>
         </button>
 
         {BOTTOM_ITEMS.map((item) => {
-          const isActive = pathname.startsWith(item.href);
+          const active = isPathActive(item.href, pathname);
           const Icon = item.icon;
           return (
-            <Link key={item.label} href={item.href}
-              className={cn("sk-item", isActive ? "sk-item-active" : "")}>
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn("sk-item", active ? "sk-item-active" : "")}
+            >
               <Icon className="h-[17px] w-[17px] shrink-0" />
-              <span
-                className="whitespace-nowrap text-[0.82rem] font-medium"
-                style={{ opacity: 0, transition: "opacity 220ms ease 50ms" }}
-                ref={(el) => {
-                  if (!el) return;
-                  const aside = el.closest("aside");
-                  if (!aside) return;
-                  const show = () => { el.style.opacity = "1"; };
-                  const hide = () => { el.style.opacity = "0"; };
-                  aside.addEventListener("mouseenter", show);
-                  aside.addEventListener("mouseleave", hide);
-                }}
-              >
-                {item.label}
-              </span>
+              <FadeLabel>
+                <span className="whitespace-nowrap text-[0.82rem] font-medium">
+                  {item.label}
+                </span>
+              </FadeLabel>
             </Link>
           );
         })}
 
-        {/* Déconnexion */}
         <button
           onClick={() => signOut({ callbackUrl: "/auth/login" })}
           className="sk-item sk-item-danger w-full text-left"
         >
           <LogOut className="h-[17px] w-[17px] shrink-0" />
-          <span
-            className="whitespace-nowrap text-[0.82rem] font-medium"
-            style={{ opacity: 0, transition: "opacity 220ms ease 50ms" }}
-            ref={(el) => {
-              if (!el) return;
-              const aside = el.closest("aside");
-              if (!aside) return;
-              const show = () => { el.style.opacity = "1"; };
-              const hide = () => { el.style.opacity = "0"; };
-              aside.addEventListener("mouseenter", show);
-              aside.addEventListener("mouseleave", hide);
-            }}
-          >
-            Déconnexion
-          </span>
+          <FadeLabel>
+            <span className="whitespace-nowrap text-[0.82rem] font-medium">Déconnexion</span>
+          </FadeLabel>
         </button>
 
         {/* Avatar */}
@@ -249,29 +342,53 @@ export default function Sidebar() {
           >
             MH
           </div>
-          <div
-            className="overflow-hidden"
-            style={{ opacity: 0, transition: "opacity 220ms ease 50ms" }}
-            ref={(el) => {
-              if (!el) return;
-              const aside = el.closest("aside");
-              if (!aside) return;
-              const show = () => { el.style.opacity = "1"; };
-              const hide = () => { el.style.opacity = "0"; };
-              aside.addEventListener("mouseenter", show);
-              aside.addEventListener("mouseleave", hide);
-            }}
-          >
+          <FadeLabel>
             <p className="whitespace-nowrap text-[0.78rem] font-medium text-white">
               Mahdi Houtia
             </p>
-            <p className="whitespace-nowrap text-[0.62rem]"
-              style={{ color: "rgba(148,163,184,0.6)" }}>
+            <p
+              className="whitespace-nowrap text-[0.62rem]"
+              style={{ color: "rgba(148,163,184,0.6)" }}
+            >
               Administrateur
             </p>
-          </div>
+          </FadeLabel>
         </div>
       </div>
     </aside>
+  );
+}
+
+/**
+ * Fade-in/out d'un libellé selon que le sidebar parent (`<aside>`) est en hover ou non.
+ * Évite la duplication des refs partout dans le composant principal.
+ */
+function FadeLabel({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn("overflow-hidden", className)}
+      style={{ opacity: 0, transition: "opacity 220ms ease 50ms" }}
+      ref={(el) => {
+        if (!el) return;
+        const aside = el.closest("aside");
+        if (!aside) return;
+        const show = () => {
+          el.style.opacity = "1";
+        };
+        const hide = () => {
+          el.style.opacity = "0";
+        };
+        aside.addEventListener("mouseenter", show);
+        aside.addEventListener("mouseleave", hide);
+      }}
+    >
+      {children}
+    </div>
   );
 }

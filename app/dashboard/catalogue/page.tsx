@@ -65,11 +65,17 @@ export default function CataloguePage() {
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm());
   const [saving, setSaving] = useState(false);
+  const [migrationPending, setMigrationPending] = useState(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
+    setMigrationPending(false);
     try {
       const res = await fetch("/api/postes-catalogue");
+      if (res.status === 503) {
+        setMigrationPending(true);
+        return;
+      }
       if (!res.ok) {
         await showApiError(res, "Chargement du catalogue impossible");
         return;
@@ -247,6 +253,29 @@ export default function CataloguePage() {
           </select>
         </div>
       </div>
+
+      {/* Migration pending banner */}
+      {migrationPending && (
+        <Card className="border-amber-300 bg-amber-50 dark:bg-amber-950/20">
+          <CardContent className="py-4">
+            <div className="flex items-start gap-3">
+              <div className="rounded-full bg-amber-500/20 p-1.5 mt-0.5">
+                <BookMarked className="h-4 w-4 text-amber-700" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
+                  Migration de base de données requise
+                </p>
+                <p className="mt-1 text-xs text-amber-800 dark:text-amber-300">
+                  La table <code className="font-mono bg-amber-100 dark:bg-amber-900/40 px-1 rounded">postes_catalogue</code> n&apos;existe pas encore dans Supabase.
+                  Pour activer cette page, exécute le SQL <code className="font-mono">prisma/migrations/_manual/2026_04_26_add_postes_catalogue.sql</code> dans
+                  Supabase → SQL Editor → New query → Run, puis recharge cette page.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* List */}
       <Card>
