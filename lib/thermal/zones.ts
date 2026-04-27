@@ -68,3 +68,31 @@ export function getZoneData(label: string | undefined | null): ZoneClimatiqueDat
   if (!label) return null;
   return ZONE_CLIMATIQUE_DATA[label] ?? null;
 }
+
+/**
+ * Part mensuelle des DJU annuels (somme = 1.0).
+ *
+ * Approximation simple agrégée pour l'audit non-réglementaire — climat tempéré
+ * français. Pour une étude réglementaire, utiliser les fichiers TRY officiels.
+ *
+ * Index 0 = Janvier, 11 = Décembre.
+ */
+export const DJU_MENSUEL_RATIO: readonly number[] = [
+  0.18, // jan
+  0.16, // fév
+  0.13, // mar
+  0.09, // avr
+  0.05, // mai
+  0.01, // jun
+  0.00, // jul
+  0.00, // aoû
+  0.03, // sep
+  0.08, // oct
+  0.13, // nov
+  0.14, // déc
+] as const;
+
+export const MOIS_LABELS_FR: readonly string[] = [
+  "Jan", "Fév", "Mar", "Avr", "Mai", "Jun",
+  "Jul", "Aoû", "Sep", "Oct", "Nov", "Déc",
+] as const;

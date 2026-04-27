@@ -27,6 +27,7 @@ import ValidationBanner, { type ValidationItem } from "./audit/ValidationBanner"
 import SuggestionsPanel from "./audit/SuggestionsPanel";
 import BatimentTypePicker from "./audit/BatimentTypePicker";
 import FicheChoiceDialog from "./audit/FicheChoiceDialog";
+import DpeGesMatrix, { parseDpeLetter, type Letter as DpeGesLetter } from "./audit/DpeGesMatrix";
 import {
   detectFichesCandidates,
   mapAuditToNote,
@@ -556,6 +557,7 @@ async function generatePDF(
   values: FormValues,
   sectionPhotos: Record<number, PhotoItem[]>,
   preconisations: PreconisationAction[],
+  thermal: ThermalCalc | null,
 ) {
   const { default: jsPDF } = await import("jspdf");
   const { default: autoTable } = await import("jspdf-autotable");
@@ -589,6 +591,12 @@ async function generatePDF(
     PDF_COLORS,
     PDF_LAYOUT,
   } = await import("@/lib/pdf-styles");
+  const {
+    renderDeperditionsChart,
+    renderPostesChart,
+    renderBesoinsMensuelsChart,
+    renderComparatifScenarioChart,
+  } = await import("@/lib/pdf-charts");
 
   const doc = new jsPDF("p", "mm", "a4");
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -748,6 +756,38 @@ async function generatePDF(
       if (postes.some((p) => p.kwh > 0)) {
         checkPage(55);
         y = drawConsoBreakdown(doc, y + 2, postes, { title: "Diagramme de répartition des consommations" });
+
+        // Camembert haute résolution (canvas) — complément visuel.
+        try {
+          const png = renderPostesChart({
+            chauffage: postes[0].kwh,
+            ecs: postes[1].kwh,
+            refroidissement: postes[2].kwh,
+            eclairage: postes[3].kwh,
+            auxiliaires: postes[4].kwh,
+          });
+          checkPage(95);
+          doc.addImage(png, "PNG", margin, y + 2, contentWidth, 90, undefined, "FAST");
+          y += 90 + PDF_LAYOUT.sectionGap;
+        } catch (err) {
+          console.warn("[generatePDF] renderPostesChart failed", err);
+        }
+      }
+
+      // Courbe besoins mensuels (si données thermiques dispo)
+      if (thermal?.besoins && values.zone_climatique) {
+        try {
+          const png = renderBesoinsMensuelsChart({
+            zone: values.zone_climatique,
+            coefG: thermal.besoins.coefG,
+            volumeChauffe: parseFloat(values.surface_habitable || "0") * (parseFloat(values.hauteur_plafond || "0") || 2.5),
+          });
+          checkPage(80);
+          doc.addImage(png, "PNG", margin, y + 2, contentWidth, 75, undefined, "FAST");
+          y += 75 + PDF_LAYOUT.sectionGap;
+        } catch (err) {
+          console.warn("[generatePDF] renderBesoinsMensuelsChart failed", err);
+        }
       }
     }
 
@@ -765,6 +805,24 @@ async function generatePDF(
       if (items.some((i) => i.pct > 0)) {
         checkPage(65);
         y = drawDeperditionsChart(doc, y + 2, items, { title: "Répartition des déperditions par paroi" });
+
+        // Histogramme haute résolution (canvas) — vue triée décroissante.
+        try {
+          const png = renderDeperditionsChart({
+            murs:            parseFloat(values.deperd_murs          || "0"),
+            toiture:         parseFloat(values.deperd_toiture       || "0"),
+            plancher:        parseFloat(values.deperd_plancher      || "0"),
+            menuiseries:     parseFloat(values.deperd_menuiseries   || "0"),
+            pontsThermiques: parseFloat(values.deperd_ponts         || "0"),
+            ventilation:     parseFloat(values.deperd_ventilation   || "0"),
+            infiltrations:   parseFloat(values.deperd_infiltrations || "0"),
+          });
+          checkPage(95);
+          doc.addImage(png, "PNG", margin, y + 2, contentWidth, 85, undefined, "FAST");
+          y += 85 + PDF_LAYOUT.sectionGap;
+        } catch (err) {
+          console.warn("[generatePDF] renderDeperditionsChart failed", err);
+        }
       }
     }
 
@@ -800,6 +858,25 @@ async function generatePDF(
           { letter: dpeAfter,  value: `Classe ${dpeAfter}` },
           { title: "Projection DPE après travaux", kind: "DPE" },
         );
+      }
+
+      // Comparatif scénarios (canvas) — barres absolues kWh EP/m²·an.
+      const consoActuelle = parseFloat(values.conso_par_m2 || "0");
+      const gain1 = parseFloat(values.scenario_1_gain || "0");
+      const gain2 = parseFloat(values.scenario_2_gain || "0");
+      if (consoActuelle > 0 && (gain1 > 0 || gain2 > 0)) {
+        try {
+          const png = renderComparatifScenarioChart({
+            consoActuelle,
+            scenario1: { gain: gain1, nom: "Scénario 1" },
+            scenario2: { gain: gain2, nom: "Scénario 2" },
+          });
+          checkPage(90);
+          doc.addImage(png, "PNG", margin, y + 2, contentWidth, 85, undefined, "FAST");
+          y += 85 + PDF_LAYOUT.sectionGap;
+        } catch (err) {
+          console.warn("[generatePDF] renderComparatifScenarioChart failed", err);
+        }
       }
     }
 
@@ -1530,7 +1607,7 @@ export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props
   async function handleGeneratePDF() {
     setGenerating(true);
     try {
-      await generatePDF(SECTIONS, values, sectionPhotos, preconisations);
+      await generatePDF(SECTIONS, values, sectionPhotos, preconisations, thermal);
       if (docId) { await fetch(`/api/documents/${docId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ statut: "TERMINE" }) }); onSaved?.(); }
       else { await handleSave(); }
     } finally { setGenerating(false); }
@@ -1877,19 +1954,48 @@ export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props
                 <CardContent className="space-y-4">
                   {/* Aperçu live DPE + GES au-dessus de la section Consommations */}
                   {activeSection === 5 && (dpeLive !== "—" || gesLive !== "—") && (
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <EnergyLabelUI
-                        kind="DPE"
-                        letter={dpeLive}
-                        value={values.conso_par_m2 ? `${values.conso_par_m2} kWhEP/m²/an` : undefined}
-                      />
-                      <EnergyLabelUI
-                        kind="GES"
-                        letter={gesLive}
-                        value={values.emissions_co2_m2 ? `${values.emissions_co2_m2} kgCO₂/m²/an` : undefined}
-                      />
-                    </div>
+                    <>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <EnergyLabelUI
+                          kind="DPE"
+                          letter={dpeLive}
+                          value={values.conso_par_m2 ? `${values.conso_par_m2} kWhEP/m²/an` : undefined}
+                        />
+                        <EnergyLabelUI
+                          kind="GES"
+                          letter={gesLive}
+                          value={values.emissions_co2_m2 ? `${values.emissions_co2_m2} kgCO₂/m²/an` : undefined}
+                        />
+                      </div>
+                      {(() => {
+                        const dpe = parseDpeLetter(values.dpe_actuel);
+                        const ges = parseDpeLetter(values.ges_actuel);
+                        if (!dpe || !ges) return null;
+                        return (
+                          <DpeGesMatrix dpeActuel={dpe} gesActuel={ges} size="sm" />
+                        );
+                      })()}
+                    </>
                   )}
+
+                  {activeSection === 11 && (() => {
+                    const dpe = parseDpeLetter(values.dpe_actuel);
+                    const ges = parseDpeLetter(values.ges_actuel);
+                    if (!dpe || !ges) return null;
+                    const dpeP = parseDpeLetter(values.dpe_projete) ?? undefined;
+                    // Pas de GES projeté saisi → on suppose conservation de la lettre GES
+                    // si seul le DPE évolue (hypothèse prudente — peut être affiné plus tard).
+                    const gesP: DpeGesLetter | undefined = dpeP ? ges : undefined;
+                    return (
+                      <DpeGesMatrix
+                        dpeActuel={dpe}
+                        gesActuel={ges}
+                        dpeProjete={dpeP}
+                        gesProjete={gesP}
+                        size="sm"
+                      />
+                    );
+                  })()}
 
                   <SuggestionsPanel
                     suggestions={suggestions.filter((s) =>

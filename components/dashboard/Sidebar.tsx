@@ -24,6 +24,7 @@ import {
   ChevronDown,
   UserSquare2,
   FileSpreadsheet,
+  TrendingDown,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
@@ -78,6 +79,7 @@ const TOP_ITEMS: NavItem[] = [
   { kind: "link", label: "Calendrier",   href: "/dashboard/calendrier", icon: CalendarDays },
   { kind: "link", label: "Documents",    href: "/dashboard/documents",  icon: FileText },
   { kind: "link", label: "Statistiques", href: "/dashboard/stats",      icon: BarChart3 },
+  { kind: "link", label: "Décret Tertiaire", href: "/dashboard/deet",   icon: TrendingDown },
 ];
 
 const BOTTOM_ITEMS: NavLink[] = [
