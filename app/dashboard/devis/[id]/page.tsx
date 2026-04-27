@@ -32,11 +32,14 @@ import {
   Mail,
   ReceiptText,
   ArrowRight,
+  BookMarked,
+  BookmarkPlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { showApiError, showNetworkError } from "@/lib/api-errors";
 import { toast } from "sonner";
-import type { DevisDetail, DevisStatut, LigneDevis } from "@/types";
+import CataloguePicker from "@/components/dashboard/CataloguePicker";
+import type { DevisDetail, DevisStatut, LigneDevis, PosteCatalogue } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
 
 const STATUT_LABELS: Record<DevisStatut, string> = {
@@ -430,6 +433,58 @@ export default function DevisDetailPage({ params }: Props) {
   const [formTauxTVA, setFormTauxTVA] = useState("20");
   const [formDateValide, setFormDateValide] = useState("");
   const [formLignes, setFormLignes] = useState<LigneForm[]>([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  function handlePickPoste(p: PosteCatalogue) {
+    // Si la dernière ligne est vide, on la remplace ; sinon on en ajoute une.
+    setFormLignes((prev) => {
+      const last = prev[prev.length - 1];
+      const isLastEmpty =
+        !!last &&
+        !last.designation.trim() &&
+        (!last.prixUnitHT || last.prixUnitHT === "0");
+      const newLigne: LigneForm = {
+        designation: p.designation,
+        unite: p.unite,
+        quantite: "1",
+        prixUnitHT: String(p.prixUnitHT),
+      };
+      if (isLastEmpty) {
+        const next = [...prev];
+        next[next.length - 1] = newLigne;
+        return next;
+      }
+      return [...prev, newLigne];
+    });
+    setPickerOpen(false);
+    toast.success(`Poste "${p.designation}" ajouté`);
+  }
+
+  async function handleSaveLigneAsPoste(ligne: LigneForm) {
+    if (!ligne.designation.trim() || !ligne.prixUnitHT) {
+      toast.error("Désignation et prix unitaire requis pour enregistrer");
+      return;
+    }
+    try {
+      const res = await fetch("/api/postes-catalogue", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          designation: ligne.designation.trim(),
+          unite: ligne.unite || "U",
+          prixUnitHT: parseFloat(ligne.prixUnitHT),
+          tauxTVA: parseFloat(formTauxTVA) || 20,
+        }),
+      });
+      if (!res.ok) {
+        await showApiError(res, "Enregistrement dans le catalogue impossible");
+        return;
+      }
+      toast.success("Poste ajouté au catalogue");
+    } catch (err) {
+      showNetworkError(err, "Erreur réseau");
+    }
+  }
 
   useEffect(() => {
     fetch(`/api/devis/${id}`)
@@ -972,29 +1027,41 @@ export default function DevisDetailPage({ params }: Props) {
           <div className="glass rounded-2xl p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-semibold text-tk-text">Lignes du devis</h2>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={addLigne}
-                className="border-tk-border bg-tk-surface text-tk-text-secondary hover:bg-tk-hover text-xs h-7"
-              >
-                <Plus className="mr-1 h-3 w-3" />
-                Ajouter une ligne
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPickerOpen(true)}
+                  className="border-tk-border bg-tk-surface text-tk-text-secondary hover:bg-tk-hover text-xs h-7"
+                >
+                  <BookMarked className="mr-1 h-3 w-3" />
+                  Depuis catalogue
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={addLigne}
+                  className="border-tk-border bg-tk-surface text-tk-text-secondary hover:bg-tk-hover text-xs h-7"
+                >
+                  <Plus className="mr-1 h-3 w-3" />
+                  Ajouter une ligne
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-2">
-              <div className="grid grid-cols-[1fr_80px_80px_120px_32px] gap-2 text-[10px] uppercase tracking-wider text-tk-text-faint px-1">
+              <div className="grid grid-cols-[1fr_80px_80px_120px_32px_32px] gap-2 text-[10px] uppercase tracking-wider text-tk-text-faint px-1">
                 <span>Designation</span>
                 <span>Unite</span>
                 <span>Quantite</span>
                 <span>Prix unit. HT</span>
                 <span></span>
+                <span></span>
               </div>
               {formLignes.map((ligne, index) => (
                 <div
                   key={index}
-                  className="grid grid-cols-[1fr_80px_80px_120px_32px] gap-2 items-center"
+                  className="grid grid-cols-[1fr_80px_80px_120px_32px_32px] gap-2 items-center"
                 >
                   <input
                     type="text"
@@ -1027,6 +1094,19 @@ export default function DevisDetailPage({ params }: Props) {
                     className="w-full rounded-lg border border-tk-border bg-tk-surface px-3 py-2 text-sm text-tk-text"
                   />
                   <button
+                    onClick={() => handleSaveLigneAsPoste(ligne)}
+                    disabled={!ligne.designation.trim() || !ligne.prixUnitHT}
+                    title="Enregistrer ce poste dans le catalogue"
+                    className={cn(
+                      "flex items-center justify-center h-9 w-8 rounded-lg transition-colors",
+                      !ligne.designation.trim() || !ligne.prixUnitHT
+                        ? "text-tk-text-faint/30 cursor-not-allowed"
+                        : "text-tk-text-faint hover:text-violet-400 hover:bg-violet-500/10"
+                    )}
+                  >
+                    <BookmarkPlus className="h-3.5 w-3.5" />
+                  </button>
+                  <button
                     onClick={() => removeLigne(index)}
                     disabled={formLignes.length <= 1}
                     className={cn(
@@ -1041,6 +1121,13 @@ export default function DevisDetailPage({ params }: Props) {
                 </div>
               ))}
             </div>
+
+            {/* Modal sélection catalogue */}
+            <CataloguePicker
+              open={pickerOpen}
+              onClose={() => setPickerOpen(false)}
+              onSelect={handlePickPoste}
+            />
 
             <div className="mt-4 flex justify-end">
               <div className="text-right space-y-1">

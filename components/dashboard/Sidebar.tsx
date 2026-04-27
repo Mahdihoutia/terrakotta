@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -110,8 +110,14 @@ export default function Sidebar() {
     return initial;
   });
 
-  // Auto-ouvre le groupe contenant la route active.
+  // Auto-ouvre le groupe contenant la route active UNIQUEMENT au premier rendu
+  // (ex: arrivée directe sur /dashboard/devis depuis un favori). Après ça,
+  // l'utilisateur contrôle manuellement l'ouverture des groupes — un clic
+  // sur un enfant ferme le groupe parent.
+  const didInitOpenRef = useRef(false);
   useEffect(() => {
+    if (didInitOpenRef.current) return;
+    didInitOpenRef.current = true;
     setOpenGroups((prev) => {
       const next = { ...prev };
       for (const item of TOP_ITEMS) {
@@ -266,6 +272,10 @@ export default function Sidebar() {
                       <Link
                         key={child.href}
                         href={child.href}
+                        onClick={() => {
+                          // Ferme le groupe parent après navigation.
+                          setOpenGroups((prev) => ({ ...prev, [item.label]: false }));
+                        }}
                         className={cn(
                           "sk-item sk-subitem",
                           childActive ? "sk-item-active" : "",

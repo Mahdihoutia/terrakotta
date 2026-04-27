@@ -17,11 +17,14 @@ import {
   Camera,
   X,
   ImagePlus,
+  BookMarked,
+  BookmarkPlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { showApiError, showNetworkError } from "@/lib/api-errors";
 import { toast } from "sonner";
 import { useDebouncedAutosave } from "@/lib/hooks/useDebouncedAutosave";
+import CataloguePicker from "@/components/dashboard/CataloguePicker";
 import { motion, AnimatePresence } from "framer-motion";
 
 // ─── Types ──────────────────────────────────────────────────────
@@ -812,6 +815,67 @@ export default function DevisDocument({ onBack, onSaved, existingDoc }: Props) {
     setSaved(false);
   }
 
+  // ─── Intégration catalogue ──────────────────────────────────
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  function handlePickPoste(p: {
+    id: string;
+    designation: string;
+    unite: string;
+    prixUnitHT: number;
+    tauxTVA: number;
+  }) {
+    // Si la dernière ligne est vide, on la remplace ; sinon on ajoute.
+    setLignes((prev) => {
+      const last = prev[prev.length - 1];
+      const isLastEmpty =
+        !!last && !last.designation.trim() && (!last.prixUnitaire || last.prixUnitaire === "0");
+      const newLigne: LigneDevis = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        designation: p.designation,
+        unite: p.unite,
+        quantite: "1",
+        prixUnitaire: String(p.prixUnitHT),
+        tva: String(p.tauxTVA ?? 5.5),
+      };
+      if (isLastEmpty) {
+        const next = [...prev];
+        next[next.length - 1] = newLigne;
+        return next;
+      }
+      return [...prev, newLigne];
+    });
+    setPickerOpen(false);
+    setSaved(false);
+    toast.success(`Poste "${p.designation}" ajouté`);
+  }
+
+  async function handleSaveLigneAsPoste(ligne: LigneDevis) {
+    if (!ligne.designation.trim() || !ligne.prixUnitaire) {
+      toast.error("Désignation et prix unitaire requis");
+      return;
+    }
+    try {
+      const res = await fetch("/api/postes-catalogue", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          designation: ligne.designation.trim(),
+          unite: ligne.unite || "U",
+          prixUnitHT: parseFloat(ligne.prixUnitaire),
+          tauxTVA: parseFloat(ligne.tva) || 5.5,
+        }),
+      });
+      if (!res.ok) {
+        await showApiError(res, "Enregistrement impossible");
+        return;
+      }
+      toast.success("Poste ajouté au catalogue");
+    } catch (err) {
+      showNetworkError(err, "Erreur réseau");
+    }
+  }
+
   const handleAddPhotos = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
@@ -1107,10 +1171,16 @@ export default function DevisDocument({ onBack, onSaved, existingDoc }: Props) {
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-base">Postes de travaux</CardTitle>
-                      <Button variant="outline" size="sm" onClick={addLigne}>
-                        <Plus className="mr-1 h-3.5 w-3.5" />
-                        Ajouter un poste
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={() => setPickerOpen(true)}>
+                          <BookMarked className="mr-1 h-3.5 w-3.5" />
+                          Depuis catalogue
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={addLigne}>
+                          <Plus className="mr-1 h-3.5 w-3.5" />
+                          Ajouter un poste
+                        </Button>
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -1132,6 +1202,16 @@ export default function DevisDocument({ onBack, onSaved, existingDoc }: Props) {
                               <span className="text-sm font-medium text-muted-foreground">Poste {idx + 1}</span>
                               <div className="flex items-center gap-2">
                                 <span className="text-sm font-mono font-semibold">{ligneTotal.toFixed(2)} € HT</span>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-violet-600 hover:text-violet-700 hover:bg-violet-50"
+                                  title="Enregistrer dans le catalogue"
+                                  onClick={() => handleSaveLigneAsPoste(ligne)}
+                                  disabled={!ligne.designation.trim() || !ligne.prixUnitaire}
+                                >
+                                  <BookmarkPlus className="h-3.5 w-3.5" />
+                                </Button>
                                 {lignes.length > 1 && (
                                   <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => removeLigne(ligne.id)}>
                                     <Trash2 className="h-3.5 w-3.5" />
@@ -1348,6 +1428,13 @@ export default function DevisDocument({ onBack, onSaved, existingDoc }: Props) {
           </AnimatePresence>
         </div>
       </div>
+
+      {/* Modal sélection catalogue */}
+      <CataloguePicker
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onSelect={handlePickPoste}
+      />
     </motion.div>
   );
 }
