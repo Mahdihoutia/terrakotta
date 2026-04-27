@@ -287,6 +287,125 @@ interface QuestionSection {
   };
 }
 
+// ─── Méthodes de calcul — typage et catalogue ──────────────────
+//
+// Chaque fiche CEE peut être calculée selon plusieurs méthodes
+// (réglementaire, ingénierie, forfait CEE). Le sélecteur côté
+// formulaire (`methode_calcul`) pilote la formule appliquée et le
+// texte de `detailMethode` retourné dans le résultat.
+
+type MethodeCalcul =
+  | "FORFAITAIRE_CEE"
+  | "BIN"
+  | "DJU"
+  | "CARNOT"
+  | "BILAN_THERMIQUE"
+  | "SCOP_DETAILLE"
+  | "EN_15232"
+  | "REGLEMENTAIRE_DELTA_U";
+
+interface MethodeOption {
+  id: MethodeCalcul;
+  label: string;
+  description: string;
+}
+
+const METHODES_PAR_FICHE: Record<FicheId, MethodeOption[]> = {
+  "BAT-TH-134": [
+    { id: "BIN", label: "Méthode bin (répartition des heures par tranche de T° ext.)", description: "COP par bin climatique × heures pondérées (NF EN 14825)" },
+    { id: "CARNOT", label: "Calcul Carnot simplifié", description: "COP_après = COP_avant × T_cond_av / T_cond_ap — calcul rapide" },
+    { id: "FORFAITAIRE_CEE", label: "Forfait CEE (arrêté du 22 décembre 2014)", description: "Forfait kWh cumac selon zone et puissance" },
+  ],
+  "BAT-TH-163": [
+    { id: "DJU", label: "Calcul simplifié (G × V × ΔT)", description: "Méthode 3CL — besoin = G × V × DJU × 24, conso = besoin / SCOP" },
+    { id: "BIN", label: "Méthode bin SCOP", description: "Pondération heures × COP par bin (NF EN 14825)" },
+    { id: "FORFAITAIRE_CEE", label: "Forfait CEE BAT-TH-163", description: "Forfait par zone climatique × puissance × surface" },
+  ],
+  "BAT-TH-142": [
+    { id: "BILAN_THERMIQUE", label: "Méthode forfaitaire (3% d'économie par °C de gradient réduit)", description: "Économie linéaire 3% par °C de gradient réduit (max 30%)" },
+    { id: "BIN", label: "Méthode bin déstratification", description: "Calcul horaire avec bins de température" },
+    { id: "FORFAITAIRE_CEE", label: "Forfait CEE BAT-TH-142", description: "Forfait kWh cumac par m² selon hauteur" },
+  ],
+  "BAT-TH-139": [
+    { id: "BILAN_THERMIQUE", label: "Bilan thermique (puissance × heures × taux de charge × taux de récup.)", description: "Chaleur récupérable = (P_froid + P_abs) × heures × τ_charge × τ_récup" },
+    { id: "FORFAITAIRE_CEE", label: "Forfait CEE BAT-TH-139", description: "Forfait par puissance frigorifique" },
+  ],
+  "BAR-TH-171": [
+    { id: "DJU", label: "DJU + besoins thermiques (G × V × DJU)", description: "Besoin = G × V × DJU, conso après = besoin / SCOP" },
+    { id: "SCOP_DETAILLE", label: "SCOP NF EN 14825 (4 bins -7/2/7/12°C)", description: "SCOP par zone climatique + correctifs détaillés" },
+    { id: "FORFAITAIRE_CEE", label: "Forfait CEE BAR-TH-171", description: "Forfait selon zone climatique × surface chauffée" },
+  ],
+  "BAR-TH-159": [
+    { id: "BIN", label: "Méthode bin avec bascule PAC/chaudière", description: "Répartition heures sur bins avec température de bascule" },
+    { id: "DJU", label: "DJU + ratio PAC/appoint", description: "Besoin total puis split selon part PAC estimée" },
+    { id: "FORFAITAIRE_CEE", label: "Forfait CEE BAR-TH-159", description: "Forfait PAC hybride par zone et puissance" },
+  ],
+  "BAR-EN-101": [
+    { id: "REGLEMENTAIRE_DELTA_U", label: "ΔU × S × DJU × 24 (réglementaire)", description: "Méthode officielle CEE — ΔU = 1/R_av − 1/R_ap" },
+    { id: "FORFAITAIRE_CEE", label: "Forfait CEE BAR-EN-101", description: "Forfait kWh cumac/m² selon zone et type de combles" },
+  ],
+  "BAR-EN-102": [
+    { id: "REGLEMENTAIRE_DELTA_U", label: "ΔU × S × DJU × 24 (réglementaire)", description: "Méthode officielle CEE" },
+    { id: "FORFAITAIRE_CEE", label: "Forfait CEE BAR-EN-102", description: "Forfait kWh cumac/m² selon zone et type d'isolation" },
+  ],
+  "BAR-EN-103": [
+    { id: "REGLEMENTAIRE_DELTA_U", label: "ΔU × S × DJU × 24 (réglementaire)", description: "Méthode officielle CEE" },
+    { id: "FORFAITAIRE_CEE", label: "Forfait CEE BAR-EN-103", description: "Forfait kWh cumac/m² selon zone et type de plancher" },
+  ],
+  "BAT-TH-116": [
+    { id: "EN_15232", label: "EN 15232 / ISO 52120-1 (forfaitaire par classe)", description: "Gain forfaitaire selon classe GTB (A=30%/20%, B=18%/14%)" },
+    { id: "BILAN_THERMIQUE", label: "Bilan énergétique détaillé", description: "Calcul poste par poste selon les fonctionnalités GTB activées" },
+  ],
+};
+
+/**
+ * Mappe le label sélectionné dans le formulaire vers un MethodeCalcul typé.
+ * Si le label est vide ou inconnu, renvoie la première option de la fiche
+ * (méthode "par défaut"). On accepte les correspondances par inclusion pour
+ * tolérer les variations rédactionnelles antérieures.
+ */
+function parseMethodeId(label: string | undefined, ficheId: FicheId): MethodeCalcul {
+  const options = METHODES_PAR_FICHE[ficheId] || [];
+  if (!label || !label.trim()) return options[0]?.id ?? "FORFAITAIRE_CEE";
+  const exact = options.find((o) => o.label === label);
+  if (exact) return exact.id;
+  const partial = options.find((o) => label.includes(o.label) || o.label.includes(label));
+  if (partial) return partial.id;
+  return options[0]?.id ?? "FORFAITAIRE_CEE";
+}
+
+/**
+ * Forfaits CEE indicatifs — kWh cumac par unité (m² ou kW selon la fiche).
+ * NB : les forfaits réels dépendent de la zone climatique, du secteur, et
+ * de la version de l'arrêté JO en vigueur. Les valeurs ci-dessous sont des
+ * ordres de grandeur réalistes pour le pré-calcul ; pour le dépôt CEE, se
+ * référer impérativement à l'arrêté BOAMP / JO en vigueur.
+ *
+ * TODO : confirmer chaque valeur avec l'arrêté JO en vigueur (édition la
+ * plus récente du recueil des fiches CEE — Direction Générale de l'Énergie
+ * et du Climat).
+ */
+const FORFAITS_CEE = {
+  "BAT-TH-134": { unit: "kW puissance froid", base: 250 },
+  "BAT-TH-163": { unit: "kW PAC", H1: 1500, H2: 1300, H3: 1100 },
+  "BAT-TH-142": { unit: "m² au sol", H1: 80, H2: 65, H3: 50 },
+  "BAT-TH-139": { unit: "kW puissance froid", base: 1200 },
+  "BAR-TH-171": { unit: "m² chauffé", H1: 5500, H2: 4500, H3: 2500 },
+  "BAR-TH-159": { unit: "m² chauffé", H1: 4400, H2: 3500, H3: 2000 },
+  "BAR-EN-101": { unit: "m² isolé", H1: 1900, H2: 1500, H3: 700 },
+  "BAR-EN-102": { unit: "m² isolé", H1: 4400, H2: 3500, H3: 1700 },
+  "BAR-EN-103": { unit: "m² isolé", H1: 1900, H2: 1500, H3: 700 },
+  "BAT-TH-116": { unit: "m² (classe A)", baseA: 300, baseB: 180 },
+} as const;
+
+/** Renvoie la zone H1/H2/H3 (par défaut H2) à partir du libellé `zone_climatique`. */
+function zoneToHKey(zone: string | undefined): "H1" | "H2" | "H3" {
+  if (!zone) return "H2";
+  if (zone.includes("H1")) return "H1";
+  if (zone.includes("H3")) return "H3";
+  return "H2";
+}
+
 // ─── BAT-TH-134 — HP Flottante ─────────────────────────────────
 
 const QUESTIONNAIRE_134: QuestionSection[] = [
@@ -1130,6 +1249,14 @@ const QUESTIONNAIRE_171: QuestionSection[] = [
     description: "Dimensionnement et preuve du gain d'énergie",
     fields: [
       {
+        id: "methode_calcul",
+        label: "Méthode de calcul utilisée",
+        type: "select",
+        options: METHODES_PAR_FICHE["BAR-TH-171"].map((m) => m.label),
+        required: true,
+        help: "Le choix de la méthode pilote la formule appliquée et le détail produit.",
+      },
+      {
         id: "detail_calcul",
         label: "Détail du calcul de dimensionnement et du bilan énergétique",
         type: "textarea",
@@ -1290,6 +1417,14 @@ const QUESTIONNAIRE_159: QuestionSection[] = [
     description: "Dimensionnement et preuve du gain d'énergie",
     fields: [
       {
+        id: "methode_calcul",
+        label: "Méthode de calcul utilisée",
+        type: "select",
+        options: METHODES_PAR_FICHE["BAR-TH-159"].map((m) => m.label),
+        required: true,
+        help: "Le choix de la méthode pilote la formule appliquée et le détail produit.",
+      },
+      {
         id: "detail_calcul",
         label: "Détail du calcul de dimensionnement et du bilan énergétique",
         type: "textarea",
@@ -1444,6 +1579,14 @@ const QUESTIONNAIRE_101: QuestionSection[] = [
     titre: "5. Calcul des gains énergétiques",
     description: "Estimation des économies d'énergie générées par l'isolation",
     fields: [
+      {
+        id: "methode_calcul",
+        label: "Méthode de calcul utilisée",
+        type: "select",
+        options: METHODES_PAR_FICHE["BAR-EN-101"].map((m) => m.label),
+        required: true,
+        help: "Le choix de la méthode pilote la formule appliquée et le détail produit.",
+      },
       {
         id: "detail_calcul",
         label: "Détail du calcul de gain énergétique",
@@ -1600,6 +1743,14 @@ const QUESTIONNAIRE_102: QuestionSection[] = [
     description: "Estimation des économies d'énergie générées par l'isolation des murs",
     fields: [
       {
+        id: "methode_calcul",
+        label: "Méthode de calcul utilisée",
+        type: "select",
+        options: METHODES_PAR_FICHE["BAR-EN-102"].map((m) => m.label),
+        required: true,
+        help: "Le choix de la méthode pilote la formule appliquée et le détail produit.",
+      },
+      {
         id: "detail_calcul",
         label: "Détail du calcul de gain énergétique",
         type: "textarea",
@@ -1748,6 +1899,14 @@ const QUESTIONNAIRE_103: QuestionSection[] = [
     titre: "5. Calcul des gains énergétiques",
     description: "Estimation des économies d'énergie générées par l'isolation du plancher",
     fields: [
+      {
+        id: "methode_calcul",
+        label: "Méthode de calcul utilisée",
+        type: "select",
+        options: METHODES_PAR_FICHE["BAR-EN-103"].map((m) => m.label),
+        required: true,
+        help: "Le choix de la méthode pilote la formule appliquée et le détail produit.",
+      },
       {
         id: "detail_calcul",
         label: "Détail du calcul de gain énergétique",
@@ -1924,6 +2083,14 @@ const QUESTIONNAIRE_116: QuestionSection[] = [
     titre: "5. Calcul des gains énergétiques",
     description: "Estimation des économies d'énergie générées par la GTB",
     fields: [
+      {
+        id: "methode_calcul",
+        label: "Méthode de calcul utilisée",
+        type: "select",
+        options: METHODES_PAR_FICHE["BAT-TH-116"].map((m) => m.label),
+        required: true,
+        help: "Le choix de la méthode pilote la formule appliquée et le détail produit.",
+      },
       {
         id: "detail_calcul",
         label: "Détail du calcul de gain énergétique",
@@ -2566,6 +2733,16 @@ interface Calcul134Result {
 }
 
 function calculer134(v: FormValues): Calcul134Result | null {
+  const methode = parseMethodeId(v.methode_calcul, "BAT-TH-134");
+  switch (methode) {
+    case "CARNOT":           return calculer134_Carnot(v);
+    case "FORFAITAIRE_CEE":  return calculer134_Forfait(v);
+    case "BIN":
+    default:                 return calculer134_Bin(v);
+  }
+}
+
+function calculer134_Bin(v: FormValues): Calcul134Result | null {
   const zone = v.zone_climatique;
   const zoneData = zone ? ZONE_CLIMATIQUE_DATA[zone] : null;
   if (!zoneData) return null;
@@ -2673,6 +2850,133 @@ function calculer134(v: FormValues): Calcul134Result | null {
   return { copMoyenAvant, copMoyenApres, consoApres, gainMwh, gainPct, economiEuros, dureeRetour, detailMethode };
 }
 
+/**
+ * BAT-TH-134 — Calcul Carnot simplifié.
+ * Hypothèse : COP_après / COP_avant = (T_cond_av − T_evap) / (T_cond_ap − T_evap)
+ * en utilisant la T° d'air extérieur moyenne pondérée comme proxy de T_cond_ap.
+ */
+function calculer134_Carnot(v: FormValues): Calcul134Result | null {
+  const zone = v.zone_climatique;
+  const zoneData = zone ? ZONE_CLIMATIQUE_DATA[zone] : null;
+  if (!zoneData) return null;
+
+  const nbGroupes = parseInt(v.nb_groupes_multi || "1", 10) || 1;
+  let pf = 0;
+  let pa = 0;
+  let tCondFix = 0;
+  let count = 0;
+  for (let i = 1; i <= nbGroupes; i++) {
+    const a = parseFloat(v[`puissance_froid_${i}`] || "0");
+    const b = parseFloat(v[`puissance_absorbee_${i}`] || "0");
+    const tc = parseFloat(v[`temp_condensation_fixe_${i}`] || "0");
+    if (a > 0 && b > 0) { pf += a; pa += b; tCondFix += tc * a; count++; }
+  }
+  if (count === 0 || pf === 0 || pa === 0) return null;
+  tCondFix /= pf;
+
+  const consoAvant = parseFloat(v.conso_electrique_avant || "0");
+  if (consoAvant <= 0) return null;
+  const tCondMin = parseFloat(v.temp_condensation_min || "25");
+  const ecartApproche = parseFloat(v.ecart_approche || "10");
+
+  // T° extérieure moyenne pondérée par les heures de fonctionnement
+  let totalH = 0;
+  let tExtMoyen = 0;
+  for (const bin of zoneData.bins) {
+    totalH += bin.heures;
+    tExtMoyen += bin.tExt * bin.heures;
+  }
+  tExtMoyen = totalH > 0 ? tExtMoyen / totalH : 10;
+
+  const tEvapPos = parseFloat(v.temp_evaporation_pos || "-8");
+  const tEvapNeg = parseFloat(v.temp_evaporation_neg || "-30");
+  const regime = v.regime_froid || "Froid positif uniquement (> 0°C)";
+  let tEvap: number;
+  if (regime.includes("négatif uniquement")) tEvap = tEvapNeg;
+  else if (regime.includes("positif + négatif")) tEvap = (tEvapPos + tEvapNeg) / 2;
+  else tEvap = tEvapPos;
+
+  const copMoyenAvant = pf / pa;
+  const tCondApres = Math.max(tExtMoyen + ecartApproche, tCondMin);
+  const deltaAvant = tCondFix - tEvap;
+  const deltaApres = tCondApres - tEvap;
+  if (deltaAvant <= 0 || deltaApres <= 0) return null;
+
+  const copMoyenApres = copMoyenAvant * (deltaAvant / deltaApres);
+  const ratioGain = copMoyenApres > copMoyenAvant ? 1 - copMoyenAvant / copMoyenApres : 0;
+  const consoApres = consoAvant * (1 - ratioGain);
+  const gainMwh = Math.max(0, consoAvant - consoApres);
+  const gainPct = ratioGain * 100;
+  const economiEuros = gainMwh * 1000 * PRIX_ELEC_KWH;
+  const coutInvest = parseFloat(v.cout_investissement || "0");
+  const dureeRetour = coutInvest > 0 && economiEuros > 0 ? coutInvest / economiEuros : null;
+
+  const detailMethode = [
+    `Calcul Carnot simplifié — Zone ${zone}`,
+    `${count} groupe(s) froid · Puissance froid totale: ${pf} kW · Puissance absorbée: ${pa} kW`,
+    `COP moyen AVANT (HP fixe ${tCondFix.toFixed(1)}°C) = ${pf}/${pa} = ${copMoyenAvant.toFixed(2)}`,
+    `T° extérieure moyenne pondérée: ${tExtMoyen.toFixed(1)}°C → T° cond après (HP flottante) = max(${tExtMoyen.toFixed(1)} + ${ecartApproche}, ${tCondMin}) = ${tCondApres.toFixed(1)}°C`,
+    `T° évaporation retenue: ${tEvap}°C`,
+    "",
+    `Rapport Carnot : COP_ap / COP_av = (T_cond_av − T_evap) / (T_cond_ap − T_evap)`,
+    `                = (${tCondFix.toFixed(1)} − ${tEvap}) / (${tCondApres.toFixed(1)} − ${tEvap}) = ${(deltaAvant/deltaApres).toFixed(3)}`,
+    `COP moyen APRÈS = ${copMoyenAvant.toFixed(2)} × ${(deltaAvant/deltaApres).toFixed(3)} = ${copMoyenApres.toFixed(2)}`,
+    "",
+    `Gain = 1 − (${copMoyenAvant.toFixed(2)} / ${copMoyenApres.toFixed(2)}) = ${gainPct.toFixed(1)}%`,
+    `Conso AVANT: ${consoAvant} MWh/an → APRÈS: ${consoApres.toFixed(1)} MWh/an`,
+    `Économie: ${gainMwh.toFixed(1)} MWh/an · ${Math.round(economiEuros)} €/an`,
+  ].join("\n");
+
+  return { copMoyenAvant, copMoyenApres, consoApres, gainMwh, gainPct, economiEuros, dureeRetour, detailMethode };
+}
+
+/**
+ * BAT-TH-134 — Forfait CEE.
+ * cumac = forfait × puissance_froid_totale (kW). Conso évitée annuelle déduite
+ * en remontant via computeCumac (durée × coef d'actualisation).
+ */
+function calculer134_Forfait(v: FormValues): Calcul134Result | null {
+  const nbGroupes = parseInt(v.nb_groupes_multi || "1", 10) || 1;
+  let pf = 0;
+  let pa = 0;
+  for (let i = 1; i <= nbGroupes; i++) {
+    pf += parseFloat(v[`puissance_froid_${i}`] || "0");
+    pa += parseFloat(v[`puissance_absorbee_${i}`] || "0");
+  }
+  const consoAvant = parseFloat(v.conso_electrique_avant || "0");
+  if (pf <= 0 || pa <= 0 || consoAvant <= 0) return null;
+
+  const forfait = FORFAITS_CEE["BAT-TH-134"].base; // kWh cumac / kW
+  const cumacKWh = forfait * pf;
+  const duree = DUREE_VIE_CONV["BAT-TH-134"];
+  const coef = coefActualisation(duree);
+  // gain énergie finale (MWh/an) = cumac / (1000 × durée × coef)
+  const gainMwh = cumacKWh / (1000 * duree * coef);
+  const consoApres = Math.max(0, consoAvant - gainMwh);
+  const copMoyenAvant = pf / pa;
+  const ratio = consoAvant > 0 ? gainMwh / consoAvant : 0;
+  const copMoyenApres = ratio > 0 && ratio < 1 ? copMoyenAvant / (1 - ratio) : copMoyenAvant;
+  const gainPct = ratio * 100;
+  const economiEuros = gainMwh * 1000 * PRIX_ELEC_KWH;
+  const coutInvest = parseFloat(v.cout_investissement || "0");
+  const dureeRetour = coutInvest > 0 && economiEuros > 0 ? coutInvest / economiEuros : null;
+
+  const detailMethode = [
+    `Forfait CEE — fiche BAT-TH-134 (arrêté du 22 décembre 2014)`,
+    `Puissance froid totale: ${pf} kW · ${nbGroupes} groupe(s)`,
+    `Forfait indicatif: ${forfait} kWh cumac / kW (TODO : confirmer avec arrêté JO en vigueur)`,
+    "",
+    `Volume CEE = ${forfait} × ${pf} = ${cumacKWh.toFixed(0)} kWh cumac (${(cumacKWh/1000).toFixed(0)} MWh cumac)`,
+    `Durée conventionnelle: ${duree} ans · coef actualisation: ${coef.toFixed(3)}`,
+    `Gain énergie finale = cumac / (1000 × ${duree} × ${coef.toFixed(3)}) = ${gainMwh.toFixed(1)} MWh/an`,
+    "",
+    `Conso AVANT: ${consoAvant} MWh/an → APRÈS estimée: ${consoApres.toFixed(1)} MWh/an (${gainPct.toFixed(1)}%)`,
+    `Économie: ${Math.round(economiEuros)} €/an`,
+  ].join("\n");
+
+  return { copMoyenAvant, copMoyenApres, consoApres, gainMwh, gainPct, economiEuros, dureeRetour, detailMethode };
+}
+
 // ─── Calculs BAT-TH-163 — PAC air/eau ──────────────────────────
 
 interface Calcul163Result {
@@ -2694,6 +2998,16 @@ interface Calcul163Result {
 }
 
 function calculer163(v: FormValues): Calcul163Result | null {
+  const methode = parseMethodeId(v.methode_calcul, "BAT-TH-163");
+  switch (methode) {
+    case "FORFAITAIRE_CEE": return calculer163_Forfait(v);
+    case "BIN":             return calculer163_Bin(v);
+    case "DJU":
+    default:                return calculer163_DJU(v);
+  }
+}
+
+function calculer163_DJU(v: FormValues): Calcul163Result | null {
   const surfaceChauffee = parseFloat(v.surface_chauffee || "0");
   const zone = v.zone_climatique;
   const zoneData = zone ? ZONE_CLIMATIQUE_DATA[zone] : null;
@@ -2814,6 +3128,105 @@ function calculer163(v: FormValues): Calcul163Result | null {
     deperditionsTotales, coeffG, deperditionsParM2, besoinChauffage,
     consoAvant, consoApres, gainMwh, gainPct, reductionCo2, economiEuros, dureeRetour, detailMethode,
   };
+}
+
+/**
+ * BAT-TH-163 — Méthode bin SCOP (NF EN 14825).
+ * Pondère le COP par bin de température extérieure pour estimer un SCOP
+ * effectif qui dépend de la zone climatique. Les autres calculs (déperditions,
+ * conso, gain) sont identiques à la méthode DJU.
+ */
+function calculer163_Bin(v: FormValues): Calcul163Result | null {
+  const base = calculer163_DJU(v);
+  if (!base) return null;
+  const zone = v.zone_climatique;
+  const zoneData = zone ? ZONE_CLIMATIQUE_DATA[zone] : null;
+  if (!zoneData) return base;
+
+  // SCOP "déclaré" sert de référence à 7°C. On calcule un SCOP pondéré
+  // selon le profil de bins en supposant une dégradation linéaire du COP
+  // de 30 % entre 7°C et −7°C (pratique courante PAC air/eau).
+  const scop7 = parseFloat(v.scop || "0");
+  if (scop7 <= 0) return base;
+
+  let h = 0;
+  let pondere = 0;
+  const lignes: string[] = [];
+  for (const bin of zoneData.bins) {
+    if (bin.tExt >= 18) continue; // hors saison de chauffe
+    const correction = 1 - Math.max(0, (7 - bin.tExt)) * 0.022; // ~30%/14°C
+    const cop = scop7 * Math.max(0.4, correction);
+    pondere += cop * bin.heures;
+    h += bin.heures;
+    lignes.push(`  T°ext ${bin.tExt}°C → COP=${cop.toFixed(2)} (${bin.heures}h)`);
+  }
+  if (h === 0) return base;
+  const scopEff = pondere / h;
+  const tauxCouv = parseFloat(v.taux_couverture || "90") / 100;
+  const rendExistant = RENDEMENTS_GENERATEURS[v.type_generateur_existant || "Autre"] || 0.85;
+  const consoApres = (base.besoinChauffage * tauxCouv) / scopEff + (base.besoinChauffage * (1 - tauxCouv)) / rendExistant;
+  const gainMwh = base.consoAvant - consoApres;
+  const gainPct = base.consoAvant > 0 ? (gainMwh / base.consoAvant) * 100 : 0;
+  const economiEuros = gainMwh * 1000 * PRIX_ELEC_KWH;
+  const coutInvest = parseFloat(v.cout_investissement || "0");
+  const dureeRetour = coutInvest > 0 && economiEuros > 0 ? coutInvest / economiEuros : null;
+
+  const detailMethode = [
+    `Méthode bin SCOP (NF EN 14825) — Zone ${zone}`,
+    `SCOP nominal (déclaré 7°C): ${scop7.toFixed(2)}`,
+    `Déperditions: G=${base.coeffG.toFixed(2)} W/m³.K · besoins nets ${base.besoinChauffage.toFixed(1)} MWh/an (mêmes hypothèses que méthode DJU)`,
+    "",
+    `Pondération horaire par bin (correction COP linéaire ≈ 2,2 %/°C entre 7°C et −7°C) :`,
+    ...lignes,
+    "",
+    `SCOP effectif pondéré: ${scopEff.toFixed(2)}`,
+    `Conso APRÈS = (${(base.besoinChauffage * tauxCouv).toFixed(1)} / ${scopEff.toFixed(2)}) + appoint = ${consoApres.toFixed(1)} MWh/an`,
+    `Conso AVANT (réutilisée): ${base.consoAvant.toFixed(1)} MWh/an`,
+    `Gain: ${gainMwh.toFixed(1)} MWh/an (${gainPct.toFixed(1)}%) · ${Math.round(economiEuros)} €/an`,
+  ].join("\n");
+
+  return { ...base, consoApres, gainMwh, gainPct, economiEuros, dureeRetour, detailMethode };
+}
+
+/**
+ * BAT-TH-163 — Forfait CEE (zone × puissance PAC).
+ * Forfait simplifié : kWh cumac/kW PAC dépend de la zone climatique.
+ */
+function calculer163_Forfait(v: FormValues): Calcul163Result | null {
+  const base = calculer163_DJU(v);
+  if (!base) return null;
+  const puissance = parseFloat(v.puissance_pac || "0") || base.deperditionsTotales;
+  if (puissance <= 0) return base;
+
+  const hKey = zoneToHKey(v.zone_climatique);
+  const forfaits = FORFAITS_CEE["BAT-TH-163"];
+  const forfait = forfaits[hKey];
+  const cumacKWh = forfait * puissance;
+  const duree = DUREE_VIE_CONV["BAT-TH-163"];
+  const coef = coefActualisation(duree);
+  const gainMwh = cumacKWh / (1000 * duree * coef);
+  const consoApres = Math.max(0, base.consoAvant - gainMwh);
+  const gainPct = base.consoAvant > 0 ? (gainMwh / base.consoAvant) * 100 : 0;
+  const energieExistante = v.energie_existante || "Gaz naturel";
+  const facteurAvant = FACTEUR_CO2[energieExistante] || 0.200;
+  const reductionCo2 = (base.consoAvant - consoApres) * facteurAvant - consoApres * 0; // simplifié
+  const economiEuros = gainMwh * 1000 * (prixEnergie(energieExistante) - PRIX_ELEC_KWH * 0.4);
+  const coutInvest = parseFloat(v.cout_investissement || "0");
+  const dureeRetour = coutInvest > 0 && economiEuros > 0 ? coutInvest / economiEuros : null;
+
+  const detailMethode = [
+    `Forfait CEE — fiche BAT-TH-163`,
+    `Zone climatique: ${hKey} · Puissance PAC retenue: ${puissance.toFixed(1)} kW (saisie ou déperditions calculées)`,
+    `Forfait indicatif zone ${hKey}: ${forfait} kWh cumac/kW (TODO : confirmer arrêté JO)`,
+    "",
+    `Volume CEE = ${forfait} × ${puissance.toFixed(1)} = ${cumacKWh.toFixed(0)} kWh cumac`,
+    `Durée: ${duree} ans · coef: ${coef.toFixed(3)} → gain EF = ${gainMwh.toFixed(1)} MWh/an`,
+    "",
+    `Conso AVANT (méthode DJU): ${base.consoAvant.toFixed(1)} MWh/an → APRÈS forfait: ${consoApres.toFixed(1)} MWh/an (${gainPct.toFixed(1)}%)`,
+    `Économie estimée: ${Math.round(economiEuros)} €/an`,
+  ].join("\n");
+
+  return { ...base, consoApres, gainMwh, gainPct, reductionCo2, economiEuros, dureeRetour, detailMethode };
 }
 
 // ─── Calculs BAT-TH-142 — Déstratification ─────────────────────
@@ -3005,6 +3418,16 @@ interface Calcul171Result {
 }
 
 function calculer171(v: FormValues): Calcul171Result | null {
+  const methode = parseMethodeId(v.methode_calcul, "BAR-TH-171");
+  switch (methode) {
+    case "FORFAITAIRE_CEE": return calculer171_Forfait(v);
+    case "SCOP_DETAILLE":   return calculer171_ScopDetaille(v);
+    case "DJU":
+    default:                return calculer171_DJU(v);
+  }
+}
+
+function calculer171_DJU(v: FormValues): Calcul171Result | null {
   const surface = parseFloat(v.surface_habitable || "0");
   const zone = v.zone_climatique;
   const zoneData = zone ? ZONE_CLIMATIQUE_DATA[zone] : null;
@@ -3075,6 +3498,126 @@ function calculer171(v: FormValues): Calcul171Result | null {
   ].filter(Boolean).join("\n");
 
   return { besoinChauffage: besoinMwh, consoAvant, consoApres, gainMwh, gainPct, reductionCo2, economiEuros, dureeRetour, cumacKWh, detailMethode };
+}
+
+/**
+ * BAR-TH-171 — SCOP NF EN 14825 détaillé (4 bins -7/2/7/12°C).
+ * On part du DJU de base, mais on remplace le SCOP "déclaré" par un SCOP
+ * effectif pondéré sur les 4 températures normatives selon la zone climatique.
+ */
+function calculer171_ScopDetaille(v: FormValues): Calcul171Result | null {
+  const base = calculer171_DJU(v);
+  if (!base) return null;
+  const zone = v.zone_climatique;
+  const zoneData = zone ? ZONE_CLIMATIQUE_DATA[zone] : null;
+  if (!zoneData) return base;
+  const scop7 = parseFloat(v.scop || v.cop || "0");
+  if (scop7 <= 0) return base;
+
+  // Profil 4 bins normatifs EN 14825 — pondération heures par bin selon zone
+  const repartition: Record<"H1" | "H2" | "H3", { tExt: number; pct: number }[]> = {
+    H1: [{ tExt: -7, pct: 0.10 }, { tExt: 2, pct: 0.45 }, { tExt: 7, pct: 0.30 }, { tExt: 12, pct: 0.15 }],
+    H2: [{ tExt: -7, pct: 0.05 }, { tExt: 2, pct: 0.40 }, { tExt: 7, pct: 0.35 }, { tExt: 12, pct: 0.20 }],
+    H3: [{ tExt: -7, pct: 0.02 }, { tExt: 2, pct: 0.30 }, { tExt: 7, pct: 0.40 }, { tExt: 12, pct: 0.28 }],
+  };
+  const hKey = zoneToHKey(zone);
+  const profil = repartition[hKey];
+  let scopEff = 0;
+  const lignes: string[] = [];
+  for (const p of profil) {
+    const correction = 1 - Math.max(0, (7 - p.tExt)) * 0.022;
+    const cop = scop7 * Math.max(0.4, correction);
+    scopEff += cop * p.pct;
+    lignes.push(`  ${p.tExt}°C → COP=${cop.toFixed(2)} × ${(p.pct * 100).toFixed(0)}%`);
+  }
+
+  const consoApresKwh = (base.besoinChauffage * 1000) / scopEff;
+  const consoApres = consoApresKwh / 1000;
+  const gainMwh = base.consoAvant - consoApres;
+  const gainPct = base.consoAvant > 0 ? (gainMwh / base.consoAvant) * 100 : 0;
+  const economiEuros = base.consoAvant * 1000 * prixEnergie(v.energie_existante || "Gaz naturel") - consoApresKwh * PRIX_ELEC_KWH;
+  const coutInvest = parseFloat(v.cout_investissement || "0");
+  const dureeRetour = coutInvest > 0 && economiEuros > 0 ? coutInvest / economiEuros : null;
+  const cumac = computeCumac("BAR-TH-171", gainMwh);
+
+  const detailMethode = [
+    `Méthode SCOP NF EN 14825 — 4 bins normatifs · Zone ${hKey}`,
+    `SCOP nominal déclaré (7°C) : ${scop7.toFixed(2)}`,
+    `Besoin net (méthode DJU) : ${base.besoinChauffage.toFixed(1)} MWh/an`,
+    "",
+    `Pondération sur les 4 températures normatives (répartition zone ${hKey}) :`,
+    ...lignes,
+    "",
+    `SCOP effectif = ${scopEff.toFixed(2)}`,
+    `Conso APRÈS = ${(base.besoinChauffage * 1000).toFixed(0)} / ${scopEff.toFixed(2)} = ${consoApresKwh.toFixed(0)} kWh/an (${consoApres.toFixed(1)} MWh/an)`,
+    `Conso AVANT (DJU) : ${base.consoAvant.toFixed(1)} MWh/an`,
+    `Gain : ${gainMwh.toFixed(1)} MWh/an (${gainPct.toFixed(1)}%) · ${Math.round(economiEuros)} €/an`,
+    cumac ? `Volume CEE : ${cumac.cumacMWh.toFixed(0)} MWh cumac` : "",
+  ].filter(Boolean).join("\n");
+
+  return { ...base, consoApres, gainMwh, gainPct, economiEuros, dureeRetour, cumacKWh: cumac?.cumacKWh ?? 0, detailMethode };
+}
+
+/**
+ * BAR-TH-171 — Forfait CEE (kWh cumac / m² selon zone climatique).
+ */
+function calculer171_Forfait(v: FormValues): Calcul171Result | null {
+  const surface = parseFloat(v.surface_habitable || "0");
+  const zone = v.zone_climatique;
+  const zoneData = zone ? ZONE_CLIMATIQUE_DATA[zone] : null;
+  if (surface <= 0 || !zoneData) return null;
+  const hKey = zoneToHKey(zone);
+  const forfait = FORFAITS_CEE["BAR-TH-171"][hKey];
+  const cumacKWh = forfait * surface;
+  const duree = DUREE_VIE_CONV["BAR-TH-171"];
+  const coef = coefActualisation(duree);
+  const gainMwh = cumacKWh / (1000 * duree * coef);
+
+  // Reconstruire un consoAvant cohérent à partir de G × V × DJU pour le %
+  const annee = parseFloat(v.annee_construction || "0");
+  const G = coeffGFromAnnee(annee);
+  const hsp = parseFloat(v.hauteur_plafond || "2.5");
+  const volume = surface * hsp;
+  const besoinKwh = (G * volume * zoneData.dju * 24 / 1000) * 0.85;
+  const besoinMwh = besoinKwh / 1000;
+  const energieExistante = v.energie_existante || "Gaz naturel";
+  const typeGen = v.type_chauffage_existant || "Chaudière standard";
+  const rendGen = RENDEMENTS_GENERATEURS[typeGen] || 0.85;
+  const rendEmet = rendementEmetteursFrom(v.emetteurs_existants);
+  const rendExistant = rendGen * rendEmet;
+  const consoAvant = besoinKwh / rendExistant / 1000;
+  const consoApres = Math.max(0, consoAvant - gainMwh);
+  const gainPct = consoAvant > 0 ? (gainMwh / consoAvant) * 100 : 0;
+  const facteurAvant = FACTEUR_CO2[energieExistante] || 0.200;
+  const reductionCo2 = (consoAvant * facteurAvant - consoApres * FACTEUR_CO2_ELEC_CHAUFFAGE) * 1; // tCO₂/an (MWh×kg/kWh = kg, ÷1000 → t : déjà cohérent ici)
+  const economiEuros = consoAvant * 1000 * prixEnergie(energieExistante) - consoApres * 1000 * PRIX_ELEC_KWH;
+  const coutInvest = parseFloat(v.cout_investissement || "0");
+  const dureeRetour = coutInvest > 0 && economiEuros > 0 ? coutInvest / economiEuros : null;
+
+  const detailMethode = [
+    `Forfait CEE — fiche BAR-TH-171 (zone ${hKey})`,
+    `Surface chauffée : ${surface} m² · Forfait indicatif : ${forfait} kWh cumac/m² (TODO : confirmer arrêté JO)`,
+    "",
+    `Volume CEE = ${forfait} × ${surface} = ${cumacKWh.toFixed(0)} kWh cumac (${(cumacKWh/1000).toFixed(0)} MWh cumac)`,
+    `Durée : ${duree} ans · coef : ${coef.toFixed(3)} → gain EF = ${gainMwh.toFixed(1)} MWh/an`,
+    "",
+    `Conso de référence reconstruite (G × V × DJU avec G=${G.toFixed(2)}) : ${consoAvant.toFixed(1)} MWh/an`,
+    `Conso APRÈS (forfait) : ${consoApres.toFixed(1)} MWh/an (${gainPct.toFixed(1)}%)`,
+    `Économie estimée : ${Math.round(economiEuros)} €/an`,
+  ].join("\n");
+
+  return {
+    besoinChauffage: besoinMwh,
+    consoAvant,
+    consoApres,
+    gainMwh,
+    gainPct,
+    reductionCo2,
+    economiEuros,
+    dureeRetour,
+    cumacKWh,
+    detailMethode,
+  };
 }
 
 // ─── Calculs BAR-TH-159 — PAC hybride résidentiel ──────────────
@@ -3283,19 +3826,94 @@ function calculerIsolation(
   return { uAvant, uApres, deltaU, surface, deperditionsEviteesKwh, gainMwh, gainPct, reductionCo2, economiEuros, dureeRetour, cumacKWh, detailMethode };
 }
 
+/**
+ * Forfait CEE pour les fiches BAR-EN-101/102/103 :
+ * cumac = forfait_zone × surface isolée. La conso évitée annuelle est
+ * reconstruite via la durée conventionnelle et le coefficient d'actualisation.
+ */
+function calculerIsolationForfait(
+  v: FormValues,
+  ficheId: "BAR-EN-101" | "BAR-EN-102" | "BAR-EN-103",
+  surfaceField: string,
+  paroi: string,
+): CalculIsolationResult | null {
+  const surface = parseFloat(v[surfaceField] || "0");
+  const zone = v.zone_climatique;
+  const zoneData = zone ? ZONE_CLIMATIQUE_DATA[zone] : null;
+  if (surface <= 0 || !zoneData) return null;
+  const hKey = zoneToHKey(zone);
+  const forfait = FORFAITS_CEE[ficheId][hKey];
+  const cumacKWh = forfait * surface;
+  const duree = DUREE_VIE_CONV[ficheId];
+  const coef = coefActualisation(duree);
+  const gainKwh = cumacKWh / (duree * coef);
+  const gainMwh = gainKwh / 1000;
+
+  const rApres = parseFloat(v.r_thermique || "0");
+  const rAvantSaisi = parseFloat(v.r_actuel || "0");
+  const uApres = rApres > 0 ? 1 / rApres : 0;
+  const uAvant = rAvantSaisi > 0 ? 1 / rAvantSaisi : 0;
+  const deltaU = Math.max(0, uAvant - uApres);
+
+  const energieExistante = v.energie_existante || "Gaz naturel";
+  const facteur = FACTEUR_CO2[energieExistante] || 0.200;
+  const reductionCo2 = (gainKwh * facteur) / 1000;
+  const prix = prixEnergie(energieExistante);
+  const economiEuros = gainKwh * prix;
+  const coutInvest = parseFloat(v.cout_investissement || "0");
+  const dureeRetour = coutInvest > 0 && economiEuros > 0 ? coutInvest / economiEuros : null;
+
+  const detailMethode = [
+    `Forfait CEE — fiche ${ficheId} (${paroi}, zone ${hKey})`,
+    `Surface isolée : ${surface} m² · Forfait indicatif : ${forfait} kWh cumac/m² (TODO : confirmer arrêté JO)`,
+    "",
+    `Volume CEE = ${forfait} × ${surface} = ${cumacKWh.toFixed(0)} kWh cumac (${(cumacKWh/1000).toFixed(0)} MWh cumac)`,
+    `Durée conventionnelle : ${duree} ans · coef actualisation : ${coef.toFixed(3)}`,
+    `Gain énergie finale = cumac / (durée × coef) = ${gainKwh.toFixed(0)} kWh/an (${gainMwh.toFixed(1)} MWh/an)`,
+    "",
+    `Énergie substituée : ${energieExistante} (prix ${prix} €/kWh · CO₂ ${facteur} kgCO₂e/kWh)`,
+    `Réduction CO₂ : ${reductionCo2.toFixed(2)} tCO₂e/an`,
+    `Économie : ${Math.round(economiEuros)} €/an`,
+  ].join("\n");
+
+  return {
+    uAvant, uApres, deltaU, surface,
+    deperditionsEviteesKwh: gainKwh,
+    gainMwh,
+    gainPct: 0,
+    reductionCo2,
+    economiEuros,
+    dureeRetour,
+    cumacKWh,
+    detailMethode,
+  };
+}
+
 function calculer101(v: FormValues): CalculIsolationResult | null {
+  const methode = parseMethodeId(v.methode_calcul, "BAR-EN-101");
+  if (methode === "FORFAITAIRE_CEE") {
+    return calculerIsolationForfait(v, "BAR-EN-101", "surface_isolee", "Combles / toiture");
+  }
   // Combles perdus non isolés : U ~ 3.0 ; après ~ 1/7 = 0.14
   return calculerIsolation(v, "BAR-EN-101", "surface_isolee",
     { uAvantDefaut: 3.0, uApresDefaut: 0.14, paroi: "Combles / toiture" });
 }
 
 function calculer102(v: FormValues): CalculIsolationResult | null {
+  const methode = parseMethodeId(v.methode_calcul, "BAR-EN-102");
+  if (methode === "FORFAITAIRE_CEE") {
+    return calculerIsolationForfait(v, "BAR-EN-102", "surface_murs", "Murs");
+  }
   // Mur non isolé : U ~ 2.0 ; après ~ 1/3.7 = 0.27
   return calculerIsolation(v, "BAR-EN-102", "surface_murs",
     { uAvantDefaut: 2.0, uApresDefaut: 0.27, paroi: "Murs" });
 }
 
 function calculer103(v: FormValues): CalculIsolationResult | null {
+  const methode = parseMethodeId(v.methode_calcul, "BAR-EN-103");
+  if (methode === "FORFAITAIRE_CEE") {
+    return calculerIsolationForfait(v, "BAR-EN-103", "surface_plancher", "Plancher bas");
+  }
   // Plancher bas non isolé : U ~ 2.0 ; après ~ 1/3 = 0.33
   return calculerIsolation(v, "BAR-EN-103", "surface_plancher",
     { uAvantDefaut: 2.0, uApresDefaut: 0.33, paroi: "Plancher bas" });
@@ -4702,6 +5320,7 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
                       <div className="flex items-center gap-2 mb-2">
                         <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
                         <h4 className="text-sm font-semibold text-green-700 dark:text-green-400">Résultats calculés automatiquement</h4>
+                        <Badge variant="outline" className="ml-auto text-[10px] font-medium">Méthode : {parseMethodeId(values.methode_calcul, "BAT-TH-134")}</Badge>
                       </div>
                       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                         {[
@@ -4731,7 +5350,6 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
                             updateValue("economie_euros", String(Math.round(calcul134.economiEuros)));
                             if (calcul134.dureeRetour) updateValue("duree_retour", calcul134.dureeRetour.toFixed(1));
                             updateValue("detail_calcul", calcul134.detailMethode);
-                            updateValue("methode_calcul", "Méthode bin (répartition des heures par tranche de T° ext.)");
                           }}
                         >
                           <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
@@ -4747,6 +5365,7 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
                       <div className="flex items-center gap-2 mb-2">
                         <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
                         <h4 className="text-sm font-semibold text-blue-700 dark:text-blue-400">Résultats calculés automatiquement</h4>
+                        <Badge variant="outline" className="ml-auto text-[10px] font-medium">Méthode : {parseMethodeId(values.methode_calcul, "BAT-TH-163")}</Badge>
                       </div>
                       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                         {[
@@ -4791,7 +5410,6 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
                             updateValue("economie_euros", String(Math.round(calcul163.economiEuros)));
                             if (calcul163.dureeRetour) updateValue("duree_retour", calcul163.dureeRetour.toFixed(1));
                             updateValue("detail_calcul", calcul163.detailMethode);
-                            updateValue("methode_calcul", "Calcul simplifié (G × V × ΔT)");
                           }}
                         >
                           <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
@@ -4807,6 +5425,7 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
                       <div className="flex items-center gap-2 mb-2">
                         <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
                         <h4 className="text-sm font-semibold text-amber-700 dark:text-amber-400">Résultats calculés automatiquement</h4>
+                        <Badge variant="outline" className="ml-auto text-[10px] font-medium">Méthode : {parseMethodeId(values.methode_calcul, "BAT-TH-142")}</Badge>
                       </div>
                       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                         {[
@@ -4852,6 +5471,7 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
                       <div className="flex items-center gap-2 mb-2">
                         <div className="h-2 w-2 rounded-full bg-orange-500 animate-pulse" />
                         <h4 className="text-sm font-semibold text-orange-700 dark:text-orange-400">Résultats calculés automatiquement</h4>
+                        <Badge variant="outline" className="ml-auto text-[10px] font-medium">Méthode : {parseMethodeId(values.methode_calcul, "BAT-TH-139")}</Badge>
                       </div>
                       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                         {[
@@ -4899,6 +5519,7 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
                       <div className="flex items-center gap-2 mb-2">
                         <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                         <h4 className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">Résultats calculés automatiquement</h4>
+                        <Badge variant="outline" className="ml-auto text-[10px] font-medium">Méthode : {parseMethodeId(values.methode_calcul, "BAR-TH-171")}</Badge>
                       </div>
                       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                         {[
@@ -4942,6 +5563,7 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
                       <div className="flex items-center gap-2 mb-2">
                         <div className="h-2 w-2 rounded-full bg-cyan-500 animate-pulse" />
                         <h4 className="text-sm font-semibold text-cyan-700 dark:text-cyan-400">Résultats calculés automatiquement</h4>
+                        <Badge variant="outline" className="ml-auto text-[10px] font-medium">Méthode : {parseMethodeId(values.methode_calcul, "BAR-TH-159")}</Badge>
                       </div>
                       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                         {[
@@ -4998,6 +5620,7 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
                         <div className="flex items-center gap-2 mb-2">
                           <div className={cn("h-2 w-2 rounded-full animate-pulse", dot)} />
                           <h4 className={cn("text-sm font-semibold", text)}>Résultats calculés automatiquement</h4>
+                          <Badge variant="outline" className="ml-auto text-[10px] font-medium">Méthode : {parseMethodeId(values.methode_calcul, selectedFiche)}</Badge>
                         </div>
                         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                           {[
@@ -5041,6 +5664,7 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
                       <div className="flex items-center gap-2 mb-2">
                         <div className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
                         <h4 className="text-sm font-semibold text-rose-700 dark:text-rose-400">Résultats calculés automatiquement — Classe {calcul116.classe}</h4>
+                        <Badge variant="outline" className="ml-auto text-[10px] font-medium">Méthode : {parseMethodeId(values.methode_calcul, "BAT-TH-116")}</Badge>
                       </div>
                       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                         {[
