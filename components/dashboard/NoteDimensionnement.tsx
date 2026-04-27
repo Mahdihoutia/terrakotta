@@ -624,13 +624,9 @@ const QUESTIONNAIRE_134: QuestionSection[] = [
         id: "methode_calcul",
         label: "Méthode de calcul utilisée",
         type: "select",
-        options: [
-          "Calcul thermodynamique (cycle frigorifique)",
-          "Méthode bin (répartition des heures par tranche de T° ext.)",
-          "Simulation logicielle (préciser)",
-          "Données constructeur + historique de consommation",
-        ],
+        options: METHODES_PAR_FICHE["BAT-TH-134"].map((m) => m.label),
         required: true,
+        help: "Le détail du calcul et les chiffres s'actualisent automatiquement selon la méthode choisie.",
       },
       { id: "logiciel_calcul", label: "Logiciel de calcul utilisé (si applicable)", type: "text", placeholder: "Ex: Coolselector, Pack Calculation Pro..." },
       {
@@ -1024,10 +1020,11 @@ const QUESTIONNAIRE_163: QuestionSection[] = [
     fields: [
       {
         id: "methode_calcul",
-        label: "Méthode de calcul des déperditions",
+        label: "Méthode de calcul utilisée",
         type: "select",
-        options: ["NF EN 12831 (méthode détaillée)", "RT existant (Th-C-E ex)", "Calcul simplifié (G × V × ΔT)", "Simulation thermique dynamique (STD)", "Logiciel de dimensionnement constructeur"],
+        options: METHODES_PAR_FICHE["BAT-TH-163"].map((m) => m.label),
         required: true,
+        help: "Le détail du calcul et les chiffres s'actualisent automatiquement selon la méthode choisie.",
       },
       { id: "logiciel_calcul", label: "Logiciel utilisé (si applicable)", type: "text", placeholder: "Ex: Perrenoud, Pleiades, ClimaWin..." },
       { id: "deperditions_totales", label: "Déperditions totales du bâtiment", type: "number", placeholder: "Ex: 130", unit: "kW", required: true },
@@ -2298,13 +2295,9 @@ const QUESTIONNAIRE_142: QuestionSection[] = [
         id: "methode_calcul",
         label: "Méthode de calcul utilisée",
         type: "select",
-        options: [
-          "Méthode par gradient thermique (réduction du ΔT sol-plafond)",
-          "Méthode forfaitaire (3% d'économie par °C de gradient réduit)",
-          "Simulation logicielle (CFD ou thermique)",
-          "Données constructeur + retour d'expérience",
-        ],
+        options: METHODES_PAR_FICHE["BAT-TH-142"].map((m) => m.label),
         required: true,
+        help: "Le détail du calcul et les chiffres s'actualisent automatiquement selon la méthode choisie.",
       },
       { id: "gradient_avant", label: "Gradient thermique AVANT travaux", type: "number", placeholder: "Ex: 14", unit: "°C", required: true },
       { id: "gradient_apres", label: "Gradient thermique APRÈS travaux (estimé)", type: "number", placeholder: "Ex: 3", unit: "°C", required: true, help: "Objectif : réduction de 70-80% du gradient" },
@@ -2545,13 +2538,9 @@ const QUESTIONNAIRE_139: QuestionSection[] = [
         id: "methode_calcul",
         label: "Méthode de calcul utilisée",
         type: "select",
-        options: [
-          "Bilan thermique (puissance × heures × taux de charge × taux de récup.)",
-          "Analyse sur données 24h représentatives (2 ans historique)",
-          "Simulation logicielle (préciser)",
-          "Données constructeur + historique consommation",
-        ],
+        options: METHODES_PAR_FICHE["BAT-TH-139"].map((m) => m.label),
         required: true,
+        help: "Le détail du calcul et les chiffres s'actualisent automatiquement selon la méthode choisie.",
       },
       { id: "chaleur_rejetee_annuelle", label: "Chaleur totale rejetée par le groupe froid", type: "number", placeholder: "Ex: 520", unit: "MWh/an", required: true, help: "= (Pfroid + Pélec) × heures × taux charge / 1000" },
       { id: "taux_recuperation", label: "Taux de récupération effectif", type: "number", placeholder: "Ex: 35", unit: "%", required: true, help: "Part de la chaleur rejetée effectivement récupérée" },
@@ -4559,7 +4548,7 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
 
     setValues((prev) => {
       const updates: FormValues = {};
-      if (!prev.methode_calcul) updates.methode_calcul = "Méthode bin (répartition des heures par tranche de T° ext.)";
+      if (!prev.methode_calcul) updates.methode_calcul = METHODES_PAR_FICHE["BAT-TH-134"][0].label;
       if (!prev.heures_fonctionnement) updates.heures_fonctionnement = heures;
       if (!prev.conso_electrique_avant) updates.conso_electrique_avant = consoEstimee.toFixed(1);
       if (!prev.source_conso_avant) updates.source_conso_avant = "Estimation par calcul";
@@ -4576,7 +4565,7 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
   useEffect(() => {
     if (selectedFiche !== "BAT-TH-134" || activeSection !== 4 || !calcul134) return;
     // Signature des résultats pour éviter les boucles infinies
-    const sig = `${calcul134.consoApres.toFixed(1)}|${calcul134.gainPct.toFixed(1)}|${calcul134.gainMwh.toFixed(1)}|${Math.round(calcul134.economiEuros)}|${calcul134.dureeRetour?.toFixed(1) ?? ""}`;
+    const sig = `${values.methode_calcul ?? ""}|${calcul134.consoApres.toFixed(1)}|${calcul134.gainPct.toFixed(1)}|${calcul134.gainMwh.toFixed(1)}|${Math.round(calcul134.economiEuros)}|${calcul134.dureeRetour?.toFixed(1) ?? ""}`;
     if (prevCalcul134Ref.current === sig) return;
     prevCalcul134Ref.current = sig;
 
@@ -4623,7 +4612,7 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
 
     setValues((prev) => {
       const updates: FormValues = {};
-      if (!prev.methode_calcul) updates.methode_calcul = "Calcul simplifié (G × V × ΔT)";
+      if (!prev.methode_calcul) updates.methode_calcul = METHODES_PAR_FICHE["BAT-TH-163"][0].label;
       if (!prev.taux_couverture) updates.taux_couverture = tauxCouverture;
       if (!prev.appoint) updates.appoint = "Résistance électrique intégrée";
       if (!prev.volume_chauffe) updates.volume_chauffe = volumeCalc;
@@ -4643,7 +4632,7 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
   const prevCalcul163Ref = useRef<string | null>(null);
   useEffect(() => {
     if (selectedFiche !== "BAT-TH-163" || activeSection !== 5 || !calcul163) return;
-    const sig = `${calcul163.deperditionsTotales.toFixed(1)}|${calcul163.consoAvant.toFixed(1)}|${calcul163.gainPct.toFixed(1)}|${calcul163.gainMwh.toFixed(1)}|${Math.round(calcul163.economiEuros)}|${calcul163.dureeRetour?.toFixed(1) ?? ""}`;
+    const sig = `${values.methode_calcul ?? ""}|${calcul163.deperditionsTotales.toFixed(1)}|${calcul163.consoAvant.toFixed(1)}|${calcul163.gainPct.toFixed(1)}|${calcul163.gainMwh.toFixed(1)}|${Math.round(calcul163.economiEuros)}|${calcul163.dureeRetour?.toFixed(1) ?? ""}`;
     if (prevCalcul163Ref.current === sig) return;
     prevCalcul163Ref.current = sig;
 
@@ -4683,7 +4672,7 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
 
     setValues((prev) => {
       const updates: FormValues = {};
-      if (!prev.methode_calcul) updates.methode_calcul = "Méthode forfaitaire (3% d'économie par °C de gradient réduit)";
+      if (!prev.methode_calcul) updates.methode_calcul = METHODES_PAR_FICHE["BAT-TH-142"][0].label;
       if (!prev.gradient_avant) updates.gradient_avant = String(gradient);
       // Estimer gradient après : réduction de 75% typique
       if (!prev.gradient_apres) updates.gradient_apres = (gradient * 0.25).toFixed(1);
@@ -4699,7 +4688,7 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
   const prevCalcul142Ref = useRef<string | null>(null);
   useEffect(() => {
     if (selectedFiche !== "BAT-TH-142" || activeSection !== 4 || !calcul142) return;
-    const sig = `${calcul142.gainNetMwh.toFixed(1)}|${calcul142.gainNetPct.toFixed(1)}|${Math.round(calcul142.economiEuros)}`;
+    const sig = `${values.methode_calcul ?? ""}|${calcul142.gainNetMwh.toFixed(1)}|${calcul142.gainNetPct.toFixed(1)}|${Math.round(calcul142.economiEuros)}`;
     if (prevCalcul142Ref.current === sig) return;
     prevCalcul142Ref.current = sig;
 
@@ -4736,7 +4725,7 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
 
     setValues((prev) => {
       const updates: FormValues = {};
-      if (!prev.methode_calcul) updates.methode_calcul = "Bilan thermique (puissance × heures × taux de charge × taux de récup.)";
+      if (!prev.methode_calcul) updates.methode_calcul = METHODES_PAR_FICHE["BAT-TH-139"][0].label;
       if (!prev.chaleur_rejetee_annuelle) updates.chaleur_rejetee_annuelle = chaleurRejetee.toFixed(1);
       if (!prev.taux_recuperation) updates.taux_recuperation = "35";
       if (!prev.chaleur_recuperee_annuelle) updates.chaleur_recuperee_annuelle = (chaleurRejetee * 0.35).toFixed(1);
@@ -4750,7 +4739,7 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
   const prevCalcul139Ref = useRef<string | null>(null);
   useEffect(() => {
     if (selectedFiche !== "BAT-TH-139" || activeSection !== 4 || !calcul139) return;
-    const sig = `${calcul139.consoEvitee.toFixed(1)}|${calcul139.gainPct.toFixed(1)}|${Math.round(calcul139.economiEuros)}`;
+    const sig = `${values.methode_calcul ?? ""}|${calcul139.consoEvitee.toFixed(1)}|${calcul139.gainPct.toFixed(1)}|${Math.round(calcul139.economiEuros)}`;
     if (prevCalcul139Ref.current === sig) return;
     prevCalcul139Ref.current = sig;
 
@@ -4773,7 +4762,7 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
   const prevCalcul171Ref = useRef<string | null>(null);
   useEffect(() => {
     if (selectedFiche !== "BAR-TH-171" || activeSection !== 4 || !calcul171) return;
-    const sig = `${calcul171.gainMwh.toFixed(1)}|${calcul171.gainPct.toFixed(1)}|${Math.round(calcul171.economiEuros)}|${calcul171.dureeRetour?.toFixed(1) ?? ""}|${Math.round(calcul171.cumacKWh)}`;
+    const sig = `${values.methode_calcul ?? ""}|${calcul171.gainMwh.toFixed(1)}|${calcul171.gainPct.toFixed(1)}|${Math.round(calcul171.economiEuros)}|${calcul171.dureeRetour?.toFixed(1) ?? ""}|${Math.round(calcul171.cumacKWh)}`;
     if (prevCalcul171Ref.current === sig) return;
     prevCalcul171Ref.current = sig;
     setValues((prev) => ({
@@ -4792,7 +4781,7 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
   const prevCalcul159Ref = useRef<string | null>(null);
   useEffect(() => {
     if (selectedFiche !== "BAR-TH-159" || activeSection !== 4 || !calcul159) return;
-    const sig = `${calcul159.gainMwh.toFixed(1)}|${calcul159.gainPct.toFixed(1)}|${Math.round(calcul159.economiEuros)}|${calcul159.dureeRetour?.toFixed(1) ?? ""}|${Math.round(calcul159.cumacKWh)}`;
+    const sig = `${values.methode_calcul ?? ""}|${calcul159.gainMwh.toFixed(1)}|${calcul159.gainPct.toFixed(1)}|${Math.round(calcul159.economiEuros)}|${calcul159.dureeRetour?.toFixed(1) ?? ""}|${Math.round(calcul159.cumacKWh)}`;
     if (prevCalcul159Ref.current === sig) return;
     prevCalcul159Ref.current = sig;
     setValues((prev) => ({
@@ -4811,7 +4800,7 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
   const prevCalcul101Ref = useRef<string | null>(null);
   useEffect(() => {
     if (selectedFiche !== "BAR-EN-101" || activeSection !== 4 || !calcul101) return;
-    const sig = `${calcul101.gainMwh.toFixed(1)}|${calcul101.gainPct.toFixed(1)}|${Math.round(calcul101.economiEuros)}|${calcul101.dureeRetour?.toFixed(1) ?? ""}|${Math.round(calcul101.cumacKWh)}`;
+    const sig = `${values.methode_calcul ?? ""}|${calcul101.gainMwh.toFixed(1)}|${calcul101.gainPct.toFixed(1)}|${Math.round(calcul101.economiEuros)}|${calcul101.dureeRetour?.toFixed(1) ?? ""}|${Math.round(calcul101.cumacKWh)}`;
     if (prevCalcul101Ref.current === sig) return;
     prevCalcul101Ref.current = sig;
     setValues((prev) => ({
@@ -4830,7 +4819,7 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
   const prevCalcul102Ref = useRef<string | null>(null);
   useEffect(() => {
     if (selectedFiche !== "BAR-EN-102" || activeSection !== 4 || !calcul102) return;
-    const sig = `${calcul102.gainMwh.toFixed(1)}|${calcul102.gainPct.toFixed(1)}|${Math.round(calcul102.economiEuros)}|${calcul102.dureeRetour?.toFixed(1) ?? ""}|${Math.round(calcul102.cumacKWh)}`;
+    const sig = `${values.methode_calcul ?? ""}|${calcul102.gainMwh.toFixed(1)}|${calcul102.gainPct.toFixed(1)}|${Math.round(calcul102.economiEuros)}|${calcul102.dureeRetour?.toFixed(1) ?? ""}|${Math.round(calcul102.cumacKWh)}`;
     if (prevCalcul102Ref.current === sig) return;
     prevCalcul102Ref.current = sig;
     setValues((prev) => ({
@@ -4849,7 +4838,7 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
   const prevCalcul103Ref = useRef<string | null>(null);
   useEffect(() => {
     if (selectedFiche !== "BAR-EN-103" || activeSection !== 4 || !calcul103) return;
-    const sig = `${calcul103.gainMwh.toFixed(1)}|${calcul103.gainPct.toFixed(1)}|${Math.round(calcul103.economiEuros)}|${calcul103.dureeRetour?.toFixed(1) ?? ""}|${Math.round(calcul103.cumacKWh)}`;
+    const sig = `${values.methode_calcul ?? ""}|${calcul103.gainMwh.toFixed(1)}|${calcul103.gainPct.toFixed(1)}|${Math.round(calcul103.economiEuros)}|${calcul103.dureeRetour?.toFixed(1) ?? ""}|${Math.round(calcul103.cumacKWh)}`;
     if (prevCalcul103Ref.current === sig) return;
     prevCalcul103Ref.current = sig;
     setValues((prev) => ({
@@ -4868,7 +4857,7 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
   const prevCalcul116Ref = useRef<string | null>(null);
   useEffect(() => {
     if (selectedFiche !== "BAT-TH-116" || activeSection !== 4 || !calcul116) return;
-    const sig = `${calcul116.gainMwh.toFixed(1)}|${calcul116.gainPct.toFixed(1)}|${Math.round(calcul116.economiEuros)}|${calcul116.dureeRetour?.toFixed(1) ?? ""}|${Math.round(calcul116.cumacKWh)}`;
+    const sig = `${values.methode_calcul ?? ""}|${calcul116.gainMwh.toFixed(1)}|${calcul116.gainPct.toFixed(1)}|${Math.round(calcul116.economiEuros)}|${calcul116.dureeRetour?.toFixed(1) ?? ""}|${Math.round(calcul116.cumacKWh)}`;
     if (prevCalcul116Ref.current === sig) return;
     prevCalcul116Ref.current = sig;
     setValues((prev) => ({
