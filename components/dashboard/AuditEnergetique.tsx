@@ -23,6 +23,28 @@ import {
 import type { PreconisationAction } from "@/lib/pdf-styles";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  calculerDeperditions,
+  calculerApportsSolaires,
+  calculerBesoinsChauffage,
+  calculerDpe,
+  estimerPontsForfaitaire,
+  mapIsolationMurLabel,
+  parseZone,
+  vecteurFromLabel,
+  checkSommeDeperditions,
+  checkEcartFactureCalc,
+  checkCoherenceUMurs,
+  U_MURS,
+  U_TOITURE,
+  U_VITRAGE,
+  U_PLANCHER,
+  RENDEMENTS_GENERATEURS,
+  type ApportSolaireResult,
+  type DeperditionsResult,
+  type BesoinsChauffageResult,
+  type DpeResult,
+} from "@/lib/thermal";
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -967,6 +989,241 @@ async function generatePDF(
   doc.save(`Audit_Energetique_${values.ref_audit || "DRAFT"}_${new Date().toISOString().slice(0, 10)}.pdf`);
 }
 
+// ─── Moteur thermique : hook + helpers UI ──────────────────────
+
+interface ThermalCalc {
+  deperditions: DeperditionsResult | null;
+  apports: ApportSolaireResult | null;
+  besoins: BesoinsChauffageResult | null;
+  dpe: DpeResult | null;
+}
+
+function num(v: string | undefined): number {
+  const n = parseFloat((v || "").replace(",", "."));
+  return Number.isFinite(n) ? n : 0;
+}
+
+/** Estimation U via les libellés du formulaire (R prioritaire si saisi). */
+function uMurFromForm(values: FormValues): number {
+  const r = num(values.murs_r);
+  if (r > 0.1) return 1 / (r + 0.17); // 0.17 = R_si + R_se conventionnel
+  const label = values.murs_isolation || "";
+  const s = label.toLowerCase();
+  if (s.includes("extérieure")) return U_MURS["Isolation extérieure (ITE)"];
+  if (s.includes("intérieure")) return U_MURS["Isolation intérieure (ITE)"];
+  if (s.includes("répartie")) return U_MURS["Isolation répartie"];
+  if (s.includes("non isol")) return U_MURS["Non isolés"];
+  return U_MURS["Inconnu"];
+}
+
+function uToitureFromForm(values: FormValues): number {
+  const r = num(values.toiture_r);
+  if (r > 0.1) return 1 / (r + 0.17);
+  const s = (values.toiture_isolation || "").toLowerCase();
+  if (s.includes("non isol")) return U_TOITURE["Non isolés"];
+  if (s.includes("bien isol")) return 0.18;
+  if (s.includes("correctement")) return 0.25;
+  if (s.includes("insuff")) return 0.45;
+  return U_TOITURE["Inconnu"];
+}
+
+function uPlancherFromForm(values: FormValues): number {
+  const r = num(values.plancher_r);
+  if (r > 0.1) return 1 / (r + 0.17);
+  const s = (values.plancher_isolation || "").toLowerCase();
+  if (s.includes("non isol")) return U_PLANCHER["Non isolé"];
+  if (s.includes("sous dalle")) return U_PLANCHER["Isolé sous dalle"];
+  if (s.includes("sous-face")) return U_PLANCHER["Isolé en sous-face"];
+  return U_PLANCHER["Inconnu"];
+}
+
+function uVitrageFromForm(values: FormValues): number {
+  const t = (values.menuiseries_type || "").toLowerCase();
+  if (t.includes("simple")) return U_VITRAGE["Simple vitrage"];
+  if (t.includes("ancien")) return U_VITRAGE["Double vitrage ancien (avant 2000)"];
+  if (t.includes("triple")) return U_VITRAGE["Triple vitrage"];
+  if (t.includes("récent") || t.includes("double")) return U_VITRAGE["Double vitrage performant"];
+  return U_VITRAGE["Mixte"];
+}
+
+function rendementGenerateurFromForm(values: FormValues): number {
+  const r = num(values.chauffage_rendement);
+  if (r > 30) return r / 100; // saisi en %
+  if (r > 0.3 && r < 5) return r; // déjà en ratio
+  const t = (values.chauffage_type || "").toLowerCase();
+  if (t.includes("condens")) return RENDEMENTS_GENERATEURS["Chaudière condensation"];
+  if (t.includes("basse t")) return RENDEMENTS_GENERATEURS["Chaudière basse température"];
+  if (t.includes("pac")) return 3.0;
+  if (t.includes("convect") || t.includes("électr") || t.includes("electr") || t.includes("radiateur électr")) return 1.0;
+  if (t.includes("bois") || t.includes("granulé")) return 0.75;
+  return RENDEMENTS_GENERATEURS["Chaudière standard"];
+}
+
+function useThermalCalc(values: FormValues): ThermalCalc {
+  return useMemo<ThermalCalc>(() => {
+    const shab = num(values.surface_habitable);
+    const hauteur = num(values.hauteur_plafond) || 2.5;
+    const volume = shab * hauteur;
+    const zoneLabel = values.zone_climatique;
+    if (!shab || shab <= 0 || !zoneLabel) {
+      return { deperditions: null, apports: null, besoins: null, dpe: null };
+    }
+
+    // Estimation grossière des surfaces déperditives à partir de SHAB.
+    // Hypothèses : forme compacte, ratio S_murs/SHAB ≈ 1.0, S_toit ≈ SHAB,
+    // S_plancher ≈ SHAB. L'utilisateur peut affiner via les U.
+    const surfaceVitree = num(values.surface_vitree_totale);
+    const surfaceMurs = Math.max(0, shab * 1.0 - surfaceVitree);
+    const surfaceToiture = shab;
+    const surfacePlancher = shab;
+
+    const uMurs = uMurFromForm(values);
+    const uToiture = uToitureFromForm(values);
+    const uPlancher = uPlancherFromForm(values);
+    const uVitree = surfaceVitree > 0 ? uVitrageFromForm(values) : 0;
+
+    // Ponts thermiques — forfaitaire selon isolation.
+    const isolation = mapIsolationMurLabel(values.murs_isolation);
+    const hParoisOpaques = uMurs * surfaceMurs + uToiture * surfaceToiture
+      + uPlancher * surfacePlancher + uVitree * surfaceVitree;
+    const hPontsThermiques = estimerPontsForfaitaire(hParoisOpaques, isolation);
+
+    // Renouvellement d'air : déduit du type de VMC.
+    const ventLabel = (values.ventilation_type || "").toLowerCase();
+    let renouvellementAir = 0.6;
+    let efficaciteDF = 0;
+    if (ventLabel.includes("aucune") || ventLabel.includes("naturelle")) renouvellementAir = 1.0;
+    else if (ventLabel.includes("hygro")) renouvellementAir = 0.4;
+    else if (ventLabel.includes("double flux")) { renouvellementAir = 0.4; efficaciteDF = 0.75; }
+    else if (ventLabel.includes("autoréglable")) renouvellementAir = 0.5;
+    if (num(values.n50) > 0) {
+      // n50 → taux global ≈ n50 × 0.07 + 0.5×VMC
+      renouvellementAir = Math.max(renouvellementAir, num(values.n50) * 0.07);
+    }
+
+    const tBaseMap: Record<string, number> = {
+      H1a: -7, H1b: -9, H1c: -10, H2a: -4, H2b: -2, H2c: -3, H2d: -5, H3: 0,
+    };
+    const zoneCode = parseZone(zoneLabel);
+    const deltaT = 19 - (tBaseMap[zoneCode] ?? -7);
+
+    const deperditions = calculerDeperditions({
+      surfaceMurs, surfaceToiture, surfacePlancher, surfaceVitree,
+      uMurs, uToiture, uPlancher, uVitree,
+      hPontsThermiques,
+      volumeChauffe: volume,
+      renouvellementAir,
+      efficaciteDoubleFlux: efficaciteDF,
+      deltaT,
+    });
+
+    // Apports solaires (mapping cardinaux → 4 orientations).
+    const apports = calculerApportsSolaires({
+      surfacesParOrientation: {
+        S: num(values.surface_vitree_sud),
+        E: num(values.surface_vitree_est),
+        O: num(values.surface_vitree_ouest),
+        N: num(values.surface_vitree_nord),
+        SE: 0, SO: 0, NE: 0, NO: 0,
+      },
+      facteurSolaireG: num(values.facteur_solaire_g) || 0.55,
+      facteurOmbre: 0.85,
+      zone: zoneCode,
+    });
+
+    // Apports internes : approximation ~5 W/m² × 50 % d'utilisation × 8760 h.
+    const apportsInternesKwh = shab * 5 * 8760 * 0.5 / 1000;
+
+    const rendement = rendementGenerateurFromForm(values);
+    const besoins = calculerBesoinsChauffage({
+      zone: zoneLabel,
+      surfaceHabitable: shab,
+      volumeChauffe: volume,
+      ubat: deperditions.ubatMoyen,
+      surfaceDeperditiveTotale: deperditions.surfaceDeperditiveTotale,
+      renouvellementAir,
+      apportsSolairesGratuits: apports.apportAnnuel,
+      apportsInternes: apportsInternesKwh,
+      rendementInstallation: rendement,
+    });
+
+    // DPE : repart des 5 postes saisis si dispo, sinon estime depuis besoins.
+    const chauffageKwh = num(values.poste_chauffage) || besoins.consoFinale;
+    const ecsKwh = num(values.poste_ecs) || shab * 25; // 25 kWh/m²·an typique
+    const refroidKwh = num(values.poste_refroidissement);
+    const eclairageKwh = num(values.poste_eclairage) || shab * 5;
+    const auxKwh = num(values.poste_auxiliaires) || shab * 3;
+
+    const dpe = calculerDpe({
+      chauffage_kwh: chauffageKwh,
+      chauffage_vecteur: vecteurFromLabel(values.chauffage_type),
+      ecs_kwh: ecsKwh,
+      ecs_vecteur: vecteurFromLabel(values.ecs_type),
+      refroidissement_kwh: refroidKwh,
+      eclairage_kwh: eclairageKwh,
+      auxiliaires_kwh: auxKwh,
+    }, shab);
+
+    return { deperditions, apports, besoins, dpe };
+  }, [values]);
+}
+
+interface CalcCardProps {
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+}
+function CalcCard({ title, subtitle, children }: CalcCardProps) {
+  return (
+    <div className="rounded-lg border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-4 space-y-3">
+      <div className="flex items-baseline justify-between gap-2">
+        <div>
+          <p className="text-[11px] uppercase tracking-wide text-primary font-semibold">Calculs auto</p>
+          <p className="text-sm font-semibold">{title}</p>
+        </div>
+        {subtitle && <p className="text-[11px] text-muted-foreground">{subtitle}</p>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+interface CalcRowProps {
+  label: string;
+  computed: string;
+  saved?: string;
+  unit?: string;
+  warn?: boolean;
+}
+function CalcRow({ label, computed, saved, unit, warn }: CalcRowProps) {
+  const ecart = saved && saved !== computed;
+  return (
+    <div className="flex items-center justify-between text-xs gap-2 py-1 border-b border-border/50 last:border-0">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="flex items-center gap-2">
+        <span className="font-medium tabular-nums">{computed}{unit && <span className="text-muted-foreground ml-0.5">{unit}</span>}</span>
+        {saved && (
+          <span className={cn("text-[10px] tabular-nums px-1.5 py-0.5 rounded", ecart ? (warn ? "bg-amber-100 text-amber-800" : "bg-muted text-muted-foreground") : "bg-emerald-100 text-emerald-800")}>
+            saisi : {saved}{unit && unit}
+          </span>
+        )}
+      </span>
+    </div>
+  );
+}
+
+interface ApplyButtonProps {
+  onClick: () => void;
+  label?: string;
+}
+function ApplyButton({ onClick, label = "Appliquer ces valeurs" }: ApplyButtonProps) {
+  return (
+    <Button size="sm" variant="outline" onClick={onClick} className="text-xs h-7">
+      {label}
+    </Button>
+  );
+}
+
 // ─── Component ──────────────────────────────────────────────────
 
 export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props) {
@@ -1079,6 +1336,21 @@ export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props
   // ─── Live DPE / GES letters pour l'aperçu UI ─────────────────
   const dpeLive = useMemo(() => (values.dpe_actuel || "").charAt(0) || "—", [values.dpe_actuel]);
   const gesLive = useMemo(() => (values.ges_actuel || "").charAt(0) || "—", [values.ges_actuel]);
+
+  // Moteur thermique — calculs auto à partir des saisies.
+  const thermal = useThermalCalc(values);
+
+  // Validations inline (Σ déperditions, écart facture/calc, U mur incohérent).
+  const issueDeperditions = useMemo(() => checkSommeDeperditions(values), [values]);
+  const issueUMurs = useMemo(() => checkCoherenceUMurs(num(values.murs_r) > 0 ? 1 / (num(values.murs_r) + 0.17) : uMurFromForm(values), values.murs_isolation || ""), [values]);
+  const issueEcart = useMemo(() => {
+    const facture = num(values.facture_annuelle);
+    const calc = thermal.besoins?.consoFinale ?? 0;
+    if (facture <= 0 || calc <= 0) return null;
+    // Conversion simplifiée : 0.10 €/kWh moyen pour comparer ordres.
+    const consoFromFacture = facture / 0.12;
+    return checkEcartFactureCalc(consoFromFacture, calc);
+  }, [values, thermal.besoins]);
 
   async function handleSave() {
     setSaving(true);
@@ -1481,6 +1753,108 @@ export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props
                       </div>
                     ))}
                   </div>
+
+                  {/* Blocs de calcul thermique (sections 3, 4, 6, 7, 8). */}
+                  {activeSection === 2 && thermal.deperditions && (
+                    <CalcCard title="Enveloppe — coefficient Ubat moyen" subtitle="Estimé à partir des U et surfaces saisis">
+                      <CalcRow label="Ubat moyen pondéré" computed={thermal.deperditions.ubatMoyen.toFixed(2)} unit=" W/m²·K" saved={values.ubat || undefined} />
+                      <CalcRow label="Surface déperditive totale" computed={thermal.deperditions.surfaceDeperditiveTotale.toFixed(0)} unit=" m²" />
+                      <CalcRow label="H ponts thermiques (forfait)" computed={thermal.deperditions.hPontsThermiques.toFixed(0)} unit=" W/K" />
+                      {issueUMurs && (
+                        <p className="text-[11px] text-amber-700 mt-1">{issueUMurs.message}</p>
+                      )}
+                      <div className="flex justify-end pt-1">
+                        <ApplyButton
+                          onClick={() => {
+                            updateValue("ubat", thermal.deperditions!.ubatMoyen.toFixed(2));
+                          }}
+                          label="Appliquer Ubat"
+                        />
+                      </div>
+                    </CalcCard>
+                  )}
+
+                  {activeSection === 3 && thermal.apports && (
+                    <CalcCard title="Apports solaires gratuits (F·g·H_g)" subtitle="Méthode 3CL — surfaces vitrées par orientation">
+                      <CalcRow label="Apport annuel total" computed={thermal.apports.apportAnnuel.toFixed(0)} unit=" kWh/an" />
+                      <CalcRow label="Saison de chauffe (oct.→avr.)" computed={thermal.apports.apportSaisonChauffe.toFixed(0)} unit=" kWh" />
+                      <CalcRow label="Saison chaude (mai→sep.)" computed={thermal.apports.apportSaisonChaude.toFixed(0)} unit=" kWh" warn={thermal.apports.risqueSurchauffe} />
+                      {thermal.apports.risqueSurchauffe && (
+                        <p className="text-[11px] text-amber-700 mt-1">Risque de surchauffe estivale — prévoir protections solaires.</p>
+                      )}
+                    </CalcCard>
+                  )}
+
+                  {activeSection === 5 && thermal.dpe && (
+                    <CalcCard title="DPE 5 usages — méthode 3CL-DPE 2021" subtitle={`Étiquette finale : ${thermal.dpe.classe_finale} (max DPE/GES)`}>
+                      <CalcRow label="Cep (énergie primaire)" computed={thermal.dpe.cep_kwh_m2.toFixed(0)} unit=" kWh EP/m²·an" saved={values.conso_par_m2 || undefined} />
+                      <CalcRow label="Étiquette DPE" computed={thermal.dpe.classe_dpe} saved={(values.dpe_actuel || "").charAt(0) || undefined} />
+                      <CalcRow label="GES" computed={thermal.dpe.ges_kg_m2.toFixed(1)} unit=" kg CO₂/m²·an" saved={values.emissions_co2_m2 || undefined} />
+                      <CalcRow label="Étiquette GES" computed={thermal.dpe.classe_ges} saved={(values.ges_actuel || "").charAt(0) || undefined} />
+                      {issueEcart && (
+                        <p className="text-[11px] text-amber-700 mt-1">{issueEcart.message}</p>
+                      )}
+                      <div className="flex justify-end gap-2 pt-1">
+                        <ApplyButton
+                          onClick={() => {
+                            updateValue("conso_par_m2", thermal.dpe!.cep_kwh_m2.toFixed(0));
+                            updateValue("conso_totale", (thermal.dpe!.cep_kwh).toFixed(0));
+                            updateValue("emissions_co2_m2", thermal.dpe!.ges_kg_m2.toFixed(1));
+                            updateValue("emissions_co2", thermal.dpe!.ges_kg.toFixed(0));
+                          }}
+                        />
+                      </div>
+                    </CalcCard>
+                  )}
+
+                  {activeSection === 6 && thermal.besoins && (
+                    <CalcCard title="Répartition par poste — chauffage calculé" subtitle="Conso chauffage = Besoin net / rendement générateur">
+                      <CalcRow label="Coefficient G" computed={thermal.besoins.coefG.toFixed(2)} unit=" W/m³·K" />
+                      <CalcRow label="Besoin brut" computed={thermal.besoins.besoinBrut.toFixed(0)} unit=" kWh/an" />
+                      <CalcRow label="Apports utilisés" computed={thermal.besoins.apportsUtilisables.toFixed(0)} unit=" kWh/an" />
+                      <CalcRow label="Besoin net" computed={thermal.besoins.besoinNet.toFixed(0)} unit=" kWh/an" />
+                      <CalcRow label="Conso finale chauffage" computed={thermal.besoins.consoFinale.toFixed(0)} unit=" kWh/an" saved={values.poste_chauffage || undefined} />
+                      <div className="flex justify-end pt-1">
+                        <ApplyButton
+                          onClick={() => updateValue("poste_chauffage", thermal.besoins!.consoFinale.toFixed(0))}
+                          label="Appliquer chauffage"
+                        />
+                      </div>
+                    </CalcCard>
+                  )}
+
+                  {activeSection === 7 && thermal.deperditions && (
+                    <CalcCard title="Déperditions par paroi (Th-BCE)" subtitle="Calculées à partir de l'enveloppe">
+                      <CalcRow label="Murs" computed={thermal.deperditions.pctMurs.toFixed(0)} unit=" %" saved={values.deperd_murs || undefined} />
+                      <CalcRow label="Toiture" computed={thermal.deperditions.pctToiture.toFixed(0)} unit=" %" saved={values.deperd_toiture || undefined} />
+                      <CalcRow label="Plancher bas" computed={thermal.deperditions.pctPlancher.toFixed(0)} unit=" %" saved={values.deperd_plancher || undefined} />
+                      <CalcRow label="Menuiseries" computed={thermal.deperditions.pctVitree.toFixed(0)} unit=" %" saved={values.deperd_menuiseries || undefined} />
+                      <CalcRow label="Ponts thermiques" computed={thermal.deperditions.pctPontsThermiques.toFixed(0)} unit=" %" saved={values.deperd_ponts || undefined} />
+                      <CalcRow label="Ventilation (VMC)" computed={thermal.deperditions.pctVentilation.toFixed(0)} unit=" %" saved={values.deperd_ventilation || undefined} />
+                      <CalcRow label="Infiltrations" computed={thermal.deperditions.pctInfiltrations.toFixed(0)} unit=" %" saved={values.deperd_infiltrations || undefined} />
+                      <CalcRow label="H_total" computed={thermal.deperditions.hTotal.toFixed(0)} unit=" W/K" />
+                      {issueDeperditions && (
+                        <p className={cn("text-[11px] mt-1", issueDeperditions.niveau === "error" ? "text-red-700" : "text-amber-700")}>
+                          {issueDeperditions.message}
+                        </p>
+                      )}
+                      <div className="flex justify-end pt-1">
+                        <ApplyButton
+                          onClick={() => {
+                            const d = thermal.deperditions!;
+                            updateValue("deperd_murs", d.pctMurs.toFixed(0));
+                            updateValue("deperd_toiture", d.pctToiture.toFixed(0));
+                            updateValue("deperd_plancher", d.pctPlancher.toFixed(0));
+                            updateValue("deperd_menuiseries", d.pctVitree.toFixed(0));
+                            updateValue("deperd_ponts", d.pctPontsThermiques.toFixed(0));
+                            updateValue("deperd_ventilation", d.pctVentilation.toFixed(0));
+                            updateValue("deperd_infiltrations", d.pctInfiltrations.toFixed(0));
+                          }}
+                          label="Appliquer la répartition"
+                        />
+                      </div>
+                    </CalcCard>
+                  )}
 
                   {/* Photos de cette étape */}
                   <div className="border-t pt-4 space-y-3">
