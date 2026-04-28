@@ -12,7 +12,6 @@ import {
   Contact,
   CalendarDays,
   Settings,
-  Search,
   Zap,
   FolderKanban,
   Receipt,
@@ -28,7 +27,6 @@ import {
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
-import { useSearch } from "./SearchProvider";
 
 type IconType = React.ComponentType<{ className?: string }>;
 
@@ -99,7 +97,6 @@ function isPathActive(href: string, pathname: string): boolean {
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { openSearch } = useSearch();
 
   // État ouvert/fermé des groupes — auto-ouvert si une route enfant est active.
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
@@ -307,13 +304,6 @@ export default function Sidebar() {
 
       {/* Bottom nav */}
       <div className="relative z-10 flex flex-col gap-0.5 px-[10px]">
-        <button onClick={openSearch} className="sk-item w-full text-left">
-          <Search className="h-[17px] w-[17px] shrink-0" />
-          <FadeLabel>
-            <span className="whitespace-nowrap text-[0.82rem] font-medium">Recherche</span>
-          </FadeLabel>
-        </button>
-
         {BOTTOM_ITEMS.map((item) => {
           const active = isPathActive(item.href, pathname);
           const Icon = item.icon;
