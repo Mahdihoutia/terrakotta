@@ -24,6 +24,9 @@ import {
   UserSquare2,
   FileSpreadsheet,
   TrendingDown,
+  Library,
+  Layers,
+  Boxes,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
@@ -71,6 +74,16 @@ const TOP_ITEMS: NavItem[] = [
       { kind: "link", label: "Devis",     href: "/dashboard/devis",     icon: Receipt },
       { kind: "link", label: "Factures",  href: "/dashboard/factures",  icon: ReceiptText },
       { kind: "link", label: "Catalogue", href: "/dashboard/catalogue", icon: BookMarked },
+    ],
+  },
+  {
+    kind: "group",
+    label: "Bibliothèques",
+    icon: Library,
+    matchPrefix: "/dashboard/library-group",
+    children: [
+      { kind: "link", label: "Matériaux", href: "/dashboard/materiaux", icon: Layers },
+      { kind: "link", label: "Parois",    href: "/dashboard/parois",    icon: Boxes },
     ],
   },
   { kind: "link", label: "AI Agents",    href: "/dashboard/agents",     icon: Bot },

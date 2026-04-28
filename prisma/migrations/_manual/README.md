@@ -41,3 +41,9 @@ npx prisma migrate resolve --applied <nom_de_la_migration>
   ajoute `updated_at` / `deleted_at` (+ index) à la table `aides` pour le
   module Suivi de prime, et ajoute la valeur `SIMULATEUR_AIDES` à l'enum
   `LeadSource` pour les leads issus du simulateur public.
+- `2026_04_28_add_bibliotheque_materiaux.sql` — Bibliothèque de matériaux
+  (table `materiaux`) + composeur de parois multicouches (tables `parois`
+  et `paroi_couches`). Crée les enums `MateriauCategorie` et `ParoiType`.
+  Soft-delete (`deleted_at`) sur matériaux et parois ; suppression cascade
+  des couches via FK. Après exécution, lancer `POST /api/admin/seed-materiaux`
+  pour peupler la bibliothèque initiale (~80 matériaux courants).

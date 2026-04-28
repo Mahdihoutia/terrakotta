@@ -341,6 +341,92 @@ model AgentLog {
   @@map("agent_logs")
 }
 
+// ─── Bibliothèque matériaux & parois ───────────────────────────
+
+model Materiau {
+  id                String            @id @default(cuid())
+  nom               String
+  categorie         MateriauCategorie
+  marque            String?
+  reference         String?
+  // Propriétés thermiques (NF EN ISO 6946)
+  conductivite      Decimal           // λ en W/m·K
+  masseVolumique    Decimal           @map("masse_volumique") // ρ en kg/m³
+  capaciteThermique Decimal           @map("capacite_thermique") // c en J/kg·K
+  resistanceVapeur  Decimal?          @map("resistance_vapeur") // µ
+  // Optionnel : pour lames d'air, valeur de R fixe (m²·K/W)
+  resistanceFixe    Decimal?          @map("resistance_fixe")
+  // ACV
+  carboneACV        Decimal?          @map("carbone_acv")
+  carboneFinDeVie   Decimal?          @map("carbone_fin_de_vie")
+  origineFdes       String?           @map("origine_fdes")
+  source            String?
+  notes             String?
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+  deletedAt         DateTime?         @map("deleted_at")
+  couches           ParoiCouche[]
+
+  @@index([deletedAt])
+  @@index([categorie])
+  @@map("materiaux")
+}
+
+model Paroi {
+  id                   String        @id @default(cuid())
+  nom                  String
+  type                 ParoiType
+  description          String?
+  uCache               Decimal?      @map("u_cache")
+  rCache               Decimal?      @map("r_cache")
+  masseSurfaciqueCache Decimal?      @map("masse_surfacique_cache")
+  dephasageCache       Decimal?      @map("dephasage_cache")
+  carboneCache         Decimal?      @map("carbone_cache")
+  rsi                  Decimal       @default(0.13)
+  rse                  Decimal       @default(0.04)
+  createdAt            DateTime      @default(now()) @map("created_at")
+  updatedAt            DateTime      @updatedAt @map("updated_at")
+  deletedAt            DateTime?     @map("deleted_at")
+  couches              ParoiCouche[]
+
+  @@index([deletedAt])
+  @@index([type])
+  @@map("parois")
+}
+
+model ParoiCouche {
+  id         String   @id @default(cuid())
+  paroiId    String   @map("paroi_id")
+  materiauId String   @map("materiau_id")
+  ordre      Int
+  epaisseur  Decimal
+  paroi      Paroi    @relation(fields: [paroiId], references: [id], onDelete: Cascade)
+  materiau   Materiau @relation(fields: [materiauId], references: [id])
+
+  @@index([paroiId])
+  @@map("paroi_couches")
+}
+
+enum MateriauCategorie {
+  STRUCTURE
+  ISOLANT
+  FINITION
+  VITRAGE
+  LAME_AIR
+  MEMBRANE
+  AUTRE
+}
+
+enum ParoiType {
+  MUR_EXT
+  MUR_INT
+  TOITURE
+  PLANCHER_BAS
+  PLANCHER_INTER
+  VITRAGE
+  PORTE
+}
+
 // ─── Enums ──────────────────────────────────────────────────────
 
 enum ClientType {

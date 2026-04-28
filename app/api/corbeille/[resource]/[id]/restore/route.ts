@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { ensureRole, MUTATION_ROLES } from "@/lib/auth-helpers";
 
-type Resource = "clients" | "leads" | "projets" | "devis" | "factures" | "documents" | "evenements";
+type Resource = "clients" | "leads" | "projets" | "devis" | "factures" | "documents" | "evenements" | "materiaux" | "parois";
 
-const ALLOWED: Resource[] = ["clients", "leads", "projets", "devis", "factures", "documents", "evenements"];
+const ALLOWED: Resource[] = ["clients", "leads", "projets", "devis", "factures", "documents", "evenements", "materiaux", "parois"];
 
 /**
  * POST /api/corbeille/{resource}/{id}/restore
@@ -45,6 +45,12 @@ export async function POST(
         break;
       case "evenements":
         await prisma.evenement.update({ where: { id }, data });
+        break;
+      case "materiaux":
+        await prisma.materiau.update({ where: { id }, data });
+        break;
+      case "parois":
+        await prisma.paroi.update({ where: { id }, data });
         break;
     }
     return NextResponse.json({ ok: true });

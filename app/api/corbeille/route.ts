@@ -10,7 +10,7 @@ export async function GET() {
   const guard = await ensureRole(MUTATION_ROLES);
   if (guard) return guard;
 
-  const [clients, leads, projets, devis, factures, documents, evenements] = await Promise.all([
+  const [clients, leads, projets, devis, factures, documents, evenements, materiaux, parois] = await Promise.all([
     prisma.client.findMany({
       where: { deletedAt: { not: null } },
       select: { id: true, nom: true, prenom: true, type: true, deletedAt: true },
@@ -46,6 +46,16 @@ export async function GET() {
       select: { id: true, titre: true, date: true, type: true, deletedAt: true },
       orderBy: { deletedAt: "desc" },
     }),
+    prisma.materiau.findMany({
+      where: { deletedAt: { not: null } },
+      select: { id: true, nom: true, categorie: true, deletedAt: true },
+      orderBy: { deletedAt: "desc" },
+    }),
+    prisma.paroi.findMany({
+      where: { deletedAt: { not: null } },
+      select: { id: true, nom: true, type: true, deletedAt: true },
+      orderBy: { deletedAt: "desc" },
+    }),
   ]);
 
   return NextResponse.json({
@@ -60,5 +70,7 @@ export async function GET() {
       date: e.date.toISOString(),
       deletedAt: e.deletedAt?.toISOString() ?? null,
     })),
+    materiaux: materiaux.map((m) => ({ ...m, deletedAt: m.deletedAt?.toISOString() ?? null })),
+    parois: parois.map((p) => ({ ...p, deletedAt: p.deletedAt?.toISOString() ?? null })),
   });
 }

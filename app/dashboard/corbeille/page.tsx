@@ -20,12 +20,14 @@ import {
   FileText,
   ReceiptText,
   CalendarDays,
+  Layers,
+  Boxes,
 } from "lucide-react";
 import { toast } from "sonner";
 import { showApiError, showNetworkError } from "@/lib/api-errors";
 import { cn } from "@/lib/utils";
 
-type ResourceKey = "clients" | "leads" | "projets" | "devis" | "factures" | "documents" | "evenements";
+type ResourceKey = "clients" | "leads" | "projets" | "devis" | "factures" | "documents" | "evenements" | "materiaux" | "parois";
 
 interface CorbeilleItem {
   id: string;
@@ -42,6 +44,8 @@ interface CorbeilleData {
   factures: Array<{ id: string; numero: string; objet: string | null; statut: string; deletedAt: string | null }>;
   documents: Array<{ id: string; titre: string; reference: string; type: string; deletedAt: string | null }>;
   evenements: Array<{ id: string; titre: string; date: string; type: string; deletedAt: string | null }>;
+  materiaux?: Array<{ id: string; nom: string; categorie: string; deletedAt: string | null }>;
+  parois?: Array<{ id: string; nom: string; type: string; deletedAt: string | null }>;
 }
 
 const RESOURCE_META: Record<ResourceKey, { label: string; icon: React.ComponentType<{ className?: string }>; tone: string }> = {
@@ -52,6 +56,8 @@ const RESOURCE_META: Record<ResourceKey, { label: string; icon: React.ComponentT
   factures:   { label: "Factures",   icon: ReceiptText,  tone: "text-orange-600 bg-orange-50" },
   documents:  { label: "Documents",  icon: FileText,     tone: "text-zinc-600 bg-zinc-100" },
   evenements: { label: "Événements", icon: CalendarDays, tone: "text-pink-600 bg-pink-50" },
+  materiaux:  { label: "Matériaux",  icon: Layers,       tone: "text-emerald-600 bg-emerald-50" },
+  parois:     { label: "Parois",     icon: Boxes,        tone: "text-sky-600 bg-sky-50" },
 };
 
 function timeAgo(iso: string | null): string {
@@ -171,6 +177,24 @@ export default function CorbeillePage() {
             label: e.titre,
             meta: `${e.type} · ${new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" }).format(new Date(e.date))}`,
             deletedAt: e.deletedAt,
+          })),
+        },
+        {
+          key: "materiaux",
+          items: (data.materiaux ?? []).map((m) => ({
+            id: m.id,
+            label: m.nom,
+            meta: m.categorie,
+            deletedAt: m.deletedAt,
+          })),
+        },
+        {
+          key: "parois",
+          items: (data.parois ?? []).map((p) => ({
+            id: p.id,
+            label: p.nom,
+            meta: p.type,
+            deletedAt: p.deletedAt,
           })),
         },
       ]
