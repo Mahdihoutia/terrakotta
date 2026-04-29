@@ -22,12 +22,13 @@ import {
   CalendarDays,
   Layers,
   Boxes,
+  UserCog,
 } from "lucide-react";
 import { toast } from "sonner";
 import { showApiError, showNetworkError } from "@/lib/api-errors";
 import { cn } from "@/lib/utils";
 
-type ResourceKey = "clients" | "leads" | "projets" | "devis" | "factures" | "documents" | "evenements" | "materiaux" | "parois";
+type ResourceKey = "clients" | "leads" | "projets" | "devis" | "factures" | "documents" | "evenements" | "materiaux" | "parois" | "users";
 
 interface CorbeilleItem {
   id: string;
@@ -46,6 +47,7 @@ interface CorbeilleData {
   evenements: Array<{ id: string; titre: string; date: string; type: string; deletedAt: string | null }>;
   materiaux?: Array<{ id: string; nom: string; categorie: string; deletedAt: string | null }>;
   parois?: Array<{ id: string; nom: string; type: string; deletedAt: string | null }>;
+  users?: Array<{ id: string; email: string; name: string | null; role: string; deletedAt: string | null }>;
 }
 
 const RESOURCE_META: Record<ResourceKey, { label: string; icon: React.ComponentType<{ className?: string }>; tone: string }> = {
@@ -58,6 +60,7 @@ const RESOURCE_META: Record<ResourceKey, { label: string; icon: React.ComponentT
   evenements: { label: "Événements", icon: CalendarDays, tone: "text-pink-600 bg-pink-50" },
   materiaux:  { label: "Matériaux",  icon: Layers,       tone: "text-emerald-600 bg-emerald-50" },
   parois:     { label: "Parois",     icon: Boxes,        tone: "text-sky-600 bg-sky-50" },
+  users:      { label: "Utilisateurs", icon: UserCog,    tone: "text-indigo-600 bg-indigo-50" },
 };
 
 function timeAgo(iso: string | null): string {
@@ -195,6 +198,15 @@ export default function CorbeillePage() {
             label: p.nom,
             meta: p.type,
             deletedAt: p.deletedAt,
+          })),
+        },
+        {
+          key: "users",
+          items: (data.users ?? []).map((u) => ({
+            id: u.id,
+            label: u.name || u.email,
+            meta: `${u.email} · ${u.role}`,
+            deletedAt: u.deletedAt,
           })),
         },
       ]

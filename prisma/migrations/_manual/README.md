@@ -54,3 +54,8 @@ npx prisma migrate resolve --applied <nom_de_la_migration>
   batiment → zones. FK vers `projets` (SET NULL) et `parois` (RESTRICT).
   Après exécution, lancer `POST /api/admin/seed-scenarios` pour peupler
   les ~6 scénarios d'occupation presets.
+- `2026_04_28_add_user_deleted_at.sql` — Gestion multi-utilisateurs : ajoute
+  `deleted_at` (+ index) à la table `users` pour permettre la corbeille des
+  comptes. Pré-requis pour `/api/users` et l'onglet « Utilisateurs » de la
+  page paramètres. Après exécution, lancer `npx tsx prisma/seeds/admin.ts
+  <email> <password>` pour créer le premier utilisateur ADMIN en DB.

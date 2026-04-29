@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import { Role } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { ensureRole, MUTATION_ROLES } from "@/lib/auth-helpers";
+import { ensureRole, MUTATION_ROLES, getSession } from "@/lib/auth-helpers";
 
 /**
  * GET /api/corbeille — Liste tous les éléments soft-deleted, par catégorie.
@@ -19,6 +20,9 @@ export async function GET() {
     }
   }
 
+  const session = await getSession();
+  const isAdmin = session?.user?.role === Role.ADMIN;
+
   const [
     clients,
     leads,
@@ -32,6 +36,7 @@ export async function GET() {
     batiments,
     zones,
     scenarios,
+    users,
   ] = await Promise.all([
     prisma.client.findMany({
       where: { deletedAt: { not: null } },
@@ -99,6 +104,21 @@ export async function GET() {
         orderBy: { deletedAt: "desc" },
       }),
     ),
+    isAdmin
+      ? safe(
+          prisma.user.findMany({
+            where: { deletedAt: { not: null } },
+            select: { id: true, email: true, name: true, role: true, deletedAt: true },
+            orderBy: { deletedAt: "desc" },
+          }),
+        )
+      : Promise.resolve([] as Array<{
+          id: string;
+          email: string;
+          name: string | null;
+          role: Role;
+          deletedAt: Date | null;
+        }>),
   ]);
 
   return NextResponse.json({
@@ -118,5 +138,6 @@ export async function GET() {
     batiments: batiments.map((b) => ({ ...b, deletedAt: b.deletedAt?.toISOString() ?? null })),
     zones: zones.map((z) => ({ ...z, deletedAt: z.deletedAt?.toISOString() ?? null })),
     scenarios: scenarios.map((s) => ({ ...s, deletedAt: s.deletedAt?.toISOString() ?? null })),
+    users: users.map((u) => ({ ...u, deletedAt: u.deletedAt?.toISOString() ?? null })),
   });
 }

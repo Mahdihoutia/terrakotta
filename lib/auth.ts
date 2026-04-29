@@ -1,11 +1,12 @@
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { Role } from "@prisma/client";
+import { prisma } from "@/lib/db";
 
 import type { AuthOptions } from "next-auth";
 
 /**
- * Détermine le rôle de l'utilisateur mono-compte.
+ * Détermine le rôle de l'utilisateur mono-compte (fallback env).
  * Configurable via la variable d'env `ADMIN_ROLE` (ADMIN | COLLABORATEUR | LECTURE_SEULE).
  * Par défaut : ADMIN.
  */
@@ -17,12 +18,17 @@ function resolveAdminRole(): Role {
 }
 
 /**
- * NextAuth.js v4 configuration for Kilowater dashboard.
+ * NextAuth.js v4 — Terrakotta dashboard.
  *
- * Mono-user authentication: admin credentials are stored in environment
- * variables (ADMIN_EMAIL + ADMIN_PASSWORD_HASH) rather than in the database.
+ * Authentification multi-utilisateurs :
+ *   1. Recherche d'abord en base (`prisma.user`) — comptes créés depuis
+ *      l'onglet Paramètres > Utilisateurs.
+ *   2. Fallback sur `ADMIN_EMAIL` + `ADMIN_PASSWORD_HASH` (compatibilité
+ *      avec le mode mono-utilisateur initial). Activé seulement si la DB
+ *      ne renvoie pas l'utilisateur ou si la requête échoue (table absente
+ *      avant migration).
  *
- * Session strategy uses JWT so no database session table is required.
+ * Session JWT (24h) — pas de table de sessions à provisionner.
  */
 export const authOptions: AuthOptions = {
   providers: [
@@ -33,56 +39,52 @@ export const authOptions: AuthOptions = {
         password: { label: "Mot de passe", type: "password" },
       },
       async authorize(credentials) {
-        const adminEmail = process.env.ADMIN_EMAIL;
-        const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH;
-
-        if (!adminEmail || !adminPasswordHash) {
-          console.error(
-            "[auth] ADMIN_EMAIL or ADMIN_PASSWORD_HASH env variable is missing"
-          );
-          throw new Error(
-            "Variables ADMIN_EMAIL et ADMIN_PASSWORD_HASH non configurées."
-          );
-        }
-
-        const email = credentials?.email;
+        const email = credentials?.email?.toLowerCase().trim();
         const password = credentials?.password;
-
         if (!email || !password) {
-          console.warn("[auth] Missing email or password in credentials");
           return null;
         }
 
-        const emailMatch =
-          email.toLowerCase().trim() === adminEmail.toLowerCase().trim();
-        console.log("[auth] Email match:", emailMatch);
-
-        if (!emailMatch) {
-          return null;
+        // 1. Recherche en base (multi-utilisateurs)
+        try {
+          const user = await prisma.user.findFirst({
+            where: { email, deletedAt: null },
+          });
+          if (user) {
+            const ok = await bcrypt.compare(password, user.password);
+            if (!ok) return null;
+            return {
+              id: user.id,
+              email: user.email,
+              name: user.name ?? user.email,
+              role: user.role,
+            };
+          }
+          // Pas trouvé en DB → on tente le fallback env
+        } catch (err) {
+          console.error("[auth] DB lookup failed, falling back to env:", err);
         }
 
-        // Verify the hash looks like a valid bcrypt hash ($2a$, $2b$, or $2y$)
-        const isBcryptHash = /^\$2[aby]\$\d{2}\$.{53}$/.test(
-          adminPasswordHash
-        );
+        // 2. Fallback env-based (compatibilité mono-compte)
+        const adminEmail = process.env.ADMIN_EMAIL?.toLowerCase().trim();
+        const adminHash = process.env.ADMIN_PASSWORD_HASH;
+        if (!adminEmail || !adminHash) {
+          return null;
+        }
+        if (email !== adminEmail) {
+          return null;
+        }
+        const isBcryptHash = /^\$2[aby]\$\d{2}\$.{53}$/.test(adminHash);
         if (!isBcryptHash) {
           console.error(
-            "[auth] ADMIN_PASSWORD_HASH does not look like a valid bcrypt hash. " +
-              "Make sure to store the HASHED password, not the plain text password. " +
-              "Generate one with: npx bcryptjs hash 'your-password'"
+            "[auth] ADMIN_PASSWORD_HASH does not look like a valid bcrypt hash.",
           );
           return null;
         }
-
-        const passwordMatch = await bcrypt.compare(password, adminPasswordHash);
-        console.log("[auth] Password match:", passwordMatch);
-
-        if (!passwordMatch) {
-          return null;
-        }
-
+        const ok = await bcrypt.compare(password, adminHash);
+        if (!ok) return null;
         return {
-          id: "admin",
+          id: "admin-env",
           email: adminEmail,
           name: "Administrateur",
           role: resolveAdminRole(),

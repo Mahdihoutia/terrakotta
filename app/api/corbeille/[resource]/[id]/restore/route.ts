@@ -1,10 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Role } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { ensureRole, MUTATION_ROLES } from "@/lib/auth-helpers";
+import { ensureRole, MUTATION_ROLES, getSession } from "@/lib/auth-helpers";
 
-type Resource = "clients" | "leads" | "projets" | "devis" | "factures" | "documents" | "evenements" | "materiaux" | "parois";
+type Resource =
+  | "clients"
+  | "leads"
+  | "projets"
+  | "devis"
+  | "factures"
+  | "documents"
+  | "evenements"
+  | "materiaux"
+  | "parois"
+  | "users";
 
-const ALLOWED: Resource[] = ["clients", "leads", "projets", "devis", "factures", "documents", "evenements", "materiaux", "parois"];
+const ALLOWED: Resource[] = [
+  "clients",
+  "leads",
+  "projets",
+  "devis",
+  "factures",
+  "documents",
+  "evenements",
+  "materiaux",
+  "parois",
+  "users",
+];
 
 /**
  * POST /api/corbeille/{resource}/{id}/restore
@@ -20,6 +42,14 @@ export async function POST(
   const { resource, id } = await ctx.params;
   if (!ALLOWED.includes(resource as Resource)) {
     return NextResponse.json({ error: "Ressource inconnue" }, { status: 404 });
+  }
+
+  // La restauration d'un utilisateur est réservée aux ADMIN.
+  if (resource === "users") {
+    const session = await getSession();
+    if (session?.user?.role !== Role.ADMIN) {
+      return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
+    }
   }
 
   try {
@@ -51,6 +81,9 @@ export async function POST(
         break;
       case "parois":
         await prisma.paroi.update({ where: { id }, data });
+        break;
+      case "users":
+        await prisma.user.update({ where: { id }, data });
         break;
     }
     return NextResponse.json({ ok: true });

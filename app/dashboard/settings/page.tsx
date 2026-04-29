@@ -1,148 +1,96 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Settings, Building2, Shield } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Building2, ShieldAlert, UserCog } from "lucide-react";
+import { getSession } from "@/lib/auth-helpers";
+import { Role } from "@prisma/client";
+import UsersPanel from "@/components/dashboard/settings/UsersPanel";
+import AccountPanel from "@/components/dashboard/settings/AccountPanel";
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  const session = await getSession();
+  const currentUser = session?.user
+    ? {
+        id: session.user.id,
+        email: session.user.email ?? "",
+        name: session.user.name ?? null,
+        role: session.user.role,
+      }
+    : null;
+  const isAdmin = currentUser?.role === Role.ADMIN;
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Paramètres</h1>
-        <p className="text-muted-foreground">
-          Configurez votre espace de travail
+        <h1 className="text-2xl font-semibold tracking-tight">Paramètres</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Gérez votre compte, les utilisateurs et les informations du bureau.
         </p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <Building2 className="h-5 w-5 text-primary" />
-              <CardTitle className="text-base">
+      <Tabs defaultValue="compte">
+        <TabsList>
+          <TabsTrigger value="compte">Compte</TabsTrigger>
+          <TabsTrigger value="utilisateurs">Utilisateurs</TabsTrigger>
+          <TabsTrigger value="bureau">Bureau</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="compte" className="mt-4">
+          {currentUser ? (
+            <AccountPanel currentUser={currentUser} />
+          ) : (
+            <Card>
+              <CardContent className="py-10 text-center text-sm text-muted-foreground">
+                Session introuvable.
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="utilisateurs" className="mt-4">
+          {isAdmin && currentUser ? (
+            <UsersPanel currentUserId={currentUser.id} />
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <ShieldAlert className="h-4 w-4 text-amber-600" />
+                  Accès réservé aux administrateurs
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Seul un compte avec le rôle ADMIN peut gérer les utilisateurs.
+                  Demandez à un administrateur de modifier votre rôle si
+                  nécessaire.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="bureau" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Building2 className="h-4 w-4 text-primary" />
                 Informations du bureau
               </CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Nom</label>
-                <input
-                  type="text"
-                  defaultValue="Kilowater"
-                  className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium">SIRET</label>
-                <input
-                  type="text"
-                  placeholder="XXX XXX XXX XXXXX"
-                  className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Email</label>
-                <input
-                  type="email"
-                  defaultValue="contact@kilowater.fr"
-                  className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Téléphone</label>
-                <input
-                  type="tel"
-                  placeholder="04 XX XX XX XX"
-                  className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                />
-              </div>
-              <div className="col-span-full space-y-1">
-                <label className="text-sm font-medium">Adresse</label>
-                <input
-                  type="text"
-                  placeholder="Adresse du bureau"
-                  className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                />
-              </div>
-            </div>
-            <Button size="sm">Sauvegarder</Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <Shield className="h-5 w-5 text-primary" />
-              <CardTitle className="text-base">Sécurité</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-1">
-              <label className="text-sm font-medium">
-                Mot de passe actuel
-              </label>
-              <input
-                type="password"
-                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium">
-                Nouveau mot de passe
-              </label>
-              <input
-                type="password"
-                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Confirmation</label>
-              <input
-                type="password"
-                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-              />
-            </div>
-            <Button size="sm">Modifier le mot de passe</Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <Settings className="h-5 w-5 text-primary" />
-              <CardTitle className="text-base">
-                Configuration des agents IA
-              </CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Configurez les clés API et les paramètres globaux de vos agents
-              d&apos;intelligence artificielle.
-            </p>
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Clé API OpenAI</label>
-              <input
-                type="password"
-                placeholder="sk-..."
-                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium">
-                Fréquence de prospection
-              </label>
-              <select className="w-full rounded-md border bg-background px-3 py-2 text-sm">
-                <option>Toutes les heures</option>
-                <option>Toutes les 4 heures</option>
-                <option>Quotidien</option>
-                <option>Hebdomadaire</option>
-              </select>
-            </div>
-            <Button size="sm">Sauvegarder</Button>
-          </CardContent>
-        </Card>
-      </div>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm text-muted-foreground">
+              <p className="flex items-center gap-2">
+                <UserCog className="h-4 w-4" />À venir — raison sociale, SIRET,
+                qualifications RGE, logo et coordonnées utilisés dans les
+                exports PDF (devis, factures, audits).
+              </p>
+              <p>
+                Ces informations seront stockées dans une table dédiée
+                (`organisation`) et chargées en en-tête de tous les documents
+                générés.
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
