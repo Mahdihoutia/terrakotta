@@ -116,6 +116,7 @@ model Projet {
   factures       Facture[]
   aides          Aide[]
   documents      Document[]
+  batiments      Batiment[]
   createdAt      DateTime       @default(now()) @map("created_at")
   updatedAt      DateTime       @updatedAt @map("updated_at")
   deletedAt      DateTime?      @map("deleted_at")
@@ -388,6 +389,7 @@ model Paroi {
   updatedAt            DateTime      @updatedAt @map("updated_at")
   deletedAt            DateTime?     @map("deleted_at")
   couches              ParoiCouche[]
+  zonesParois          ZoneParoi[]
 
   @@index([deletedAt])
   @@index([type])
@@ -405,6 +407,103 @@ model ParoiCouche {
 
   @@index([paroiId])
   @@map("paroi_couches")
+}
+
+// ─── Zoning thermique multi-zones (style Pleiades) ─────────────
+
+model Batiment {
+  id              String      @id @default(cuid())
+  nom             String
+  description     String?
+  zoneClimatique  String      @map("zone_climatique")
+  altitude        Decimal?
+  orientation     String?
+  projetId        String?     @map("projet_id")
+  projet          Projet?     @relation(fields: [projetId], references: [id])
+  auditDocumentId String?     @map("audit_document_id")
+  zones           Zone[]
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+  deletedAt       DateTime?   @map("deleted_at")
+
+  @@index([deletedAt])
+  @@index([projetId])
+  @@map("batiments")
+}
+
+model Zone {
+  id                   String              @id @default(cuid())
+  batimentId           String              @map("batiment_id")
+  batiment             Batiment            @relation(fields: [batimentId], references: [id], onDelete: Cascade)
+  nom                  String
+  usage                ZoneUsage
+  surface              Decimal
+  hauteurSousPlafond   Decimal             @map("hauteur_sous_plafond")
+  consigneChauffageOcc Decimal             @default(20) @map("consigne_chauffage_occ")
+  consigneChauffageRed Decimal             @default(16) @map("consigne_chauffage_red")
+  consigneClimOcc      Decimal             @default(26) @map("consigne_clim_occ")
+  consigneClimRed      Decimal             @default(28) @map("consigne_clim_red")
+  densiteOccupation    Decimal             @default(15) @map("densite_occupation")
+  apportsParPersonne   Decimal             @default(80) @map("apports_par_personne")
+  apportsEquipements   Decimal             @default(15) @map("apports_equipements")
+  apportsEclairage     Decimal             @default(8)  @map("apports_eclairage")
+  qVmcM3hM2            Decimal             @default(2.5) @map("qvmc_m3h_m2")
+  efficaciteDoubleFlux Decimal             @default(0)   @map("efficacite_df")
+  scenarioId           String?             @map("scenario_id")
+  scenario             ScenarioOccupation? @relation(fields: [scenarioId], references: [id])
+  parois               ZoneParoi[]
+  createdAt            DateTime            @default(now()) @map("created_at")
+  updatedAt            DateTime            @updatedAt @map("updated_at")
+  deletedAt            DateTime?           @map("deleted_at")
+
+  @@index([deletedAt])
+  @@index([batimentId])
+  @@map("zones")
+}
+
+model ZoneParoi {
+  id          String  @id @default(cuid())
+  zoneId      String  @map("zone_id")
+  paroiId     String  @map("paroi_id")
+  zone        Zone    @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  paroi       Paroi   @relation(fields: [paroiId], references: [id])
+  surface     Decimal
+  orientation String?
+  inclinaison Decimal? @default(90)
+  cotePaire   Boolean? @default(false) @map("cote_paire")
+
+  @@index([zoneId])
+  @@map("zone_parois")
+}
+
+model ScenarioOccupation {
+  id          String    @id @default(cuid())
+  nom         String
+  description String?
+  patternJson String    @map("pattern_json")
+  preset      Boolean   @default(false)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  zones       Zone[]
+
+  @@index([deletedAt])
+  @@map("scenarios_occupation")
+}
+
+enum ZoneUsage {
+  BUREAUX
+  OPEN_SPACE
+  CIRCULATION
+  ARCHIVES
+  SALLE_REUNION
+  SALLE_SERVEUR
+  COMMERCE
+  RESTAURATION
+  LOGEMENT
+  HALL_ACCUEIL
+  TECHNIQUE
+  AUTRE
 }
 
 enum MateriauCategorie {

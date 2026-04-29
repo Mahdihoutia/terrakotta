@@ -27,6 +27,8 @@ import {
   Library,
   Layers,
   Boxes,
+  Building2,
+  CalendarClock,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
@@ -84,6 +86,8 @@ const TOP_ITEMS: NavItem[] = [
     children: [
       { kind: "link", label: "Matériaux", href: "/dashboard/materiaux", icon: Layers },
       { kind: "link", label: "Parois",    href: "/dashboard/parois",    icon: Boxes },
+      { kind: "link", label: "Bâtiments", href: "/dashboard/batiments", icon: Building2 },
+      { kind: "link", label: "Scénarios", href: "/dashboard/scenarios", icon: CalendarClock },
     ],
   },
   { kind: "link", label: "AI Agents",    href: "/dashboard/agents",     icon: Bot },

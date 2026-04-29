@@ -47,3 +47,10 @@ npx prisma migrate resolve --applied <nom_de_la_migration>
   Soft-delete (`deleted_at`) sur matériaux et parois ; suppression cascade
   des couches via FK. Après exécution, lancer `POST /api/admin/seed-materiaux`
   pour peupler la bibliothèque initiale (~80 matériaux courants).
+- `2026_04_28_add_zoning_thermique.sql` — Palier #2 : zoning thermique
+  multi-zones façon Pleiades. Crée l'enum `ZoneUsage` et les tables
+  `batiments`, `zones`, `zone_parois`, `scenarios_occupation`. Soft-delete
+  sur batiments / zones / scenarios. Cascade : zone → zone_parois,
+  batiment → zones. FK vers `projets` (SET NULL) et `parois` (RESTRICT).
+  Après exécution, lancer `POST /api/admin/seed-scenarios` pour peupler
+  les ~6 scénarios d'occupation presets.

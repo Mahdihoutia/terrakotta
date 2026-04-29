@@ -10,7 +10,29 @@ export async function GET() {
   const guard = await ensureRole(MUTATION_ROLES);
   if (guard) return guard;
 
-  const [clients, leads, projets, devis, factures, documents, evenements, materiaux, parois] = await Promise.all([
+  // Helper : retourne [] si la table n'existe pas encore.
+  async function safe<T>(p: Promise<T[]>): Promise<T[]> {
+    try {
+      return await p;
+    } catch {
+      return [] as T[];
+    }
+  }
+
+  const [
+    clients,
+    leads,
+    projets,
+    devis,
+    factures,
+    documents,
+    evenements,
+    materiaux,
+    parois,
+    batiments,
+    zones,
+    scenarios,
+  ] = await Promise.all([
     prisma.client.findMany({
       where: { deletedAt: { not: null } },
       select: { id: true, nom: true, prenom: true, type: true, deletedAt: true },
@@ -56,6 +78,27 @@ export async function GET() {
       select: { id: true, nom: true, type: true, deletedAt: true },
       orderBy: { deletedAt: "desc" },
     }),
+    safe(
+      prisma.batiment.findMany({
+        where: { deletedAt: { not: null } },
+        select: { id: true, nom: true, zoneClimatique: true, deletedAt: true },
+        orderBy: { deletedAt: "desc" },
+      }),
+    ),
+    safe(
+      prisma.zone.findMany({
+        where: { deletedAt: { not: null } },
+        select: { id: true, nom: true, usage: true, deletedAt: true },
+        orderBy: { deletedAt: "desc" },
+      }),
+    ),
+    safe(
+      prisma.scenarioOccupation.findMany({
+        where: { deletedAt: { not: null }, preset: false },
+        select: { id: true, nom: true, deletedAt: true },
+        orderBy: { deletedAt: "desc" },
+      }),
+    ),
   ]);
 
   return NextResponse.json({
@@ -72,5 +115,8 @@ export async function GET() {
     })),
     materiaux: materiaux.map((m) => ({ ...m, deletedAt: m.deletedAt?.toISOString() ?? null })),
     parois: parois.map((p) => ({ ...p, deletedAt: p.deletedAt?.toISOString() ?? null })),
+    batiments: batiments.map((b) => ({ ...b, deletedAt: b.deletedAt?.toISOString() ?? null })),
+    zones: zones.map((z) => ({ ...z, deletedAt: z.deletedAt?.toISOString() ?? null })),
+    scenarios: scenarios.map((s) => ({ ...s, deletedAt: s.deletedAt?.toISOString() ?? null })),
   });
 }
