@@ -33,10 +33,8 @@ export async function GET(request: Request) {
   } catch (err) {
     const message = err instanceof Error ? err.message : "Erreur inconnue";
     const isMissingTable =
-      message.includes("parois") ||
-      message.includes("does not exist") ||
-      message.includes("relation") ||
-      message.includes("P2021");
+      message.includes("P2021") ||
+      message.includes("does not exist in the current database");
     if (isMissingTable) {
       return NextResponse.json(
         {
@@ -47,6 +45,7 @@ export async function GET(request: Request) {
         { status: 503 },
       );
     }
+    console.error("[/api/parois GET] error:", err);
     return NextResponse.json(
       { error: "ServerError", message },
       { status: 500 },

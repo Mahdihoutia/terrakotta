@@ -56,10 +56,8 @@ export async function GET(request: Request) {
     // Cas typique : table postes_catalogue absente (migration pas encore passée).
     const message = err instanceof Error ? err.message : "Erreur inconnue";
     const isMissingTable =
-      message.includes("postes_catalogue") ||
-      message.includes("does not exist") ||
-      message.includes("relation") ||
-      message.includes("P2021");
+      message.includes("P2021") ||
+      message.includes("does not exist in the current database");
     if (isMissingTable) {
       return NextResponse.json(
         {

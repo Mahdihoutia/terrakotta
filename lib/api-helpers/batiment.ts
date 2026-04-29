@@ -317,9 +317,9 @@ const MIGRATION_TABLES = ["batiments", "zones", "zone_parois", "scenarios_occupa
 export function isMigrationPendingError(err: unknown): boolean {
   const message = err instanceof Error ? err.message : "";
   if (!message) return false;
+  // Détection stricte : code Prisma P2021 ou message officiel.
+  // Évite les substrings larges qui matchaient à tort des erreurs sans rapport.
   if (message.includes("P2021")) return true;
-  if (message.includes("does not exist") || message.includes("relation")) {
-    return MIGRATION_TABLES.some((t) => message.includes(t));
-  }
+  if (message.includes("does not exist in the current database")) return true;
   return false;
 }

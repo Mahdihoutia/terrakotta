@@ -37,21 +37,23 @@ export async function GET(request: Request) {
     return NextResponse.json(list.map(serializeMateriau));
   } catch (err) {
     const message = err instanceof Error ? err.message : "Erreur inconnue";
+    // Détection stricte de la table manquante : P2021 est le code Prisma officiel
+    // "The table does not exist in the current database". On évite les substrings
+    // larges ("relation", "materiaux") qui matchaient à tort d'autres erreurs.
     const isMissingTable =
-      message.includes("materiaux") ||
-      message.includes("does not exist") ||
-      message.includes("relation") ||
-      message.includes("P2021");
+      message.includes("P2021") ||
+      message.includes("does not exist in the current database");
     if (isMissingTable) {
       return NextResponse.json(
         {
           error: "MigrationPending",
           message:
-            "La table materiaux n'existe pas encore. Exécute la migration SQL (prisma/migrations/_manual/2026_04_28_add_bibliotheque_materiaux.sql) puis POST /api/admin/seed-materiaux.",
+            "La table materiaux n'existe pas encore. Exécute la migration SQL (prisma/migrations/_manual/2026_04_28_add_bibliotheque_materiaux.sql).",
         },
         { status: 503 },
       );
     }
+    console.error("[/api/materiaux GET] error:", err);
     return NextResponse.json(
       { error: "ServerError", message },
       { status: 500 },
