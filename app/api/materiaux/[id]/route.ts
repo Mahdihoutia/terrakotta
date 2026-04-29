@@ -6,7 +6,7 @@ import {
   ensureRole,
 } from "@/lib/auth-helpers";
 import { updateMateriauSchema } from "@/lib/validations/materiau";
-import { serializeMateriau } from "../route";
+import { serializeMateriau } from "@/lib/api-helpers/materiau";
 
 interface RouteContext {
   params: Promise<{ id: string }>;

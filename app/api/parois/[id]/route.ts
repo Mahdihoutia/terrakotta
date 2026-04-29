@@ -6,7 +6,7 @@ import {
   ensureRole,
 } from "@/lib/auth-helpers";
 import { updateParoiSchema } from "@/lib/validations/paroi";
-import { recalcParoiCache, serializeParoi } from "../route";
+import { recalcParoiCache, serializeParoi } from "@/lib/api-helpers/paroi";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
