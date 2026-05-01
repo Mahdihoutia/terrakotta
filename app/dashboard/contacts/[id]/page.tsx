@@ -22,6 +22,10 @@ import {
   Euro,
   StickyNote,
   Hash,
+  FolderKanban,
+  Receipt,
+  FileText,
+  ArrowRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { showApiError, showNetworkError } from "@/lib/api-errors";
@@ -97,6 +101,14 @@ export default function ContactDetailPage({ params }: Props) {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Activités liées : projets, devis, documents
+  type RelatedDoc = { id: string; titre: string; type: string; reference: string };
+  type RelatedProjet = { id: string; titre: string; statut: string; updatedAt: string; documents?: RelatedDoc[] };
+  type RelatedDevis = { id: string; numero: string; objet: string | null; statut: string; montantTTC: number; dateEmis: string };
+  const [relatedProjets, setRelatedProjets] = useState<RelatedProjet[]>([]);
+  const [relatedDevis, setRelatedDevis] = useState<RelatedDevis[]>([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(false);
   const [form, setForm] = useState({
     nom: "",
     prenom: "",
@@ -115,6 +127,40 @@ export default function ContactDetailPage({ params }: Props) {
     budgetEstime: "",
     notes: "",
   });
+
+  // ─── Charge projets + devis liés au contact ─────────────
+  useEffect(() => {
+    let cancelled = false;
+    setActivitiesLoading(true);
+    Promise.all([
+      fetch(`/api/projets?clientId=${id}`).then((r) => (r.ok ? r.json() : [])),
+      fetch(`/api/devis?clientId=${id}`).then((r) => (r.ok ? r.json() : [])),
+    ])
+      .then(async ([projets, devis]) => {
+        if (cancelled) return;
+        // Pour chaque projet : récupère les documents joints (n+1 mais OK pour n petit)
+        const projetsAvecDocs = await Promise.all(
+          (projets as Array<{ id: string; titre: string; statut: string; updatedAt: string }>).map(async (p) => {
+            try {
+              const res = await fetch(`/api/projets/${p.id}`);
+              if (!res.ok) return p;
+              const detail = await res.json();
+              return { ...p, documents: detail.documents ?? [] };
+            } catch {
+              return p;
+            }
+          }),
+        );
+        if (cancelled) return;
+        setRelatedProjets(projetsAvecDocs);
+        setRelatedDevis(devis);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setActivitiesLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [id]);
 
   useEffect(() => {
     fetch(`/api/clients/${id}`)
@@ -485,16 +531,89 @@ export default function ContactDetailPage({ params }: Props) {
             </div>
 
             <div className="rounded-2xl border bg-card p-6">
-              <h2 className="text-sm font-semibold text-foreground mb-4">Activité</h2>
-              <div className="space-y-4">
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Projets liés</p>
-                  <p className="text-2xl font-bold text-foreground">{contact.projetsCount}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Devis</p>
-                  <p className="text-2xl font-bold text-foreground">{contact.devisCount}</p>
-                </div>
+              <h2 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+                <FolderKanban className="h-4 w-4 text-muted-foreground" /> Activités
+              </h2>
+
+              {/* Projets liés */}
+              <div className="mb-5">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">
+                  Projets ({relatedProjets.length})
+                </p>
+                {activitiesLoading ? (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Chargement…
+                  </div>
+                ) : relatedProjets.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">Aucun projet lié</p>
+                ) : (
+                  <div className="space-y-2">
+                    {relatedProjets.map((p) => (
+                      <div key={p.id} className="rounded-lg border bg-muted/30 p-2.5">
+                        <Link
+                          href={`/dashboard/projets/${p.id}`}
+                          className="group flex items-start gap-2 text-sm hover:text-blue-500"
+                        >
+                          <FolderKanban className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0 group-hover:text-blue-500" />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate font-medium">{p.titre}</p>
+                            <p className="text-[10px] text-muted-foreground">
+                              {p.statut.replace(/_/g, " ")}
+                            </p>
+                          </div>
+                          <ArrowRight className="h-3 w-3 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </Link>
+                        {p.documents && p.documents.length > 0 && (
+                          <div className="mt-2 ml-5 border-l border-border pl-2.5 space-y-1">
+                            {p.documents.map((d) => (
+                              <Link
+                                key={d.id}
+                                href={`/dashboard/documents?doc=${d.id}`}
+                                className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-blue-500 transition-colors"
+                              >
+                                <FileText className="h-3 w-3 shrink-0" />
+                                <span className="truncate">{d.titre}</span>
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Devis liés */}
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">
+                  Devis ({relatedDevis.length})
+                </p>
+                {activitiesLoading ? null : relatedDevis.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">Aucun devis lié</p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {relatedDevis.map((d) => (
+                      <Link
+                        key={d.id}
+                        href={`/dashboard/devis/${d.id}`}
+                        className="group flex items-center gap-2 rounded-lg border bg-muted/30 p-2 text-sm hover:text-blue-500"
+                      >
+                        <Receipt className="h-3.5 w-3.5 text-muted-foreground shrink-0 group-hover:text-blue-500" />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-medium">{d.numero}</p>
+                          <p className="truncate text-[10px] text-muted-foreground">
+                            {d.objet || "Sans objet"} · {formatCurrency(d.montantTTC)}
+                          </p>
+                        </div>
+                        <span className="text-[9px] uppercase tracking-wider text-muted-foreground shrink-0">
+                          {d.statut}
+                        </span>
+                        <ArrowRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </Link>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 

@@ -8,25 +8,41 @@ import { Loader2, CalendarClock, Sparkles, Plus, Trash2 } from "lucide-react";
 import { showApiError, showNetworkError } from "@/lib/api-errors";
 import { toast } from "sonner";
 
+type CellState = "OCC" | "RED" | "INOCC";
+type Pattern = CellState[][];
+
 interface Scenario {
   id: string;
   nom: string;
   description: string | null;
   preset: boolean;
-  patternJson: string;
+  /** L'API renvoie déjà le pattern parsé (matrice 7×24). */
+  pattern: Pattern;
+  /** Compat : certains anciens consommateurs envoyaient un patternJson string. */
+  patternJson?: string;
   createdAt: string;
 }
 
 const JOURS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
-function parsePattern(json: string): Array<Array<"OCC" | "RED" | "INOCC">> {
-  try {
-    const p = JSON.parse(json);
-    if (Array.isArray(p) && p.length === 7) return p;
-  } catch {
-    /* ignore */
-  }
+function patternVide(): Pattern {
   return Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => "INOCC" as const));
+}
+
+/** Normalise un pattern reçu (array ou JSON string en fallback). */
+function normalizePattern(s: Scenario): Pattern {
+  if (Array.isArray(s.pattern) && s.pattern.length === 7) {
+    return s.pattern;
+  }
+  if (typeof s.patternJson === "string") {
+    try {
+      const p = JSON.parse(s.patternJson);
+      if (Array.isArray(p) && p.length === 7) return p as Pattern;
+    } catch {
+      /* ignore */
+    }
+  }
+  return patternVide();
 }
 
 function colorForState(s: "OCC" | "RED" | "INOCC"): string {
@@ -216,7 +232,7 @@ function ScenarioCard({
   scenario: Scenario;
   onDelete?: () => void;
 }) {
-  const pattern = parsePattern(scenario.patternJson);
+  const pattern = normalizePattern(scenario);
   const totalOcc = pattern.flat().filter((c) => c === "OCC").length;
   const totalRed = pattern.flat().filter((c) => c === "RED").length;
 

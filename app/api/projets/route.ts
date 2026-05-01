@@ -53,15 +53,17 @@ const includeRelations = {
   aides: { select: { id: true } },
 };
 
-/** GET /api/projets — Liste tous les projets avec filtrage optionnel par statut */
+/** GET /api/projets — Liste tous les projets avec filtrage optionnel par statut + clientId */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const statut = searchParams.get("statut");
+  const clientId = searchParams.get("clientId");
 
   const projets = await prisma.projet.findMany({
     where: {
       deletedAt: null,
       ...(statut && statut !== "TOUS" ? { statut: statut as never } : {}),
+      ...(clientId ? { clientId } : {}),
     },
     include: includeRelations,
     orderBy: { updatedAt: "desc" },

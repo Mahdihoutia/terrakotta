@@ -123,6 +123,28 @@ function DocumentsPageInner() {
     }
   }, [searchParams]);
 
+  // ─── Ouverture directe d'un document via ?doc=ID ──────────────
+  // Utilisé par les liens "Documents joints" depuis projet/contact/devis.
+  useEffect(() => {
+    const docId = searchParams.get("doc");
+    if (!docId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/documents/${docId}`);
+        if (!res.ok) return;
+        const doc: DocumentRecord = await res.json();
+        if (cancelled) return;
+        setEditingDoc(doc);
+        setSelectedType(doc.type);
+        setActiveTab("generate");
+      } catch {
+        /* silent */
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [searchParams]);
+
   // ─── Fetch documents ─────────────────────────────────────
   const fetchDocuments = useCallback(async () => {
     try {
