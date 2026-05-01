@@ -7,6 +7,14 @@ import {
 } from "@/lib/validations/materiau";
 import { serializeMateriau } from "@/lib/api-helpers/materiau";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+const NO_CACHE_HEADERS = {
+  "Cache-Control": "no-store, no-cache, must-revalidate",
+  Pragma: "no-cache",
+} as const;
+
 /** GET /api/materiaux — Liste filtrable. */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -34,13 +42,12 @@ export async function GET(request: Request) {
       where,
       orderBy: [{ categorie: "asc" }, { nom: "asc" }],
     });
-    return NextResponse.json(list.map(serializeMateriau));
+    return NextResponse.json(list.map(serializeMateriau), { headers: NO_CACHE_HEADERS });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Erreur inconnue";
-    // Détection stricte de la table manquante : P2021 est le code Prisma officiel
-    // "The table does not exist in the current database". On évite les substrings
-    // larges ("relation", "materiaux") qui matchaient à tort d'autres erreurs.
+    const code = (err as { code?: string })?.code ?? null;
     const isMissingTable =
+      code === "P2021" ||
       message.includes("P2021") ||
       message.includes("does not exist in the current database");
     if (isMissingTable) {
@@ -49,14 +56,15 @@ export async function GET(request: Request) {
           error: "MigrationPending",
           message:
             "La table materiaux n'existe pas encore. Exécute la migration SQL (prisma/migrations/_manual/2026_04_28_add_bibliotheque_materiaux.sql).",
+          debug: { code, rawMessage: message },
         },
-        { status: 503 },
+        { status: 503, headers: NO_CACHE_HEADERS },
       );
     }
     console.error("[/api/materiaux GET] error:", err);
     return NextResponse.json(
-      { error: "ServerError", message },
-      { status: 500 },
+      { error: "ServerError", message, code },
+      { status: 500, headers: NO_CACHE_HEADERS },
     );
   }
 }
