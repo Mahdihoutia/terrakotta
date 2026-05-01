@@ -29,28 +29,44 @@ interface BatimentLite {
   zonesCount?: number;
 }
 
+interface ZoneResultDto {
+  besoinChauffageMWh: number;
+  besoinClimMWh: number;
+  apportsSolairesMWh: number;
+  apportsInternesMWh: number;
+  pertesEnveloppeMWh: number;
+  pertesVentilationMWh: number;
+  heuresSurchauffe?: number;
+  puissanceCreteChauffage?: number;
+  puissanceCreteClim?: number;
+}
+
 interface BilanResult {
-  totalSurface: number;
-  totalChauffageMWh: number;
-  totalClimMWh: number;
-  totalApportsSolairesMWh: number;
-  totalApportsInternesMWh: number;
-  totalPertesEnveloppeMWh: number;
-  totalPertesVentilationMWh: number;
-  ratios: {
-    chauffageKwhM2An: number;
-    climKwhM2An: number;
+  batimentId?: string;
+  zoneClimatique?: string;
+  total: {
+    surface: number;
+    besoinChauffageMWh: number;
+    besoinClimMWh: number;
+    apportsSolairesMWh: number;
+    apportsInternesMWh: number;
+    pertesEnveloppeMWh: number;
+    pertesVentilationMWh: number;
+    besoinChauffageKWhM2: number;
+    besoinClimKWhM2: number;
   };
   zones: Array<{
     id: string;
     nom: string;
+    usage?: string;
     surface: number;
-    besoinChauffageMWh: number;
-    besoinClimMWh: number;
-    heuresSurchauffe: number;
-    puissanceCreteChauffage: number;
-    puissanceCreteClim: number;
+    result: ZoneResultDto;
   }>;
+}
+
+function safeNum(v: unknown): number {
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  return 0;
 }
 
 interface DocumentRecord {
@@ -104,7 +120,11 @@ export default function BilanThermiqueDocument({ onBack, onSaved, existingDoc }:
     try {
       const parsed = JSON.parse(existingDoc.donnees);
       if (parsed.batimentId) setSelectedId(parsed.batimentId);
-      if (parsed.bilan) setBilan(parsed.bilan);
+      // Compat : ancien format imbriqué (bilan: {...}) vs nouveau (objet à plat)
+      const candidate = parsed.bilan ?? parsed;
+      if (candidate && typeof candidate === "object" && candidate.total) {
+        setBilan(candidate as BilanResult);
+      }
     } catch {
       /* ignore */
     }
@@ -126,8 +146,8 @@ export default function BilanThermiqueDocument({ onBack, onSaved, existingDoc }:
         await showApiError(res, "Calcul du bilan impossible");
         return;
       }
-      const data = await res.json();
-      setBilan(data.bilan ?? data);
+      const data = (await res.json()) as BilanResult;
+      setBilan(data);
       const bat = batiments.find((b) => b.id === selectedId);
       if (bat && !titre) {
         setTitre(`Bilan thermique — ${bat.nom}`);
@@ -326,7 +346,7 @@ export default function BilanThermiqueDocument({ onBack, onSaved, existingDoc }:
                 Bilan annuel
               </CardTitle>
               <Badge variant="outline" className="text-[10px]">
-                Surface totale : {bilan.totalSurface.toFixed(0)} m²
+                Surface totale : {safeNum(bilan.total?.surface).toFixed(0)} m²
               </Badge>
             </div>
           </CardHeader>
@@ -336,28 +356,28 @@ export default function BilanThermiqueDocument({ onBack, onSaved, existingDoc }:
               <Kpi
                 icon={<Thermometer className="h-4 w-4" />}
                 label="Besoin chauffage"
-                value={`${bilan.totalChauffageMWh.toFixed(1)} MWh/an`}
-                sub={`${bilan.ratios.chauffageKwhM2An.toFixed(0)} kWh/m²·an`}
+                value={`${safeNum(bilan.total?.besoinChauffageMWh).toFixed(1)} MWh/an`}
+                sub={`${safeNum(bilan.total?.besoinChauffageKWhM2).toFixed(0)} kWh/m²·an`}
                 tone="orange"
               />
               <Kpi
                 icon={<Snowflake className="h-4 w-4" />}
                 label="Besoin clim"
-                value={`${bilan.totalClimMWh.toFixed(1)} MWh/an`}
-                sub={`${bilan.ratios.climKwhM2An.toFixed(0)} kWh/m²·an`}
+                value={`${safeNum(bilan.total?.besoinClimMWh).toFixed(1)} MWh/an`}
+                sub={`${safeNum(bilan.total?.besoinClimKWhM2).toFixed(0)} kWh/m²·an`}
                 tone="blue"
               />
               <Kpi
                 icon={<Sun className="h-4 w-4" />}
                 label="Apports solaires"
-                value={`${bilan.totalApportsSolairesMWh.toFixed(1)} MWh/an`}
+                value={`${safeNum(bilan.total?.apportsSolairesMWh).toFixed(1)} MWh/an`}
                 sub="Gratuits (vitrages)"
                 tone="amber"
               />
               <Kpi
                 icon={<TrendingUp className="h-4 w-4" />}
                 label="Apports internes"
-                value={`${bilan.totalApportsInternesMWh.toFixed(1)} MWh/an`}
+                value={`${safeNum(bilan.total?.apportsInternesMWh).toFixed(1)} MWh/an`}
                 sub="Occupants + équip."
                 tone="violet"
               />
@@ -369,13 +389,13 @@ export default function BilanThermiqueDocument({ onBack, onSaved, existingDoc }:
                 <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
                   Pertes enveloppe
                 </p>
-                <p className="mt-1 text-xl font-semibold">{bilan.totalPertesEnveloppeMWh.toFixed(1)} MWh/an</p>
+                <p className="mt-1 text-xl font-semibold">{safeNum(bilan.total?.pertesEnveloppeMWh).toFixed(1)} MWh/an</p>
               </div>
               <div className="rounded-lg border bg-muted/30 p-4">
                 <p className="text-[11px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                   <Wind className="h-3 w-3" /> Pertes ventilation
                 </p>
-                <p className="mt-1 text-xl font-semibold">{bilan.totalPertesVentilationMWh.toFixed(1)} MWh/an</p>
+                <p className="mt-1 text-xl font-semibold">{safeNum(bilan.total?.pertesVentilationMWh).toFixed(1)} MWh/an</p>
               </div>
             </div>
 
@@ -396,20 +416,24 @@ export default function BilanThermiqueDocument({ onBack, onSaved, existingDoc }:
                       </tr>
                     </thead>
                     <tbody className="divide-y">
-                      {bilan.zones.map((z) => (
-                        <tr key={z.id} className="hover:bg-muted/30">
-                          <td className="px-3 py-2 font-medium">{z.nom}</td>
-                          <td className="px-3 py-2 text-right tabular-nums">{z.surface.toFixed(0)} m²</td>
-                          <td className="px-3 py-2 text-right tabular-nums">{z.besoinChauffageMWh.toFixed(1)} MWh</td>
-                          <td className="px-3 py-2 text-right tabular-nums">{z.besoinClimMWh.toFixed(1)} MWh</td>
-                          <td className="px-3 py-2 text-right tabular-nums">{z.puissanceCreteChauffage.toFixed(1)} kW</td>
-                          <td className="px-3 py-2 text-right tabular-nums">
-                            <span className={z.heuresSurchauffe > 100 ? "text-amber-600 font-medium" : ""}>
-                              {z.heuresSurchauffe.toFixed(0)} h
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
+                      {bilan.zones.map((z) => {
+                        const r = z.result ?? ({} as ZoneResultDto);
+                        const surchauffe = safeNum(r.heuresSurchauffe);
+                        return (
+                          <tr key={z.id} className="hover:bg-muted/30">
+                            <td className="px-3 py-2 font-medium">{z.nom}</td>
+                            <td className="px-3 py-2 text-right tabular-nums">{safeNum(z.surface).toFixed(0)} m²</td>
+                            <td className="px-3 py-2 text-right tabular-nums">{safeNum(r.besoinChauffageMWh).toFixed(1)} MWh</td>
+                            <td className="px-3 py-2 text-right tabular-nums">{safeNum(r.besoinClimMWh).toFixed(1)} MWh</td>
+                            <td className="px-3 py-2 text-right tabular-nums">{safeNum(r.puissanceCreteChauffage).toFixed(1)} kW</td>
+                            <td className="px-3 py-2 text-right tabular-nums">
+                              <span className={surchauffe > 100 ? "text-amber-600 font-medium" : ""}>
+                                {surchauffe.toFixed(0)} h
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
