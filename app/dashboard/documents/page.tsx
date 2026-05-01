@@ -26,6 +26,8 @@ import {
   AlertCircle,
   Loader2,
   Pencil,
+  Search,
+  X,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import NoteDimensionnement from "@/components/dashboard/NoteDimensionnement";
@@ -112,6 +114,7 @@ function DocumentsPageInner() {
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(true);
   const [activeTab, setActiveTab] = useState("generate");
+  const [historySearch, setHistorySearch] = useState("");
 
   // ─── Auto-sélection depuis l'audit (?create=note) ─────────────
   useEffect(() => {
@@ -289,7 +292,29 @@ function DocumentsPageInner() {
           )}
         </TabsContent>
 
-        <TabsContent value="history" className="mt-4">
+        <TabsContent value="history" className="mt-4 space-y-3">
+          {/* Barre de recherche */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <input
+              type="text"
+              value={historySearch}
+              onChange={(e) => setHistorySearch(e.target.value)}
+              placeholder="Rechercher par titre, référence, client ou type…"
+              className="w-full rounded-lg border border-input bg-background pl-9 pr-9 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+            {historySearch && (
+              <button
+                type="button"
+                onClick={() => setHistorySearch("")}
+                aria-label="Effacer la recherche"
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+
           <Card>
             <CardContent className="p-0">
               {loadingDocs ? (
@@ -322,7 +347,19 @@ function DocumentsPageInner() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {documents.map((doc) => {
+                    {documents
+                      .filter((doc) => {
+                        const q = historySearch.trim().toLowerCase();
+                        if (!q) return true;
+                        const typeLabel = TYPE_CONFIG[doc.type]?.label?.toLowerCase() ?? "";
+                        return (
+                          doc.titre.toLowerCase().includes(q) ||
+                          doc.reference.toLowerCase().includes(q) ||
+                          (doc.clientNom?.toLowerCase().includes(q) ?? false) ||
+                          typeLabel.includes(q)
+                        );
+                      })
+                      .map((doc) => {
                       const typeConfig = TYPE_CONFIG[doc.type];
                       const statusConfig = STATUS_CONFIG[doc.statut];
                       const StatusIcon = statusConfig.icon;

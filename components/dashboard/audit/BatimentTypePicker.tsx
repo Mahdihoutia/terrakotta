@@ -46,7 +46,7 @@ export default function BatimentTypePicker({ open, onOpenChange, hasExistingValu
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-6xl w-[94vw] sm:w-[92vw] max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5 text-primary" />
@@ -57,7 +57,7 @@ export default function BatimentTypePicker({ open, onOpenChange, hasExistingValu
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 max-h-[60vh] overflow-y-auto pr-1">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 overflow-y-auto pr-1 flex-1">
             {BATIMENTS_TYPES.map((t) => (
               <button
                 key={t.id}
