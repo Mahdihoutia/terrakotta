@@ -6,7 +6,7 @@ import { MUTATION_ROLES, ensureRole } from "@/lib/auth-helpers";
 const createDocumentSchema = z.object({
   titre: z.string().min(1, "Le titre est requis"),
   reference: z.string().min(1, "La référence est requise"),
-  type: z.enum(["RAPPORT_VISITE", "NOTE_DIMENSIONNEMENT", "DEVIS", "AUDIT"]),
+  type: z.enum(["RAPPORT_VISITE", "NOTE_DIMENSIONNEMENT", "DEVIS", "AUDIT", "BILAN_THERMIQUE"]),
   statut: z.enum(["BROUILLON", "EN_COURS", "TERMINE", "ENVOYE"]).optional(),
   clientNom: z.string().nullable().optional(),
   donnees: z.string().nullable().optional(),

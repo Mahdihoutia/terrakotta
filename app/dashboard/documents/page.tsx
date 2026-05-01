@@ -28,14 +28,16 @@ import {
   Pencil,
   Search,
   X,
+  Thermometer,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import NoteDimensionnement from "@/components/dashboard/NoteDimensionnement";
 import RapportVisite from "@/components/dashboard/RapportVisite";
 import AuditEnergetique from "@/components/dashboard/AuditEnergetique";
 import DevisDocument from "@/components/dashboard/DevisDocument";
+import BilanThermiqueDocument from "@/components/dashboard/BilanThermiqueDocument";
 
-type DocumentType = "RAPPORT_VISITE" | "DEVIS" | "NOTE_DIMENSIONNEMENT" | "AUDIT";
+type DocumentType = "RAPPORT_VISITE" | "DEVIS" | "NOTE_DIMENSIONNEMENT" | "AUDIT" | "BILAN_THERMIQUE";
 type DocumentStatus = "BROUILLON" | "EN_COURS" | "TERMINE" | "ENVOYE";
 
 interface DocumentRecord {
@@ -55,6 +57,7 @@ const TYPE_CONFIG: Record<DocumentType, { label: string; icon: React.ComponentTy
   DEVIS: { label: "Devis", icon: Calculator, color: "bg-emerald-500/10 text-emerald-700" },
   NOTE_DIMENSIONNEMENT: { label: "Note de dimensionnement", icon: Ruler, color: "bg-violet-500/10 text-violet-700" },
   AUDIT: { label: "Audit énergétique", icon: FileText, color: "bg-amber-500/10 text-amber-700" },
+  BILAN_THERMIQUE: { label: "Bilan thermique", icon: Thermometer, color: "bg-orange-500/10 text-orange-700" },
 };
 
 const STATUS_CONFIG: Record<DocumentStatus, { label: string; className: string; icon: React.ComponentType<{ className?: string }> }> = {
@@ -88,6 +91,12 @@ const TEMPLATES = [
     title: "Audit énergétique",
     description: "Diagnostic complet avec DPE projeté, scénarios de rénovation, gains énergétiques et plan de financement.",
     sections: ["État des lieux", "Consommations actuelles", "Scénarios de rénovation", "Gains projetés", "Plan de financement", "DPE projeté"],
+  },
+  {
+    type: "BILAN_THERMIQUE" as DocumentType,
+    title: "Bilan thermique",
+    description: "Simulation horaire 8760h sur un bâtiment multi-zones (méthode 5R1C ISO 13790). Besoins chauffage/clim, apports gratuits, puissances crêtes par zone.",
+    sections: ["Sélection du bâtiment", "Calcul horaire", "Bilan annuel global", "Détail par zone", "Apports gratuits", "Puissances de dimensionnement"],
   },
 ];
 
@@ -280,6 +289,12 @@ function DocumentsPageInner() {
             />
           ) : selectedType === "DEVIS" ? (
             <DevisDocument
+              onBack={() => { setSelectedType(null); setEditingDoc(null); }}
+              onSaved={handleDocumentSaved}
+              existingDoc={editingDoc}
+            />
+          ) : selectedType === "BILAN_THERMIQUE" ? (
+            <BilanThermiqueDocument
               onBack={() => { setSelectedType(null); setEditingDoc(null); }}
               onSaved={handleDocumentSaved}
               existingDoc={editingDoc}

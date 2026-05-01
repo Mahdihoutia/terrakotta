@@ -617,6 +617,7 @@ enum DocumentType {
   NOTE_DIMENSIONNEMENT
   DEVIS
   AUDIT
+  BILAN_THERMIQUE
 }
 
 enum DocumentStatut {
