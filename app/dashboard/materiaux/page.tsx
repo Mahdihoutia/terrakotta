@@ -115,7 +115,7 @@ export default function MateriauxPage() {
     setLoading(true);
     setMigrationPending(false);
     try {
-      const res = await fetch("/api/materiaux");
+      const res = await fetch("/api/materiaux", { cache: "no-store" });
       if (res.status === 503) {
         setMigrationPending(true);
         return;

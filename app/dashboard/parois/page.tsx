@@ -137,8 +137,8 @@ export default function ParoisPage() {
     setMigrationPending(false);
     try {
       const [paroisRes, materiauxRes] = await Promise.all([
-        fetch("/api/parois"),
-        fetch("/api/materiaux"),
+        fetch("/api/parois", { cache: "no-store" }),
+        fetch("/api/materiaux", { cache: "no-store" }),
       ]);
       if (paroisRes.status === 503 || materiauxRes.status === 503) {
         setMigrationPending(true);
