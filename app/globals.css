@@ -480,6 +480,174 @@
   font-feature-settings: "tnum";
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   Métier / workspace primitives — dense screens (saisie & calcul)
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Densité — référence : Linear, Attio, Notion-database */
+  --metier-row-h:        32px;
+  --metier-row-h-sm:     28px;
+  --metier-cell-px:      8px;
+  --metier-text-table:   12px;
+  --metier-text-body:    13px;
+  --metier-text-label:   10px;
+  --metier-text-h2:      14px;
+  --metier-text-h1:      18px;
+
+  /* DPE — couleurs réglementaires (arrêté DPE 2021) */
+  --dpe-a: #319834;
+  --dpe-b: #5fb234;
+  --dpe-c: #c8d439;
+  --dpe-d: #fff12c;
+  --dpe-e: #f9a01b;
+  --dpe-f: #eb6b1f;
+  --dpe-g: #d7221f;
+}
+
+/* ── Metric : grandeur physique avec unité ───────────────────── */
+.metric {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.2rem;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  font-weight: 600;
+  color: var(--tk-text);
+  letter-spacing: -0.01em;
+}
+.metric-lg {
+  font-size: 1.5rem;
+  line-height: 1.1;
+}
+.metric-md {
+  font-size: 1rem;
+  line-height: 1.2;
+}
+.metric-sm {
+  font-size: 0.8125rem;
+  line-height: 1.25;
+}
+.metric .unit {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 0.72em;
+  color: var(--tk-text-muted);
+  letter-spacing: 0;
+}
+.metric-muted { color: var(--tk-text-muted); }
+.metric-pos   { color: rgb(21, 128, 61); }
+.metric-neg   { color: rgb(185, 28, 28); }
+.dark .metric-pos { color: rgb(134, 239, 172); }
+.dark .metric-neg { color: rgb(252, 165, 165); }
+
+/* ── Data table : tableau dense éditable ─────────────────────── */
+.data-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--metier-text-table);
+  font-variant-numeric: tabular-nums;
+}
+.data-table thead th {
+  height: var(--metier-row-h-sm);
+  padding: 0 var(--metier-cell-px);
+  text-align: left;
+  font-size: var(--metier-text-label);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tk-text-muted) !important;
+  background: var(--tk-bg);
+  border-bottom: 1px solid var(--tk-border);
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.data-table tbody td {
+  height: var(--metier-row-h);
+  padding: 0 var(--metier-cell-px);
+  border-bottom: 1px solid var(--tk-border);
+  color: var(--tk-text);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.data-table tbody tr:hover td {
+  background: var(--tk-hover);
+}
+.data-table tbody tr[data-selected="true"] td {
+  background: var(--tk-primary-light);
+}
+.data-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+.data-table .col-narrow { width: 1%; }
+
+/* ── Workspace toolbar (au-dessus d'un tableau / canvas) ─────── */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 2.25rem;
+  padding: 0 0.5rem;
+  border: 1px solid var(--tk-border);
+  border-radius: 0.5rem;
+  background: var(--tk-surface);
+  font-size: var(--metier-text-table);
+}
+.toolbar > .sep {
+  width: 1px;
+  height: 1rem;
+  background: var(--tk-border);
+}
+
+/* ── Field label fine (formulaires denses) ───────────────────── */
+.field-label-tiny {
+  display: block;
+  font-size: var(--metier-text-label);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tk-text-faint);
+  margin-bottom: 0.25rem;
+}
+
+/* ── DPE badge — étiquette énergétique A→G ───────────────────── */
+.dpe-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.5rem;
+  border-radius: 0.25rem;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: #1a1a1a;
+  letter-spacing: 0.02em;
+}
+.dpe-badge[data-letter="A"] { background: var(--dpe-a); color: #fff; }
+.dpe-badge[data-letter="B"] { background: var(--dpe-b); color: #fff; }
+.dpe-badge[data-letter="C"] { background: var(--dpe-c); }
+.dpe-badge[data-letter="D"] { background: var(--dpe-d); }
+.dpe-badge[data-letter="E"] { background: var(--dpe-e); color: #fff; }
+.dpe-badge[data-letter="F"] { background: var(--dpe-f); color: #fff; }
+.dpe-badge[data-letter="G"] { background: var(--dpe-g); color: #fff; }
+
+/* ── Section title — variante dense pour écrans métier ───────── */
+.section-title-dense {
+  font-size: var(--metier-text-h1);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--tk-text);
+  line-height: 1.2;
+}
+
 /* ── Avatar fallback ─────────────────────────────────────────── */
 .avatar-initials {
   display: inline-flex;
