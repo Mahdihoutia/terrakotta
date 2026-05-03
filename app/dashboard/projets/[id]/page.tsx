@@ -649,32 +649,18 @@ export default function ProjetDetailPage({ params }: Props) {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      {/* ─── Header ─────────────────────────────────────── */}
+      {/* ─── Action bar ─────────────────────────────────── */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/dashboard/projets">
-            <Button variant="ghost" size="icon" className="h-9 w-9 text-tk-text-faint hover:text-tk-text hover:bg-tk-hover">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-tk-text">
-              {editing ? "Modifier le projet" : projet.titre}
-            </h1>
-            <div className="flex items-center gap-2 mt-1">
-              <span
-                className={cn(
-                  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium",
-                  STATUT_COLORS[editing ? form.statut : projet.statut]
-                )}
-              >
-                {STATUT_LABELS[editing ? form.statut : projet.statut]}
-              </span>
-              <span className="text-xs text-tk-text-faint">
-                Créé le {formatDate(projet.createdAt)} · Modifié le {formatDate(projet.updatedAt)}
-              </span>
-            </div>
-          </div>
+        <div className="flex items-center gap-2 text-[11px] text-tk-text-faint">
+          <span>Créé le {formatDate(projet.createdAt)}</span>
+          <span className="text-tk-border">·</span>
+          <span>Modifié le {formatDate(projet.updatedAt)}</span>
+          {editing && (
+            <>
+              <span className="text-tk-border">·</span>
+              <span className="font-medium text-amber-500">Mode édition</span>
+            </>
+          )}
         </div>
         <div className="flex gap-2">
           {editing ? (
