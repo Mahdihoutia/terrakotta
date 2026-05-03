@@ -9,7 +9,6 @@ import {
   Trash2,
   X,
   Loader2,
-  Filter,
   ArrowUp,
   ArrowDown,
   Layers,
@@ -20,7 +19,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { showApiError, showNetworkError } from "@/lib/api-errors";
 import { toast } from "sonner";
@@ -123,6 +121,7 @@ export default function ParoisPage() {
   );
 
   const [editing, setEditing] = useState<Paroi | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState<FormState>(defaultForm());
   const [saving, setSaving] = useState(false);
@@ -360,149 +359,263 @@ export default function ParoisPage() {
 
   const uQual = qualifierU(metrics.uValue);
   const dephQual = qualifierDephasage(metrics.dephasage);
+  const selected = selectedId ? filtered.find((p) => p.id === selectedId) ?? parois.find((p) => p.id === selectedId) ?? null : null;
+  const totalSelectedMm = selected?.couches?.reduce((s, c) => s + c.epaisseur * 1000, 0) ?? 0;
 
   return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="rounded-lg p-2 bg-sky-500/10 text-sky-700">
-            <Boxes className="h-5 w-5" />
-          </div>
-          <div>
-            <h1 className="text-xl font-semibold">Composeur de parois</h1>
-            <p className="text-xs text-muted-foreground">
-              {parois.length} paroi{parois.length > 1 ? "s" : ""} · U, déphasage et carbone calculés automatiquement
-            </p>
-          </div>
+    <div className="flex flex-col gap-3">
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div>
+          <h1 className="section-title-dense">Composeur de parois</h1>
+          <p className="text-[12px] text-tk-text-muted">
+            {parois.length} paroi{parois.length > 1 ? "s" : ""} · calcul U, déphasage, carbone
+          </p>
         </div>
-        <Button size="sm" onClick={openCreate}>
-          <Plus className="mr-1 h-4 w-4" />
-          Nouvelle paroi
-        </Button>
-      </div>
-
-      {/* Filters */}
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <input
-            type="text"
-            value={filters.search}
-            onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-            placeholder="Rechercher une paroi…"
-            className="w-full rounded-md border pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-          />
-        </div>
-        <div className="flex items-center gap-1.5">
-          <Filter className="h-4 w-4 text-muted-foreground" />
+        <div className="ml-auto flex items-center gap-2">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-tk-text-faint" />
+            <input
+              type="text"
+              value={filters.search}
+              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+              placeholder="Rechercher…"
+              className="h-8 w-56 rounded-md border border-tk-border bg-tk-surface pl-8 pr-2 text-[12px] focus:outline-none"
+            />
+          </div>
           <select
             value={filters.type}
             onChange={(e) => setFilters({ ...filters, type: e.target.value })}
-            className="rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+            className="h-8 rounded-md border border-tk-border bg-tk-surface px-2 text-[12px] focus:outline-none"
           >
             <option value="TOUTES">Tous types</option>
             {PAROI_TYPES.map((t) => (
               <option key={t} value={t}>{TYPE_LABELS[t]}</option>
             ))}
           </select>
+          <Button size="sm" onClick={openCreate} className="h-8">
+            <Plus className="mr-1 h-3.5 w-3.5" />
+            Nouvelle paroi
+          </Button>
         </div>
       </div>
 
       {migrationPending && (
-        <Card className="border-amber-300 bg-amber-50">
-          <CardContent className="py-4">
-            <p className="text-sm font-medium text-amber-900">Migration de base de données requise</p>
-            <p className="mt-1 text-xs text-amber-800">
-              Exécute <code className="font-mono">prisma/migrations/_manual/2026_04_28_add_bibliotheque_materiaux.sql</code> dans Supabase.
-            </p>
-          </CardContent>
-        </Card>
+        <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-[12px]">
+          <p className="font-medium text-amber-900">Migration de base de données requise</p>
+          <p className="mt-1 text-amber-800">
+            Exécute <code className="font-mono">prisma/migrations/_manual/2026_04_28_add_bibliotheque_materiaux.sql</code>.
+          </p>
+        </div>
       )}
 
-      {/* List */}
-      <Card>
-        <CardContent className="p-0">
+      {/* Workspace : table + inspector */}
+      <div className="flex gap-3 min-h-[560px]">
+        {/* Main : data table */}
+        <div className="flex-1 min-w-0 overflow-auto rounded-lg border border-tk-border bg-tk-surface">
           {loading ? (
             <div className="flex items-center justify-center py-16">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              <Loader2 className="h-5 w-5 animate-spin text-tk-text-faint" />
             </div>
           ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <Boxes className="h-10 w-10 text-muted-foreground/30" />
-              <p className="mt-3 text-sm font-medium">Aucune paroi</p>
-              <p className="mt-1 text-xs text-muted-foreground max-w-xs">
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <Boxes className="h-8 w-8 text-tk-text-faint/40" />
+              <p className="mt-3 text-[13px] font-medium text-tk-text">Aucune paroi</p>
+              <p className="mt-1 max-w-xs text-[12px] text-tk-text-muted">
                 {parois.length === 0
-                  ? "Compose ta première paroi multicouche en empilant des matériaux de la bibliothèque."
+                  ? "Compose ta première paroi multicouche depuis la bibliothèque."
                   : "Aucun résultat avec ces filtres."}
               </p>
               {parois.length === 0 && (
                 <Button size="sm" className="mt-4" onClick={openCreate}>
-                  <Plus className="mr-1 h-4 w-4" />
+                  <Plus className="mr-1 h-3.5 w-3.5" />
                   Créer une paroi
                 </Button>
               )}
             </div>
           ) : (
-            <div className="divide-y">
-              {filtered.map((p) => {
-                const u = p.uCache ?? 0;
-                const q = qualifierU(u);
-                return (
-                  <div key={p.id} className="px-5 py-3.5 hover:bg-muted/30 transition-colors">
-                    <div className="flex items-start gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start gap-2 flex-wrap">
-                          <p className="text-sm font-medium leading-snug">{p.nom}</p>
-                          <Badge variant="outline" className="text-[10px] shrink-0">
-                            {TYPE_LABELS[p.type] ?? p.type}
-                          </Badge>
-                          <Badge
-                            className={cn(
-                              "text-[10px] shrink-0",
-                              q.niveau === "EXCELLENT" && "bg-emerald-100 text-emerald-800 border-emerald-200",
-                              q.niveau === "BON" && "bg-emerald-50 text-emerald-700 border-emerald-100",
-                              q.niveau === "MOYEN" && "bg-amber-50 text-amber-800 border-amber-200",
-                              q.niveau === "FAIBLE" && "bg-red-50 text-red-700 border-red-200",
-                            )}
-                          >
-                            {q.label}
-                          </Badge>
-                        </div>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Nom</th>
+                  <th>Type</th>
+                  <th className="num">U <span className="font-normal lowercase opacity-60">W/m²·K</span></th>
+                  <th className="num">R <span className="font-normal lowercase opacity-60">m²·K/W</span></th>
+                  <th className="num">Masse <span className="font-normal lowercase opacity-60">kg/m²</span></th>
+                  <th className="num">φ <span className="font-normal lowercase opacity-60">h</span></th>
+                  <th className="num">CO₂ <span className="font-normal lowercase opacity-60">kg/m²</span></th>
+                  <th className="num col-narrow">Couches</th>
+                  <th className="col-narrow"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((p) => {
+                  const u = p.uCache ?? 0;
+                  const q = qualifierU(u);
+                  const isSelected = p.id === selectedId;
+                  return (
+                    <tr
+                      key={p.id}
+                      data-selected={isSelected || undefined}
+                      onClick={() => setSelectedId(p.id)}
+                      onDoubleClick={() => openEdit(p)}
+                      className="cursor-pointer"
+                    >
+                      <td>
+                        <span className="font-medium text-tk-text">{p.nom}</span>
                         {p.description && (
-                          <p className="mt-1 text-xs text-muted-foreground line-clamp-1">{p.description}</p>
+                          <span className="ml-2 text-tk-text-muted">{p.description}</span>
                         )}
-                        <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
-                          <span>U <span className="font-mono text-foreground font-semibold">{u.toFixed(3)}</span> W/m²·K</span>
-                          {p.rCache != null && <span>R <span className="font-mono text-foreground">{p.rCache.toFixed(2)}</span></span>}
-                          {p.masseSurfaciqueCache != null && <span>M <span className="font-mono text-foreground">{p.masseSurfaciqueCache.toFixed(0)}</span> kg/m²</span>}
-                          {p.dephasageCache != null && <span>φ <span className="font-mono text-foreground">{p.dephasageCache.toFixed(1)}</span> h</span>}
-                          {p.carboneCache != null && <span>CO₂ <span className="font-mono text-foreground">{p.carboneCache.toFixed(0)}</span> kg/m²</span>}
-                          <span className="text-[10px]">· {p.couches?.length ?? 0} couche{(p.couches?.length ?? 0) > 1 ? "s" : ""}</span>
+                      </td>
+                      <td className="text-tk-text-muted">{TYPE_LABELS[p.type] ?? p.type}</td>
+                      <td className={cn(
+                        "num font-mono font-semibold",
+                        q.niveau === "EXCELLENT" && "text-emerald-700 dark:text-emerald-400",
+                        q.niveau === "BON" && "text-emerald-600 dark:text-emerald-300",
+                        q.niveau === "MOYEN" && "text-amber-700 dark:text-amber-400",
+                        q.niveau === "FAIBLE" && "text-red-700 dark:text-red-400",
+                      )}>
+                        {u.toFixed(3)}
+                      </td>
+                      <td className="num font-mono">{p.rCache != null ? p.rCache.toFixed(2) : "—"}</td>
+                      <td className="num font-mono">{p.masseSurfaciqueCache != null ? p.masseSurfaciqueCache.toFixed(0) : "—"}</td>
+                      <td className="num font-mono">{p.dephasageCache != null ? p.dephasageCache.toFixed(1) : "—"}</td>
+                      <td className="num font-mono">{p.carboneCache != null ? p.carboneCache.toFixed(0) : "—"}</td>
+                      <td className="num font-mono text-tk-text-muted">{p.couches?.length ?? 0}</td>
+                      <td className="col-narrow text-right">
+                        <div className="flex items-center justify-end gap-0.5" onClick={(e) => e.stopPropagation()}>
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => openEdit(p)} aria-label="Modifier">
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-destructive hover:text-destructive"
+                            onClick={() => handleDelete(p)}
+                            aria-label="Supprimer"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(p)} aria-label="Modifier">
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive"
-                          onClick={() => handleDelete(p)}
-                          aria-label="Supprimer"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {/* Inspector */}
+        <aside className="hidden lg:flex w-[340px] shrink-0 flex-col rounded-lg border border-tk-border bg-tk-surface overflow-hidden">
+          {selected ? (
+            <>
+              <header className="flex items-start justify-between gap-2 border-b border-tk-border px-4 py-3">
+                <div className="min-w-0">
+                  <p className="field-label-tiny">Inspecteur · {TYPE_LABELS[selected.type] ?? selected.type}</p>
+                  <h2 className="text-[14px] font-semibold text-tk-text leading-tight truncate">{selected.nom}</h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedId(null)}
+                  className="rounded p-1 text-tk-text-faint hover:bg-tk-hover hover:text-tk-text"
+                  aria-label="Fermer"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </header>
+
+              <div className="flex-1 overflow-y-auto p-4 space-y-5">
+                {selected.description && (
+                  <p className="text-[12px] leading-relaxed text-tk-text-muted">{selected.description}</p>
+                )}
+
+                {/* Métriques */}
+                <div className="grid grid-cols-2 gap-2">
+                  <InspectorMetric label="U" value={selected.uCache} unit="W/m²·K" decimals={3} tone={qualifierU(selected.uCache ?? 0).niveau} />
+                  <InspectorMetric label="R" value={selected.rCache} unit="m²·K/W" decimals={2} />
+                  <InspectorMetric label="Masse" value={selected.masseSurfaciqueCache} unit="kg/m²" decimals={0} />
+                  <InspectorMetric label="Déphasage" value={selected.dephasageCache} unit="h" decimals={1} />
+                  <InspectorMetric label="Carbone" value={selected.carboneCache} unit="kgCO₂e/m²" decimals={1} />
+                </div>
+
+                {/* Coupe schématique */}
+                {selected.couches && selected.couches.length > 0 && (
+                  <div>
+                    <p className="field-label-tiny mb-1.5">Coupe · {totalSelectedMm.toFixed(0)} mm</p>
+                    <div className="flex h-10 overflow-hidden rounded border border-tk-border">
+                      <span className="flex w-7 shrink-0 items-center justify-center border-r border-tk-border bg-orange-100 text-[9px] font-semibold uppercase text-orange-800">int</span>
+                      {selected.couches.map((c, i) => {
+                        const w = totalSelectedMm > 0 ? (c.epaisseur * 1000 / totalSelectedMm) * 100 : 0;
+                        const cat = c.materiau?.categorie ?? "AUTRE";
+                        return (
+                          <div
+                            key={i}
+                            title={`${c.materiau?.nom ?? "?"} · ${(c.epaisseur * 1000).toFixed(0)} mm`}
+                            style={{ width: `${w}%`, background: CATEGORIE_COLORS[cat] }}
+                            className="flex items-center justify-center text-[9px] font-medium text-white/95"
+                          >
+                            {w > 8 ? (c.epaisseur * 1000).toFixed(0) : ""}
+                          </div>
+                        );
+                      })}
+                      <span className="flex w-7 shrink-0 items-center justify-center border-l border-tk-border bg-sky-100 text-[9px] font-semibold uppercase text-sky-800">ext</span>
                     </div>
                   </div>
-                );
-              })}
+                )}
+
+                {/* Couches */}
+                {selected.couches && selected.couches.length > 0 && (
+                  <div>
+                    <p className="field-label-tiny mb-1.5">Composition</p>
+                    <ul className="space-y-1">
+                      {selected.couches.map((c, i) => (
+                        <li
+                          key={c.id ?? i}
+                          className="flex items-center gap-2 rounded border border-tk-border px-2 py-1.5 text-[12px]"
+                        >
+                          <span
+                            className="h-6 w-1 shrink-0 rounded-full"
+                            style={{ background: CATEGORIE_COLORS[c.materiau?.categorie ?? "AUTRE"] }}
+                          />
+                          <span className="flex-1 min-w-0 truncate">{c.materiau?.nom ?? "Matériau supprimé"}</span>
+                          <span className="font-mono tabular-nums text-tk-text-muted">
+                            {(c.epaisseur * 1000).toFixed(0)} mm
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-2">
+                  <InspectorMetric label="Rsi" value={selected.rsi} unit="m²·K/W" decimals={2} small />
+                  <InspectorMetric label="Rse" value={selected.rse} unit="m²·K/W" decimals={2} small />
+                </div>
+              </div>
+
+              <footer className="flex gap-2 border-t border-tk-border p-3">
+                <Button size="sm" variant="outline" onClick={() => handleDelete(selected)} className="flex-1">
+                  <Trash2 className="mr-1 h-3 w-3" />
+                  Supprimer
+                </Button>
+                <Button size="sm" onClick={() => openEdit(selected)} className="flex-1">
+                  <Pencil className="mr-1 h-3 w-3" />
+                  Modifier
+                </Button>
+              </footer>
+            </>
+          ) : (
+            <div className="flex flex-1 flex-col items-center justify-center p-8 text-center">
+              <Boxes className="h-7 w-7 text-tk-text-faint/40" />
+              <p className="mt-3 text-[12px] font-medium text-tk-text">Aucune paroi sélectionnée</p>
+              <p className="mt-1 text-[11px] text-tk-text-muted">
+                Clic sur une ligne pour voir le détail. Double-clic pour éditer.
+              </p>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </aside>
+      </div>
 
       {/* Composeur modal */}
       {(creating || editing) && (
@@ -809,6 +922,45 @@ export default function ParoisPage() {
           </Card>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ─── Inspector metric tile (compact, mono) ──────────────────── */
+interface InspectorMetricProps {
+  label: string;
+  value: number | null | undefined;
+  unit: string;
+  decimals?: number;
+  tone?: string;
+  small?: boolean;
+}
+function InspectorMetric({ label, value, unit, decimals = 2, tone, small }: InspectorMetricProps) {
+  const formatted =
+    value === null || value === undefined
+      ? "—"
+      : new Intl.NumberFormat("fr-FR", {
+          minimumFractionDigits: decimals,
+          maximumFractionDigits: decimals,
+        }).format(value);
+  return (
+    <div className={cn("rounded-md border border-tk-border bg-tk-bg/40", small ? "px-2 py-1.5" : "px-2.5 py-2")}>
+      <p className="text-[10px] uppercase tracking-wider text-tk-text-faint">{label}</p>
+      <div className={cn("mt-0.5 flex items-baseline gap-1", small && "mt-0")}>
+        <span
+          className={cn(
+            "font-mono font-semibold tabular-nums",
+            small ? "text-[12px]" : "text-[15px]",
+            tone === "EXCELLENT" && "text-emerald-700 dark:text-emerald-400",
+            tone === "BON" && "text-emerald-600 dark:text-emerald-300",
+            tone === "MOYEN" && "text-amber-700 dark:text-amber-400",
+            tone === "FAIBLE" && "text-red-700 dark:text-red-400",
+          )}
+        >
+          {formatted}
+        </span>
+        <span className="text-[10px] text-tk-text-muted">{unit}</span>
+      </div>
     </div>
   );
 }
