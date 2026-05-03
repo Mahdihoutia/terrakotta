@@ -24,7 +24,7 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { ZONE_CLIMATIQUE_DATA } from "@/lib/thermal/zones";
-import type { ParoiDto } from "./bilan-thermique/types";
+import type { ParoiDto, ScenarioDto } from "./bilan-thermique/types";
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -139,6 +139,7 @@ interface ZoneRow {
   consigneClimOcc: string;
   densiteOccupation: string;
   qVmcM3hM2: string;
+  scenarioId: string;
   parois: ParoiRow[];
 }
 
@@ -171,6 +172,7 @@ function emptyZone(): ZoneRow {
     consigneClimOcc: "26",
     densiteOccupation: "0.1",
     qVmcM3hM2: "1.2",
+    scenarioId: "",
     parois: [],
   };
 }
@@ -221,6 +223,9 @@ export default function BilanThermiqueDocument({ onBack, onSaved, existingDoc }:
   const [activeSection, setActiveSection] = useState(0);
   const [parois, setParois] = useState<ParoiDto[]>([]);
   const [paroisLoading, setParoisLoading] = useState(true);
+  const [scenarios, setScenarios] = useState<ScenarioDto[]>([]);
+  const [scenariosLoading, setScenariosLoading] = useState(true);
+  const [seedingScenarios, setSeedingScenarios] = useState(false);
 
   const [bilan, setBilan] = useState<BilanResult | null>(null);
   const [batimentId, setBatimentId] = useState<string | null>(null);
@@ -253,6 +258,51 @@ export default function BilanThermiqueDocument({ onBack, onSaved, existingDoc }:
       cancelled = true;
     };
   }, []);
+
+  // ─── Charge la bibliothèque de scénarios d'occupation ────────
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/scenarios", { cache: "no-store" });
+        if (!res.ok) {
+          if (!cancelled) setScenarios([]);
+          return;
+        }
+        const data = (await res.json()) as ScenarioDto[];
+        if (!cancelled) setScenarios(Array.isArray(data) ? data : []);
+      } catch {
+        if (!cancelled) setScenarios([]);
+      } finally {
+        if (!cancelled) setScenariosLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function seedScenarios() {
+    setSeedingScenarios(true);
+    try {
+      const res = await fetch("/api/admin/seed-scenarios", { method: "POST" });
+      if (!res.ok) {
+        await showApiError(res, "Initialisation des scénarios impossible");
+        return;
+      }
+      const j = (await res.json()) as { created: number; skipped: number };
+      toast.success(`Presets ajoutés — ${j.created} scénarios (${j.skipped} déjà présents)`);
+      const refresh = await fetch("/api/scenarios", { cache: "no-store" });
+      if (refresh.ok) {
+        const data = (await refresh.json()) as ScenarioDto[];
+        setScenarios(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      showNetworkError(err, "Erreur réseau");
+    } finally {
+      setSeedingScenarios(false);
+    }
+  }
 
   // ─── Pré-remplissage à l'édition ─────────────────────────────
   useEffect(() => {
@@ -503,6 +553,7 @@ export default function BilanThermiqueDocument({ onBack, onSaved, existingDoc }:
             consigneClimOcc: parseNum(z.consigneClimOcc) ?? undefined,
             densiteOccupation: parseNum(z.densiteOccupation) ?? undefined,
             qVmcM3hM2: parseNum(z.qVmcM3hM2) ?? undefined,
+            ...(z.scenarioId ? { scenarioId: z.scenarioId } : {}),
           };
           const zRes = await fetch("/api/zones", {
             method: "POST",
@@ -778,6 +829,10 @@ export default function BilanThermiqueDocument({ onBack, onSaved, existingDoc }:
                 addZone={addZone}
                 removeZone={removeZone}
                 updateZone={updateZone}
+                scenarios={scenarios}
+                scenariosLoading={scenariosLoading}
+                seedingScenarios={seedingScenarios}
+                onSeedScenarios={seedScenarios}
               />
             )}
             {activeSection === 3 && (
@@ -986,12 +1041,21 @@ function SectionZones({
   addZone,
   removeZone,
   updateZone,
+  scenarios,
+  scenariosLoading,
+  seedingScenarios,
+  onSeedScenarios,
 }: {
   zones: ZoneRow[];
   addZone: () => void;
   removeZone: (idx: number) => void;
   updateZone: (idx: number, patch: Partial<ZoneRow>) => void;
+  scenarios: ScenarioDto[];
+  scenariosLoading: boolean;
+  seedingScenarios: boolean;
+  onSeedScenarios: () => void;
 }) {
+  const noScenarios = !scenariosLoading && scenarios.length === 0;
   return (
     <Card>
       <CardHeader>
@@ -1001,6 +1065,22 @@ function SectionZones({
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
+        {noScenarios && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 flex items-center justify-between gap-3">
+            <span>
+              Aucun scénario d&apos;occupation en bibliothèque. Initialisez les presets pour
+              attribuer un rythme hebdomadaire à chaque zone.
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onSeedScenarios}
+              disabled={seedingScenarios}
+            >
+              {seedingScenarios ? "Initialisation…" : "Initialiser les presets"}
+            </Button>
+          </div>
+        )}
         {zones.map((z, idx) => (
           <div key={idx} className="rounded-lg border bg-background p-4 space-y-3">
             <div className="flex items-center justify-between">
@@ -1111,6 +1191,33 @@ function SectionZones({
                   onChange={(e) => updateZone(idx, { qVmcM3hM2: e.target.value })}
                   className={inputCls}
                 />
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <FieldLabel>Scénario d&apos;occupation</FieldLabel>
+                <select
+                  value={z.scenarioId}
+                  onChange={(e) => updateZone(idx, { scenarioId: e.target.value })}
+                  className={inputCls}
+                  disabled={scenariosLoading || scenarios.length === 0}
+                >
+                  <option value="">
+                    {scenariosLoading
+                      ? "Chargement…"
+                      : scenarios.length === 0
+                      ? "Aucun scénario disponible"
+                      : "— Profil par défaut (occ. en continu) —"}
+                  </option>
+                  {scenarios.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.preset ? "★ " : ""}
+                      {s.nom}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-muted-foreground">
+                  Pattern hebdomadaire 7×24h appliqué aux apports internes, à la VMC
+                  et aux consignes (mode réduit hors occupation).
+                </p>
               </div>
             </div>
           </div>
