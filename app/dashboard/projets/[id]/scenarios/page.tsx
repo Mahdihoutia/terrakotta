@@ -5,6 +5,14 @@ import VarianteCreateDialog from "@/components/dashboard/VarianteCreateDialog";
 import { calculerAides, BAREMES_VERSION } from "@/lib/aides";
 import type { Geste, FoyerDemandeur, GesteCode } from "@/lib/aides";
 import { prisma } from "@/lib/db";
+import { buildProjetBaseline } from "@/lib/calcul-projet";
+import {
+  applyGestesToBaseline,
+  computeIndicatorsFromState,
+  TARIFS_ENERGIE_2025,
+  type BaselineState,
+  type VarianteIndicators,
+} from "@/lib/calcul-variante";
 
 /* Foyer démo — catégorie JAUNE (modeste) en province. */
 const FOYER_DEMO: FoyerDemandeur = {
@@ -13,7 +21,7 @@ const FOYER_DEMO: FoyerDemandeur = {
   rfr: 28000,
 };
 
-const SURFACE = 142;
+const FALLBACK_SURFACE = 142;
 
 interface VarianteDemo {
   id: string;
@@ -60,7 +68,7 @@ const VARIANTES: VarianteDemo[] = [
   },
 ];
 
-function buildScenario(v: VarianteDemo): Scenario {
+function buildDemoScenario(v: VarianteDemo): Scenario {
   const aides = calculerAides(v.gestes, FOYER_DEMO);
   return {
     id: v.id,
@@ -88,28 +96,25 @@ function buildScenario(v: VarianteDemo): Scenario {
 function aidesLibelle(code: string): string {
   const map: Record<string, string> = {
     ISOLATION_MURS_ITE: "ITE murs extérieurs",
+    ISOLATION_MURS_ITI: "ITI murs intérieurs",
     ISOLATION_COMBLES: "Isolation combles",
-    MENUISERIES: "Menuiseries triple vitrage",
-    PAC_AIR_EAU: "PAC air/eau",
+    ISOLATION_PLANCHER_BAS: "Isolation plancher bas",
+    ISOLATION_TOITURE_TERRASSE: "Isolation toiture-terrasse",
+    MENUISERIES: "Menuiseries",
     VMC_DOUBLE_FLUX: "VMC double flux",
+    VMC_SIMPLE_FLUX: "VMC simple flux",
+    PAC_AIR_EAU: "PAC air/eau",
+    PAC_GEOTHERMIQUE: "PAC géothermique",
+    PAC_AIR_AIR: "PAC air/air",
+    CHAUDIERE_BIOMASSE: "Chaudière biomasse",
+    POELE_GRANULES: "Poêle à granulés",
+    POELE_BUCHES: "Poêle à bûches",
+    CHAUFFE_EAU_THERMODYNAMIQUE: "Chauffe-eau thermodynamique",
+    CHAUFFE_EAU_SOLAIRE: "Chauffe-eau solaire",
     DEPOSE_CUVE_FIOUL: "Dépose cuve fioul",
+    AUDIT_ENERGETIQUE: "Audit énergétique",
   };
   return map[code] ?? code;
-}
-
-const SCENARIO_INITIAL: Scenario = {
-  id: "initial",
-  nom: "Avant travaux",
-  type: "INITIAL",
-  description: "Maison individuelle 1978, isolation murs 5 cm, simple vitrage, chaudière fioul.",
-  indicateurs: {
-    cep: 412, cef: 287, ges: 88, dpe: "F", ges_class: "F",
-    besoinChauffage: 220, besoinECS: 38, besoinClim: 0,
-  },
-};
-
-interface PageProps {
-  params: Promise<{ id: string }>;
 }
 
 interface VarianteDb {
@@ -119,70 +124,173 @@ interface VarianteDb {
   inputs: { gestes?: { code: string; quantite: number; coutHT: number }[] } | null;
 }
 
-function buildDbScenario(v: VarianteDb): Scenario {
+interface PageProps {
+  params: Promise<{ id: string }>;
+}
+
+/** Simule une variante DB en appliquant ses gestes sur la baseline du projet. */
+function buildDbScenario(
+  v: VarianteDb,
+  baseline: BaselineState | null,
+  baselineIndicators: VarianteIndicators | null,
+): Scenario {
   const gestes: Geste[] = (v.inputs?.gestes ?? []).map((g) => ({
     code: g.code as GesteCode,
     quantite: g.quantite,
     coutHT: g.coutHT,
   }));
+
   const aides = calculerAides(gestes, FOYER_DEMO);
+
+  // Si la baseline n'est pas calculable (saisie incomplète), retombe sur indicateurs neutres
+  let indicateurs: Scenario["indicateurs"];
+  let economieAnnuelle = 0;
+
+  if (baseline && baselineIndicators) {
+    const newState = applyGestesToBaseline(baseline, gestes);
+    const ind = computeIndicatorsFromState(
+      newState,
+      { tarifChauffage: TARIFS_ENERGIE_2025[baseline.chauffageVecteur], tarifECS: TARIFS_ENERGIE_2025[baseline.ecsVecteur] },
+      baselineIndicators.consoFinaleM2,
+    );
+    indicateurs = {
+      cep: Math.round(ind.cep),
+      cef: Math.round(ind.cef),
+      ges: Number(ind.ges.toFixed(1)),
+      dpe: ind.dpe,
+      ges_class: ind.ges_class,
+      besoinChauffage: Math.round(ind.besoinChauffage),
+      besoinECS: Math.round(ind.besoinECS),
+      besoinClim: Math.round(ind.besoinClim),
+    };
+    economieAnnuelle = Math.round(ind.economieAnnuelle);
+  } else {
+    indicateurs = {
+      cep: 0, cef: 0, ges: 0, dpe: "C", ges_class: "C",
+      besoinChauffage: 0, besoinECS: 0, besoinClim: 0,
+    };
+  }
+
+  const tri = economieAnnuelle > 0 ? Math.round(aides.resteACharge / economieAnnuelle) : 0;
+
   return {
     id: v.id,
     nom: v.nom,
     type: "VARIANTE",
     description: v.description ?? undefined,
-    // Indicateurs énergétiques non encore calculés depuis les vraies inputs : valeurs neutres
-    indicateurs: {
-      cep: 0, cef: 0, ges: 0, dpe: "C", ges_class: "C",
-      besoinChauffage: 0, besoinECS: 0, besoinClim: 0,
-    },
-    travaux: gestes.map((g) => ({ poste: g.code, description: "", coutHT: g.coutHT })),
+    indicateurs,
+    travaux: gestes.map((g) => ({
+      poste: aidesLibelle(g.code),
+      description: "",
+      coutHT: g.coutHT,
+    })),
     finances: {
       coutTravauxHT: aides.coutTravauxHT,
       aides: aides.lignes
         .filter((l) => l.montant > 0)
         .map((l) => ({ nom: l.libelle, montant: l.montant })),
       resteACharge: aides.resteACharge,
-      economieAnnuelle: 0,
-      tri: 0,
+      economieAnnuelle,
+      tri,
     },
   };
 }
 
+const FALLBACK_INITIAL: Scenario = {
+  id: "initial",
+  nom: "Avant travaux (démo)",
+  type: "INITIAL",
+  description: "Maison individuelle 1978, isolation murs 5 cm, simple vitrage, chaudière fioul.",
+  indicateurs: {
+    cep: 412, cef: 287, ges: 88, dpe: "F", ges_class: "F",
+    besoinChauffage: 220, besoinECS: 38, besoinClim: 0,
+  },
+};
+
 export default async function ScenariosTabPage({ params }: PageProps) {
   const { id: projetId } = await params;
 
-  const dbVariantes = await prisma.variante.findMany({
-    where: { projetId, deletedAt: null, type: "VARIANTE" },
-    orderBy: { createdAt: "asc" },
-    select: { id: true, nom: true, description: true, inputsJson: true },
-  });
+  const [baselineRes, dbVariantes] = await Promise.all([
+    buildProjetBaseline(projetId),
+    prisma.variante.findMany({
+      where: { projetId, deletedAt: null, type: "VARIANTE" },
+      orderBy: { createdAt: "asc" },
+      select: { id: true, nom: true, description: true, inputsJson: true },
+    }),
+  ]);
+
+  const baseline = baselineRes?.baseline ?? null;
+  const baselineIndicators = baseline && baselineRes?.hasEnvelope && baselineRes?.hasSystems
+    ? computeIndicatorsFromState(baseline)
+    : null;
+
+  // Scénario état initial : depuis baseline projet si calculable, sinon fallback démo
+  const scenarioInitial: Scenario = baseline && baselineIndicators
+    ? {
+        id: "initial",
+        nom: "État existant",
+        type: "INITIAL",
+        description: `Bâti et systèmes saisis dans ce projet · zone ${baseline.zoneClimatique}`,
+        indicateurs: {
+          cep: Math.round(baselineIndicators.cep),
+          cef: Math.round(baselineIndicators.cef),
+          ges: Number(baselineIndicators.ges.toFixed(1)),
+          dpe: baselineIndicators.dpe,
+          ges_class: baselineIndicators.ges_class,
+          besoinChauffage: Math.round(baselineIndicators.besoinChauffage),
+          besoinECS: Math.round(baselineIndicators.besoinECS),
+          besoinClim: Math.round(baselineIndicators.besoinClim),
+        },
+      }
+    : FALLBACK_INITIAL;
 
   const dbScenarios: Scenario[] = dbVariantes.map((v) => {
     let inputs: VarianteDb["inputs"] = null;
     try { inputs = JSON.parse(v.inputsJson); } catch {}
-    return buildDbScenario({ id: v.id, nom: v.nom, description: v.description, inputs });
+    return buildDbScenario(
+      { id: v.id, nom: v.nom, description: v.description, inputs },
+      baseline,
+      baselineIndicators,
+    );
   });
 
+  // Scénarios démo affichés uniquement si pas de baseline réelle (sinon redondant avec les vrais)
+  const demoScenarios: Scenario[] = baseline && baselineIndicators
+    ? []
+    : VARIANTES.map(buildDemoScenario);
+
   const SCENARIOS: Scenario[] = [
-    SCENARIO_INITIAL,
-    ...VARIANTES.map(buildScenario),
+    scenarioInitial,
+    ...demoScenarios,
     ...dbScenarios,
   ];
+
+  const surface = baseline?.surfaceHabitable && baseline.surfaceHabitable > 0
+    ? Math.round(baseline.surfaceHabitable)
+    : FALLBACK_SURFACE;
 
   return (
     <div className="space-y-4">
       <div>
         <h1 className="section-title-dense">Scénarios de rénovation</h1>
         <p className="text-[13px] text-tk-text-muted">
-          Comparaison de l&apos;état initial avec les variantes chiffrées · Aides calculées sur barèmes {BAREMES_VERSION}
+          {baseline && baselineIndicators
+            ? "État existant calculé depuis la saisie projet · "
+            : "Mode démo (saisie projet incomplète) · "}
+          Aides calculées sur barèmes {BAREMES_VERSION}
           · Foyer {FOYER_DEMO.nbPersonnes} pers., RFR {FOYER_DEMO.rfr.toLocaleString("fr-FR")} €
-          {dbVariantes.length > 0 && <> · <span className="text-tk-primary">{dbVariantes.length} variante{dbVariantes.length > 1 ? "s" : ""} enregistrée{dbVariantes.length > 1 ? "s" : ""}</span></>}
+          {dbVariantes.length > 0 && (
+            <>
+              {" "}· <span className="text-tk-primary">
+                {dbVariantes.length} variante{dbVariantes.length > 1 ? "s" : ""} enregistrée{dbVariantes.length > 1 ? "s" : ""}
+              </span>
+            </>
+          )}
         </p>
       </div>
       <ScenarioComparator
         scenarios={SCENARIOS}
-        surface={SURFACE}
+        surface={surface}
         actionSlot={<VarianteCreateDialog projetId={projetId} />}
       />
     </div>
