@@ -18,6 +18,7 @@ import {
 } from "@/lib/thermal";
 import Metric from "@/components/dashboard/Metric";
 import DpeBadge from "@/components/dashboard/DpeBadge";
+import RapportProjetExportButton from "@/components/dashboard/RapportProjetExportButton";
 
 type SystemePrisma = "ELEC" | "GAZ_NATUREL" | "FIOUL" | "BOIS" | "PROPANE" | "RESEAU_CHALEUR";
 const VECTEUR_MAP: Record<SystemePrisma, Vecteur> = {
@@ -348,6 +349,7 @@ export default async function CalculTabPage({ params }: Props) {
             )}
           </p>
         </div>
+        <RapportProjetExportButton projetId={id} />
       </div>
 
       {/* DPE projet (si systèmes saisis) */}
