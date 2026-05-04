@@ -69,6 +69,7 @@ interface BatimentUI {
   description: string | null;
   zoneClimatique: string;
   altitude: number | null;
+  projetId: string | null;
   zones: ZoneUI[];
 }
 
@@ -285,8 +286,9 @@ export default function BatimentDetailPage({ params }: PageProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link
-            href="/dashboard/batiments"
+            href={batiment.projetId ? `/dashboard/projets/${batiment.projetId}/bati` : "/dashboard/batiments"}
             className="text-muted-foreground hover:text-foreground"
+            aria-label={batiment.projetId ? "Retour au projet" : "Retour aux bâtiments"}
           >
             <ArrowLeft className="h-5 w-5" />
           </Link>
