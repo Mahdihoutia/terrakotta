@@ -123,55 +123,91 @@ export async function POST(request: Request) {
 
   const data = result.data;
 
-  // Verify client exists
-  const clientExists = await prisma.client.findFirst({
-    where: { id: data.clientId, deletedAt: null },
-    select: { id: true },
-  });
+  try {
+    // Verify client exists
+    const clientExists = await prisma.client.findFirst({
+      where: { id: data.clientId, deletedAt: null },
+      select: { id: true },
+    });
 
-  if (!clientExists) {
+    if (!clientExists) {
+      return NextResponse.json(
+        { error: "Client introuvable", message: `Aucun client actif avec l'id ${data.clientId}` },
+        { status: 400 }
+      );
+    }
+
+    const projet = await prisma.projet.create({
+      data: {
+        titre: data.titre,
+        description: data.description || null,
+        statut: data.statut,
+        typeClient: data.typeClient,
+        typeTravaux: data.typeTravaux || null,
+        adresseChantier: data.adresseChantier || null,
+        budgetPrevu: data.budgetPrevu ?? null,
+        dateDebut: data.dateDebut ? new Date(data.dateDebut) : null,
+        dateFin: data.dateFin ? new Date(data.dateFin) : null,
+        clientId: data.clientId,
+        aides:
+          data.aides && data.aides.length > 0
+            ? {
+                create: data.aides.map((a) => ({
+                  type: "CEE" as const,
+                  nom: a.nom,
+                  fiche: a.fiche,
+                  kwhCumac: a.kwhCumac,
+                  prixUnitaire: a.prixUnitaire,
+                  montant: a.montant,
+                })),
+              }
+            : undefined,
+      },
+      include: includeRelations,
+    });
+
+    // Link documents to the newly created project (optional)
+    if (data.documentIds && data.documentIds.length > 0) {
+      await prisma.document.updateMany({
+        where: { id: { in: data.documentIds } },
+        data: { projetId: projet.id },
+      });
+    }
+
+    return NextResponse.json(serializeProjet(projet), { status: 201 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Erreur inconnue";
+    console.error("[/api/projets POST] error:", err);
+
+    // Erreurs Prisma fréquentes — retour 4xx avec message clair
+    if (message.includes("P2003")) {
+      return NextResponse.json(
+        { error: "ForeignKeyConstraint", message: "Client ou document référencé inexistant." },
+        { status: 400 },
+      );
+    }
+    if (message.includes("P2021") || message.includes("does not exist in the current database")) {
+      return NextResponse.json(
+        { error: "MigrationPending", message: "Schéma de base désynchronisé — exécute les migrations Prisma." },
+        { status: 503 },
+      );
+    }
+    if (message.includes("P2002")) {
+      return NextResponse.json(
+        { error: "UniqueConstraint", message: "Un projet avec ces valeurs uniques existe déjà." },
+        { status: 409 },
+      );
+    }
+    if (message.includes("Can't reach database") || message.includes("ECONNREFUSED")) {
+      return NextResponse.json(
+        { error: "DatabaseUnreachable", message: "Base de données injoignable — vérifier DATABASE_URL." },
+        { status: 503 },
+      );
+    }
+
     return NextResponse.json(
-      { error: "Client introuvable" },
-      { status: 400 }
+      { error: "ServerError", message },
+      { status: 500 },
     );
   }
-
-  const projet = await prisma.projet.create({
-    data: {
-      titre: data.titre,
-      description: data.description || null,
-      statut: data.statut,
-      typeClient: data.typeClient,
-      typeTravaux: data.typeTravaux || null,
-      adresseChantier: data.adresseChantier || null,
-      budgetPrevu: data.budgetPrevu ?? null,
-      dateDebut: data.dateDebut ? new Date(data.dateDebut) : null,
-      dateFin: data.dateFin ? new Date(data.dateFin) : null,
-      clientId: data.clientId,
-      aides:
-        data.aides && data.aides.length > 0
-          ? {
-              create: data.aides.map((a) => ({
-                type: "CEE" as const,
-                nom: a.nom,
-                fiche: a.fiche,
-                kwhCumac: a.kwhCumac,
-                prixUnitaire: a.prixUnitaire,
-                montant: a.montant,
-              })),
-            }
-          : undefined,
-    },
-    include: includeRelations,
-  });
-
-  // Link documents to the newly created project (optional)
-  if (data.documentIds && data.documentIds.length > 0) {
-    await prisma.document.updateMany({
-      where: { id: { in: data.documentIds } },
-      data: { projetId: projet.id },
-    });
-  }
-
-  return NextResponse.json(serializeProjet(projet), { status: 201 });
 }
