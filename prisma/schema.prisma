@@ -120,12 +120,58 @@ model Projet {
   documents      Document[]
   batiments      Batiment[]
   systemes       Systeme[]
+  variantes      Variante[]
+  calculs        Calcul[]
   createdAt      DateTime       @default(now()) @map("created_at")
   updatedAt      DateTime       @updatedAt @map("updated_at")
   deletedAt      DateTime?      @map("deleted_at")
 
   @@index([deletedAt])
   @@map("projets")
+}
+
+// ─── Variantes & Calculs immutables ─────────────────────────────
+
+model Variante {
+  id          String        @id @default(cuid())
+  projetId    String        @map("projet_id")
+  parentId    String?       @map("parent_id")
+  type        VarianteType  @default(VARIANTE)
+  nom         String
+  description String?
+  inputsJson  String        @map("inputs_json") // snapshot inputs (gestes, ressources foyer, options)
+  projet      Projet        @relation(fields: [projetId], references: [id], onDelete: Cascade)
+  parent      Variante?     @relation("VarianteFork", fields: [parentId], references: [id])
+  forks       Variante[]    @relation("VarianteFork")
+  calculs     Calcul[]
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  deletedAt   DateTime?     @map("deleted_at")
+
+  @@index([projetId])
+  @@index([deletedAt])
+  @@map("variantes")
+}
+
+model Calcul {
+  id              String        @id @default(cuid())
+  projetId        String        @map("projet_id")
+  varianteId      String?       @map("variante_id")
+  type            CalculType
+  inputsJson      String        @map("inputs_json")  // snapshot complet inputs
+  outputsJson     String        @map("outputs_json") // snapshot complet outputs
+  moteurVersion   String        @map("moteur_version") // ex "thermal@2026-05-04"
+  baremesVersion  String?       @map("baremes_version") // ex "2025-01-01" pour aides
+  notes           String?
+  projet          Projet        @relation(fields: [projetId], references: [id], onDelete: Cascade)
+  variante        Variante?     @relation(fields: [varianteId], references: [id], onDelete: SetNull)
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  @@index([projetId])
+  @@index([varianteId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("calculs")
 }
 
 // ─── Systèmes énergétiques ──────────────────────────────────────
@@ -685,4 +731,17 @@ enum SystemeVecteur {
   BOIS
   PROPANE
   RESEAU_CHALEUR
+}
+
+enum VarianteType {
+  INITIAL
+  VARIANTE
+}
+
+enum CalculType {
+  DEPERDITIONS
+  BESOINS_CHAUFFAGE
+  DPE
+  AIDES
+  BILAN_GLOBAL
 }

@@ -12,6 +12,7 @@ import {
   generateRapportProjetPdf,
   type RapportProjetData,
 } from "@/lib/pdf-rapport-projet";
+import { snapshotCalcul, MOTEUR_THERMIQUE_VERSION } from "@/lib/calcul-snapshot";
 
 const VECTEUR_MAP: Record<string, Vecteur> = {
   ELEC: "elec",
@@ -263,6 +264,35 @@ export async function GET(_req: Request, ctx: RouteContext) {
 
   try {
     const pdfBytes = generateRapportProjetPdf(data);
+
+    // Snapshot immuable du calcul global (audit trail / rejouabilité)
+    await snapshotCalcul({
+      projetId: id,
+      type: "BILAN_GLOBAL",
+      inputs: {
+        zoneClimatique: zoneClimat,
+        surfaceTotale, volumeTotale,
+        renouvellementAir, efficaciteDoubleFlux, consigneInt, deltaT,
+        parois: { surfaceMurs, surfaceToiture, surfacePlancher, surfaceVitree, uMurs, uToiture, uPlancher, uVitree, hPT },
+        systemes: systemes.map((s) => ({
+          type: s.type, vecteur: s.vecteur, nom: s.nom,
+          rendement: Number(s.rendement), partCouverture: Number(s.partCouverture),
+          cop: s.cop != null ? Number(s.cop) : null,
+        })),
+      },
+      outputs: {
+        deperditions: dep,
+        besoinChauffageNet: besoinChauffage,
+        dpe,
+        reference,
+      },
+      moteurVersion: MOTEUR_THERMIQUE_VERSION,
+      notes: `Rapport PDF généré (${reference})`,
+    }).catch((err) => {
+      // Snapshot ne doit pas bloquer la génération PDF — log seulement
+      console.error("[rapport-pdf] snapshot failed:", err);
+    });
+
     return new Response(pdfBytes as unknown as ArrayBuffer, {
       status: 200,
       headers: {
