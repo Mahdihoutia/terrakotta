@@ -5,9 +5,13 @@ import {
   calculerDeperditions,
   calculerBesoinsChauffage,
   calculerDpe,
+  calculerApportsSolaires,
+  estimerPontsForfaitaire,
+  parseZone,
   getZoneData,
   type Vecteur,
 } from "@/lib/thermal";
+import type { Orientation } from "@/lib/thermal";
 import {
   generateRapportProjetPdf,
   type RapportProjetData,
@@ -69,6 +73,7 @@ export async function GET(_req: Request, ctx: RouteContext) {
             parois: {
               select: {
                 surface: true,
+                orientation: true,
                 paroi: { select: { nom: true, type: true, uCache: true } },
               },
             },
@@ -90,6 +95,25 @@ export async function GET(_req: Request, ctx: RouteContext) {
     VITRAGE: { s: 0, ua: 0 },
     PORTE: { s: 0, ua: 0 },
   };
+  // Surface vitrée par orientation (pour apports solaires)
+  const vitresParOrient: Record<Orientation, number> = {
+    S: 0, SE: 0, SO: 0, E: 0, O: 0, NE: 0, NO: 0, N: 0,
+  };
+  function normalizeOrient(raw: string | null | undefined): Orientation | null {
+    if (!raw) return null;
+    const o = raw.toUpperCase().replace(/[ÉÈ]/g, "E").trim();
+    const map: Record<string, Orientation> = {
+      "S": "S", "SUD": "S",
+      "SE": "SE", "SUD-EST": "SE", "SUD EST": "SE",
+      "SO": "SO", "SW": "SO", "SUD-OUEST": "SO", "SUD OUEST": "SO",
+      "E": "E", "EST": "E",
+      "O": "O", "W": "O", "OUEST": "O",
+      "NE": "NE", "NORD-EST": "NE", "NORD EST": "NE",
+      "NO": "NO", "NW": "NO", "NORD-OUEST": "NO", "NORD OUEST": "NO",
+      "N": "N", "NORD": "N",
+    };
+    return map[o] ?? null;
+  }
   let surfaceTotale = 0;
   let volumeTotale = 0;
   let qVmcGlobal = 0;
@@ -119,6 +143,11 @@ export async function GET(_req: Request, ctx: RouteContext) {
         if (t in buckets) {
           buckets[t].s += s;
           buckets[t].ua += u * s;
+        }
+        // Surface vitrée par orientation pour apports solaires
+        if (t === "VITRAGE") {
+          const o = normalizeOrient(zp.orientation);
+          if (o) vitresParOrient[o] += s;
         }
       }
     }
@@ -206,6 +235,24 @@ export async function GET(_req: Request, ctx: RouteContext) {
       )
     : null;
 
+  // Apports solaires (méthode F·g·H_g) — facteur g et ombre forfaitaires
+  const zoneCourt = parseZone(zoneClimat);
+  const surfaceVitreeTotale = surfaceVitree;
+  const apportsRes = surfaceVitreeTotale > 0
+    ? calculerApportsSolaires({
+        surfacesParOrientation: vitresParOrient,
+        facteurSolaireG: 0.5, // double vitrage standard
+        facteurOmbre: 0.85,    // protection légère
+        zone: zoneCourt,
+      })
+    : null;
+
+  // Ponts thermiques — estimation forfaitaire si pas de saisie détaillée
+  // Heuristique : si une paroi MUR_EXT a U < 0.4, on suppose ITE ; sinon Aucune
+  const isolation = uMurs > 0 && uMurs < 0.4 ? "ITE" : uMurs < 0.8 ? "ITI" : "Aucune";
+  const hParoisOpaques = surfaceMurs * uMurs + surfaceToiture * uToiture + surfacePlancher * uPlancher;
+  const hPontsForfait = estimerPontsForfaitaire(hParoisOpaques, isolation);
+
   const reference = `KW-${projet.id.slice(-6).toUpperCase()}-${new Date().toISOString().slice(0, 10)}`;
 
   const data: RapportProjetData = {
@@ -260,6 +307,24 @@ export async function GET(_req: Request, ctx: RouteContext) {
       rendement: s.cop != null ? Number(s.cop) : Number(s.rendement),
       partCouverture: Number(s.partCouverture),
     })),
+    apportsSolaires: apportsRes
+      ? {
+          apportAnnuel: apportsRes.apportAnnuel,
+          apportSaisonChauffe: apportsRes.apportSaisonChauffe,
+          apportSaisonChaude: apportsRes.apportSaisonChaude,
+          detailParOrientation: Object.entries(apportsRes.detailParOrientation)
+            .filter(([, v]) => v > 0)
+            .sort((a, b) => b[1] - a[1])
+            .map(([orientation, apport]) => ({ orientation, apport })),
+          risqueSurchauffe: apportsRes.risqueSurchauffe,
+          surfaceVitreeTotale,
+        }
+      : undefined,
+    pontsThermiques: {
+      isolation,
+      hTotal: hPontsForfait,
+      methode: "FORFAIT",
+    },
   };
 
   try {

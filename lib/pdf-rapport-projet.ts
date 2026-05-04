@@ -100,6 +100,24 @@ export interface RapportProjetData {
     ecoPtzMax: number;
     lignes: { libelle: string; montant: number; base: string }[];
   };
+
+  // Apports solaires (saison de chauffe / saison chaude)
+  apportsSolaires?: {
+    apportAnnuel: number;
+    apportSaisonChauffe: number;
+    apportSaisonChaude: number;
+    detailParOrientation: { orientation: string; apport: number }[];
+    risqueSurchauffe: boolean;
+    surfaceVitreeTotale: number;
+  };
+
+  // Ponts thermiques détaillés
+  pontsThermiques?: {
+    isolation: string; // ITE/ITI/ITR/Aucune
+    hTotal: number; // W/K
+    methode: "DETAIL" | "FORFAIT";
+    detail?: { typo: string; longueur: number; psi: number; h: number }[];
+  };
 }
 
 const TYPE_SYS_LABEL: Record<string, string> = {
@@ -147,9 +165,11 @@ export function generateRapportProjetPdf(data: RapportProjetData): Uint8Array {
   const toc: TocEntry[] = [
     { title: "1. Synthèse énergétique", page: 3 },
     { title: "2. État du bâti existant", page: 4 },
-    { title: "3. Systèmes installés", page: 5 },
-    { title: "4. Plan de financement", page: 6 },
-    { title: "5. Annexe méthodologique", page: 7 },
+    { title: "3. Apports solaires gratuits", page: 5 },
+    { title: "4. Ponts thermiques", page: 6 },
+    { title: "5. Systèmes installés", page: 7 },
+    { title: "6. Plan de financement", page: 8 },
+    { title: "7. Annexe méthodologique", page: 9 },
   ];
   drawSommaire(doc, toc, "Rapport d'audit énergétique", data.projet.reference);
 
@@ -266,9 +286,126 @@ export function generateRapportProjetPdf(data: RapportProjetData): Uint8Array {
     alternateRowStyles: { fillColor: PDF_COLORS.surface },
   });
 
-  /* ───── 5. Systèmes ───────────────────────────────────────── */
+  /* ───── 5. Apports solaires ───────────────────────────────── */
   doc.addPage();
-  y = drawSectionHeader(doc, "Systèmes installés", PDF_LAYOUT.topMargin, undefined, { number: 3 });
+  y = drawSectionHeader(doc, "Apports solaires gratuits", PDF_LAYOUT.topMargin, undefined, { number: 3 });
+
+  if (data.apportsSolaires && data.apportsSolaires.surfaceVitreeTotale > 0) {
+    const a = data.apportsSolaires;
+    y = drawCallout(
+      doc,
+      `Surface vitrée totale ${a.surfaceVitreeTotale.toFixed(1)} m² · ` +
+        `Apport annuel ${formatNumberPdf(a.apportAnnuel, { maximumFractionDigits: 0 })} kWh · ` +
+        `Saison de chauffe (oct → avr) ${formatNumberPdf(a.apportSaisonChauffe, { maximumFractionDigits: 0 })} kWh · ` +
+        `Saison chaude (mai → sep) ${formatNumberPdf(a.apportSaisonChaude, { maximumFractionDigits: 0 })} kWh`,
+      y,
+      { title: "Synthèse apports F·g·H_g (méthode 3CL §A5)" },
+    );
+    y += 4;
+
+    if (a.risqueSurchauffe) {
+      y = drawCallout(
+        doc,
+        "Apports estivaux > 80 kWh/m² vitré sur la saison chaude. Prévoir des protections solaires extérieures (BSO, casquettes, volets) pour limiter le confort thermique d'été.",
+        y,
+        { title: "⚠ Risque de surchauffe estivale" },
+      );
+      y += 4;
+    }
+
+    autoTable(doc, {
+      startY: y,
+      head: [["Orientation", "Apport annuel (kWh)", "Part"]],
+      body: a.detailParOrientation.map((d) => [
+        d.orientation,
+        formatNumberPdf(d.apport, { maximumFractionDigits: 0 }),
+        a.apportAnnuel > 0 ? `${((d.apport / a.apportAnnuel) * 100).toFixed(0)} %` : "—",
+      ]),
+      margin: { left: margin, right: margin },
+      styles: {
+        fontSize: 9,
+        cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 },
+        textColor: PDF_COLORS.body,
+        lineColor: PDF_COLORS.border,
+        lineWidth: 0.15,
+      },
+      headStyles: {
+        fillColor: PDF_COLORS.navy,
+        textColor: PDF_COLORS.white,
+        fontStyle: "bold",
+        fontSize: 9,
+      },
+      alternateRowStyles: { fillColor: PDF_COLORS.surface },
+    });
+  } else {
+    drawCallout(
+      doc,
+      "Pour calculer les apports solaires, renseignez l'orientation des parois vitrées dans le module Bâtiments.",
+      y,
+      { title: "Données vitrages incomplètes" },
+    );
+  }
+
+  /* ───── 6. Ponts thermiques ───────────────────────────────── */
+  doc.addPage();
+  y = drawSectionHeader(doc, "Ponts thermiques", PDF_LAYOUT.topMargin, undefined, { number: 4 });
+
+  if (data.pontsThermiques) {
+    const pt = data.pontsThermiques;
+    y = drawCallout(
+      doc,
+      `Type d'isolation retenu : ${pt.isolation} · Méthode : ${pt.methode === "DETAIL" ? "calcul détaillé Th-U" : "estimation forfaitaire"} · ` +
+        `Déperdition par ponts thermiques H_pt = ${formatNumberPdf(pt.hTotal, { maximumFractionDigits: 0 })} W/K`,
+      y,
+      { title: "Synthèse ponts thermiques (Th-U fascicule 5)" },
+    );
+    y += 4;
+
+    if (pt.methode === "DETAIL" && pt.detail && pt.detail.length > 0) {
+      autoTable(doc, {
+        startY: y,
+        head: [["Liaison", "Longueur (m)", "ψ (W/m·K)", "H = ψ·L (W/K)"]],
+        body: pt.detail.map((d) => [
+          d.typo.replace(/_/g, " ").toLowerCase(),
+          formatNumberPdf(d.longueur, { maximumFractionDigits: 1 }),
+          d.psi.toFixed(2),
+          formatNumberPdf(d.h, { maximumFractionDigits: 0 }),
+        ]),
+        margin: { left: margin, right: margin },
+        styles: {
+          fontSize: 9,
+          cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 },
+          textColor: PDF_COLORS.body,
+          lineColor: PDF_COLORS.border,
+          lineWidth: 0.15,
+        },
+        headStyles: {
+          fillColor: PDF_COLORS.navy,
+          textColor: PDF_COLORS.white,
+          fontStyle: "bold",
+          fontSize: 9,
+        },
+        alternateRowStyles: { fillColor: PDF_COLORS.surface },
+      });
+    } else {
+      const ratios: Record<string, string> = {
+        ITE: "5 % de la déperdition par parois opaques (excellent traitement)",
+        ITI: "25 % (forte rupture aux liaisons mur/plancher)",
+        ITR: "10 % (réparti, intermédiaire)",
+        Aucune: "20 % (parois non isolées, ponts non traités)",
+      };
+      drawCallout(
+        doc,
+        `${ratios[pt.isolation] ?? "Estimation simplifiée"}. Pour un calcul détaillé liaison par liaison (mur/dalle, mur/toiture, menuiseries…), saisir les longueurs et types de liaison dans le module Bâtiments.`,
+        y,
+        { title: "Estimation forfaitaire" },
+      );
+    }
+  }
+
+  /* ───── 7. Systèmes ───────────────────────────────────────── */
+  doc.addPage();
+  y = drawSectionHeader(doc, "Systèmes installés", PDF_LAYOUT.topMargin, undefined, { number: 5 });
 
   if (data.systemes.length === 0) {
     drawCallout(
@@ -306,9 +443,9 @@ export function generateRapportProjetPdf(data: RapportProjetData): Uint8Array {
     });
   }
 
-  /* ───── 6. Plan de financement (aides) ────────────────────── */
+  /* ───── 8. Plan de financement (aides) ────────────────────── */
   doc.addPage();
-  y = drawSectionHeader(doc, "Plan de financement", PDF_LAYOUT.topMargin, undefined, { number: 4 });
+  y = drawSectionHeader(doc, "Plan de financement", PDF_LAYOUT.topMargin, undefined, { number: 6 });
 
   if (data.aides) {
     const a = data.aides;
@@ -356,9 +493,9 @@ export function generateRapportProjetPdf(data: RapportProjetData): Uint8Array {
     );
   }
 
-  /* ───── 7. Annexe méthodologique ──────────────────────────── */
+  /* ───── 9. Annexe méthodologique ──────────────────────────── */
   doc.addPage();
-  y = drawSectionHeader(doc, "Annexe méthodologique", PDF_LAYOUT.topMargin, undefined, { number: 5 });
+  y = drawSectionHeader(doc, "Annexe méthodologique", PDF_LAYOUT.topMargin, undefined, { number: 7 });
   resetTextState(doc);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9.5);

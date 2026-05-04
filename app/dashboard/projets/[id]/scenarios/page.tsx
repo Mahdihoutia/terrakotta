@@ -1,8 +1,10 @@
 import ScenarioComparator, {
   Scenario,
 } from "@/components/dashboard/ScenarioComparator";
+import VarianteCreateDialog from "@/components/dashboard/VarianteCreateDialog";
 import { calculerAides, BAREMES_VERSION } from "@/lib/aides";
-import type { Geste, FoyerDemandeur } from "@/lib/aides";
+import type { Geste, FoyerDemandeur, GesteCode } from "@/lib/aides";
+import { prisma } from "@/lib/db";
 
 /* Foyer démo — catégorie JAUNE (modeste) en province. */
 const FOYER_DEMO: FoyerDemandeur = {
@@ -95,21 +97,79 @@ function aidesLibelle(code: string): string {
   return map[code] ?? code;
 }
 
-const SCENARIOS: Scenario[] = [
-  {
-    id: "initial",
-    nom: "Avant travaux",
-    type: "INITIAL",
-    description: "Maison individuelle 1978, isolation murs 5 cm, simple vitrage, chaudière fioul.",
-    indicateurs: {
-      cep: 412, cef: 287, ges: 88, dpe: "F", ges_class: "F",
-      besoinChauffage: 220, besoinECS: 38, besoinClim: 0,
-    },
+const SCENARIO_INITIAL: Scenario = {
+  id: "initial",
+  nom: "Avant travaux",
+  type: "INITIAL",
+  description: "Maison individuelle 1978, isolation murs 5 cm, simple vitrage, chaudière fioul.",
+  indicateurs: {
+    cep: 412, cef: 287, ges: 88, dpe: "F", ges_class: "F",
+    besoinChauffage: 220, besoinECS: 38, besoinClim: 0,
   },
-  ...VARIANTES.map(buildScenario),
-];
+};
 
-export default function ScenariosTabPage() {
+interface PageProps {
+  params: Promise<{ id: string }>;
+}
+
+interface VarianteDb {
+  id: string;
+  nom: string;
+  description: string | null;
+  inputs: { gestes?: { code: string; quantite: number; coutHT: number }[] } | null;
+}
+
+function buildDbScenario(v: VarianteDb): Scenario {
+  const gestes: Geste[] = (v.inputs?.gestes ?? []).map((g) => ({
+    code: g.code as GesteCode,
+    quantite: g.quantite,
+    coutHT: g.coutHT,
+  }));
+  const aides = calculerAides(gestes, FOYER_DEMO);
+  return {
+    id: v.id,
+    nom: v.nom,
+    type: "VARIANTE",
+    description: v.description ?? undefined,
+    // Indicateurs énergétiques non encore calculés depuis les vraies inputs : valeurs neutres
+    indicateurs: {
+      cep: 0, cef: 0, ges: 0, dpe: "C", ges_class: "C",
+      besoinChauffage: 0, besoinECS: 0, besoinClim: 0,
+    },
+    travaux: gestes.map((g) => ({ poste: g.code, description: "", coutHT: g.coutHT })),
+    finances: {
+      coutTravauxHT: aides.coutTravauxHT,
+      aides: aides.lignes
+        .filter((l) => l.montant > 0)
+        .map((l) => ({ nom: l.libelle, montant: l.montant })),
+      resteACharge: aides.resteACharge,
+      economieAnnuelle: 0,
+      tri: 0,
+    },
+  };
+}
+
+export default async function ScenariosTabPage({ params }: PageProps) {
+  const { id: projetId } = await params;
+
+  const dbVariantes = await prisma.variante.findMany({
+    where: { projetId, deletedAt: null, type: "VARIANTE" },
+    orderBy: { createdAt: "asc" },
+    select: { id: true, nom: true, description: true, inputsJson: true },
+  });
+
+  const dbScenarios: Scenario[] = dbVariantes.map((v) => {
+    let inputs: VarianteDb["inputs"] = null;
+    try { inputs = JSON.parse(v.inputsJson); } catch {}
+    return buildDbScenario({ id: v.id, nom: v.nom, description: v.description, inputs });
+  });
+
+  const SCENARIOS: Scenario[] = [
+    SCENARIO_INITIAL,
+    ...VARIANTES.map(buildScenario),
+    ...dbScenarios,
+  ];
+
   return (
     <div className="space-y-4">
       <div>
@@ -117,9 +177,14 @@ export default function ScenariosTabPage() {
         <p className="text-[13px] text-tk-text-muted">
           Comparaison de l&apos;état initial avec les variantes chiffrées · Aides calculées sur barèmes {BAREMES_VERSION}
           · Foyer {FOYER_DEMO.nbPersonnes} pers., RFR {FOYER_DEMO.rfr.toLocaleString("fr-FR")} €
+          {dbVariantes.length > 0 && <> · <span className="text-tk-primary">{dbVariantes.length} variante{dbVariantes.length > 1 ? "s" : ""} enregistrée{dbVariantes.length > 1 ? "s" : ""}</span></>}
         </p>
       </div>
-      <ScenarioComparator scenarios={SCENARIOS} surface={SURFACE} />
+      <ScenarioComparator
+        scenarios={SCENARIOS}
+        surface={SURFACE}
+        actionSlot={<VarianteCreateDialog projetId={projetId} />}
+      />
     </div>
   );
 }

@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Building2, Plus, ExternalLink, MapPin } from "lucide-react";
+import { Building2, ExternalLink, MapPin } from "lucide-react";
 import { prisma } from "@/lib/db";
+import BatimentCreateDialog from "@/components/dashboard/BatimentCreateDialog";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -49,13 +50,7 @@ export default async function BatiTabPage({ params }: Props) {
               : `${batiments.length} bâtiment${batiments.length > 1 ? "s" : ""} · ${totalZones} zone${totalZones > 1 ? "s" : ""} · ${totalSurface.toFixed(0)} m²`}
           </p>
         </div>
-        <Link
-          href="/dashboard/batiments"
-          className="inline-flex items-center gap-1.5 rounded-md border border-tk-border bg-tk-surface px-3 py-1.5 text-[12px] font-medium text-tk-text-secondary hover:border-tk-border-hover hover:text-tk-text"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          Nouveau bâtiment
-        </Link>
+        <BatimentCreateDialog projetId={id} />
       </div>
 
       {batiments.length === 0 ? (
@@ -73,13 +68,7 @@ export default async function BatiTabPage({ params }: Props) {
             </p>
           )}
           <div className="mt-5">
-            <Link
-              href="/dashboard/batiments"
-              className="inline-flex items-center gap-1.5 rounded-md bg-tk-primary px-3 py-1.5 text-[12px] font-medium text-white hover:bg-tk-primary-hover"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Créer un bâtiment
-            </Link>
+            <BatimentCreateDialog projetId={id} />
           </div>
         </div>
       ) : (

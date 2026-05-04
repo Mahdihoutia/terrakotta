@@ -43,6 +43,8 @@ export interface Scenario {
 interface Props {
   scenarios: Scenario[];
   surface: number;
+  /** Slot pour le bouton de création (variante). Remplace le bouton par défaut s'il est fourni. */
+  actionSlot?: React.ReactNode;
 }
 
 function formatEur(n: number): string {
@@ -243,7 +245,7 @@ function BesoinBar({ label, value, max }: { label: string; value: number; max: n
   );
 }
 
-export default function ScenarioComparator({ scenarios, surface }: Props) {
+export default function ScenarioComparator({ scenarios, surface, actionSlot }: Props) {
   if (scenarios.length === 0) return null;
   const baseline = scenarios.find((s) => s.type === "INITIAL") ?? scenarios[0];
   return (
@@ -255,13 +257,15 @@ export default function ScenarioComparator({ scenarios, surface }: Props) {
             Surface chauffée {surface} m² · {scenarios.length - 1} variante{scenarios.length > 2 ? "s" : ""} de rénovation
           </p>
         </div>
-        <button
-          type="button"
-          className="inline-flex items-center gap-1 rounded-md border border-tk-border bg-tk-surface px-2.5 py-1 text-[12px] font-medium text-tk-text-secondary hover:border-tk-border-hover hover:text-tk-text"
-        >
-          <Plus className="h-3 w-3" />
-          Ajouter une variante
-        </button>
+        {actionSlot ?? (
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 rounded-md border border-tk-border bg-tk-surface px-2.5 py-1 text-[12px] font-medium text-tk-text-secondary hover:border-tk-border-hover hover:text-tk-text"
+          >
+            <Plus className="h-3 w-3" />
+            Ajouter une variante
+          </button>
+        )}
       </header>
       <div className="flex overflow-x-auto">
         {scenarios.map((s, i) => (
