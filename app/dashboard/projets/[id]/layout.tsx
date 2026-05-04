@@ -46,33 +46,33 @@ export default async function ProjetWorkspaceLayout({ children, params }: Props)
   const clientLabel = [projet.client.nom, projet.client.prenom].filter(Boolean).join(" ");
 
   return (
-    <div className="-m-6 lg:-m-8 flex flex-col h-full min-h-[calc(100vh-4rem)]">
+    <div className="-m-6 lg:-m-8 flex min-h-[calc(100vh-4rem)] flex-col">
       {/* Workspace header — sticky, dense */}
-      <header className="sticky top-0 z-20 border-b border-tk-border bg-tk-bg/95 backdrop-blur supports-[backdrop-filter]:bg-tk-bg/80">
-        <div className="flex items-center gap-3 px-6 lg:px-8 pt-4 pb-3">
+      <header className="sticky top-0 z-20 border-b border-tk-border bg-tk-bg/95 backdrop-blur">
+        <div className="flex items-center gap-3 px-6 lg:px-8 pt-7 pb-4">
           <Link
             href="/dashboard/projets"
             aria-label="Retour à la liste des projets"
-            className="rounded-md p-1.5 text-tk-text-faint transition-colors hover:bg-tk-hover hover:text-tk-text"
+            className="-ml-1.5 rounded-md p-1.5 text-tk-text-faint transition-colors hover:bg-tk-hover hover:text-tk-text"
           >
             <ArrowLeft className="h-4 w-4" />
           </Link>
 
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <h1 className="truncate text-[15px] font-semibold text-tk-text">
+            <div className="flex items-center gap-2.5">
+              <h1 className="truncate text-[16px] font-semibold tracking-tight text-tk-text">
                 {projet.titre}
               </h1>
               <span
                 className={cn(
-                  "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide",
+                  "inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide",
                   STATUT_COLORS[projet.statut] ?? STATUT_COLORS.EN_ATTENTE,
                 )}
               >
                 {STATUT_LABELS[projet.statut] ?? projet.statut}
               </span>
             </div>
-            <div className="mt-0.5 flex items-center gap-3 text-[11px] text-tk-text-faint">
+            <div className="mt-1 flex items-center gap-2.5 text-[11.5px] text-tk-text-faint">
               <Link
                 href={`/dashboard/contacts/${projet.client.id}`}
                 className="inline-flex items-center gap-1 transition-colors hover:text-tk-text"
@@ -97,13 +97,13 @@ export default async function ProjetWorkspaceLayout({ children, params }: Props)
         </div>
 
         {/* Tabs */}
-        <div className="px-6 lg:px-8 border-b border-tk-border/60">
+        <div className="px-6 lg:px-8">
           <ProjetWorkspaceTabs projetId={projet.id} />
         </div>
       </header>
 
       {/* Tab content */}
-      <div className="flex-1 px-6 lg:px-8 py-6">{children}</div>
+      <div className="flex-1 px-6 py-8 lg:px-8 lg:py-10">{children}</div>
     </div>
   );
 }
