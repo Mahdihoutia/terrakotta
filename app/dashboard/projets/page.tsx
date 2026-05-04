@@ -27,6 +27,8 @@ import {
   List as ListIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { showApiError, showNetworkError } from "@/lib/api-errors";
+import { toast } from "sonner";
 import { useLocalStorage } from "@/lib/hooks/useLocalStorage";
 import { motion, AnimatePresence } from "framer-motion";
 import ProjetsKanban from "@/components/dashboard/ProjetsKanban";
@@ -180,7 +182,11 @@ export default function ProjetsPage() {
   const fetchProjets = useCallback(async () => {
     try {
       const res = await fetch("/api/projets");
-      if (!res.ok) throw new Error("Erreur lors du chargement des projets");
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null);
+        const detail = payload?.message ?? payload?.error ?? `HTTP ${res.status}`;
+        throw new Error(`Chargement des projets impossible — ${detail}`);
+      }
       const data: Projet[] = await res.json();
       setProjets(data);
     } catch (err) {
@@ -263,7 +269,14 @@ export default function ProjetsPage() {
   const statuts: string[] = ["TOUS", "EN_ATTENTE", "EN_COURS", "EN_PAUSE", "TERMINE", "ANNULE"];
 
   async function handleCreate() {
-    if (!form.titre.trim() || !form.clientId) return;
+    if (!form.titre.trim()) {
+      toast.error("Le titre du projet est requis.");
+      return;
+    }
+    if (!form.clientId) {
+      toast.error("Sélectionnez un client avant de créer le projet.");
+      return;
+    }
     setSubmitting(true);
 
     const payload: Record<string, unknown> = {
@@ -286,17 +299,21 @@ export default function ProjetsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error("Erreur lors de la création");
+      if (!res.ok) {
+        await showApiError(res, "Création du projet impossible");
+        return;
+      }
       const created: Projet = await res.json();
       setProjets((prev) => [created, ...prev]);
       setForm(EMPTY_FORM);
       setSelectedDocIds([]);
       setAidesCEE([]);
       setShowForm(false);
+      toast.success("Projet créé");
       // Refresh documents list to reflect new links
       fetchDocuments();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur inconnue");
+      showNetworkError(err, "Création du projet impossible");
     } finally {
       setSubmitting(false);
     }
