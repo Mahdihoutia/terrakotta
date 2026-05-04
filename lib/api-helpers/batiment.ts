@@ -198,11 +198,21 @@ export async function buildZoneInputFromDb(
     const masse = nReq(zp.paroi.masseSurfaciqueCache, 100);
     const isVitrage =
       zp.paroi.type === "VITRAGE" || zp.paroi.type === "PORTE";
+    // Inférence cotePaire (déperditive vers ext) depuis type si non saisi.
+    // Bug fix : les parois ext/toiture/plancher bas/vitrage/porte sont
+    // déperditives par défaut. Sans cette inférence, besoin chauffage ≈ 0.
+    const isDeperditiveByType =
+      zp.paroi.type === "MUR_EXT" ||
+      zp.paroi.type === "TOITURE" ||
+      zp.paroi.type === "PLANCHER_BAS" ||
+      zp.paroi.type === "VITRAGE" ||
+      zp.paroi.type === "PORTE";
+    const cotePaire = zp.cotePaire ?? isDeperditiveByType;
     return {
       surface: nReq(zp.surface),
       uValue: u,
       masseSurfacique: masse,
-      cotePaire: zp.cotePaire ?? false,
+      cotePaire,
       orientation: zp.orientation,
       isVitrage,
       facteurSolaireG: isVitrage ? 0.6 : undefined,
