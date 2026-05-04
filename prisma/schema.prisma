@@ -119,12 +119,35 @@ model Projet {
   aides          Aide[]
   documents      Document[]
   batiments      Batiment[]
+  systemes       Systeme[]
   createdAt      DateTime       @default(now()) @map("created_at")
   updatedAt      DateTime       @updatedAt @map("updated_at")
   deletedAt      DateTime?      @map("deleted_at")
 
   @@index([deletedAt])
   @@map("projets")
+}
+
+// ─── Systèmes énergétiques ──────────────────────────────────────
+
+model Systeme {
+  id             String         @id @default(cuid())
+  projetId       String         @map("projet_id")
+  type           SystemeType
+  vecteur        SystemeVecteur
+  nom            String
+  rendement      Decimal        @default(1)
+  partCouverture Decimal        @default(1) @map("part_couverture")
+  cop            Decimal?       // PAC : COP (Coefficient of Performance)
+  notes          String?
+  projet         Projet         @relation(fields: [projetId], references: [id], onDelete: Cascade)
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+  deletedAt      DateTime?      @map("deleted_at")
+
+  @@index([projetId])
+  @@index([deletedAt])
+  @@map("systemes")
 }
 
 // ─── Jalon (milestones) ─────────────────────────────────────────
@@ -646,4 +669,20 @@ enum AgentStatut {
   EN_PAUSE
   ERREUR
   INACTIF
+}
+
+enum SystemeType {
+  CHAUFFAGE
+  ECS
+  VENTILATION
+  CLIMATISATION
+}
+
+enum SystemeVecteur {
+  ELEC
+  GAZ_NATUREL
+  FIOUL
+  BOIS
+  PROPANE
+  RESEAU_CHALEUR
 }

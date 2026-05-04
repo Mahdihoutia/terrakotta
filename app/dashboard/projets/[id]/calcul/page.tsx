@@ -12,9 +12,22 @@ import { cn } from "@/lib/utils";
 import {
   calculerDeperditions,
   calculerBesoinsChauffage,
+  calculerDpe,
   getZoneData,
+  type Vecteur,
 } from "@/lib/thermal";
 import Metric from "@/components/dashboard/Metric";
+import DpeBadge from "@/components/dashboard/DpeBadge";
+
+type SystemePrisma = "ELEC" | "GAZ_NATUREL" | "FIOUL" | "BOIS" | "PROPANE" | "RESEAU_CHALEUR";
+const VECTEUR_MAP: Record<SystemePrisma, Vecteur> = {
+  ELEC: "elec",
+  GAZ_NATUREL: "gaz_naturel",
+  FIOUL: "fioul",
+  BOIS: "bois",
+  PROPANE: "propane",
+  RESEAU_CHALEUR: "reseau_chaleur",
+};
 
 type ParoiType = "MUR_EXT" | "MUR_INT" | "TOITURE" | "PLANCHER_BAS" | "PLANCHER_INTER" | "VITRAGE" | "PORTE";
 
@@ -103,6 +116,11 @@ export default async function CalculTabPage({ params }: Props) {
     select: { id: true, titre: true },
   });
   if (!projet) notFound();
+
+  const systemes = await prisma.systeme.findMany({
+    where: { projetId: id, deletedAt: null },
+    select: { id: true, type: true, vecteur: true, nom: true, rendement: true, partCouverture: true, cop: true },
+  });
 
   const batiments = await prisma.batiment.findMany({
     where: { projetId: id, deletedAt: null },
@@ -259,9 +277,64 @@ export default async function CalculTabPage({ params }: Props) {
   const totalSurface = calculs.reduce((s, c) => s + c.surfaceHabitable, 0);
   const totalH = totalCompletes.reduce((s, c) => s + (c.dep?.hTotal ?? 0), 0);
   const totalBesoinBrut = totalCompletes.reduce((s, c) => s + (c.besoins?.besoinBrut ?? 0), 0);
-  const totalConsoFinale = totalCompletes.reduce((s, c) => s + (c.besoins?.consoFinale ?? 0), 0);
+  const totalBesoinNet = totalCompletes.reduce((s, c) => s + (c.besoins?.besoinNet ?? 0), 0);
   const totalPertesTBase = totalCompletes.reduce((s, c) => s + (c.dep?.pertesT_base ?? 0), 0);
-  const consoFinaleM2 = totalSurface > 0 ? totalConsoFinale / totalSurface : 0;
+
+  // Cep + étiquette DPE — branchement Systèmes
+  const sysChauffage = systemes.filter((s) => s.type === "CHAUFFAGE");
+  const sysECS       = systemes.filter((s) => s.type === "ECS");
+  const sysClim      = systemes.filter((s) => s.type === "CLIMATISATION");
+
+  // Rendement chauffage moyen pondéré par partCouverture
+  function moyenneEff(arr: typeof systemes): { eff: number; vecteur: Vecteur } {
+    if (arr.length === 0) return { eff: 0.85, vecteur: "gaz_naturel" };
+    let sumPart = 0;
+    let sumPartEff = 0;
+    let dominantVect: Vecteur = VECTEUR_MAP[arr[0].vecteur as SystemePrisma];
+    let dominantPart = 0;
+    for (const s of arr) {
+      const p = Number(s.partCouverture);
+      const e = s.cop != null ? Number(s.cop) : Number(s.rendement);
+      sumPart += p;
+      sumPartEff += p * e;
+      if (p > dominantPart) {
+        dominantPart = p;
+        dominantVect = VECTEUR_MAP[s.vecteur as SystemePrisma];
+      }
+    }
+    return { eff: sumPart > 0 ? sumPartEff / sumPart : 0.85, vecteur: dominantVect };
+  }
+
+  const chauf = moyenneEff(sysChauffage);
+  const ecs   = moyenneEff(sysECS);
+
+  const chauffage_kwh = chauf.eff > 0 ? totalBesoinNet / chauf.eff : 0;
+  // ECS forfait DPE 2021 : 17.78 kWh/m²·an d'EF (besoin) — varie selon catégorie ECS
+  const besoinECS_kwh = totalSurface * 17.78;
+  const ecs_kwh = ecs.eff > 0 ? besoinECS_kwh / ecs.eff : 0;
+  // Auxiliaires VMC + circulateurs (élec) — forfait 5 kWh/m²·an
+  const auxiliaires_kwh = totalSurface * 5;
+  // Éclairage logement DPE 2021 — 1.4 kWh/m²·an (lampes LED)
+  const eclairage_kwh = totalSurface * 1.4;
+  // Refroidissement : sans calcul Bclim ici, on utilise 0 sauf si système clim présent (forfait 12)
+  const refroid_kwh = sysClim.length > 0 ? totalSurface * 12 : 0;
+
+  const dpeProjet = totalSurface > 0 && (chauffage_kwh > 0 || sysChauffage.length > 0)
+    ? calculerDpe(
+        {
+          chauffage_kwh,
+          chauffage_vecteur: chauf.vecteur,
+          ecs_kwh,
+          ecs_vecteur: ecs.vecteur,
+          refroidissement_kwh: refroid_kwh,
+          eclairage_kwh,
+          auxiliaires_kwh,
+        },
+        totalSurface,
+      )
+    : null;
+
+  const consoFinaleM2 = totalSurface > 0 ? (chauffage_kwh + ecs_kwh + auxiliaires_kwh + eclairage_kwh + refroid_kwh) / totalSurface : 0;
 
   return (
     <div className="space-y-6">
@@ -276,6 +349,64 @@ export default async function CalculTabPage({ params }: Props) {
           </p>
         </div>
       </div>
+
+      {/* DPE projet (si systèmes saisis) */}
+      {dpeProjet && (
+        <div className="rounded-lg border border-tk-border bg-tk-surface overflow-hidden">
+          <div className="flex flex-col sm:flex-row">
+            <div className="flex flex-1 items-center gap-5 border-b sm:border-b-0 sm:border-r border-tk-border bg-tk-bg/40 px-5 py-4">
+              <div>
+                <p className="field-label-tiny">Étiquette DPE</p>
+                <div className="mt-1.5 flex items-center gap-3">
+                  <DpeBadge letter={dpeProjet.classe_dpe} className="!h-12 !min-w-12 !text-xl" />
+                  <Metric value={dpeProjet.cep_kwh_m2} unit={<>kWh<sub>ep</sub>/m²·an</>} size="md" decimals={0} />
+                </div>
+              </div>
+              <div className="h-10 w-px bg-tk-border" />
+              <div>
+                <p className="field-label-tiny">Étiquette GES</p>
+                <div className="mt-1.5 flex items-center gap-3">
+                  <DpeBadge letter={dpeProjet.classe_ges} className="!h-12 !min-w-12 !text-xl" />
+                  <Metric value={dpeProjet.ges_kg_m2} unit={<>kgCO<sub>2</sub>/m²·an</>} size="md" decimals={1} />
+                </div>
+              </div>
+            </div>
+            <div className="px-5 py-4 sm:w-72">
+              <p className="field-label-tiny">Étiquette finale (max)</p>
+              <div className="mt-1.5 flex items-center gap-2.5">
+                <DpeBadge letter={dpeProjet.classe_finale} className="!h-12 !min-w-12 !text-xl" />
+                <span className="text-[11.5px] text-tk-text-muted leading-snug">
+                  Règle DPE 2021 : pire des deux étiquettes énergie/GES.
+                </span>
+              </div>
+            </div>
+          </div>
+          <div className="border-t border-tk-border">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Usage</th>
+                  <th>Vecteur</th>
+                  <th className="num">EF</th>
+                  <th className="num">EP</th>
+                  <th className="num">CO₂</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dpeProjet.detail.map((d, i) => (
+                  <tr key={i}>
+                    <td className="text-tk-text">{d.usage}</td>
+                    <td className="text-tk-text-muted capitalize">{d.vecteur.replace(/_/g, " ")}</td>
+                    <td className="num font-mono">{d.ef_kwh.toFixed(0)} kWh</td>
+                    <td className="num font-mono">{d.ep_kwh.toFixed(0)} kWh<sub>ep</sub></td>
+                    <td className="num font-mono">{d.co2_kg.toFixed(0)} kg</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* KPIs projet */}
       {totalCompletes.length > 0 && (
@@ -295,20 +426,35 @@ export default async function CalculTabPage({ params }: Props) {
             hint="Puissance déperdition à T° base"
           />
           <KpiCard
-            label="Besoin brut"
-            value={totalBesoinBrut}
-            unit="kWh/an"
+            label="Besoin chauffage"
+            value={totalBesoinNet / Math.max(totalSurface, 1)}
+            unit="kWh/m²·an"
             decimals={0}
-            hint="Avant rendement installation"
+            hint={`Total ${totalBesoinNet.toFixed(0)} kWh/an net`}
           />
           <KpiCard
             label="Conso finale"
             value={consoFinaleM2}
             unit="kWh/m²·an"
             decimals={0}
-            hint={`Total ${(totalConsoFinale).toFixed(0)} kWh/an · η 0.85`}
+            hint={
+              sysChauffage.length === 0
+                ? "Saisis un système chauffage pour calculer le Cep"
+                : `Tous usages confondus`
+            }
             tone={consoFinaleM2 < 100 ? "pos" : consoFinaleM2 < 200 ? "default" : "neg"}
           />
+        </div>
+      )}
+
+      {/* Avertissement si pas de système */}
+      {totalCompletes.length > 0 && systemes.length === 0 && (
+        <div className="rounded-md border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-[12px] text-amber-700 dark:text-amber-400">
+          <AlertTriangle className="mr-1.5 inline-block h-3.5 w-3.5" />
+          Aucun système saisi — l&apos;étiquette DPE n&apos;est pas calculée.{" "}
+          <Link href={`/dashboard/projets/${id}/systemes`} className="font-medium underline underline-offset-2">
+            Ajouter un chauffage et une ECS →
+          </Link>
         </div>
       )}
 
