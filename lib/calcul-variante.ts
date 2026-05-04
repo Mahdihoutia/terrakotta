@@ -19,12 +19,21 @@
 
 import {
   calculerDeperditions,
-  calculerBesoinsChauffage,
   calculerDpe,
+  coefficientUtilisationApports,
+  nadeqDepuisSurface,
+  besoinECSAnnuel,
+  apportsInternesAnnuel,
+  getZoneData,
   type Vecteur,
   type ClasseDpe,
+  type InertieClasse,
 } from "./thermal";
 import type { Geste, GesteCode } from "./aides";
+
+function djuAnnuelZone(zoneClim: string): number {
+  return getZoneData(zoneClim)?.dju ?? 2500;
+}
 
 export interface BaselineState {
   zoneClimatique: string;
@@ -45,7 +54,13 @@ export interface BaselineState {
   // Régulation
   consigneInt: number;
   tBase: number;
-  // Systèmes (rendement effectif = COP si PAC)
+  /** Programmation chauffage — réduit Bch ~10 %. */
+  intermittenceChauffage: boolean;
+  /** Inertie thermique — exposant a du η_gn (Th-BCE 2008). */
+  inertie: InertieClasse;
+  /** Nombre d'occupants saisi. Si non fourni, calculé via Nadeq surface. */
+  nbOccupants?: number | null;
+  // Systèmes (rendement effectif = SCOP saisonnier si PAC)
   chauffageEff: number;
   chauffageVecteur: Vecteur;
   ecsEff: number;
@@ -53,6 +68,8 @@ export interface BaselineState {
   /** Part solaire ECS — réduit le besoin ECS net (0..1). */
   partSolaireECS: number;
   hasClim: boolean;
+  /** Calibration facture — facteur correcteur à appliquer au Bch calculé. */
+  calibrationFactor?: number;
 }
 
 export interface VarianteIndicators {
@@ -135,6 +152,16 @@ export function applyGestesToBaseline(
 /**
  * Calcule les indicateurs énergétiques d'un state (déperditions → besoin → Cep → DPE).
  * Pure function — pas d'effet de bord.
+ *
+ * Méthode :
+ *   1. Déperditions H_total (W/K) via calculerDeperditions (Th-BCE)
+ *   2. DJU annuel × H_total → Bch_brut
+ *   3. Apports gratuits = solaires + internes (Nadeq)
+ *   4. η_gn = Th-BCE selon γ et inertie → Bch_net = Bch_brut − η × apports
+ *   5. Intermittence : Bch_net × 0.90 si activée
+ *   6. Calibration facture : ×k si fournie
+ *   7. Conso EF = besoinNet / SCOP, par usage, vecteur
+ *   8. calculerDpe → Cep, GES, étiquettes
  */
 export function computeIndicatorsFromState(
   state: BaselineState,
@@ -160,24 +187,44 @@ export function computeIndicatorsFromState(
     deltaT: state.consigneInt - state.tBase,
   });
 
+  // Nadeq (occupants équivalents) — si saisi par utilisateur, sinon Nadeq surface
+  const nadeq = state.nbOccupants && state.nbOccupants > 0
+    ? state.nbOccupants
+    : nadeqDepuisSurface(state.surfaceHabitable);
+
   let besoinChauffageNet = 0;
   if (state.surfaceHabitable > 0 && dep.surfaceDeperditiveTotale > 0) {
-    const b = calculerBesoinsChauffage({
-      zone: state.zoneClimatique,
-      surfaceHabitable: state.surfaceHabitable,
-      volumeChauffe: state.volumeChauffe,
-      ubat: dep.ubatMoyen,
-      surfaceDeperditiveTotale: dep.surfaceDeperditiveTotale,
-      renouvellementAir: state.renouvellementAir,
-      apportsSolairesGratuits: 0,
-      apportsInternes: 5 * state.surfaceHabitable,
-      rendementInstallation: 1.0, // on intègre le rendement au niveau Cep
-    });
-    besoinChauffageNet = b.besoinNet;
+    // DJU mensuels approximés : DJU annuel zone × 1 (calculerBesoinsChauffage utilise zone clim)
+    // On reproduit ici Bch_brut = H_total × DJU × 24 / 1000 mais simplifié sans calculerBesoinsChauffage
+    // pour pouvoir injecter η_gn correctement.
+    const dju = djuAnnuelZone(state.zoneClimatique);
+    const besoinBrut = (dep.hTotal * dju * 24) / 1000; // kWh/an
+
+    // Apports gratuits — internes (forfait Th-BCE basé sur Nadeq) + solaires (forfait simple)
+    const apportsInternes = apportsInternesAnnuel(state.surfaceHabitable, nadeq);
+    // Forfait apports solaires simple : 80 kWh/m² vitré × surface vitrée × période chauffe (0.4)
+    const apportsSolaires = 80 * state.surfaceVitree * 0.4;
+    const apportsTotaux = apportsInternes + apportsSolaires;
+
+    // Coefficient utilisation η_gn (Th-BCE / ISO 13790)
+    const gamma = besoinBrut > 0 ? apportsTotaux / besoinBrut : 0;
+    const eta_gn = coefficientUtilisationApports(gamma, state.inertie);
+
+    besoinChauffageNet = Math.max(0, besoinBrut - eta_gn * apportsTotaux);
+
+    // Intermittence (consigne réduite) : −10 % sur le Bch
+    if (state.intermittenceChauffage) {
+      besoinChauffageNet *= 0.90;
+    }
+
+    // Calibration facture — applique le facteur correcteur si défini
+    if (state.calibrationFactor && state.calibrationFactor > 0) {
+      besoinChauffageNet *= state.calibrationFactor;
+    }
   }
 
-  // Besoin ECS forfait DPE 2021 = 17.78 kWh/m²·an
-  const besoinECSBrut = state.surfaceHabitable * 17.78;
+  // Besoin ECS — formule DPE 2021 ajustée par Nadeq vs surface
+  const besoinECSBrut = besoinECSAnnuel(state.surfaceHabitable, nadeq); // kWh/an
   const besoinECSNet = besoinECSBrut * (1 - state.partSolaireECS);
 
   const chauffage_kwh = state.chauffageEff > 0 ? besoinChauffageNet / state.chauffageEff : 0;

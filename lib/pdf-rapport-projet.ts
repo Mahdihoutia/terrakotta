@@ -118,6 +118,13 @@ export interface RapportProjetData {
     methode: "DETAIL" | "FORFAIT";
     detail?: { typo: string; longueur: number; psi: number; h: number }[];
   };
+
+  // Calibration facture (quick win #7)
+  calibration?: {
+    factor: number;          // k = facture / calculé
+    consoFacture: number;    // kWh/an
+    consoCalculee: number;   // kWh/an
+  };
 }
 
 const TYPE_SYS_LABEL: Record<string, string> = {
@@ -176,6 +183,21 @@ export function generateRapportProjetPdf(data: RapportProjetData): Uint8Array {
   /* ───── 3. Synthèse énergétique ───────────────────────────── */
   doc.addPage();
   let y = drawSectionHeader(doc, "Synthèse énergétique", PDF_LAYOUT.topMargin, undefined, { number: 1 });
+
+  // Calibration facture (s'il y a) — encadré succès en haut de synthèse
+  if (data.calibration) {
+    const c = data.calibration;
+    y = drawCallout(
+      doc,
+      `Facteur correcteur k = ${c.factor.toFixed(2)} appliqué au Bch calculé. ` +
+        `Calculé brut ${formatNumberPdf(c.consoCalculee, { maximumFractionDigits: 0 })} kWh/an · ` +
+        `Conso réelle facture ${formatNumberPdf(c.consoFacture, { maximumFractionDigits: 0 })} kWh/an. ` +
+        `Les indicateurs Cep ci-dessous reflètent la consommation observée.`,
+      y,
+      { title: "✓ Calibration facture appliquée" },
+    );
+    y += 4;
+  }
 
   if (data.dpe) {
     // Bandeau étiquettes DPE / GES
@@ -518,7 +540,13 @@ export function generateRapportProjetPdf(data: RapportProjetData): Uint8Array {
     "",
     "Aides : barèmes MaPrimeRénov' 2025 (forfaits par geste, plafond global % TTC selon catégorie ressources), CEE (forfaits indicatifs offre publique), TVA 5,5 % (gestes éligibles, logement principal > 2 ans), Eco-PTZ (15/25/30 k€ selon nombre d'actions, 50 k€ rénovation globale).",
     "",
-    "Limites : audit incitatif, non-réglementaire au sens du DPE certifié. Pour un DPE opposable, missionner un diagnostiqueur certifié.",
+    "Coefficient d'utilisation des apports gratuits η_gn (Th-BCE 2008 / ISO 13790) selon γ = apports/pertes et inertie thermique du bâti (Légère a=0.8, Moyenne a=1.0, Lourde a=2.5).",
+    "",
+    "Besoin ECS : formule officielle DPE 2021 (B_ecs = 17,78 × Nadeq), avec Nadeq calculé depuis la surface habitable ou saisi.",
+    "",
+    "Calibration facture (si renseignée) : facteur correcteur k = conso_facture / conso_calculée appliqué au Bch. Plage acceptée 0,5 à 2,0.",
+    "",
+    "Limites : audit incitatif, non-réglementaire au sens du DPE certifié. Pour un DPE opposable, missionner un diagnostiqueur certifié. Incertitude estimée sur Cep : ±25 % sans calibration facture, ±10 % avec.",
   ];
 
   for (const line of methode) {

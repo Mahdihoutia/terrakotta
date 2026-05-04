@@ -247,6 +247,14 @@ const updateProjetSchema = z.object({
   dateDebut: z.string().datetime({ offset: true }).nullable().optional(),
   dateFin: z.string().datetime({ offset: true }).nullable().optional(),
   clientId: z.string().min(1).optional(),
+  // Précision thermique
+  nbOccupants: z.number().int().min(0).max(20).nullable().optional(),
+  inertie: z.enum(["LEGERE", "MOYENNE", "LOURDE"]).nullable().optional(),
+  intermittenceChauffage: z.boolean().optional(),
+  permeabiliteAir: z.number().nonnegative().nullable().optional(),
+  // Calibration facture
+  consoFactureChauffage: z.number().nonnegative().nullable().optional(),
+  consoFactureECS: z.number().nonnegative().nullable().optional(),
 });
 
 /** PATCH /api/projets/[id] — Mettre à jour un projet */

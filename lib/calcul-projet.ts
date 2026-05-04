@@ -29,7 +29,20 @@ export async function buildProjetBaseline(projetId: string): Promise<{
   baseline: BaselineState;
   hasEnvelope: boolean;
   hasSystems: boolean;
+  /** Calibration facture appliquée si conso facture renseignée. */
+  calibrationApplied: { factor: number; consoFacture: number; consoCalculee: number } | null;
 } | null> {
+  const projet = await prisma.projet.findFirst({
+    where: { id: projetId, deletedAt: null },
+    select: {
+      nbOccupants: true,
+      inertie: true,
+      intermittenceChauffage: true,
+      consoFactureChauffage: true,
+    },
+  });
+  if (!projet) return null;
+
   const [batiments, systemes] = await Promise.all([
     prisma.batiment.findMany({
       where: { projetId, deletedAt: null },
@@ -58,7 +71,7 @@ export async function buildProjetBaseline(projetId: string): Promise<{
     }),
   ]);
 
-  if (batiments.length === 0) return null;
+  if (batiments.length === 0) return { baseline: emptyBaseline(), hasEnvelope: false, hasSystems: false, calibrationApplied: null };
 
   // Aggrégation parois (somme sur tous bâtiments du projet)
   const buckets: Record<ParoiCat, { s: number; ua: number }> = {
@@ -157,6 +170,9 @@ export async function buildProjetBaseline(projetId: string): Promise<{
     efficaciteDoubleFlux,
     consigneInt,
     tBase,
+    intermittenceChauffage: projet.intermittenceChauffage ?? false,
+    inertie: projet.inertie ?? "MOYENNE",
+    nbOccupants: projet.nbOccupants ?? null,
     chauffageEff: cha.eff,
     chauffageVecteur: cha.vecteur,
     ecsEff: ecsRes.eff,
@@ -166,9 +182,51 @@ export async function buildProjetBaseline(projetId: string): Promise<{
   };
 
   const surfaceOpaqueTotale = surfaceMurs + buckets.TOITURE.s + buckets.PLANCHER_BAS.s + buckets.VITRAGE.s;
+  const hasEnvelope = nbParois > 0 && surfaceOpaqueTotale > 0;
+  const hasSystems = sysChauf.length > 0;
+
+  // Calibration facture — calcule k = facture / calculé si les deux dispos
+  let calibrationApplied: { factor: number; consoFacture: number; consoCalculee: number } | null = null;
+  if (hasEnvelope && hasSystems && projet.consoFactureChauffage) {
+    const consoFacture = Number(projet.consoFactureChauffage);
+    if (consoFacture > 0) {
+      // Calcul de la conso chauffage attendue avec la baseline (sans calibration encore)
+      const tmpInd = await import("./calcul-variante").then((m) =>
+        m.computeIndicatorsFromState(baseline),
+      );
+      const consoCalculee = (tmpInd.cef - 5 - 1.4 - (baseline.hasClim ? 12 : 0) - tmpInd.besoinECS / Math.max(baseline.ecsEff, 1)) * baseline.surfaceHabitable;
+      const consoCalculeeChauf = Math.max(consoCalculee, 0);
+      if (consoCalculeeChauf > 0) {
+        const factor = consoFacture / consoCalculeeChauf;
+        // Plage raisonnable [0.5 ; 2.0] — au-delà, soit la saisie est aberrante,
+        // soit le moteur a un bug, on n'applique pas
+        if (factor >= 0.5 && factor <= 2.0) {
+          baseline.calibrationFactor = factor;
+          calibrationApplied = { factor, consoFacture, consoCalculee: consoCalculeeChauf };
+        }
+      }
+    }
+  }
+
   return {
     baseline,
-    hasEnvelope: nbParois > 0 && surfaceOpaqueTotale > 0,
-    hasSystems: sysChauf.length > 0,
+    hasEnvelope,
+    hasSystems,
+    calibrationApplied,
+  };
+}
+
+function emptyBaseline(): BaselineState {
+  return {
+    zoneClimatique: "H1a",
+    surfaceHabitable: 0, volumeChauffe: 0,
+    surfaceMurs: 0, surfaceToiture: 0, surfacePlancher: 0, surfaceVitree: 0,
+    uMurs: 0, uToiture: 0, uPlancher: 0, uVitree: 0,
+    renouvellementAir: 0.5, efficaciteDoubleFlux: 0,
+    consigneInt: 19, tBase: -7,
+    intermittenceChauffage: false, inertie: "MOYENNE", nbOccupants: null,
+    chauffageEff: 0.85, chauffageVecteur: "gaz_naturel",
+    ecsEff: 1.0, ecsVecteur: "elec",
+    partSolaireECS: 0, hasClim: false,
   };
 }

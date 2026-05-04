@@ -21,3 +21,4 @@ export * from "./besoins-chauffage";
 export * from "./dpe";
 export * from "./validation";
 export * from "./suggestions";
+export * from "./coefficient-utilisation";

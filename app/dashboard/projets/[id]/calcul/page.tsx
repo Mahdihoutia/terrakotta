@@ -19,6 +19,8 @@ import {
 import Metric from "@/components/dashboard/Metric";
 import DpeBadge from "@/components/dashboard/DpeBadge";
 import RapportProjetExportButton from "@/components/dashboard/RapportProjetExportButton";
+import ParametresPrecisionDialog from "@/components/dashboard/ParametresPrecisionDialog";
+import { buildProjetBaseline } from "@/lib/calcul-projet";
 
 type SystemePrisma = "ELEC" | "GAZ_NATUREL" | "FIOUL" | "BOIS" | "PROPANE" | "RESEAU_CHALEUR";
 const VECTEUR_MAP: Record<SystemePrisma, Vecteur> = {
@@ -114,9 +116,15 @@ export default async function CalculTabPage({ params }: Props) {
   const { id } = await params;
   const projet = await prisma.projet.findUnique({
     where: { id },
-    select: { id: true, titre: true },
+    select: {
+      id: true, titre: true,
+      nbOccupants: true, inertie: true, intermittenceChauffage: true,
+      permeabiliteAir: true, consoFactureChauffage: true, consoFactureECS: true,
+    },
   });
   if (!projet) notFound();
+
+  const projetBaseline = await buildProjetBaseline(id);
 
   const systemes = await prisma.systeme.findMany({
     where: { projetId: id, deletedAt: null },
@@ -349,8 +357,33 @@ export default async function CalculTabPage({ params }: Props) {
             )}
           </p>
         </div>
-        <RapportProjetExportButton projetId={id} />
+        <div className="flex items-center gap-2">
+          <ParametresPrecisionDialog
+            projetId={id}
+            initial={{
+              nbOccupants: projet.nbOccupants,
+              inertie: projet.inertie,
+              intermittenceChauffage: projet.intermittenceChauffage,
+              permeabiliteAir: projet.permeabiliteAir != null ? Number(projet.permeabiliteAir) : null,
+              consoFactureChauffage: projet.consoFactureChauffage != null ? Number(projet.consoFactureChauffage) : null,
+              consoFactureECS: projet.consoFactureECS != null ? Number(projet.consoFactureECS) : null,
+            }}
+          />
+          <RapportProjetExportButton projetId={id} />
+        </div>
       </div>
+
+      {projetBaseline?.calibrationApplied && (
+        <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 px-4 py-2.5 text-[12px] text-emerald-700 dark:text-emerald-400 flex items-start gap-2">
+          <span className="mt-0.5">✓</span>
+          <div>
+            <strong>Calibration facture appliquée</strong> · facteur k = {projetBaseline.calibrationApplied.factor.toFixed(2)}
+            (calculé {Math.round(projetBaseline.calibrationApplied.consoCalculee).toLocaleString("fr-FR")} kWh
+            vs facture {Math.round(projetBaseline.calibrationApplied.consoFacture).toLocaleString("fr-FR")} kWh).
+            Le Bch est ajusté à la consommation réelle.
+          </div>
+        </div>
+      )}
 
       {/* DPE projet (si systèmes saisis) */}
       {dpeProjet && (

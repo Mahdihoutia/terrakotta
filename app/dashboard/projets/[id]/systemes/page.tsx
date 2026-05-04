@@ -189,7 +189,7 @@ export default function SystemesTabPage({ params }: PageProps) {
                 ))}
               </select>
             </Field>
-            <Field label="Rendement / COP">
+            <Field label="Rendement / SCOP">
               <input
                 type="number"
                 step="0.01"
@@ -198,6 +198,9 @@ export default function SystemesTabPage({ params }: PageProps) {
                 placeholder="0.85"
                 className="h-8 w-full rounded-md border border-tk-border bg-tk-input px-2 text-[12px] tabular-nums"
               />
+              <p className="mt-1 text-[10px] text-tk-text-faint">
+                Pour PAC : SCOP saisonnier (≈ 2.5 air/eau, 3.5 géothermie). Pas le COP nominal.
+              </p>
             </Field>
             <Field label="Part couverture (0..1)">
               <input

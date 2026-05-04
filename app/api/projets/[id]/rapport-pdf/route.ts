@@ -48,6 +48,7 @@ export async function GET(_req: Request, ctx: RouteContext) {
       typeTravaux: true,
       adresseChantier: true,
       createdAt: true,
+      consoFactureChauffage: true,
       client: { select: { nom: true, prenom: true } },
     },
   });
@@ -325,6 +326,14 @@ export async function GET(_req: Request, ctx: RouteContext) {
       hTotal: hPontsForfait,
       methode: "FORFAIT",
     },
+    calibration: projet.consoFactureChauffage && chauffage_kwh > 0
+      ? (() => {
+          const consoFacture = Number(projet.consoFactureChauffage);
+          const factor = consoFacture / chauffage_kwh;
+          if (factor < 0.5 || factor > 2.0) return undefined;
+          return { factor, consoFacture, consoCalculee: chauffage_kwh };
+        })()
+      : undefined,
   };
 
   try {
