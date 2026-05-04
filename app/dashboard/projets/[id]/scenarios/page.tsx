@@ -115,7 +115,7 @@ export default function ScenariosTabPage() {
       <div>
         <h1 className="section-title-dense">Scénarios de rénovation</h1>
         <p className="text-[13px] text-tk-text-muted">
-          Comparaison de l'état initial avec les variantes chiffrées · Aides calculées sur barèmes {BAREMES_VERSION}
+          Comparaison de l&apos;état initial avec les variantes chiffrées · Aides calculées sur barèmes {BAREMES_VERSION}
           · Foyer {FOYER_DEMO.nbPersonnes} pers., RFR {FOYER_DEMO.rfr.toLocaleString("fr-FR")} €
         </p>
       </div>
