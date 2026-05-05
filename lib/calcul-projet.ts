@@ -4,7 +4,15 @@
  */
 
 import { prisma } from "./db";
-import { getZoneData, parseZone, type Vecteur } from "./thermal";
+import {
+  getZoneData,
+  parseZone,
+  calculerPontsThermiques,
+  PSI_LIBRARY,
+  type Vecteur,
+  type TypeLiaison,
+  type TypeIsolation,
+} from "./thermal";
 import type { BaselineState } from "./calcul-variante";
 
 const VECTEUR_MAP: Record<string, Vecteur> = {
@@ -29,8 +37,10 @@ export async function buildProjetBaseline(projetId: string): Promise<{
   baseline: BaselineState;
   hasEnvelope: boolean;
   hasSystems: boolean;
-  /** Calibration facture appliquée si conso facture renseignée. */
+  /** Calibration facture chauffage. */
   calibrationApplied: { factor: number; consoFacture: number; consoCalculee: number } | null;
+  /** Calibration facture ECS. */
+  calibrationECSApplied: { factor: number; consoFacture: number; consoCalculee: number } | null;
 } | null> {
   const projet = await prisma.projet.findFirst({
     where: { id: projetId, deletedAt: null },
@@ -40,6 +50,7 @@ export async function buildProjetBaseline(projetId: string): Promise<{
       intermittenceChauffage: true,
       permeabiliteAir: true,
       consoFactureChauffage: true,
+      consoFactureECS: true,
     },
   });
   if (!projet) return null;
@@ -49,6 +60,10 @@ export async function buildProjetBaseline(projetId: string): Promise<{
       where: { projetId, deletedAt: null },
       select: {
         zoneClimatique: true,
+        pontsThermiques: {
+          where: { deletedAt: null },
+          select: { typo: true, isolation: true, longueur: true, psiOverride: true },
+        },
         zones: {
           select: {
             surface: true,
@@ -68,11 +83,21 @@ export async function buildProjetBaseline(projetId: string): Promise<{
     }),
     prisma.systeme.findMany({
       where: { projetId, deletedAt: null },
-      select: { type: true, vecteur: true, rendement: true, partCouverture: true, cop: true },
+      select: {
+        type: true, vecteur: true, rendement: true, partCouverture: true, cop: true,
+        puissanceKwc: true, tauxAutoconso: true,
+      },
     }),
   ]);
 
-  if (batiments.length === 0) return { baseline: emptyBaseline(), hasEnvelope: false, hasSystems: false, calibrationApplied: null };
+  // Production PV annuelle (kWh/kWc selon zone climatique — Météo France/PVGIS)
+  const PRODUCTIBLE_KWH_KWC: Record<string, number> = {
+    H1a: 1050, H1b: 1080, H1c: 1100,
+    H2a: 1100, H2b: 1180, H2c: 1300, H2d: 1200,
+    H3:  1450,
+  };
+
+  if (batiments.length === 0) return { baseline: emptyBaseline(), hasEnvelope: false, hasSystems: false, calibrationApplied: null, calibrationECSApplied: null };
 
   // Aggrégation parois (somme sur tous bâtiments du projet)
   const buckets: Record<ParoiCat, { s: number; ua: number }> = {
@@ -90,9 +115,21 @@ export async function buildProjetBaseline(projetId: string): Promise<{
   let nbZones = 0;
   let nbParois = 0;
   let zoneClim = "H1a — Nord";
+  let nbPonts = 0;
+  let hPontsTotal = 0;
 
   for (const b of batiments) {
     if (b.zoneClimatique) zoneClim = b.zoneClimatique;
+    // Ponts thermiques saisis : ψ override > biblio Th-U selon typo+isolation
+    for (const pt of b.pontsThermiques) {
+      const longueur = Number(pt.longueur);
+      const psiSaisi = pt.psiOverride != null ? Number(pt.psiOverride) : null;
+      const psiBiblio =
+        PSI_LIBRARY[pt.typo as TypeLiaison]?.[pt.isolation as TypeIsolation] ?? 0;
+      const psi = psiSaisi != null ? psiSaisi : psiBiblio;
+      hPontsTotal += psi * longueur;
+      nbPonts += 1;
+    }
     for (const z of b.zones) {
       const sZ = Number(z.surface);
       const hZ = Number(z.hauteurSousPlafond);
@@ -151,9 +188,22 @@ export async function buildProjetBaseline(projetId: string): Promise<{
   const sysChauf = systemes.filter((s) => s.type === "CHAUFFAGE");
   const sysECS = systemes.filter((s) => s.type === "ECS");
   const sysClim = systemes.filter((s) => s.type === "CLIMATISATION");
+  const sysPV = systemes.filter((s) => s.type === "PHOTOVOLTAIQUE");
 
   const cha = moy(sysChauf);
   const ecsRes = moy(sysECS);
+
+  // PV : production annuelle × taux autoconso
+  let pvAutoconsoKwh = 0;
+  const zoneCourt = parseZone(zoneClim);
+  const productible = PRODUCTIBLE_KWH_KWC[zoneCourt] ?? 1100;
+  for (const pv of sysPV) {
+    const kWc = pv.puissanceKwc != null ? Number(pv.puissanceKwc) : 0;
+    const tauxAuto = pv.tauxAutoconso != null ? Number(pv.tauxAutoconso) : 0.4;
+    if (kWc > 0) {
+      pvAutoconsoKwh += kWc * productible * tauxAuto;
+    }
+  }
 
   const baseline: BaselineState = {
     zoneClimatique: parseZone(zoneClim),
@@ -175,36 +225,60 @@ export async function buildProjetBaseline(projetId: string): Promise<{
     inertie: projet.inertie ?? "MOYENNE",
     nbOccupants: projet.nbOccupants ?? null,
     permeabiliteAir: projet.permeabiliteAir != null ? Number(projet.permeabiliteAir) : null,
+    hPontsThermiquesSaisis: nbPonts > 0 ? hPontsTotal : null,
     chauffageEff: cha.eff,
     chauffageVecteur: cha.vecteur,
     ecsEff: ecsRes.eff,
     ecsVecteur: ecsRes.vecteur,
     partSolaireECS: 0,
     hasClim: sysClim.length > 0,
+    pvAutoconsoKwh: pvAutoconsoKwh > 0 ? pvAutoconsoKwh : undefined,
   };
 
   const surfaceOpaqueTotale = surfaceMurs + buckets.TOITURE.s + buckets.PLANCHER_BAS.s + buckets.VITRAGE.s;
   const hasEnvelope = nbParois > 0 && surfaceOpaqueTotale > 0;
   const hasSystems = sysChauf.length > 0;
 
-  // Calibration facture — calcule k = facture / calculé si les deux dispos
+  // Calibration multi-énergies (chauffage + ECS séparés)
   let calibrationApplied: { factor: number; consoFacture: number; consoCalculee: number } | null = null;
-  if (hasEnvelope && hasSystems && projet.consoFactureChauffage) {
-    const consoFacture = Number(projet.consoFactureChauffage);
-    if (consoFacture > 0) {
-      // Calcul de la conso chauffage attendue avec la baseline (sans calibration encore)
-      const tmpInd = await import("./calcul-variante").then((m) =>
-        m.computeIndicatorsFromState(baseline),
-      );
-      const consoCalculee = (tmpInd.cef - 5 - 1.4 - (baseline.hasClim ? 12 : 0) - tmpInd.besoinECS / Math.max(baseline.ecsEff, 1)) * baseline.surfaceHabitable;
-      const consoCalculeeChauf = Math.max(consoCalculee, 0);
-      if (consoCalculeeChauf > 0) {
+  let calibrationECSApplied: { factor: number; consoFacture: number; consoCalculee: number } | null = null;
+
+  if (hasEnvelope && hasSystems && (projet.consoFactureChauffage || projet.consoFactureECS)) {
+    const tmpInd = await import("./calcul-variante").then((m) =>
+      m.computeIndicatorsFromState(baseline),
+    );
+    const auxM2 = (tmpInd.consoFinaleM2 - tmpInd.cef);
+    void auxM2; // unused, placeholder for clarity
+
+    // Conso chauffage calculée brut (avant calibration) :
+    //   chauffage_kwh = besoinChauffageNet / chauffageEff
+    // tmpInd.besoinChauffage est en kWh/m²·an net.
+    const consoCalculeeChauf = baseline.chauffageEff > 0
+      ? (tmpInd.besoinChauffage * baseline.surfaceHabitable) / baseline.chauffageEff
+      : 0;
+
+    // Conso ECS calculée brut :
+    const consoCalculeeECS = baseline.ecsEff > 0
+      ? (tmpInd.besoinECS * baseline.surfaceHabitable) / baseline.ecsEff
+      : 0;
+
+    if (projet.consoFactureChauffage) {
+      const consoFacture = Number(projet.consoFactureChauffage);
+      if (consoFacture > 0 && consoCalculeeChauf > 0) {
         const factor = consoFacture / consoCalculeeChauf;
-        // Plage raisonnable [0.5 ; 2.0] — au-delà, soit la saisie est aberrante,
-        // soit le moteur a un bug, on n'applique pas
         if (factor >= 0.5 && factor <= 2.0) {
           baseline.calibrationFactor = factor;
           calibrationApplied = { factor, consoFacture, consoCalculee: consoCalculeeChauf };
+        }
+      }
+    }
+    if (projet.consoFactureECS) {
+      const consoFacture = Number(projet.consoFactureECS);
+      if (consoFacture > 0 && consoCalculeeECS > 0) {
+        const factor = consoFacture / consoCalculeeECS;
+        if (factor >= 0.5 && factor <= 2.0) {
+          baseline.calibrationFactorECS = factor;
+          calibrationECSApplied = { factor, consoFacture, consoCalculee: consoCalculeeECS };
         }
       }
     }
@@ -215,6 +289,7 @@ export async function buildProjetBaseline(projetId: string): Promise<{
     hasEnvelope,
     hasSystems,
     calibrationApplied,
+    calibrationECSApplied,
   };
 }
 

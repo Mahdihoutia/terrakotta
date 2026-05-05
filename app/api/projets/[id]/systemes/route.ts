@@ -4,12 +4,14 @@ import { prisma } from "@/lib/db";
 import { ensureRole, MUTATION_ROLES } from "@/lib/auth-helpers";
 
 const createSystemeSchema = z.object({
-  type: z.enum(["CHAUFFAGE", "ECS", "VENTILATION", "CLIMATISATION"]),
+  type: z.enum(["CHAUFFAGE", "ECS", "VENTILATION", "CLIMATISATION", "PHOTOVOLTAIQUE"]),
   vecteur: z.enum(["ELEC", "GAZ_NATUREL", "FIOUL", "BOIS", "PROPANE", "RESEAU_CHALEUR"]),
   nom: z.string().min(1, "Nom requis"),
   rendement: z.number().positive().default(1),
   partCouverture: z.number().min(0).max(1).default(1),
   cop: z.number().positive().nullable().optional(),
+  puissanceKwc: z.number().positive().nullable().optional(),
+  tauxAutoconso: z.number().min(0).max(1).nullable().optional(),
   notes: z.string().nullable().optional(),
 });
 
@@ -20,7 +22,10 @@ interface RouteContext {
 function serialize(s: {
   id: string; type: string; vecteur: string; nom: string;
   rendement: { toString(): string }; partCouverture: { toString(): string };
-  cop: { toString(): string } | null; notes: string | null;
+  cop: { toString(): string } | null;
+  puissanceKwc?: { toString(): string } | null;
+  tauxAutoconso?: { toString(): string } | null;
+  notes: string | null;
   createdAt: Date; updatedAt: Date;
 }) {
   return {
@@ -31,6 +36,8 @@ function serialize(s: {
     rendement: Number(s.rendement),
     partCouverture: Number(s.partCouverture),
     cop: s.cop != null ? Number(s.cop) : null,
+    puissanceKwc: s.puissanceKwc != null ? Number(s.puissanceKwc) : null,
+    tauxAutoconso: s.tauxAutoconso != null ? Number(s.tauxAutoconso) : null,
     notes: s.notes,
     createdAt: s.createdAt.toISOString(),
     updatedAt: s.updatedAt.toISOString(),

@@ -373,15 +373,28 @@ export default async function CalculTabPage({ params }: Props) {
         </div>
       </div>
 
-      {projetBaseline?.calibrationApplied && (
-        <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 px-4 py-2.5 text-[12px] text-emerald-700 dark:text-emerald-400 flex items-start gap-2">
-          <span className="mt-0.5">✓</span>
-          <div>
-            <strong>Calibration facture appliquée</strong> · facteur k = {projetBaseline.calibrationApplied.factor.toFixed(2)}
-            (calculé {Math.round(projetBaseline.calibrationApplied.consoCalculee).toLocaleString("fr-FR")} kWh
-            vs facture {Math.round(projetBaseline.calibrationApplied.consoFacture).toLocaleString("fr-FR")} kWh).
-            Le Bch est ajusté à la consommation réelle.
-          </div>
+      {(projetBaseline?.calibrationApplied || projetBaseline?.calibrationECSApplied) && (
+        <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 px-4 py-2.5 text-[12px] text-emerald-700 dark:text-emerald-400 space-y-1">
+          {projetBaseline?.calibrationApplied && (
+            <div className="flex items-start gap-2">
+              <span className="mt-0.5">✓</span>
+              <div>
+                <strong>Calibration chauffage</strong> · k = {projetBaseline.calibrationApplied.factor.toFixed(2)}
+                {" "}(calculé {Math.round(projetBaseline.calibrationApplied.consoCalculee).toLocaleString("fr-FR")} kWh
+                {" "}vs facture {Math.round(projetBaseline.calibrationApplied.consoFacture).toLocaleString("fr-FR")} kWh)
+              </div>
+            </div>
+          )}
+          {projetBaseline?.calibrationECSApplied && (
+            <div className="flex items-start gap-2">
+              <span className="mt-0.5">✓</span>
+              <div>
+                <strong>Calibration ECS</strong> · k = {projetBaseline.calibrationECSApplied.factor.toFixed(2)}
+                {" "}(calculé {Math.round(projetBaseline.calibrationECSApplied.consoCalculee).toLocaleString("fr-FR")} kWh
+                {" "}vs facture {Math.round(projetBaseline.calibrationECSApplied.consoFacture).toLocaleString("fr-FR")} kWh)
+              </div>
+            </div>
+          )}
         </div>
       )}
 

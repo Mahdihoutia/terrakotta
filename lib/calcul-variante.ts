@@ -62,6 +62,8 @@ export interface BaselineState {
   nbOccupants?: number | null;
   /** Perméabilité à l'air mesurée Q4Pa-surf (m³/h·m²). Défaut 1.7 (RT 2005). */
   permeabiliteAir?: number | null;
+  /** H_pt (W/K) calculé depuis ponts thermiques saisis. Si null, forfait 5%. */
+  hPontsThermiquesSaisis?: number | null;
   // Systèmes (rendement effectif = SCOP saisonnier si PAC)
   chauffageEff: number;
   chauffageVecteur: Vecteur;
@@ -70,8 +72,12 @@ export interface BaselineState {
   /** Part solaire ECS — réduit le besoin ECS net (0..1). */
   partSolaireECS: number;
   hasClim: boolean;
-  /** Calibration facture — facteur correcteur à appliquer au Bch calculé. */
+  /** Production PV autoconsommée (kWh EF/an) déduite du Cep. */
+  pvAutoconsoKwh?: number;
+  /** Calibration facture chauffage — facteur correcteur sur Bch. */
   calibrationFactor?: number;
+  /** Calibration facture ECS — facteur correcteur sur Becs. */
+  calibrationFactorECS?: number;
 }
 
 export interface VarianteIndicators {
@@ -171,8 +177,10 @@ export function computeIndicatorsFromState(
   tarifsBaseline?: { tarifChauffage: number; tarifECS: number },
   consoBaselineM2?: number,
 ): VarianteIndicators {
-  // Forfait ponts thermiques RT existant : 5 % de Σ A_paroi opaque
-  const hPT = 0.05 * (state.surfaceMurs + state.surfaceToiture + state.surfacePlancher);
+  // Ponts thermiques : valeur saisie détaillée (Th-U) si disponible, sinon forfait 5 %.
+  const hPT = state.hPontsThermiquesSaisis != null
+    ? state.hPontsThermiquesSaisis
+    : 0.05 * (state.surfaceMurs + state.surfaceToiture + state.surfacePlancher);
 
   // Perméabilité à l'air — corrige le renouvellement d'air par rapport au défaut RT 2005 (Q4Pa = 1.7).
   // L'infiltrations représente ≈30 % du renouvellement total dans calculerDeperditions.
@@ -235,7 +243,11 @@ export function computeIndicatorsFromState(
   }
 
   // Besoin ECS — formule DPE 2021 ajustée par Nadeq vs surface
-  const besoinECSBrut = besoinECSAnnuel(state.surfaceHabitable, nadeq); // kWh/an
+  let besoinECSBrut = besoinECSAnnuel(state.surfaceHabitable, nadeq); // kWh/an
+  // Calibration facture ECS si renseignée
+  if (state.calibrationFactorECS && state.calibrationFactorECS > 0) {
+    besoinECSBrut *= state.calibrationFactorECS;
+  }
   const besoinECSNet = besoinECSBrut * (1 - state.partSolaireECS);
 
   const chauffage_kwh = state.chauffageEff > 0 ? besoinChauffageNet / state.chauffageEff : 0;
@@ -264,20 +276,49 @@ export function computeIndicatorsFromState(
   const ecl_kwh = state.surfaceHabitable * 1.4;
   const refr_kwh = state.hasClim ? state.surfaceHabitable * 12 : 0;
 
+  // PV autoconsommé : déduit des postes élec dans l'ordre auxiliaires →
+  // éclairage → refroidissement → ECS (si élec) → chauffage (si élec).
+  // Plafonne chaque poste à 0 (pas de production exportée valorisée ici).
+  let aux_final = aux_kwh;
+  let ecl_final = ecl_kwh;
+  let refr_final = refr_kwh;
+  let ecs_final = ecs_kwh;
+  let chauf_final = chauffage_kwh;
+  let pvRest = state.pvAutoconsoKwh ?? 0;
+  function deduce(curr: number): { remain: number; consumed: number } {
+    const consumed = Math.min(curr, pvRest);
+    return { remain: curr - consumed, consumed };
+  }
+  if (pvRest > 0) {
+    const r = deduce(aux_final); aux_final = r.remain; pvRest -= r.consumed;
+  }
+  if (pvRest > 0) {
+    const r = deduce(ecl_final); ecl_final = r.remain; pvRest -= r.consumed;
+  }
+  if (pvRest > 0) {
+    const r = deduce(refr_final); refr_final = r.remain; pvRest -= r.consumed;
+  }
+  if (pvRest > 0 && state.ecsVecteur === "elec") {
+    const r = deduce(ecs_final); ecs_final = r.remain; pvRest -= r.consumed;
+  }
+  if (pvRest > 0 && state.chauffageVecteur === "elec") {
+    const r = deduce(chauf_final); chauf_final = r.remain; pvRest -= r.consumed;
+  }
+
   const dpe = calculerDpe(
     {
-      chauffage_kwh,
+      chauffage_kwh: chauf_final,
       chauffage_vecteur: state.chauffageVecteur,
-      ecs_kwh,
+      ecs_kwh: ecs_final,
       ecs_vecteur: state.ecsVecteur,
-      refroidissement_kwh: refr_kwh,
-      eclairage_kwh: ecl_kwh,
-      auxiliaires_kwh: aux_kwh,
+      refroidissement_kwh: refr_final,
+      eclairage_kwh: ecl_final,
+      auxiliaires_kwh: aux_final,
     },
     Math.max(state.surfaceHabitable, 1),
   );
 
-  const consoFinaleTotal = chauffage_kwh + ecs_kwh + aux_kwh + ecl_kwh + refr_kwh;
+  const consoFinaleTotal = chauf_final + ecs_final + aux_final + ecl_final + refr_final;
   const consoFinaleM2 = state.surfaceHabitable > 0 ? consoFinaleTotal / state.surfaceHabitable : 0;
 
   // Économie annuelle estimée (€/an) = (conso baseline − conso variante) × tarif moyen

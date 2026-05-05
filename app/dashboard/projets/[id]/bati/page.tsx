@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Building2, ExternalLink, MapPin } from "lucide-react";
 import { prisma } from "@/lib/db";
 import BatimentCreateDialog from "@/components/dashboard/BatimentCreateDialog";
+import PontsThermiquesPanel from "@/components/dashboard/PontsThermiquesPanel";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -151,6 +152,7 @@ export default async function BatiTabPage({ params }: Props) {
                     </tbody>
                   </table>
                 )}
+                <PontsThermiquesPanel batimentId={b.id} />
               </section>
             );
           })}

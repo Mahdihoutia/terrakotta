@@ -1,13 +1,13 @@
 "use client";
 
 import { use, useEffect, useState, useCallback } from "react";
-import { Cog, Plus, Trash2, Loader2, Flame, Droplets, Wind, Snowflake, X } from "lucide-react";
+import { Cog, Plus, Trash2, Loader2, Flame, Droplets, Wind, Snowflake, X, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { showApiError, showNetworkError } from "@/lib/api-errors";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-type SystemeType = "CHAUFFAGE" | "ECS" | "VENTILATION" | "CLIMATISATION";
+type SystemeType = "CHAUFFAGE" | "ECS" | "VENTILATION" | "CLIMATISATION" | "PHOTOVOLTAIQUE";
 type SystemeVecteur = "ELEC" | "GAZ_NATUREL" | "FIOUL" | "BOIS" | "PROPANE" | "RESEAU_CHALEUR";
 
 interface Systeme {
@@ -26,6 +26,7 @@ const TYPE_META: Record<SystemeType, { label: string; icon: React.ComponentType<
   ECS: { label: "ECS", icon: Droplets, color: "text-sky-500" },
   VENTILATION: { label: "Ventilation", icon: Wind, color: "text-emerald-500" },
   CLIMATISATION: { label: "Climatisation", icon: Snowflake, color: "text-blue-500" },
+  PHOTOVOLTAIQUE: { label: "Photovoltaïque", icon: Sun, color: "text-amber-500" },
 };
 
 const VECTEUR_LABEL: Record<SystemeVecteur, string> = {
@@ -44,6 +45,8 @@ interface FormState {
   rendement: string;
   partCouverture: string;
   cop: string;
+  puissanceKwc: string;
+  tauxAutoconso: string;
 }
 
 const EMPTY_FORM: FormState = {
@@ -53,6 +56,8 @@ const EMPTY_FORM: FormState = {
   rendement: "0.85",
   partCouverture: "1",
   cop: "",
+  puissanceKwc: "3",
+  tauxAutoconso: "0.4",
 };
 
 interface PageProps {
@@ -101,13 +106,18 @@ export default function SystemesTabPage({ params }: PageProps) {
     }
     setSubmitting(true);
     try {
+      const isPV = form.type === "PHOTOVOLTAIQUE";
+      const puissanceKwc = isPV && form.puissanceKwc ? parseFloat(form.puissanceKwc) : null;
+      const tauxAutoconso = isPV && form.tauxAutoconso ? parseFloat(form.tauxAutoconso) : null;
       const res = await fetch(`/api/projets/${projetId}/systemes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          type: form.type, vecteur: form.vecteur, nom: form.nom.trim(),
+          type: form.type, vecteur: isPV ? "ELEC" : form.vecteur, nom: form.nom.trim(),
           rendement, partCouverture: Number.isNaN(partCouverture) ? 1 : partCouverture,
-          cop: cop && !Number.isNaN(cop) ? cop : null,
+          cop: !isPV && cop && !Number.isNaN(cop) ? cop : null,
+          puissanceKwc: puissanceKwc && !Number.isNaN(puissanceKwc) ? puissanceKwc : null,
+          tauxAutoconso: tauxAutoconso != null && !Number.isNaN(tauxAutoconso) ? tauxAutoconso : null,
         }),
       });
       if (!res.ok) {
@@ -144,7 +154,7 @@ export default function SystemesTabPage({ params }: PageProps) {
   }
 
   // Group by type
-  const groups = (["CHAUFFAGE", "ECS", "VENTILATION", "CLIMATISATION"] as const).map((t) => ({
+  const groups = (["CHAUFFAGE", "ECS", "VENTILATION", "CLIMATISATION", "PHOTOVOLTAIQUE"] as const).map((t) => ({
     type: t,
     items: systemes.filter((s) => s.type === t),
   }));
@@ -173,7 +183,7 @@ export default function SystemesTabPage({ params }: PageProps) {
                 onChange={(e) => setForm({ ...form, type: e.target.value as SystemeType })}
                 className="h-8 w-full rounded-md border border-tk-border bg-tk-input px-2 text-[12px]"
               >
-                {(["CHAUFFAGE", "ECS", "VENTILATION", "CLIMATISATION"] as const).map((t) => (
+                {(["CHAUFFAGE", "ECS", "VENTILATION", "CLIMATISATION", "PHOTOVOLTAIQUE"] as const).map((t) => (
                   <option key={t} value={t}>{TYPE_META[t].label}</option>
                 ))}
               </select>
@@ -212,12 +222,37 @@ export default function SystemesTabPage({ params }: PageProps) {
               />
             </Field>
           </div>
+          {form.type === "PHOTOVOLTAIQUE" && (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <Field label="Puissance crête (kWc)">
+                <input
+                  type="number" step="0.5" min="0"
+                  value={form.puissanceKwc}
+                  onChange={(e) => setForm({ ...form, puissanceKwc: e.target.value })}
+                  placeholder="3.0"
+                  className="h-8 w-full rounded-md border border-tk-border bg-tk-input px-2 text-[12px] tabular-nums"
+                />
+              </Field>
+              <Field label="Taux autoconso (0..1)">
+                <input
+                  type="number" step="0.05" min="0" max="1"
+                  value={form.tauxAutoconso}
+                  onChange={(e) => setForm({ ...form, tauxAutoconso: e.target.value })}
+                  placeholder="0.4"
+                  className="h-8 w-full rounded-md border border-tk-border bg-tk-input px-2 text-[12px] tabular-nums"
+                />
+                <p className="mt-1 text-[10px] text-tk-text-faint">
+                  ≈ 0.30 sans batterie, 0.55 avec batterie ou pilotage.
+                </p>
+              </Field>
+            </div>
+          )}
           <Field label="Désignation">
             <input
               type="text"
               value={form.nom}
               onChange={(e) => setForm({ ...form, nom: e.target.value })}
-              placeholder="Ex: PAC air/eau Atlantic Alféa Excellia"
+              placeholder={form.type === "PHOTOVOLTAIQUE" ? "Ex: PV 3 kWc toiture sud" : "Ex: PAC air/eau Atlantic Alféa Excellia"}
               className="h-8 w-full rounded-md border border-tk-border bg-tk-input px-2 text-[12px]"
             />
           </Field>
