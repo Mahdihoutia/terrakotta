@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   },
   description:
     "Kilowater, bureau d'étude spécialisé en rénovation énergétique. Audit énergétique, maîtrise d'œuvre, accompagnement CEE et MaPrimeRénov' pour particuliers, professionnels et collectivités.",
-  metadataBase: new URL("https://kilowater.fr"),
+  metadataBase: new URL("https://www.kilowater.fr"),
   robots: {
     index: true,
     follow: true,

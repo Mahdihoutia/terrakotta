@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-const BASE_URL = "https://kilowater.fr";
+const BASE_URL = "https://www.kilowater.fr";
 
 export const metadata: Metadata = {
   title: "Bureau d'étude thermique Paris | Kilowater BET RGE",

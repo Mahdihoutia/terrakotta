@@ -17,12 +17,12 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Accompagnement CEE — Certificats d'Économies d'Énergie | Kilowater",
     description: "Bureau d'étude CEE : calcul kWh cumac, montage dossier, fiches BAR-TH et BAT-TH. Optimisez vos aides à la rénovation énergétique.",
-    url: "https://kilowater.fr/accompagnement-cee",
-    images: [{ url: "https://kilowater.fr/opengraph-image", width: 1200, height: 630, alt: "Kilowater — Accompagnement CEE" }],
+    url: "https://www.kilowater.fr/accompagnement-cee",
+    images: [{ url: "https://www.kilowater.fr/opengraph-image", width: 1200, height: 630, alt: "Kilowater — Accompagnement CEE" }],
     type: "website",
   },
   alternates: {
-    canonical: "https://kilowater.fr/accompagnement-cee",
+    canonical: "https://www.kilowater.fr/accompagnement-cee",
   },
 };
 
@@ -30,12 +30,12 @@ const breadcrumbSchema = {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   itemListElement: [
-    { "@type": "ListItem", position: 1, name: "Accueil", item: "https://kilowater.fr" },
+    { "@type": "ListItem", position: 1, name: "Accueil", item: "https://www.kilowater.fr" },
     {
       "@type": "ListItem",
       position: 2,
       name: "Accompagnement CEE",
-      item: "https://kilowater.fr/accompagnement-cee",
+      item: "https://www.kilowater.fr/accompagnement-cee",
     },
   ],
 };

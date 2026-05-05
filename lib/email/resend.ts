@@ -1,0 +1,16 @@
+import { Resend } from "resend";
+
+let cached: Resend | null = null;
+
+export function getResend(): Resend {
+  if (cached) return cached;
+  const key = process.env.RESEND_API_KEY;
+  if (!key) {
+    throw new Error("RESEND_API_KEY manquante");
+  }
+  cached = new Resend(key);
+  return cached;
+}
+
+export const EMAIL_FROM = process.env.EMAIL_FROM || "Kilowater <contact@kilowater.fr>";
+export const CONTACT_EMAIL = process.env.CONTACT_EMAIL || "contact@kilowater.fr";

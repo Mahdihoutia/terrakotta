@@ -105,7 +105,7 @@ export default function Footer() {
 
             {/* Trust badges — compact */}
             <div className="mt-6 max-w-sm">
-              <p className="text-[0.62rem] uppercase tracking-[0.18em] text-[#5E80A8] mb-3">
+              <p className="text-[0.62rem] uppercase tracking-[0.18em] text-[#7BAAC8] mb-3">
                 Qualifications &amp; référentiels
               </p>
               <ul className="flex flex-wrap gap-1.5">
@@ -195,12 +195,16 @@ export default function Footer() {
       {/* Bottom Bar */}
       <div className="border-t border-[#1B3356]">
         <div className="mx-auto max-w-[1400px] px-6 md:px-10 lg:px-16 py-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-[0.75rem] text-[#5E80A8]">
+          <p className="text-[0.75rem] text-[#7BAAC8]">
             &copy; {new Date().getFullYear()} Kilowater. Tous droits réservés.
           </p>
-          <p className="text-[0.75rem] text-[#5E80A8]">
-            Bureau d&apos;étude en rénovation énergétique
-          </p>
+          <ul className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[0.75rem] text-[#7BAAC8]">
+            <li>
+              <Link href="/cookies" className="hover:text-[#BFDBFE] transition-colors">
+                Cookies
+              </Link>
+            </li>
+          </ul>
         </div>
       </div>
     </footer>

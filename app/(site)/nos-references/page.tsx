@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { MapPin, TrendingDown, Calendar } from "lucide-react";
+import RelatedLinks from "@/components/site/RelatedLinks";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -289,6 +290,31 @@ export default function NosReferencesPage() {
           </div>
         </div>
       </section>
+
+      <RelatedLinks
+        title="Découvrez nos expertises"
+        subtitle="Chaque référence ci-dessus s'appuie sur l'un de nos métiers. Explorez la prestation qui correspond à votre projet."
+        links={[
+          {
+            href: "/audit-energetique",
+            eyebrow: "Diagnostic",
+            title: "Audit énergétique",
+            description: "Bilan thermique complet pour identifier les leviers d'économie d'énergie de votre bâtiment.",
+          },
+          {
+            href: "/bureau-d-etude-thermique",
+            eyebrow: "Études",
+            title: "Bureau d'étude thermique",
+            description: "Calculs RE2020, simulations dynamiques, ACV — l'expertise technique au service de la performance.",
+          },
+          {
+            href: "/accompagnement-cee",
+            eyebrow: "Financement",
+            title: "Accompagnement CEE",
+            description: "Maximisez vos aides : Certificats d'Économies d'Énergie, MaPrimeRénov', Coup de pouce.",
+          },
+        ]}
+      />
     </>
   );
 }

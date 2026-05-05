@@ -16,12 +16,12 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Audit énergétique — Bilan thermique | Kilowater",
     description: "Audit énergétique complet par un bureau d'étude RGE. Diagnostic, simulation, préconisations chiffrées.",
-    url: "https://kilowater.fr/audit-energetique",
-    images: [{ url: "https://kilowater.fr/opengraph-image", width: 1200, height: 630, alt: "Kilowater — Audit énergétique" }],
+    url: "https://www.kilowater.fr/audit-energetique",
+    images: [{ url: "https://www.kilowater.fr/opengraph-image", width: 1200, height: 630, alt: "Kilowater — Audit énergétique" }],
     type: "website",
   },
   alternates: {
-    canonical: "https://kilowater.fr/audit-energetique",
+    canonical: "https://www.kilowater.fr/audit-energetique",
   },
 };
 
@@ -29,12 +29,12 @@ const breadcrumbSchema = {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   itemListElement: [
-    { "@type": "ListItem", position: 1, name: "Accueil", item: "https://kilowater.fr" },
+    { "@type": "ListItem", position: 1, name: "Accueil", item: "https://www.kilowater.fr" },
     {
       "@type": "ListItem",
       position: 2,
       name: "Audit énergétique",
-      item: "https://kilowater.fr/audit-energetique",
+      item: "https://www.kilowater.fr/audit-energetique",
     },
   ],
 };

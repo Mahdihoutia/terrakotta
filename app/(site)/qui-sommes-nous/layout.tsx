@@ -17,12 +17,12 @@ export const metadata: Metadata = {
     title: "Qui sommes-nous | Kilowater — Bureau d'étude rénovation",
     description:
       "Découvrez Kilowater : un bureau d'étude indépendant, qualifié RGE, engagé pour la performance énergétique des bâtiments résidentiels et tertiaires.",
-    url: "https://kilowater.fr/qui-sommes-nous",
-    images: [{ url: "https://kilowater.fr/og-image.jpg", width: 1200, height: 630, alt: "Kilowater" }],
+    url: "https://www.kilowater.fr/qui-sommes-nous",
+    images: [{ url: "https://www.kilowater.fr/og-image.jpg", width: 1200, height: 630, alt: "Kilowater" }],
     type: "website",
   },
   alternates: {
-    canonical: "https://kilowater.fr/qui-sommes-nous",
+    canonical: "https://www.kilowater.fr/qui-sommes-nous",
   },
 };
 

@@ -53,19 +53,10 @@ export default function ContactezNousPage() {
     // Anti-spam : honeypot
     if (formData.get("website")) return;
 
-    const typeProjet = formData.get("type") as string;
-    const message = formData.get("message") as string;
-    const notes = [
-      typeProjet ? `Type de projet : ${typeProjet}` : "",
-      message,
-    ]
-      .filter(Boolean)
-      .join("\n\n");
-
     setSending(true);
 
     try {
-      const res = await fetch("/api/leads", {
+      const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -75,9 +66,8 @@ export default function ContactezNousPage() {
           telephone: formData.get("telephone") || undefined,
           raisonSociale: formData.get("raisonSociale") || undefined,
           fonction: formData.get("fonction") || undefined,
-          source: "SITE_WEB",
-          statut: "NOUVEAU",
-          notes,
+          typeProjet: (formData.get("type") as string) || undefined,
+          message: formData.get("message"),
         }),
       });
 

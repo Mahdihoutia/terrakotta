@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { Award, Leaf, Users, Target, CheckCircle } from "lucide-react";
+import RelatedLinks from "@/components/site/RelatedLinks";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -225,6 +226,32 @@ export default function QuiSommesNousPage() {
           </div>
         </div>
       </section>
+
+      <RelatedLinks
+        variant="dark"
+        title="Notre savoir-faire en action"
+        subtitle="Découvrez comment nous mettons notre expertise au service des projets de rénovation énergétique."
+        links={[
+          {
+            href: "/nos-prestations",
+            eyebrow: "Catalogue",
+            title: "Nos prestations",
+            description: "L'éventail complet de nos services : de l'audit initial au suivi post-travaux.",
+          },
+          {
+            href: "/nos-references",
+            eyebrow: "Réalisations",
+            title: "Nos références",
+            description: "Projets concrets de rénovation énergétique : copropriétés, tertiaire, collectivités.",
+          },
+          {
+            href: "/contactez-nous",
+            eyebrow: "Discuter",
+            title: "Échanger sur votre projet",
+            description: "Une question, une étude, un avis technique : nous répondons sous 48h.",
+          },
+        ]}
+      />
     </>
   );
 }

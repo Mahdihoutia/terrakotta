@@ -3,6 +3,7 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
+import RelatedLinks from "@/components/site/RelatedLinks";
 import {
   FileText,
   Calculator,
@@ -703,6 +704,31 @@ export default function AccompagnementCEEPage() {
           </motion.div>
         </div>
       </section>
+
+      <RelatedLinks
+        title="Compléter votre projet"
+        subtitle="Le dispositif CEE s'articule avec d'autres expertises pour maximiser la performance et le financement de votre rénovation."
+        links={[
+          {
+            href: "/audit-energetique",
+            eyebrow: "Préalable",
+            title: "Audit énergétique",
+            description: "Identifier les travaux éligibles aux Certificats d'Économies d'Énergie et hiérarchiser les priorités.",
+          },
+          {
+            href: "/bureau-d-etude-thermique",
+            eyebrow: "Études",
+            title: "Bureau d'étude thermique",
+            description: "Calcul des kWh cumac générés par chaque opération et dimensionnement technique.",
+          },
+          {
+            href: "/nos-references",
+            eyebrow: "Réalisations",
+            title: "Nos références CEE",
+            description: "Découvrez des dossiers réels accompagnés et financés via les Certificats d'Économies d'Énergie.",
+          },
+        ]}
+      />
     </>
   );
 }

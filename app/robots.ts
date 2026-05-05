@@ -14,7 +14,7 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    sitemap: "https://kilowater.fr/sitemap.xml",
-    host: "https://kilowater.fr",
+    sitemap: "https://www.kilowater.fr/sitemap.xml",
+    host: "https://www.kilowater.fr",
   };
 }

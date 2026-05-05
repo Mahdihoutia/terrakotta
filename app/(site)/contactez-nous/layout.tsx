@@ -15,12 +15,12 @@ export const metadata: Metadata = {
     title: "Contactez Kilowater — Parlez-nous de votre projet",
     description:
       "Un projet de rénovation énergétique ? Contactez Kilowater pour un audit, un accompagnement CEE ou une mission de maîtrise d'œuvre. Réponse rapide.",
-    url: "https://kilowater.fr/contactez-nous",
-    images: [{ url: "https://kilowater.fr/og-image.jpg", width: 1200, height: 630, alt: "Kilowater" }],
+    url: "https://www.kilowater.fr/contactez-nous",
+    images: [{ url: "https://www.kilowater.fr/og-image.jpg", width: 1200, height: 630, alt: "Kilowater" }],
     type: "website",
   },
   alternates: {
-    canonical: "https://kilowater.fr/contactez-nous",
+    canonical: "https://www.kilowater.fr/contactez-nous",
   },
 };
 

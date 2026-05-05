@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import Navbar from "@/components/site/Navbar";
 import Footer from "@/components/site/Footer";
+import CookieBanner from "@/components/site/CookieBanner";
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -17,7 +18,7 @@ const manrope = Manrope({
   display: "swap",
 });
 
-const SITE_URL = "https://kilowater.fr";
+const SITE_URL = "https://www.kilowater.fr";
 const SITE_NAME = "Kilowater";
 const DEFAULT_DESCRIPTION =
   "Kilowater, bureau d'étude spécialisé en rénovation énergétique. Audit énergétique, maîtrise d'œuvre, accompagnement CEE et MaPrimeRénov' pour particuliers, professionnels et collectivités.";
@@ -160,6 +161,7 @@ export default function SiteLayout({
       <Navbar />
       <main>{children}</main>
       <Footer />
+      <CookieBanner />
     </div>
   );
 }

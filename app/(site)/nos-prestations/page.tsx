@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
+import RelatedLinks from "@/components/site/RelatedLinks";
 import {
   Thermometer,
   FileCheck,
@@ -243,6 +244,31 @@ export default function NosPrestationsPage() {
           </motion.div>
         </div>
       </section>
+
+      <RelatedLinks
+        title="Approfondir une expertise"
+        subtitle="Chaque prestation s'appuie sur un savoir-faire métier que nous détaillons dans les pages dédiées."
+        links={[
+          {
+            href: "/audit-energetique",
+            eyebrow: "Diagnostic",
+            title: "Audit énergétique",
+            description: "Audit réglementaire, audit copropriété, audit décret tertiaire — tous les formats d'audit que nous réalisons.",
+          },
+          {
+            href: "/bureau-d-etude-thermique",
+            eyebrow: "Calculs",
+            title: "Bureau d'étude thermique",
+            description: "Études RE2020, simulations thermiques dynamiques, ACV, dimensionnement systèmes.",
+          },
+          {
+            href: "/accompagnement-cee",
+            eyebrow: "Aides",
+            title: "Accompagnement CEE",
+            description: "Maximisez vos financements : Certificats d'Économies d'Énergie, MaPrimeRénov' et primes locales.",
+          },
+        ]}
+      />
     </>
   );
 }

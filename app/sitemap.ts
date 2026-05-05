@@ -1,7 +1,7 @@
 import { MetadataRoute } from "next";
 import { getAllArticles } from "@/lib/articles";
 
-const BASE_URL = "https://kilowater.fr";
+const BASE_URL = "https://www.kilowater.fr";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
@@ -69,6 +69,25 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly",
       priority: 0.9,
     },
+    // Pages locales SEO (priorité élevée — fort potentiel de trafic local)
+    {
+      url: `${BASE_URL}/audit-energetique-paris`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.85,
+    },
+    {
+      url: `${BASE_URL}/bureau-etude-thermique-ile-de-france`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.85,
+    },
+    {
+      url: `${BASE_URL}/renovation-energetique-paris`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.85,
+    },
   ];
 
   // Articles du laboratoire d'idées
@@ -85,5 +104,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
     };
   });
 
-  return [...staticRoutes, ...articleRoutes];
+  const legalRoutes: MetadataRoute.Sitemap = [
+    {
+      url: `${BASE_URL}/cookies`,
+      lastModified: now,
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
+  ];
+
+  return [...staticRoutes, ...articleRoutes, ...legalRoutes];
 }

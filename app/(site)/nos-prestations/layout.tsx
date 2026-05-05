@@ -17,12 +17,12 @@ export const metadata: Metadata = {
     title: "Nos prestations — Audit & Maîtrise d'œuvre | Kilowater",
     description:
       "Audit énergétique, maîtrise d'œuvre, CEE, MaPrimeRénov' : l'expertise complète de Kilowater pour votre projet de rénovation énergétique.",
-    url: "https://kilowater.fr/nos-prestations",
-    images: [{ url: "https://kilowater.fr/og-image.jpg", width: 1200, height: 630, alt: "Kilowater" }],
+    url: "https://www.kilowater.fr/nos-prestations",
+    images: [{ url: "https://www.kilowater.fr/og-image.jpg", width: 1200, height: 630, alt: "Kilowater" }],
     type: "website",
   },
   alternates: {
-    canonical: "https://kilowater.fr/nos-prestations",
+    canonical: "https://www.kilowater.fr/nos-prestations",
   },
 };
 

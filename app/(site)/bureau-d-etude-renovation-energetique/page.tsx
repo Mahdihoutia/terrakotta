@@ -22,7 +22,6 @@ import {
   ArrowRight,
   Layers,
   Calendar,
-  Euro,
 } from "lucide-react";
 
 const fadeUp = {
@@ -792,128 +791,6 @@ export default function BureauDEtudePage() {
                     </div>
                   </motion.div>
                 ))}
-              </motion.div>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* ── Prix & honoraires ── */}
-        <section className="py-20 md:py-28">
-          <div className="mx-auto max-w-[1400px] px-6 md:px-10 lg:px-16">
-            <motion.div
-              variants={staggerContainer}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-80px" }}
-              className="grid gap-12 lg:grid-cols-2 lg:items-start"
-            >
-              <div>
-                <motion.p
-                  variants={fadeUp}
-                  className="mb-4 text-[0.72rem] uppercase tracking-[0.25em] text-[#2563EB]"
-                >
-                  Tarifs & financement
-                </motion.p>
-
-                <motion.h2
-                  variants={fadeUp}
-                  className="font-display text-3xl font-semibold text-[#0D1B35] md:text-4xl"
-                >
-                  Prix d'un bureau d'étude en rénovation énergétique
-                </motion.h2>
-
-                <motion.p
-                  variants={fadeUp}
-                  className="mt-4 text-[#4A6285] leading-relaxed"
-                >
-                  Les honoraires d'un{" "}
-                  <strong className="font-semibold text-[#0D1B35]">bureau d'étude en rénovation énergétique</strong>{" "}
-                  dépendent du périmètre de mission et de la complexité du
-                  bâtiment. La bonne nouvelle : ces coûts sont en grande partie
-                  financés par les CEE et les aides publiques — jusqu'à 100 %
-                  sur certains dispositifs.
-                </motion.p>
-
-                <motion.p
-                  variants={fadeUp}
-                  className="mt-4 text-[#4A6285] leading-relaxed"
-                >
-                  Chez Kilowater, nous facturons au forfait sur la base d'un
-                  périmètre précisément défini. Pas de dépassement caché : le
-                  devis engage. Pour une mission complète de maîtrise d'œuvre,
-                  le BET rénovation énergétique représente typiquement{" "}
-                  <strong className="font-semibold text-[#0D1B35]">8 % à 12 % du montant HT des travaux</strong>{" "}
-                  — à comparer aux 15 à 30 % d'économies générées sur le budget
-                  global grâce à la consultation compétitive et au dimensionnement
-                  optimisé.
-                </motion.p>
-              </div>
-
-              <motion.div
-                variants={fadeUp}
-                className="rounded-2xl border border-[#DBEAFE] bg-white p-8"
-              >
-                <div className="mb-6 flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#EFF6FF]">
-                    <Euro className="h-5 w-5 text-[#2563EB]" />
-                  </div>
-                  <h3 className="font-semibold text-[#0D1B35]">
-                    Fourchettes indicatives HT
-                  </h3>
-                </div>
-                <ul className="space-y-4">
-                  {[
-                    {
-                      label: "Audit énergétique tertiaire",
-                      value: "2 000 – 10 000 €",
-                      sub: "Selon surface et nombre de systèmes",
-                    },
-                    {
-                      label: "Audit énergétique industriel (EED)",
-                      value: "15 000 € +",
-                      sub: "Périmètre process + utilités",
-                    },
-                    {
-                      label: "Simulation thermique dynamique (STD)",
-                      value: "3 500 – 8 000 €",
-                      sub: "Modélisation du comportement thermique",
-                    },
-                    {
-                      label: "Maîtrise d'œuvre complète",
-                      value: "8 – 12 % du montant travaux",
-                      sub: "Conception + consultation + DET + AOR",
-                    },
-                    {
-                      label: "Audit énergétique copropriété",
-                      value: "4 000 – 12 000 €",
-                      sub: "Selon nombre de lots",
-                    },
-                  ].map((row) => (
-                    <li
-                      key={row.label}
-                      className="flex items-start justify-between gap-4 border-b border-[#DBEAFE] pb-4 last:border-0"
-                    >
-                      <div>
-                        <p className="font-medium text-[#0D1B35] text-sm">
-                          {row.label}
-                        </p>
-                        <p className="mt-0.5 text-xs text-[#4A6285]">
-                          {row.sub}
-                        </p>
-                      </div>
-                      <p className="whitespace-nowrap font-semibold text-[#2563EB] text-sm">
-                        {row.value}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-                <p className="mt-6 rounded-lg bg-[#F5FAFF] p-4 text-xs leading-relaxed text-[#4A6285]">
-                  <strong className="font-semibold text-[#0D1B35]">Bon à savoir :</strong>{" "}
-                  la plupart de ces missions sont finançables par les
-                  Certificats d'Économies d'Énergie (CEE) et par les dispositifs
-                  d'aide à la rénovation énergétique. Contactez-nous pour
-                  évaluer le reste à charge réel.
-                </p>
               </motion.div>
             </motion.div>
           </div>

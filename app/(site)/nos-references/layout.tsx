@@ -17,12 +17,12 @@ export const metadata: Metadata = {
     title: "Nos références — Projets réalisés | Kilowater",
     description:
       "Découvrez les projets de rénovation énergétique réalisés par Kilowater : résidentiel, tertiaire, collectivités. Résultats et économies d'énergie chiffrés.",
-    url: "https://kilowater.fr/nos-references",
-    images: [{ url: "https://kilowater.fr/og-image.jpg", width: 1200, height: 630, alt: "Kilowater" }],
+    url: "https://www.kilowater.fr/nos-references",
+    images: [{ url: "https://www.kilowater.fr/og-image.jpg", width: 1200, height: 630, alt: "Kilowater" }],
     type: "website",
   },
   alternates: {
-    canonical: "https://kilowater.fr/nos-references",
+    canonical: "https://www.kilowater.fr/nos-references",
   },
 };
 

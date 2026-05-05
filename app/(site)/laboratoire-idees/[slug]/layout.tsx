@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getArticleBySlug, getAllArticles } from "@/lib/articles";
 
-const BASE_URL = "https://kilowater.fr";
+const BASE_URL = "https://www.kilowater.fr";
 
 interface Props {
   params: Promise<{ slug: string }>;
