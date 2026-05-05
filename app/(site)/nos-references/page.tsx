@@ -302,9 +302,9 @@ export default function NosReferencesPage() {
             description: "Bilan thermique complet pour identifier les leviers d'économie d'énergie de votre bâtiment.",
           },
           {
-            href: "/bureau-d-etude-thermique",
-            eyebrow: "Études",
-            title: "Bureau d'étude thermique",
+            href: "/bureau-d-etude-renovation-energetique",
+            eyebrow: "Métier",
+            title: "Bureau d'étude rénovation énergétique",
             description: "Calculs RE2020, simulations dynamiques, ACV — l'expertise technique au service de la performance.",
           },
           {

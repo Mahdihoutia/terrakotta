@@ -588,7 +588,7 @@ Demandez des références récentes sur des projets comparables — surface, usa
 
 ## 4. La méthodologie et les outils
 
-Un [bureau d'étude thermique](/bureau-d-etude-thermique) sérieux travaille avec des outils de calcul professionnels : Pleiades+COMFIE, Design Builder, EnergyPlus ou ClimaWin pour la simulation thermique dynamique, Perrenoud pour les calculs réglementaires, base INIES pour les analyses de cycle de vie. Méfiez-vous des cabinets qui n'utilisent qu'un tableur Excel ou un logiciel gratuit : les résultats manquent de finesse et les dimensionnements risquent d'être approximatifs.
+Un [bureau d'étude thermique](/bureau-d-etude-renovation-energetique) sérieux travaille avec des outils de calcul professionnels : Pleiades+COMFIE, Design Builder, EnergyPlus ou ClimaWin pour la simulation thermique dynamique, Perrenoud pour les calculs réglementaires, base INIES pour les analyses de cycle de vie. Méfiez-vous des cabinets qui n'utilisent qu'un tableur Excel ou un logiciel gratuit : les résultats manquent de finesse et les dimensionnements risquent d'être approximatifs.
 
 La méthodologie doit également être documentée. Demandez le plan type d'un rapport d'audit, un exemple de cahier des charges ou une simulation STD anonymisée. La qualité des livrables est le meilleur indicateur du sérieux technique.
 
@@ -672,7 +672,7 @@ Plusieurs éléments expliquent les écarts parfois importants entre devis.
 
 ## Les aides qui réduisent le reste à charge
 
-Bonne nouvelle : la majorité des missions de [bureau d'étude thermique](/bureau-d-etude-thermique) sont finançables par les Certificats d'Économies d'Énergie (CEE). Pour les entreprises, les fiches BAT-TH (tertiaire) et IND-UT (industrie) prennent en charge une large part des honoraires. Pour les copropriétés, MaPrimeRénov' Copropriétés couvre jusqu'à 30 % du coût de l'audit et de l'assistance à maîtrise d'ouvrage. Pour les industriels, le Fonds Chaleur et les dispositifs de l'ADEME complètent le financement.
+Bonne nouvelle : la majorité des missions de [bureau d'étude thermique](/bureau-d-etude-renovation-energetique) sont finançables par les Certificats d'Économies d'Énergie (CEE). Pour les entreprises, les fiches BAT-TH (tertiaire) et IND-UT (industrie) prennent en charge une large part des honoraires. Pour les copropriétés, MaPrimeRénov' Copropriétés couvre jusqu'à 30 % du coût de l'audit et de l'assistance à maîtrise d'ouvrage. Pour les industriels, le Fonds Chaleur et les dispositifs de l'ADEME complètent le financement.
 
 Concrètement, sur un audit tertiaire facturé 6 000 € HT, le reste à charge après aides peut descendre à 2 000 € HT. Sur une maîtrise d'œuvre complète, le bureau d'étude peut souvent mobiliser 30 à 50 % d'aides cumulées.
 
@@ -700,7 +700,7 @@ Pour estimer le budget de votre bureau d'étude, partez de la règle simple : 1 
     icon: Scale,
     content: `## Deux métiers, un même bâtiment
 
-Sur un projet de construction ou de rénovation, plusieurs bureaux d'étude interviennent en parallèle : structure, thermique, fluides, acoustique, électricité, environnement. Parmi eux, le [bureau d'étude thermique](/bureau-d-etude-thermique) et le bureau d'étude fluides (souvent abrégés BET thermique et BET fluides) sont les plus directement liés à la performance énergétique. Leurs périmètres se recouvrent en partie, ce qui explique la confusion fréquente. Ils sont pourtant complémentaires et remplissent des rôles bien distincts.
+Sur un projet de construction ou de rénovation, plusieurs bureaux d'étude interviennent en parallèle : structure, thermique, fluides, acoustique, électricité, environnement. Parmi eux, le [bureau d'étude thermique](/bureau-d-etude-renovation-energetique) et le bureau d'étude fluides (souvent abrégés BET thermique et BET fluides) sont les plus directement liés à la performance énergétique. Leurs périmètres se recouvrent en partie, ce qui explique la confusion fréquente. Ils sont pourtant complémentaires et remplissent des rôles bien distincts.
 
 ## Le bureau d'étude thermique : l'enveloppe et la performance
 
@@ -808,7 +808,7 @@ Soyons lucides : la qualification RGE Études est un filtre utile, mais elle ne 
 
 **L'étendue du cabinet varie.** Une qualification est délivrée à une structure, pas à chaque ingénieur individuellement. Un gros cabinet qualifié peut confier votre dossier à un stagiaire ou à un junior peu expérimenté. Exigez de savoir qui est l'ingénieur référent de votre projet et quelle est son expérience.
 
-**La qualification ne certifie pas l'indépendance.** Un [bureau d'étude thermique](/bureau-d-etude-thermique) qualifié peut parfaitement être une filiale d'un fabricant d'équipement ou d'un installateur. Cette situation n'est pas interdite, mais elle peut biaiser les recommandations. La qualification ne remplace pas votre vigilance sur le modèle économique du cabinet.
+**La qualification ne certifie pas l'indépendance.** Un [bureau d'étude thermique](/bureau-d-etude-renovation-energetique) qualifié peut parfaitement être une filiale d'un fabricant d'équipement ou d'un installateur. Cette situation n'est pas interdite, mais elle peut biaiser les recommandations. La qualification ne remplace pas votre vigilance sur le modèle économique du cabinet.
 
 **La qualification n'est pas un gage d'adéquation à votre projet.** Un cabinet qualifié OPQIBI 1905 (audit tertiaire) ne sera pas forcément le meilleur pour un audit industriel (1911), même s'il a le droit d'intervenir. Vérifiez que la spécialisation du cabinet correspond à votre typologie de bâtiment.
 

@@ -256,10 +256,10 @@ export default function NosPrestationsPage() {
             description: "Audit réglementaire, audit copropriété, audit décret tertiaire — tous les formats d'audit que nous réalisons.",
           },
           {
-            href: "/bureau-d-etude-thermique",
-            eyebrow: "Calculs",
-            title: "Bureau d'étude thermique",
-            description: "Études RE2020, simulations thermiques dynamiques, ACV, dimensionnement systèmes.",
+            href: "/bureau-d-etude-renovation-energetique",
+            eyebrow: "Métier",
+            title: "Bureau d'étude rénovation énergétique",
+            description: "Études thermiques RE2020, STD, ACV, audits réglementaires et accompagnement projet de A à Z.",
           },
           {
             href: "/accompagnement-cee",

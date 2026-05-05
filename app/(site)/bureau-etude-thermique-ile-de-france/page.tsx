@@ -106,7 +106,7 @@ export default function BureauEtudeThermiqueIDFPage() {
         },
       ]}
       related={[
-        { href: "/bureau-d-etude-thermique", label: "Bureau d'étude thermique (page complète)" },
+        { href: "/bureau-d-etude-renovation-energetique", label: "Bureau d'étude rénovation énergétique" },
         { href: "/audit-energetique-paris", label: "Audit énergétique à Paris" },
         { href: "/renovation-energetique-paris", label: "Rénovation énergétique à Paris" },
         { href: "/audit-energetique", label: "Audit énergétique" },

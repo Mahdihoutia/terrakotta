@@ -716,9 +716,9 @@ export default function AccompagnementCEEPage() {
             description: "Identifier les travaux éligibles aux Certificats d'Économies d'Énergie et hiérarchiser les priorités.",
           },
           {
-            href: "/bureau-d-etude-thermique",
+            href: "/bureau-d-etude-renovation-energetique",
             eyebrow: "Études",
-            title: "Bureau d'étude thermique",
+            title: "Bureau d'étude rénovation énergétique",
             description: "Calcul des kWh cumac générés par chaque opération et dimensionnement technique.",
           },
           {
