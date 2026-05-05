@@ -15,8 +15,10 @@ import {
   X,
   ImagePlus,
   FileText,
+  FileType,
   Loader2,
 } from "lucide-react";
+import { exportToWord, type WordSectionInput } from "@/lib/word-export";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -607,6 +609,7 @@ export default function RapportVisite({ onBack, onSaved, existingDoc }: Props) {
     return {};
   });
   const [generating, setGenerating] = useState(false);
+  const [generatingWord, setGeneratingWord] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function updateValue(id: string, value: string) {
@@ -724,6 +727,66 @@ export default function RapportVisite({ onBack, onSaved, existingDoc }: Props) {
     }));
   }
 
+  async function handleGenerateWord() {
+    setGeneratingWord(true);
+    try {
+      const wordSections: WordSectionInput[] = SECTIONS.map((section, sIdx) => {
+        const rows: { label: string; value: string }[] = [];
+        const paragraphs: { label?: string; text: string }[] = [];
+        for (const field of section.fields) {
+          const val = values[field.id];
+          if (!val || !val.trim()) continue;
+          if (field.type === "textarea") {
+            paragraphs.push({ label: field.label, text: val.trim() });
+          } else {
+            const label = field.unit ? `${field.label} (${field.unit})` : field.label;
+            rows.push({ label, value: val });
+          }
+        }
+        const photos = (sectionPhotos[sIdx] || []).map((p) => ({
+          dataUrl: p.preview,
+          categorie: p.categorie,
+          legende: p.legende,
+        }));
+        return {
+          titre: section.titre,
+          description: section.description,
+          rows,
+          paragraphs,
+          photos,
+        };
+      }).filter((s) => (s.rows?.length ?? 0) + (s.paragraphs?.length ?? 0) + (s.photos?.length ?? 0) > 0);
+
+      await exportToWord({
+        title: "Rapport de visite technique",
+        subtitle: "Constat de l'existant et préconisations de travaux",
+        reference: values.ref_rapport || "DRAFT",
+        meta: [
+          { label: "Référence", value: values.ref_rapport || "—" },
+          { label: "Bénéficiaire", value: values.client_nom || "—" },
+          { label: "Adresse", value: values.adresse || "—" },
+          { label: "Date visite", value: values.date_visite || "—" },
+          { label: "Rédacteur", value: values.redacteur || "—" },
+          { label: "Téléphone", value: values.client_telephone || "—" },
+        ],
+        sections: wordSections,
+        filename: `Rapport_Visite_${values.ref_rapport || "DRAFT"}_${new Date().toISOString().slice(0, 10)}.docx`,
+      });
+      if (docId) {
+        await fetch(`/api/documents/${docId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ statut: "TERMINE" }),
+        });
+        onSaved?.();
+      } else {
+        await handleSave();
+      }
+    } finally {
+      setGeneratingWord(false);
+    }
+  }
+
   async function handleGeneratePDF() {
     setGenerating(true);
     try {
@@ -776,7 +839,11 @@ export default function RapportVisite({ onBack, onSaved, existingDoc }: Props) {
             {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : saved ? <CheckCircle2 className="mr-2 h-4 w-4 text-emerald-500" /> : <Save className="mr-2 h-4 w-4" />}
             {saving ? "Sauvegarde..." : saved ? "Sauvegardé" : "Sauvegarder"}
           </Button>
-          <Button size="sm" onClick={handleGeneratePDF} disabled={generating}>
+          <Button variant="outline" size="sm" onClick={handleGenerateWord} disabled={generatingWord || generating}>
+            {generatingWord ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileType className="mr-2 h-4 w-4" />}
+            {generatingWord ? "Word..." : "Word"}
+          </Button>
+          <Button size="sm" onClick={handleGeneratePDF} disabled={generating || generatingWord}>
             {generating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}
             {generating ? "Génération..." : "Générer le PDF"}
           </Button>
@@ -946,10 +1013,16 @@ export default function RapportVisite({ onBack, onSaved, existingDoc }: Props) {
                         Suivant &rarr;
                       </Button>
                     ) : (
-                      <Button size="sm" onClick={handleGeneratePDF} disabled={generating}>
-                        {generating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}
-                        {generating ? "Génération..." : "Générer le PDF"}
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={handleGenerateWord} disabled={generatingWord || generating}>
+                          {generatingWord ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileType className="mr-2 h-4 w-4" />}
+                          {generatingWord ? "Word..." : "Word"}
+                        </Button>
+                        <Button size="sm" onClick={handleGeneratePDF} disabled={generating || generatingWord}>
+                          {generating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}
+                          {generating ? "Génération..." : "Générer le PDF"}
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </CardContent>

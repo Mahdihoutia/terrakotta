@@ -12,6 +12,7 @@ import {
   AlertCircle,
   Save,
   FileText,
+  FileType,
   Camera,
   X,
   ImagePlus,
@@ -23,6 +24,7 @@ import {
   Building2,
   Sparkles,
 } from "lucide-react";
+import { exportToWord, type WordSectionInput, type WordChart } from "@/lib/word-export";
 import ValidationBanner, { type ValidationItem } from "./audit/ValidationBanner";
 import SuggestionsPanel from "./audit/SuggestionsPanel";
 import BatimentTypePicker from "./audit/BatimentTypePicker";
@@ -1367,6 +1369,7 @@ export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props
     return {};
   });
   const [generating, setGenerating] = useState(false);
+  const [generatingWord, setGeneratingWord] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function updateValue(id: string, value: string) { setValues((prev) => ({ ...prev, [id]: value })); setSaved(false); }
@@ -1613,6 +1616,140 @@ export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props
     } finally { setGenerating(false); }
   }
 
+  async function handleGenerateWord() {
+    setGeneratingWord(true);
+    try {
+      const {
+        renderDeperditionsChart,
+        renderPostesChart,
+        renderBesoinsMensuelsChart,
+        renderComparatifScenarioChart,
+      } = await import("@/lib/pdf-charts");
+
+      const sectionCharts: Record<number, WordChart[]> = {};
+
+      // Charts identiques à la sortie PDF (mêmes inputs)
+      try {
+        const chauffage = parseFloat(values.conso_chauffage || "0");
+        const ecs = parseFloat(values.conso_ecs || "0");
+        const refroidissement = parseFloat(values.conso_refroidissement || "0");
+        const eclairage = parseFloat(values.conso_eclairage || "0");
+        const auxiliaires = parseFloat(values.conso_auxiliaires || "0");
+        if ([chauffage, ecs, refroidissement, eclairage, auxiliaires].some((v) => v > 0)) {
+          const png = renderPostesChart({ chauffage, ecs, refroidissement, eclairage, auxiliaires });
+          (sectionCharts[6] = sectionCharts[6] || []).push({ title: "Répartition des consommations", dataUrl: png });
+        }
+      } catch { /* skip */ }
+
+      try {
+        if (thermal?.besoins && values.zone_climatique) {
+          const png = renderBesoinsMensuelsChart({
+            zone: values.zone_climatique,
+            coefG: thermal.besoins.coefG,
+            volumeChauffe: parseFloat(values.surface_habitable || "0") * (parseFloat(values.hauteur_plafond || "0") || 2.5),
+          });
+          (sectionCharts[6] = sectionCharts[6] || []).push({ title: "Besoins de chauffage mensuels", dataUrl: png });
+        }
+      } catch { /* skip */ }
+
+      try {
+        const png = renderDeperditionsChart({
+          murs:            parseFloat(values.deperd_murs          || "0"),
+          toiture:         parseFloat(values.deperd_toiture       || "0"),
+          plancher:        parseFloat(values.deperd_plancher      || "0"),
+          menuiseries:     parseFloat(values.deperd_menuiseries   || "0"),
+          pontsThermiques: parseFloat(values.deperd_ponts         || "0"),
+          ventilation:     parseFloat(values.deperd_ventilation   || "0"),
+          infiltrations:   parseFloat(values.deperd_infiltrations || "0"),
+        });
+        (sectionCharts[7] = sectionCharts[7] || []).push({ title: "Répartition des déperditions par paroi", dataUrl: png });
+      } catch { /* skip */ }
+
+      try {
+        const consoActuelle = parseFloat(values.conso_par_m2 || "0");
+        const gain1 = parseFloat(values.scenario_1_gain || "0");
+        const gain2 = parseFloat(values.scenario_2_gain || "0");
+        if (consoActuelle > 0 && (gain1 > 0 || gain2 > 0)) {
+          const png = renderComparatifScenarioChart({
+            consoActuelle,
+            scenario1: { gain: gain1, nom: "Scénario 1" },
+            scenario2: { gain: gain2, nom: "Scénario 2" },
+          });
+          (sectionCharts[11] = sectionCharts[11] || []).push({ title: "Comparatif des scénarios (kWh EP/m²·an)", dataUrl: png });
+        }
+      } catch { /* skip */ }
+
+      const wordSections: WordSectionInput[] = SECTIONS.map((section, sIdx) => {
+        const rows: { label: string; value: string }[] = [];
+        const paragraphs: { label?: string; text: string }[] = [];
+        for (const field of section.fields) {
+          const val = values[field.id];
+          if (!val || !val.trim()) continue;
+          if (field.type === "textarea") {
+            paragraphs.push({ label: field.label, text: val.trim() });
+          } else {
+            const label = field.unit ? `${field.label} (${field.unit})` : field.label;
+            rows.push({ label, value: val });
+          }
+        }
+        const photos = (sectionPhotos[sIdx] || []).map((p) => ({
+          dataUrl: p.preview,
+          categorie: p.categorie,
+          legende: p.legende,
+        }));
+        const charts = sectionCharts[sIdx] || [];
+        return { titre: section.titre, description: section.description, rows, paragraphs, photos, charts };
+      }).filter((s) => (s.rows?.length ?? 0) + (s.paragraphs?.length ?? 0) + (s.photos?.length ?? 0) + (s.charts?.length ?? 0) > 0);
+
+      // Préconisations en tableau dédié
+      if (preconisations.length > 0) {
+        wordSections.push({
+          titre: "Préconisations",
+          description: "Actions de rénovation priorisées",
+          tables: [{
+            headers: ["Code", "Action", "Famille", "Horizon", "Coût (€)", "Économies (€/an)"],
+            rows: preconisations.map((a) => [
+              a.code || "—",
+              a.titre || "—",
+              a.famille || "—",
+              a.horizon || "—",
+              a.coutTravaux ? Math.round(a.coutTravaux).toString() : "—",
+              a.economiesEuro ? Math.round(a.economiesEuro).toString() : "—",
+            ]),
+          }],
+        });
+      }
+
+      await exportToWord({
+        title: "Audit énergétique",
+        subtitle: "Diagnostic complet et scénarios de rénovation",
+        reference: values.ref_audit || "DRAFT",
+        meta: [
+          { label: "Référence", value: values.ref_audit || "—" },
+          { label: "Bénéficiaire", value: values.client_nom || "—" },
+          { label: "Adresse", value: values.adresse || "—" },
+          { label: "Date visite", value: values.date_visite || "—" },
+          { label: "Auditeur", value: values.redacteur || "—" },
+          { label: "DPE actuel", value: values.dpe_actuel || "—" },
+        ],
+        sections: wordSections,
+        filename: `Audit_Energetique_${values.ref_audit || "DRAFT"}_${new Date().toISOString().slice(0, 10)}.docx`,
+      });
+      if (docId) {
+        await fetch(`/api/documents/${docId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ statut: "TERMINE" }),
+        });
+        onSaved?.();
+      } else {
+        await handleSave();
+      }
+    } finally {
+      setGeneratingWord(false);
+    }
+  }
+
   const PRECO_IDX = SECTIONS.length; // index virtuel pour la nav
   const isPrecoView = activeSection === PRECO_IDX;
   const currentSection = SECTIONS[activeSection];
@@ -1669,7 +1806,11 @@ export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props
             {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : saved ? <CheckCircle2 className="mr-2 h-4 w-4 text-emerald-500" /> : <Save className="mr-2 h-4 w-4" />}
             {saving ? "Sauvegarde..." : saved ? "Sauvegardé" : "Sauvegarder"}
           </Button>
-          <Button size="sm" onClick={handleGeneratePDF} disabled={generating}>
+          <Button variant="outline" size="sm" onClick={handleGenerateWord} disabled={generatingWord || generating}>
+            {generatingWord ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileType className="mr-2 h-4 w-4" />}
+            {generatingWord ? "Word..." : "Word"}
+          </Button>
+          <Button size="sm" onClick={handleGeneratePDF} disabled={generating || generatingWord}>
             {generating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}
             {generating ? "Génération..." : "Générer le PDF"}
           </Button>
@@ -1936,10 +2077,16 @@ export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props
 
                   <div className="flex justify-between pt-4 border-t">
                     <Button variant="outline" size="sm" onClick={() => setActiveSection(SECTIONS.length - 1)}>&larr; Précédent</Button>
-                    <Button size="sm" onClick={handleGeneratePDF} disabled={generating}>
-                      {generating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}
-                      {generating ? "Génération..." : "Générer le PDF"}
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={handleGenerateWord} disabled={generatingWord || generating}>
+                        {generatingWord ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileType className="mr-2 h-4 w-4" />}
+                        {generatingWord ? "Word..." : "Word"}
+                      </Button>
+                      <Button size="sm" onClick={handleGeneratePDF} disabled={generating || generatingWord}>
+                        {generating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}
+                        {generating ? "Génération..." : "Générer le PDF"}
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

@@ -19,7 +19,9 @@ import {
   ImagePlus,
   BookMarked,
   BookmarkPlus,
+  FileType,
 } from "lucide-react";
+import { exportToWord, type WordSectionInput } from "@/lib/word-export";
 import { cn } from "@/lib/utils";
 import { showApiError, showNetworkError } from "@/lib/api-errors";
 import { toast } from "sonner";
@@ -766,6 +768,7 @@ export default function DevisDocument({ onBack, onSaved, existingDoc }: Props) {
   const [saving, setSaving] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [generatingWord, setGeneratingWord] = useState(false);
   const [showLignes, setShowLignes] = useState(false);
   const [sectionPhotos, setSectionPhotos] = useState<Record<number, PhotoItem[]>>(() => {
     if (existingDoc?.donnees) {
@@ -1007,6 +1010,97 @@ export default function DevisDocument({ onBack, onSaved, existingDoc }: Props) {
     }
   }
 
+  async function handleGenerateWord() {
+    setGeneratingWord(true);
+    try {
+      const wordSections: WordSectionInput[] = SECTIONS.map((section, sIdx) => {
+        const rows: { label: string; value: string }[] = [];
+        const paragraphs: { label?: string; text: string }[] = [];
+        for (const field of section.fields) {
+          const val = values[field.id];
+          if (!val || !val.trim()) continue;
+          if (field.type === "textarea") {
+            paragraphs.push({ label: field.label, text: val.trim() });
+          } else {
+            const label = field.unit ? `${field.label} (${field.unit})` : field.label;
+            rows.push({ label, value: val });
+          }
+        }
+        const photos = (sectionPhotos[sIdx] || []).map((p) => ({
+          dataUrl: p.preview,
+          categorie: p.categorie,
+          legende: p.legende,
+        }));
+        return { titre: section.titre, description: section.description, rows, paragraphs, photos };
+      }).filter((s) => (s.rows?.length ?? 0) + (s.paragraphs?.length ?? 0) + (s.photos?.length ?? 0) > 0);
+
+      // Tableau des lignes de devis (cœur du document)
+      if (lignes.length > 0) {
+        const totalHT = lignes.reduce(
+          (sum, l) => sum + (parseFloat(l.quantite) || 0) * (parseFloat(l.prixUnitaire) || 0),
+          0,
+        );
+        const tvaRate = values.tva_applicable?.includes("5,5") ? 5.5
+          : values.tva_applicable?.includes("10%") ? 10 : 20;
+        const totalTVA = totalHT * (tvaRate / 100);
+        const totalTTC = totalHT + totalTVA;
+        const fmt = (n: number) =>
+          n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
+
+        wordSections.unshift({
+          titre: "Détail du devis",
+          tables: [{
+            headers: ["Désignation", "Unité", "Qté", "PU HT", "Total HT"],
+            rows: lignes.map((l) => {
+              const qte = parseFloat(l.quantite) || 0;
+              const pu = parseFloat(l.prixUnitaire) || 0;
+              return [
+                l.designation || "—",
+                l.unite || "—",
+                qte.toString(),
+                fmt(pu),
+                fmt(qte * pu),
+              ];
+            }),
+          }],
+          rows: [
+            { label: "Total HT", value: fmt(totalHT) },
+            { label: `TVA (${tvaRate}%)`, value: fmt(totalTVA) },
+            { label: "Total TTC", value: fmt(totalTTC) },
+          ],
+        });
+      }
+
+      await exportToWord({
+        title: "Devis",
+        subtitle: values.client_nom ? `Pour ${values.client_nom}` : undefined,
+        reference: values.ref_devis || "DV-DRAFT",
+        meta: [
+          { label: "Référence", value: values.ref_devis || "—" },
+          { label: "Date d'émission", value: values.date_emission || "—" },
+          { label: "Date de validité", value: values.date_validite || "—" },
+          { label: "Client", value: values.client_nom || "—" },
+          { label: "Adresse client", value: values.client_adresse || "—" },
+          { label: "Adresse chantier", value: values.adresse_chantier || values.client_adresse || "—" },
+        ],
+        sections: wordSections,
+        filename: `Devis_${values.ref_devis || "DRAFT"}_${new Date().toISOString().slice(0, 10)}.docx`,
+      });
+      if (docId) {
+        await fetch(`/api/documents/${docId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ statut: "TERMINE" }),
+        });
+        onSaved?.();
+      } else {
+        await handleSave();
+      }
+    } finally {
+      setGeneratingWord(false);
+    }
+  }
+
   async function handleGeneratePDF() {
     setGenerating(true);
     try {
@@ -1077,7 +1171,11 @@ export default function DevisDocument({ onBack, onSaved, existingDoc }: Props) {
             {saving ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Save className="mr-1 h-3.5 w-3.5" />}
             Sauvegarder
           </Button>
-          <Button size="sm" onClick={handleGeneratePDF} disabled={generating}>
+          <Button variant="outline" size="sm" onClick={handleGenerateWord} disabled={generatingWord || generating}>
+            {generatingWord ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <FileType className="mr-1 h-3.5 w-3.5" />}
+            Word
+          </Button>
+          <Button size="sm" onClick={handleGeneratePDF} disabled={generating || generatingWord}>
             {generating ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Calculator className="mr-1 h-3.5 w-3.5" />}
             Générer PDF
           </Button>
@@ -1417,10 +1515,16 @@ export default function DevisDocument({ onBack, onSaved, existingDoc }: Props) {
                       Suivant →
                     </Button>
                   ) : (
-                    <Button size="sm" onClick={handleGeneratePDF} disabled={generating}>
-                      {generating ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Calculator className="mr-1 h-3.5 w-3.5" />}
-                      Générer le PDF
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={handleGenerateWord} disabled={generatingWord || generating}>
+                        {generatingWord ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <FileType className="mr-1 h-3.5 w-3.5" />}
+                        Word
+                      </Button>
+                      <Button size="sm" onClick={handleGeneratePDF} disabled={generating || generatingWord}>
+                        {generating ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Calculator className="mr-1 h-3.5 w-3.5" />}
+                        Générer le PDF
+                      </Button>
+                    </div>
                   )}
                 </div>
               </motion.div>

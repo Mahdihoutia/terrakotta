@@ -12,6 +12,7 @@ import {
   AlertCircle,
   Thermometer,
   FileText,
+  FileType,
   Plus,
   Trash2,
   Calculator,
@@ -19,6 +20,7 @@ import {
   Snowflake,
   TrendingUp,
 } from "lucide-react";
+import { exportToWord, type WordSectionInput, type WordChart } from "@/lib/word-export";
 import { showApiError, showNetworkError } from "@/lib/api-errors";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -207,6 +209,94 @@ function parseNum(v: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/**
+ * Bar chart canvas rendant les besoins (chauffage + clim) par zone.
+ * Retourne un PNG dataURL pour embarquage dans le Word.
+ */
+function renderBesoinsParZoneBarChart(
+  zones: Array<{ nom: string; surface: number; result: { besoinChauffageMWh: number; besoinClimMWh: number } }>,
+): string | null {
+  if (zones.length === 0) return null;
+  const data = zones.map((z) => {
+    const surf = Math.max(z.surface, 1);
+    return {
+      nom: z.nom,
+      chauffage: (z.result.besoinChauffageMWh * 1000) / surf,
+      clim: (z.result.besoinClimMWh * 1000) / surf,
+    };
+  });
+
+  const W = 1100;
+  const H = 600;
+  const padTop = 60;
+  const padBottom = 90;
+  const padLeft = 70;
+  const padRight = 40;
+  const plotW = W - padLeft - padRight;
+  const plotH = H - padTop - padBottom;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+
+  ctx.fillStyle = "#FFFFFF";
+  ctx.fillRect(0, 0, W, H);
+
+  const max = Math.max(1, ...data.flatMap((d) => [d.chauffage, d.clim]));
+  const niceMax = Math.ceil(max / 10) * 10;
+
+  ctx.font = "16px -apple-system, Helvetica, Arial";
+  ctx.fillStyle = "#171717";
+  ctx.fillText("Besoins par zone (kWh/m²·an)", padLeft, 30);
+
+  ctx.strokeStyle = "#E5E5E5";
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = padTop + (plotH * i) / 4;
+    ctx.beginPath();
+    ctx.moveTo(padLeft, y);
+    ctx.lineTo(W - padRight, y);
+    ctx.stroke();
+    const value = niceMax * (1 - i / 4);
+    ctx.fillStyle = "#737373";
+    ctx.font = "12px -apple-system, Helvetica, Arial";
+    ctx.fillText(value.toFixed(0), 10, y + 4);
+  }
+
+  const groupW = plotW / data.length;
+  const barW = Math.min(60, groupW / 3);
+  data.forEach((d, i) => {
+    const groupX = padLeft + i * groupW + groupW / 2;
+    const hChauf = (d.chauffage / niceMax) * plotH;
+    const hClim = (d.clim / niceMax) * plotH;
+    ctx.fillStyle = "#DC2626";
+    ctx.fillRect(groupX - barW - 4, padTop + plotH - hChauf, barW, hChauf);
+    ctx.fillStyle = "#0EA5E9";
+    ctx.fillRect(groupX + 4, padTop + plotH - hClim, barW, hClim);
+
+    ctx.fillStyle = "#404040";
+    ctx.font = "13px -apple-system, Helvetica, Arial";
+    ctx.textAlign = "center";
+    ctx.fillText(d.nom.length > 16 ? d.nom.slice(0, 14) + "…" : d.nom, groupX, padTop + plotH + 18);
+    ctx.textAlign = "start";
+  });
+
+  // Légende
+  ctx.fillStyle = "#DC2626";
+  ctx.fillRect(padLeft, H - 30, 14, 14);
+  ctx.fillStyle = "#404040";
+  ctx.font = "13px -apple-system, Helvetica, Arial";
+  ctx.fillText("Chauffage", padLeft + 22, H - 18);
+  ctx.fillStyle = "#0EA5E9";
+  ctx.fillRect(padLeft + 130, H - 30, 14, 14);
+  ctx.fillStyle = "#404040";
+  ctx.fillText("Climatisation", padLeft + 152, H - 18);
+
+  return canvas.toDataURL("image/png");
+}
+
 // ─── Composant principal ─────────────────────────────────────────
 
 export default function BilanThermiqueDocument({ onBack, onSaved, existingDoc }: Props) {
@@ -234,6 +324,7 @@ export default function BilanThermiqueDocument({ onBack, onSaved, existingDoc }:
   const [docId, setDocId] = useState<string | null>(existingDoc?.id ?? null);
   const [saving, setSaving] = useState(false);
   const [generatingPDF, setGeneratingPDF] = useState(false);
+  const [generatingWord, setGeneratingWord] = useState(false);
   const [saved, setSaved] = useState(false);
 
   // ─── Charge la bibliothèque de parois ────────────────────────
@@ -679,6 +770,136 @@ export default function BilanThermiqueDocument({ onBack, onSaved, existingDoc }:
     }
   }
 
+  // ─── Word ────────────────────────────────────────────────────
+  async function handleGenerateWord() {
+    if (!bilan) {
+      toast.error("Calculez d'abord le bilan");
+      return;
+    }
+    setGeneratingWord(true);
+    try {
+      const ref = form.reference.trim() || generateReference();
+      const fmt1 = (n: number) => n.toLocaleString("fr-FR", { maximumFractionDigits: 1 });
+      const fmt0 = (n: number) => n.toLocaleString("fr-FR", { maximumFractionDigits: 0 });
+
+      const sections: WordSectionInput[] = [];
+
+      // Section 1 — Informations générales
+      sections.push({
+        titre: "1. Informations générales",
+        rows: [
+          { label: "Titre", value: form.titre || "—" },
+          { label: "Référence", value: ref },
+          { label: "Client", value: form.clientNom || "—" },
+        ],
+      });
+
+      // Section 2 — Bâtiment
+      sections.push({
+        titre: "2. Bâtiment",
+        rows: [
+          { label: "Nom du bâtiment", value: form.batimentNom || "—" },
+          { label: "Zone climatique", value: form.zoneClimatique || "—" },
+          { label: "Altitude (m)", value: form.altitude || "—" },
+          { label: "Orientation principale", value: form.orientation || "—" },
+        ],
+      });
+
+      // Section 3 — Bilan annuel global
+      const t = bilan.total;
+      sections.push({
+        titre: "3. Bilan annuel global",
+        description: "Méthode 5R1C — simulation horaire 8760h",
+        rows: [
+          { label: "Surface totale (m²)", value: fmt1(t.surface) },
+          { label: "Besoin chauffage (MWh/an)", value: fmt1(t.besoinChauffageMWh) },
+          { label: "Besoin chauffage (kWh/m²·an)", value: fmt1(t.besoinChauffageKWhM2) },
+          { label: "Besoin climatisation (MWh/an)", value: fmt1(t.besoinClimMWh) },
+          { label: "Besoin climatisation (kWh/m²·an)", value: fmt1(t.besoinClimKWhM2) },
+          { label: "Apports solaires (MWh/an)", value: fmt1(t.apportsSolairesMWh) },
+          { label: "Apports internes (MWh/an)", value: fmt1(t.apportsInternesMWh) },
+          { label: "Pertes enveloppe (MWh/an)", value: fmt1(t.pertesEnveloppeMWh) },
+          { label: "Pertes ventilation (MWh/an)", value: fmt1(t.pertesVentilationMWh) },
+        ],
+      });
+
+      // Chart : besoins par zone (bar chart canvas natif)
+      const zoneCharts: WordChart[] = [];
+      try {
+        const png = renderBesoinsParZoneBarChart(bilan.zones);
+        if (png) zoneCharts.push({ title: "Besoins de chauffage et climatisation par zone (kWh/m²·an)", dataUrl: png });
+      } catch { /* skip */ }
+
+      // Section 4 — Détail par zone
+      sections.push({
+        titre: "4. Détail par zone",
+        charts: zoneCharts,
+        tables: [{
+          headers: ["Zone", "Usage", "Surface (m²)", "Chauf. (MWh)", "Clim. (MWh)", "P. crête chauf. (kW)", "P. crête clim. (kW)"],
+          rows: bilan.zones.map((z) => [
+            z.nom,
+            z.usage || "—",
+            fmt1(z.surface),
+            fmt1(z.result.besoinChauffageMWh),
+            fmt1(z.result.besoinClimMWh),
+            z.result.puissanceCreteChauffage != null ? fmt1(z.result.puissanceCreteChauffage) : "—",
+            z.result.puissanceCreteClim != null ? fmt1(z.result.puissanceCreteClim) : "—",
+          ]),
+        }],
+      });
+
+      // Section 5 — Apports gratuits
+      sections.push({
+        titre: "5. Apports gratuits par zone",
+        tables: [{
+          headers: ["Zone", "Solaires (MWh)", "Internes (MWh)", "Total (MWh)"],
+          rows: bilan.zones.map((z) => {
+            const total = z.result.apportsSolairesMWh + z.result.apportsInternesMWh;
+            return [
+              z.nom,
+              fmt1(z.result.apportsSolairesMWh),
+              fmt1(z.result.apportsInternesMWh),
+              fmt1(total),
+            ];
+          }),
+        }],
+      });
+
+      // Section 6 — Heures de surchauffe (si dispo)
+      const surchaufZones = bilan.zones.filter((z) => z.result.heuresSurchauffe != null);
+      if (surchaufZones.length > 0) {
+        sections.push({
+          titre: "6. Heures de surchauffe",
+          description: "Heures > 28 °C en occupation — indicateur de risque inconfort estival",
+          tables: [{
+            headers: ["Zone", "Heures > 28 °C"],
+            rows: surchaufZones.map((z) => [z.nom, fmt0(z.result.heuresSurchauffe ?? 0)]),
+          }],
+        });
+      }
+
+      await exportToWord({
+        title: "Bilan thermique",
+        subtitle: "Simulation horaire 8760h — méthode 5R1C ISO 13790",
+        reference: ref,
+        meta: [
+          { label: "Référence", value: ref },
+          { label: "Client", value: form.clientNom || "—" },
+          { label: "Bâtiment", value: form.batimentNom || "—" },
+          { label: "Zone climatique", value: form.zoneClimatique || "—" },
+          { label: "Surface totale", value: `${fmt1(t.surface)} m²` },
+        ],
+        sections,
+        filename: `Bilan_Thermique_${ref}_${new Date().toISOString().slice(0, 10)}.docx`,
+      });
+      toast.success("Word téléchargé");
+    } catch (err) {
+      showNetworkError(err, "Erreur lors de la génération Word");
+    } finally {
+      setGeneratingWord(false);
+    }
+  }
+
   // ─── PDF ─────────────────────────────────────────────────────
   async function handleGeneratePDF() {
     if (!bilan) {
@@ -746,8 +967,21 @@ export default function BilanThermiqueDocument({ onBack, onSaved, existingDoc }:
           <Button
             variant="outline"
             size="sm"
+            onClick={handleGenerateWord}
+            disabled={generatingWord || generatingPDF || !bilan}
+          >
+            {generatingWord ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <FileType className="mr-2 h-4 w-4" />
+            )}
+            {generatingWord ? "Word..." : "Word"}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={handleGeneratePDF}
-            disabled={generatingPDF || !bilan}
+            disabled={generatingPDF || generatingWord || !bilan}
           >
             {generatingPDF ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
