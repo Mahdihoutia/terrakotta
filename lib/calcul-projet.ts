@@ -38,6 +38,7 @@ export async function buildProjetBaseline(projetId: string): Promise<{
       nbOccupants: true,
       inertie: true,
       intermittenceChauffage: true,
+      permeabiliteAir: true,
       consoFactureChauffage: true,
     },
   });
@@ -173,6 +174,7 @@ export async function buildProjetBaseline(projetId: string): Promise<{
     intermittenceChauffage: projet.intermittenceChauffage ?? false,
     inertie: projet.inertie ?? "MOYENNE",
     nbOccupants: projet.nbOccupants ?? null,
+    permeabiliteAir: projet.permeabiliteAir != null ? Number(projet.permeabiliteAir) : null,
     chauffageEff: cha.eff,
     chauffageVecteur: cha.vecteur,
     ecsEff: ecsRes.eff,
@@ -225,6 +227,7 @@ function emptyBaseline(): BaselineState {
     renouvellementAir: 0.5, efficaciteDoubleFlux: 0,
     consigneInt: 19, tBase: -7,
     intermittenceChauffage: false, inertie: "MOYENNE", nbOccupants: null,
+    permeabiliteAir: null,
     chauffageEff: 0.85, chauffageVecteur: "gaz_naturel",
     ecsEff: 1.0, ecsVecteur: "elec",
     partSolaireECS: 0, hasClim: false,

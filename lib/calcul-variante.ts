@@ -60,6 +60,8 @@ export interface BaselineState {
   inertie: InertieClasse;
   /** Nombre d'occupants saisi. Si non fourni, calculé via Nadeq surface. */
   nbOccupants?: number | null;
+  /** Perméabilité à l'air mesurée Q4Pa-surf (m³/h·m²). Défaut 1.7 (RT 2005). */
+  permeabiliteAir?: number | null;
   // Systèmes (rendement effectif = SCOP saisonnier si PAC)
   chauffageEff: number;
   chauffageVecteur: Vecteur;
@@ -171,6 +173,15 @@ export function computeIndicatorsFromState(
 ): VarianteIndicators {
   // Forfait ponts thermiques RT existant : 5 % de Σ A_paroi opaque
   const hPT = 0.05 * (state.surfaceMurs + state.surfaceToiture + state.surfacePlancher);
+
+  // Perméabilité à l'air — corrige le renouvellement d'air par rapport au défaut RT 2005 (Q4Pa = 1.7).
+  // L'infiltrations représente ≈30 % du renouvellement total dans calculerDeperditions.
+  // facteur appliqué sur la part infiltrations : Q4Pa / 1.7
+  const Q4PA_DEFAULT = 1.7;
+  const q4 = state.permeabiliteAir && state.permeabiliteAir > 0 ? state.permeabiliteAir : Q4PA_DEFAULT;
+  const facteurInf = q4 / Q4PA_DEFAULT;
+  const renouvAirCorrige = state.renouvellementAir * (0.7 + 0.3 * facteurInf);
+
   const dep = calculerDeperditions({
     surfaceMurs:    state.surfaceMurs,
     surfaceToiture: state.surfaceToiture,
@@ -182,7 +193,7 @@ export function computeIndicatorsFromState(
     uVitree:  state.uVitree,
     hPontsThermiques: hPT,
     volumeChauffe: state.volumeChauffe,
-    renouvellementAir: state.renouvellementAir,
+    renouvellementAir: renouvAirCorrige,
     efficaciteDoubleFlux: state.efficaciteDoubleFlux,
     deltaT: state.consigneInt - state.tBase,
   });
@@ -229,7 +240,27 @@ export function computeIndicatorsFromState(
 
   const chauffage_kwh = state.chauffageEff > 0 ? besoinChauffageNet / state.chauffageEff : 0;
   const ecs_kwh = state.ecsEff > 0 ? besoinECSNet / state.ecsEff : 0;
-  const aux_kwh = state.surfaceHabitable * 5;
+
+  // Auxiliaires différenciés selon ventilation + type chauffage (DPE 2021 §10) :
+  //   VMC double flux (efficacité > 0)   : 5.0 kWh/m²·an (2 ventilateurs)
+  //   VMC simple flux ou hygroréglable   : 1.5 kWh/m²·an
+  //   Pas de VMC (q ≈ 0)                 : 0.5 kWh/m²·an (extracteurs ponctuels)
+  //   + circulateur chauffage hydraulique : +2.0 kWh/m²·an
+  //     (chaudière gaz/fioul/bois ou PAC eau — exclus convecteurs élec direct)
+  const isVmcDF = state.efficaciteDoubleFlux > 0.1;
+  const isVmcActive = state.renouvellementAir > 0.1;
+  const auxVmc = isVmcDF ? 5.0 : isVmcActive ? 1.5 : 0.5;
+  const isChauffHydraulique =
+    state.chauffageVecteur === "gaz_naturel" ||
+    state.chauffageVecteur === "fioul" ||
+    state.chauffageVecteur === "bois" ||
+    state.chauffageVecteur === "propane" ||
+    state.chauffageVecteur === "reseau_chaleur" ||
+    // PAC air/eau ou géothermique : SCOP entre 2.5 et 4.5 (PAC air/air ≈ 3, identifiée par hasClim)
+    (state.chauffageVecteur === "elec" && state.chauffageEff > 1.5 && !state.hasClim);
+  const auxCirc = isChauffHydraulique ? 2.0 : 0;
+  const aux_kwh = state.surfaceHabitable * (auxVmc + auxCirc);
+
   const ecl_kwh = state.surfaceHabitable * 1.4;
   const refr_kwh = state.hasClim ? state.surfaceHabitable * 12 : 0;
 
