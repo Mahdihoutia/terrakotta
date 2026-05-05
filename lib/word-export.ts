@@ -101,7 +101,33 @@ export async function exportToWord(input: WordExportInput): Promise<void> {
     BorderStyle,
     PageBreak,
     ShadingType,
+    TableLayoutType,
+    VerticalAlign,
+    Header,
+    Footer,
+    PageNumber,
   } = docx;
+
+  // Détection MIME image robuste (data:image/jpeg, jpg, png, gif, webp…)
+  const detectImageType = (dataUrl: string): "jpg" | "png" | "gif" | "bmp" => {
+    const m = /^data:image\/([a-z0-9+.-]+)/i.exec(dataUrl);
+    const sub = (m?.[1] ?? "").toLowerCase();
+    if (sub === "jpeg" || sub === "jpg") return "jpg";
+    if (sub === "gif") return "gif";
+    if (sub === "bmp") return "bmp";
+    return "png";
+  };
+
+  // Bordures fines grises appliquées par défaut sur les tableaux de données
+  const thinBorder = { style: BorderStyle.SINGLE, size: 4, color: "D6D3D1" };
+  const dataTableBorders = {
+    top: thinBorder,
+    bottom: thinBorder,
+    left: thinBorder,
+    right: thinBorder,
+    insideHorizontal: thinBorder,
+    insideVertical: thinBorder,
+  };
 
   const children: InstanceType<typeof Paragraph | typeof Table>[] = [];
 
@@ -137,17 +163,22 @@ export async function exportToWord(input: WordExportInput): Promise<void> {
     children.push(
       new Table({
         width: { size: 100, type: WidthType.PERCENTAGE },
+        layout: TableLayoutType.FIXED,
+        columnWidths: [2880, 6720],
         borders: noBorders(BorderStyle),
         rows: input.meta.map(
           ({ label, value }) =>
             new TableRow({
+              cantSplit: true,
               children: [
                 new TableCell({
                   width: { size: 30, type: WidthType.PERCENTAGE },
+                  verticalAlign: VerticalAlign.CENTER,
                   shading: { type: ShadingType.CLEAR, color: "auto", fill: "F5F5F4" },
+                  margins: { top: 80, bottom: 80, left: 140, right: 120 },
                   children: [
                     new Paragraph({
-                      spacing: { before: 80, after: 80 },
+                      spacing: { before: 40, after: 40 },
                       children: [
                         new TextRun({ text: label, bold: true, size: 18, color: "404040" }),
                       ],
@@ -156,9 +187,11 @@ export async function exportToWord(input: WordExportInput): Promise<void> {
                 }),
                 new TableCell({
                   width: { size: 70, type: WidthType.PERCENTAGE },
+                  verticalAlign: VerticalAlign.CENTER,
+                  margins: { top: 80, bottom: 80, left: 140, right: 120 },
                   children: [
                     new Paragraph({
-                      spacing: { before: 80, after: 80 },
+                      spacing: { before: 40, after: 40 },
                       children: [new TextRun({ text: value || "—", size: 20 })],
                     }),
                   ],
@@ -209,16 +242,22 @@ export async function exportToWord(input: WordExportInput): Promise<void> {
       children.push(
         new Table({
           width: { size: 100, type: WidthType.PERCENTAGE },
+          layout: TableLayoutType.FIXED,
+          borders: dataTableBorders,
+          columnWidths: [3840, 5760],
           rows: section.rows.map(
             ({ label, value }) =>
               new TableRow({
+                cantSplit: true,
                 children: [
                   new TableCell({
                     width: { size: 40, type: WidthType.PERCENTAGE },
+                    verticalAlign: VerticalAlign.CENTER,
                     shading: { type: ShadingType.CLEAR, color: "auto", fill: "FAFAF9" },
+                    margins: { top: 80, bottom: 80, left: 120, right: 120 },
                     children: [
                       new Paragraph({
-                        spacing: { before: 60, after: 60 },
+                        spacing: { before: 40, after: 40 },
                         children: [
                           new TextRun({ text: label, bold: true, size: 18, color: "404040" }),
                         ],
@@ -227,9 +266,11 @@ export async function exportToWord(input: WordExportInput): Promise<void> {
                   }),
                   new TableCell({
                     width: { size: 60, type: WidthType.PERCENTAGE },
+                    verticalAlign: VerticalAlign.CENTER,
+                    margins: { top: 80, bottom: 80, left: 120, right: 120 },
                     children: [
                       new Paragraph({
-                        spacing: { before: 60, after: 60 },
+                        spacing: { before: 40, after: 40 },
                         children: [new TextRun({ text: value || "—", size: 20 })],
                       }),
                     ],
@@ -239,7 +280,7 @@ export async function exportToWord(input: WordExportInput): Promise<void> {
           ),
         }),
       );
-      children.push(new Paragraph({ spacing: { after: 100 }, children: [] }));
+      children.push(new Paragraph({ spacing: { after: 160 }, children: [] }));
     }
 
     // Tableaux libres
@@ -255,15 +296,34 @@ export async function exportToWord(input: WordExportInput): Promise<void> {
             }),
           );
         }
+        const colCount = Math.max(tbl.headers.length, 1);
+        // Largeur utile (A4 - marges) ≈ 9000 twentieths ; on répartit également,
+        // sauf si la 1re colonne est manifestement « libellé long » (≥ 3 colonnes).
+        const totalWidth = 9600;
+        const columnWidths: number[] =
+          colCount >= 3
+            ? [
+                Math.round(totalWidth * 0.4),
+                ...Array.from({ length: colCount - 1 }, () =>
+                  Math.round((totalWidth * 0.6) / (colCount - 1)),
+                ),
+              ]
+            : Array.from({ length: colCount }, () => Math.round(totalWidth / colCount));
+
         const headerRow = new TableRow({
           tableHeader: true,
+          cantSplit: true,
           children: tbl.headers.map(
-            (h) =>
+            (h, idx) =>
               new TableCell({
+                width: { size: columnWidths[idx], type: WidthType.DXA },
+                verticalAlign: VerticalAlign.CENTER,
                 shading: { type: ShadingType.CLEAR, color: "auto", fill: "E7E5E4" },
+                margins: { top: 80, bottom: 80, left: 120, right: 120 },
                 children: [
                   new Paragraph({
-                    spacing: { before: 60, after: 60 },
+                    alignment: idx === 0 ? AlignmentType.LEFT : AlignmentType.RIGHT,
+                    spacing: { before: 40, after: 40 },
                     children: [new TextRun({ text: h, bold: true, size: 18 })],
                   }),
                 ],
@@ -273,26 +333,34 @@ export async function exportToWord(input: WordExportInput): Promise<void> {
         const dataRows = tbl.rows.map(
           (r) =>
             new TableRow({
-              children: r.map(
-                (cell) =>
-                  new TableCell({
-                    children: [
-                      new Paragraph({
-                        spacing: { before: 40, after: 40 },
-                        children: [new TextRun({ text: cell, size: 18 })],
-                      }),
-                    ],
-                  }),
-              ),
+              cantSplit: true,
+              children: Array.from({ length: colCount }, (_, idx) => {
+                const cell = r[idx] ?? "";
+                return new TableCell({
+                  width: { size: columnWidths[idx], type: WidthType.DXA },
+                  verticalAlign: VerticalAlign.CENTER,
+                  margins: { top: 60, bottom: 60, left: 120, right: 120 },
+                  children: [
+                    new Paragraph({
+                      alignment: idx === 0 ? AlignmentType.LEFT : AlignmentType.RIGHT,
+                      spacing: { before: 20, after: 20 },
+                      children: [new TextRun({ text: cell, size: 18 })],
+                    }),
+                  ],
+                });
+              }),
             }),
         );
         children.push(
           new Table({
             width: { size: 100, type: WidthType.PERCENTAGE },
+            layout: TableLayoutType.FIXED,
+            borders: dataTableBorders,
+            columnWidths,
             rows: [headerRow, ...dataRows],
           }),
         );
-        children.push(new Paragraph({ spacing: { after: 100 }, children: [] }));
+        children.push(new Paragraph({ spacing: { after: 160 }, children: [] }));
       }
     }
 
@@ -385,7 +453,7 @@ export async function exportToWord(input: WordExportInput): Promise<void> {
                 new ImageRun({
                   data: dataUrlToUint8Array(photo.dataUrl),
                   transformation: fitted,
-                  type: photo.dataUrl.startsWith("data:image/jpeg") ? "jpg" : "png",
+                  type: detectImageType(photo.dataUrl),
                 }),
               ],
             }),
@@ -444,8 +512,48 @@ export async function exportToWord(input: WordExportInput): Promise<void> {
       {
         properties: {
           page: {
-            margin: { top: 1000, right: 1000, bottom: 1000, left: 1000 },
+            margin: { top: 1134, right: 1134, bottom: 1134, left: 1134 },
           },
+        },
+        headers: {
+          default: new Header({
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.RIGHT,
+                spacing: { after: 0 },
+                children: [
+                  new TextRun({
+                    text: `${input.title} — ${input.reference || ""}`.trim(),
+                    size: 16,
+                    color: "A8A29E",
+                  }),
+                ],
+              }),
+            ],
+          }),
+        },
+        footers: {
+          default: new Footer({
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.RIGHT,
+                children: [
+                  new TextRun({ text: "Page ", size: 16, color: "A8A29E" }),
+                  new TextRun({
+                    children: [PageNumber.CURRENT],
+                    size: 16,
+                    color: "A8A29E",
+                  }),
+                  new TextRun({ text: " / ", size: 16, color: "A8A29E" }),
+                  new TextRun({
+                    children: [PageNumber.TOTAL_PAGES],
+                    size: 16,
+                    color: "A8A29E",
+                  }),
+                ],
+              }),
+            ],
+          }),
         },
         children,
       },
