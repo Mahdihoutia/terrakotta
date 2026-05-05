@@ -12,6 +12,7 @@ import {
   Search, Loader2, Star, MapPin, Building2, Filter, ArrowRight,
   Radar, Globe, BookOpen, Sparkles, Users, TrendingUp, Target,
   Download, RefreshCw, Phone, Mail, ExternalLink, ChevronLeft, ChevronRight,
+  AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Lead, LeadSource } from "@/types";
@@ -19,21 +20,27 @@ import { motion, AnimatePresence } from "framer-motion";
 
 // ─── Constants ──────────────────────────────────────────────────
 
+// Sources actives pour les nouvelles recherches.
+const ACTIVE_SOURCES: Array<"SIRENE" | "DPE_ADEME"> = ["SIRENE", "DPE_ADEME"];
+
+// Tous les labels (incluant historique) pour l'affichage des leads existants.
 const SOURCE_LABELS: Record<string, { label: string; icon: typeof Globe; color: string }> = {
-  PAGES_JAUNES: { label: "Pages Jaunes", icon: BookOpen, color: "text-yellow-600 bg-yellow-100" },
-  SOCIETE_COM: { label: "societe.com", icon: Building2, color: "text-blue-600 bg-blue-100" },
-  WEB_SCRAPING: { label: "Web / API", icon: Globe, color: "text-emerald-600 bg-emerald-100" },
+  // Sources actives
   SIRENE: { label: "SIRENE (INSEE)", icon: Building2, color: "text-indigo-600 bg-indigo-100" },
-  BODACC: { label: "BODACC", icon: BookOpen, color: "text-orange-600 bg-orange-100" },
   DPE_ADEME: { label: "DPE ADEME", icon: Target, color: "text-red-600 bg-red-100" },
-  BOAMP: { label: "Marchés Publics", icon: Building2, color: "text-teal-600 bg-teal-100" },
-  PERMIS_CONSTRUIRE: { label: "Permis Construire", icon: Building2, color: "text-violet-600 bg-violet-100" },
-  LINKEDIN: { label: "LinkedIn", icon: Users, color: "text-sky-700 bg-sky-100" },
-  INFOGREFFE: { label: "Infogreffe", icon: Building2, color: "text-rose-600 bg-rose-100" },
-  PAPPERS: { label: "Pappers", icon: Globe, color: "text-cyan-600 bg-cyan-100" },
-  CADASTRE_DVF: { label: "Cadastre / DVF", icon: MapPin, color: "text-lime-700 bg-lime-100" },
-  FRANCE_TRAVAIL: { label: "France Travail", icon: TrendingUp, color: "text-fuchsia-600 bg-fuchsia-100" },
-  ANNONCES_LEGALES: { label: "Annonces Légales", icon: BookOpen, color: "text-amber-700 bg-amber-100" },
+  // Sources legacy (lecture seule — leads créés avant le nettoyage)
+  PAGES_JAUNES: { label: "Pages Jaunes (legacy)", icon: BookOpen, color: "text-yellow-600 bg-yellow-100" },
+  SOCIETE_COM: { label: "societe.com (legacy)", icon: Building2, color: "text-blue-600 bg-blue-100" },
+  WEB_SCRAPING: { label: "Web / API (legacy)", icon: Globe, color: "text-emerald-600 bg-emerald-100" },
+  BODACC: { label: "BODACC (legacy)", icon: BookOpen, color: "text-orange-600 bg-orange-100" },
+  BOAMP: { label: "Marchés Publics (legacy)", icon: Building2, color: "text-teal-600 bg-teal-100" },
+  PERMIS_CONSTRUIRE: { label: "Permis Construire (legacy)", icon: Building2, color: "text-violet-600 bg-violet-100" },
+  LINKEDIN: { label: "LinkedIn (legacy)", icon: Users, color: "text-sky-700 bg-sky-100" },
+  INFOGREFFE: { label: "Infogreffe (legacy)", icon: Building2, color: "text-rose-600 bg-rose-100" },
+  PAPPERS: { label: "Pappers (legacy)", icon: Globe, color: "text-cyan-600 bg-cyan-100" },
+  CADASTRE_DVF: { label: "Cadastre / DVF (legacy)", icon: MapPin, color: "text-lime-700 bg-lime-100" },
+  FRANCE_TRAVAIL: { label: "France Travail (legacy)", icon: TrendingUp, color: "text-fuchsia-600 bg-fuchsia-100" },
+  ANNONCES_LEGALES: { label: "Annonces Légales (legacy)", icon: BookOpen, color: "text-amber-700 bg-amber-100" },
 };
 
 const ROLE_OPTIONS = [
@@ -110,7 +117,7 @@ export default function ProspectionPage() {
 
   // Search config
   const [showConfig, setShowConfig] = useState(false);
-  const [selectedSources, setSelectedSources] = useState<LeadSource[]>(["PAGES_JAUNES", "SOCIETE_COM", "WEB_SCRAPING", "SIRENE", "BODACC", "DPE_ADEME", "BOAMP", "PERMIS_CONSTRUIRE", "LINKEDIN", "INFOGREFFE", "PAPPERS", "CADASTRE_DVF", "FRANCE_TRAVAIL", "ANNONCES_LEGALES"]);
+  const [selectedSources, setSelectedSources] = useState<LeadSource[]>(["SIRENE", "DPE_ADEME"]);
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [selectedDepts, setSelectedDepts] = useState<string[]>([]);
   const [surfaceMin, setSurfaceMin] = useState(1000);
@@ -219,10 +226,10 @@ export default function ProspectionPage() {
         <div>
           <h1 className="text-2xl font-bold text-tk-text flex items-center gap-2">
             <Radar className="h-6 w-6 text-blue-500" />
-            Prospection
+            Prospection ciblée
           </h1>
           <p className="text-tk-text-faint">
-            Agent de prospection automatique — {leads.length} leads trouvés
+            Sources publiques officielles — {leads.length} leads · emails à enrichir manuellement
           </p>
         </div>
         <div className="flex gap-2">
@@ -360,9 +367,12 @@ export default function ProspectionPage() {
 
               {/* Sources */}
               <div>
-                <label className="text-xs font-medium text-tk-text-muted mb-2 block">Sources de recherche</label>
+                <label className="text-xs font-medium text-tk-text-muted mb-2 block">
+                  Sources de recherche · données publiques officielles
+                </label>
                 <div className="flex flex-wrap gap-2">
-                  {(Object.entries(SOURCE_LABELS) as [LeadSource, typeof SOURCE_LABELS[string]][]).map(([key, cfg]) => {
+                  {ACTIVE_SOURCES.map((key) => {
+                    const cfg = SOURCE_LABELS[key];
                     const Icon = cfg.icon;
                     const selected = selectedSources.includes(key);
                     return (
@@ -388,6 +398,11 @@ export default function ProspectionPage() {
                     );
                   })}
                 </div>
+                <p className="mt-2 text-[11px] text-tk-text-faint leading-relaxed">
+                  <strong>SIRENE</strong> : registre officiel des entreprises (annuaire-entreprises.data.gouv.fr) — sociétés cibles, dirigeants, SIRET. <br />
+                  <strong>DPE ADEME</strong> : diagnostics F/G du parc résidentiel (open data ADEME) — bâtiments à fort potentiel rénovation. <br />
+                  Les emails ne sont jamais fabriqués : à enrichir manuellement (LinkedIn, site société, Dropcontact).
+                </p>
               </div>
 
               {/* Roles cibles */}
@@ -597,9 +612,15 @@ export default function ProspectionPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-0.5">
-                      <span className="flex items-center gap-1 text-xs text-tk-text-secondary">
-                        <Mail className="h-3 w-3 text-tk-text-faint" /> {lead.email}
-                      </span>
+                      {lead.email ? (
+                        <span className="flex items-center gap-1 text-xs text-tk-text-secondary">
+                          <Mail className="h-3 w-3 text-tk-text-faint" /> {lead.email}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 self-start rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
+                          <AlertCircle className="h-3 w-3" /> Email à enrichir
+                        </span>
+                      )}
                       {lead.telephone && (
                         <span className="flex items-center gap-1 text-xs text-tk-text-muted">
                           <Phone className="h-3 w-3" /> {lead.telephone}
