@@ -23,6 +23,7 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { exportToWord, type WordSectionInput } from "@/lib/word-export";
+import { BAR_TH_171, type FicheCalculResult } from "@/lib/thermal";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -3393,223 +3394,33 @@ function rendementEmetteursFrom(type: string | undefined): number {
   return 0.90;
 }
 
-// ─── Calculs BAR-TH-171 — PAC air/eau résidentiel ──────────────
+// ─── Calculs BAR-TH-171 — délégué à lib/thermal/cee/BAR-TH-171.ts ──
+//
+// Les 3 méthodes (DJU, SCOP_DETAILLE, FORFAITAIRE_CEE) ainsi que les
+// forfaits versionnés (arrêté + dateApplication) vivent dans la lib pure
+// `lib/thermal/cee/BAR-TH-171.ts`. Ce wrapper se contente d'adapter
+// `FormValues` (UI) → `BarTh171Inputs` (domaine) et de remonter le Result.
 
-interface Calcul171Result {
-  besoinChauffage: number;   // MWh/an
-  consoAvant: number;        // MWh/an
-  consoApres: number;        // MWh/an
-  gainMwh: number;
-  gainPct: number;
-  reductionCo2: number;      // t/an
-  economiEuros: number;
-  dureeRetour: number | null;
-  cumacKWh: number;
-  detailMethode: string;
-}
+type Calcul171Result = FicheCalculResult;
 
 function calculer171(v: FormValues): Calcul171Result | null {
   const methode = parseMethodeId(v.methode_calcul, "BAR-TH-171");
-  switch (methode) {
-    case "FORFAITAIRE_CEE": return calculer171_Forfait(v);
-    case "SCOP_DETAILLE":   return calculer171_ScopDetaille(v);
-    case "DJU":
-    default:                return calculer171_DJU(v);
-  }
-}
-
-function calculer171_DJU(v: FormValues): Calcul171Result | null {
-  const surface = parseFloat(v.surface_habitable || "0");
-  const zone = v.zone_climatique;
-  const zoneData = zone ? ZONE_CLIMATIQUE_DATA[zone] : null;
-  const annee = parseFloat(v.annee_construction || "0");
-  const scop = parseFloat(v.scop || v.cop || "0");
-  if (surface <= 0 || !zoneData || scop <= 0) return null;
-
-  const hsp = parseFloat(v.hauteur_plafond || "2.5");
-  const volume = surface * hsp;
-  const G = coeffGFromAnnee(annee);
-  // Besoin brut (kWh/an) = G × V × DJU × 24 / 1000
-  const besoinBrutKwh = (G * volume * zoneData.dju * 24) / 1000;
-  // Apports gratuits résidentiel : 15 %
-  const besoinKwh = besoinBrutKwh * 0.85;
-  const besoinMwh = besoinKwh / 1000;
-
-  const energieExistante = v.energie_existante || "Gaz naturel";
-  const typeGen = v.type_chauffage_existant || "Chaudière standard";
-  const rendGen = RENDEMENTS_GENERATEURS[typeGen] || 0.85;
-  const rendEmet = rendementEmetteursFrom(v.emetteurs_existants);
-  const rendExistant = rendGen * rendEmet;
-
-  const consoAvantKwh = besoinKwh / rendExistant;
-  // PAC : SCOP appliqué aux besoins (émission supposée adaptée ≈ 1.0)
-  const consoApresKwh = besoinKwh / scop;
-
-  const consoAvant = consoAvantKwh / 1000;
-  const consoApres = consoApresKwh / 1000;
-  const gainMwh = consoAvant - consoApres;
-  const gainPct = consoAvant > 0 ? (gainMwh / consoAvant) * 100 : 0;
-
-  // CO₂
-  const facteurCo2Avant = FACTEUR_CO2[energieExistante] || 0.200;
-  const facteurCo2Apres = FACTEUR_CO2_ELEC_CHAUFFAGE;
-  const reductionCo2 = (consoAvantKwh * facteurCo2Avant - consoApresKwh * facteurCo2Apres) / 1000;
-
-  // Coûts
-  const prixAvant = prixEnergie(energieExistante);
-  const coutAvant = consoAvantKwh * prixAvant;
-  const coutApres = consoApresKwh * PRIX_ELEC_KWH;
-  const economiEuros = coutAvant - coutApres;
-
-  const coutInvest = parseFloat(v.cout_investissement || "0");
-  const dureeRetour = coutInvest > 0 && economiEuros > 0 ? coutInvest / economiEuros : null;
-
-  const cumac = computeCumac("BAR-TH-171", gainMwh);
-  const cumacKWh = cumac?.cumacKWh ?? 0;
-
-  const detailMethode = [
-    `Méthode DJU × déperditions (G × V × DJU) — Zone ${zone}`,
-    `Surface: ${surface} m² · HSP: ${hsp} m · Volume: ${volume.toFixed(0)} m³`,
-    `Année construction: ${Number.isFinite(annee) && annee > 0 ? annee : "?"} → G estimé: ${G.toFixed(2)} W/m³.K`,
-    `DJU base 18°C zone ${zone}: ${zoneData.dju}`,
-    "",
-    `Besoin brut = G × V × DJU × 24 / 1000 = ${G.toFixed(2)} × ${volume.toFixed(0)} × ${zoneData.dju} × 24 / 1000 = ${besoinBrutKwh.toFixed(0)} kWh/an`,
-    `Apports gratuits (solaire + internes) : 15 % → besoin net = ${besoinKwh.toFixed(0)} kWh/an (${besoinMwh.toFixed(1)} MWh/an)`,
-    "",
-    `Situation AVANT: énergie ${energieExistante}, générateur "${typeGen}" (η=${rendGen.toFixed(2)}), émetteurs "${v.emetteurs_existants ?? "?"}" (η=${rendEmet.toFixed(2)}) → η global=${rendExistant.toFixed(2)}`,
-    `  Conso AVANT = ${besoinKwh.toFixed(0)} / ${rendExistant.toFixed(2)} = ${consoAvantKwh.toFixed(0)} kWh/an (${consoAvant.toFixed(1)} MWh/an)`,
-    "",
-    `Situation APRÈS: PAC air/eau — SCOP = ${scop.toFixed(2)}`,
-    `  Conso APRÈS = ${besoinKwh.toFixed(0)} / ${scop.toFixed(2)} = ${consoApresKwh.toFixed(0)} kWh/an (${consoApres.toFixed(1)} MWh/an)`,
-    "",
-    `Gain énergétique = ${gainMwh.toFixed(1)} MWh/an (${gainPct.toFixed(1)} %)`,
-    `Réduction CO₂ = ${reductionCo2.toFixed(2)} tCO₂e/an (facteurs : ${facteurCo2Avant} → ${facteurCo2Apres} kgCO₂e/kWh)`,
-    `Économie = ${Math.round(coutAvant)} € (avant) − ${Math.round(coutApres)} € (après) = ${Math.round(economiEuros)} €/an`,
-    cumac ? `Volume CEE = ${gainMwh.toFixed(1)} MWh × ${cumac.duree} ans × ${cumac.coefActu.toFixed(3)} = ${cumac.cumacMWh.toFixed(0)} MWh cumac` : "",
-  ].filter(Boolean).join("\n");
-
-  return { besoinChauffage: besoinMwh, consoAvant, consoApres, gainMwh, gainPct, reductionCo2, economiEuros, dureeRetour, cumacKWh, detailMethode };
-}
-
-/**
- * BAR-TH-171 — SCOP NF EN 14825 détaillé (4 bins -7/2/7/12°C).
- * On part du DJU de base, mais on remplace le SCOP "déclaré" par un SCOP
- * effectif pondéré sur les 4 températures normatives selon la zone climatique.
- */
-function calculer171_ScopDetaille(v: FormValues): Calcul171Result | null {
-  const base = calculer171_DJU(v);
-  if (!base) return null;
-  const zone = v.zone_climatique;
-  const zoneData = zone ? ZONE_CLIMATIQUE_DATA[zone] : null;
-  if (!zoneData) return base;
-  const scop7 = parseFloat(v.scop || v.cop || "0");
-  if (scop7 <= 0) return base;
-
-  // Profil 4 bins normatifs EN 14825 — pondération heures par bin selon zone
-  const repartition: Record<"H1" | "H2" | "H3", { tExt: number; pct: number }[]> = {
-    H1: [{ tExt: -7, pct: 0.10 }, { tExt: 2, pct: 0.45 }, { tExt: 7, pct: 0.30 }, { tExt: 12, pct: 0.15 }],
-    H2: [{ tExt: -7, pct: 0.05 }, { tExt: 2, pct: 0.40 }, { tExt: 7, pct: 0.35 }, { tExt: 12, pct: 0.20 }],
-    H3: [{ tExt: -7, pct: 0.02 }, { tExt: 2, pct: 0.30 }, { tExt: 7, pct: 0.40 }, { tExt: 12, pct: 0.28 }],
+  const inputs: BAR_TH_171.BarTh171Inputs = {
+    surfaceHabitable: parseFloat(v.surface_habitable || "0"),
+    zoneClimatique: v.zone_climatique || "",
+    anneeConstruction: parseFloat(v.annee_construction || "0") || undefined,
+    hauteurPlafond: parseFloat(v.hauteur_plafond || "2.5") || 2.5,
+    scop: parseFloat(v.scop || v.cop || "0"),
+    energieExistante: v.energie_existante,
+    typeChauffageExistant: v.type_chauffage_existant,
+    emetteursExistants: v.emetteurs_existants,
+    coutInvestissement: parseFloat(v.cout_investissement || "0") || undefined,
+    methode,
   };
-  const hKey = zoneToHKey(zone);
-  const profil = repartition[hKey];
-  let scopEff = 0;
-  const lignes: string[] = [];
-  for (const p of profil) {
-    const correction = 1 - Math.max(0, (7 - p.tExt)) * 0.022;
-    const cop = scop7 * Math.max(0.4, correction);
-    scopEff += cop * p.pct;
-    lignes.push(`  ${p.tExt}°C → COP=${cop.toFixed(2)} × ${(p.pct * 100).toFixed(0)}%`);
-  }
-
-  const consoApresKwh = (base.besoinChauffage * 1000) / scopEff;
-  const consoApres = consoApresKwh / 1000;
-  const gainMwh = base.consoAvant - consoApres;
-  const gainPct = base.consoAvant > 0 ? (gainMwh / base.consoAvant) * 100 : 0;
-  const economiEuros = base.consoAvant * 1000 * prixEnergie(v.energie_existante || "Gaz naturel") - consoApresKwh * PRIX_ELEC_KWH;
-  const coutInvest = parseFloat(v.cout_investissement || "0");
-  const dureeRetour = coutInvest > 0 && economiEuros > 0 ? coutInvest / economiEuros : null;
-  const cumac = computeCumac("BAR-TH-171", gainMwh);
-
-  const detailMethode = [
-    `Méthode SCOP NF EN 14825 — 4 bins normatifs · Zone ${hKey}`,
-    `SCOP nominal déclaré (7°C) : ${scop7.toFixed(2)}`,
-    `Besoin net (méthode DJU) : ${base.besoinChauffage.toFixed(1)} MWh/an`,
-    "",
-    `Pondération sur les 4 températures normatives (répartition zone ${hKey}) :`,
-    ...lignes,
-    "",
-    `SCOP effectif = ${scopEff.toFixed(2)}`,
-    `Conso APRÈS = ${(base.besoinChauffage * 1000).toFixed(0)} / ${scopEff.toFixed(2)} = ${consoApresKwh.toFixed(0)} kWh/an (${consoApres.toFixed(1)} MWh/an)`,
-    `Conso AVANT (DJU) : ${base.consoAvant.toFixed(1)} MWh/an`,
-    `Gain : ${gainMwh.toFixed(1)} MWh/an (${gainPct.toFixed(1)}%) · ${Math.round(economiEuros)} €/an`,
-    cumac ? `Volume CEE : ${cumac.cumacMWh.toFixed(0)} MWh cumac` : "",
-  ].filter(Boolean).join("\n");
-
-  return { ...base, consoApres, gainMwh, gainPct, economiEuros, dureeRetour, cumacKWh: cumac?.cumacKWh ?? 0, detailMethode };
+  const result = BAR_TH_171.calculer(inputs);
+  return result.ok ? result.value : null;
 }
 
-/**
- * BAR-TH-171 — Forfait CEE (kWh cumac / m² selon zone climatique).
- */
-function calculer171_Forfait(v: FormValues): Calcul171Result | null {
-  const surface = parseFloat(v.surface_habitable || "0");
-  const zone = v.zone_climatique;
-  const zoneData = zone ? ZONE_CLIMATIQUE_DATA[zone] : null;
-  if (surface <= 0 || !zoneData) return null;
-  const hKey = zoneToHKey(zone);
-  const forfait = FORFAITS_CEE["BAR-TH-171"][hKey];
-  const cumacKWh = forfait * surface;
-  const duree = DUREE_VIE_CONV["BAR-TH-171"];
-  const coef = coefActualisation(duree);
-  const gainMwh = cumacKWh / (1000 * duree * coef);
-
-  // Reconstruire un consoAvant cohérent à partir de G × V × DJU pour le %
-  const annee = parseFloat(v.annee_construction || "0");
-  const G = coeffGFromAnnee(annee);
-  const hsp = parseFloat(v.hauteur_plafond || "2.5");
-  const volume = surface * hsp;
-  const besoinKwh = (G * volume * zoneData.dju * 24 / 1000) * 0.85;
-  const besoinMwh = besoinKwh / 1000;
-  const energieExistante = v.energie_existante || "Gaz naturel";
-  const typeGen = v.type_chauffage_existant || "Chaudière standard";
-  const rendGen = RENDEMENTS_GENERATEURS[typeGen] || 0.85;
-  const rendEmet = rendementEmetteursFrom(v.emetteurs_existants);
-  const rendExistant = rendGen * rendEmet;
-  const consoAvant = besoinKwh / rendExistant / 1000;
-  const consoApres = Math.max(0, consoAvant - gainMwh);
-  const gainPct = consoAvant > 0 ? (gainMwh / consoAvant) * 100 : 0;
-  const facteurAvant = FACTEUR_CO2[energieExistante] || 0.200;
-  const reductionCo2 = (consoAvant * facteurAvant - consoApres * FACTEUR_CO2_ELEC_CHAUFFAGE) * 1; // tCO₂/an (MWh×kg/kWh = kg, ÷1000 → t : déjà cohérent ici)
-  const economiEuros = consoAvant * 1000 * prixEnergie(energieExistante) - consoApres * 1000 * PRIX_ELEC_KWH;
-  const coutInvest = parseFloat(v.cout_investissement || "0");
-  const dureeRetour = coutInvest > 0 && economiEuros > 0 ? coutInvest / economiEuros : null;
-
-  const detailMethode = [
-    `Forfait CEE — fiche BAR-TH-171 (zone ${hKey})`,
-    `Surface chauffée : ${surface} m² · Forfait indicatif : ${forfait} kWh cumac/m² (TODO : confirmer arrêté JO)`,
-    "",
-    `Volume CEE = ${forfait} × ${surface} = ${cumacKWh.toFixed(0)} kWh cumac (${(cumacKWh/1000).toFixed(0)} MWh cumac)`,
-    `Durée : ${duree} ans · coef : ${coef.toFixed(3)} → gain EF = ${gainMwh.toFixed(1)} MWh/an`,
-    "",
-    `Conso de référence reconstruite (G × V × DJU avec G=${G.toFixed(2)}) : ${consoAvant.toFixed(1)} MWh/an`,
-    `Conso APRÈS (forfait) : ${consoApres.toFixed(1)} MWh/an (${gainPct.toFixed(1)}%)`,
-    `Économie estimée : ${Math.round(economiEuros)} €/an`,
-  ].join("\n");
-
-  return {
-    besoinChauffage: besoinMwh,
-    consoAvant,
-    consoApres,
-    gainMwh,
-    gainPct,
-    reductionCo2,
-    economiEuros,
-    dureeRetour,
-    cumacKWh,
-    detailMethode,
-  };
-}
 
 // ─── Calculs BAR-TH-159 — PAC hybride résidentiel ──────────────
 
