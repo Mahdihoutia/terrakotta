@@ -68,3 +68,10 @@ export type {
 
 // Fiches CEE migrées (namespace par fiche pour éviter les collisions de noms).
 export * as BAR_TH_171 from "./cee/BAR-TH-171";
+export * as BAR_TH_159 from "./cee/BAR-TH-159";
+export * as BAR_EN_ISOLATION from "./cee/BAR-EN-isolation";
+export * as BAT_TH_142 from "./cee/BAT-TH-142";
+export * as BAT_TH_139 from "./cee/BAT-TH-139";
+export * as BAT_TH_116 from "./cee/BAT-TH-116";
+export * as BAT_TH_134 from "./cee/BAT-TH-134";
+export * as BAT_TH_163 from "./cee/BAT-TH-163";
