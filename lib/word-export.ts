@@ -40,6 +40,18 @@ export interface WordExportInput {
   /** Méta-données affichées sur la couverture (Bénéficiaire, Adresse, Date…) */
   meta: WordKeyValue[];
   sections: WordSectionInput[];
+  /**
+   * Préambule narratif inséré entre le sommaire et la 1ʳᵉ section.
+   * - `intro` : paragraphes d'ouverture (rôle du document, méthodologie…)
+   * - `constats` : liste à puces — observations clés
+   * - `leviers` : liste à puces — pistes / recommandations principales
+   */
+  lead?: {
+    titre?: string;
+    intro?: string[];
+    constats?: string[];
+    leviers?: string[];
+  };
   /** Bloc de clôture optionnel */
   closing?: { titre: string; paragraphs: string[] };
   filename?: string;
@@ -353,31 +365,42 @@ export async function exportToWord(input: WordExportInput): Promise<void> {
   );
   children.push(new Paragraph({ spacing: { before: 0, after: 360 }, children: [] }));
 
-  // Bloc méta — clean 2 colonnes, labels tracked gris-bleu, valeurs navy
+  // Bloc méta — vraie présentation tableau : label col teintée + filets fins
   if (input.meta.length > 0) {
+    const metaHairline = { style: BorderStyle.SINGLE, size: 4, color: "E2E8F0" };
+    const metaBorder = { style: BorderStyle.SINGLE, size: 4, color: "CBD5E1" };
     children.push(
       new Table({
         width: { size: 100, type: WidthType.PERCENTAGE },
         layout: TableLayoutType.FIXED,
-        columnWidths: [2880, 6720],
-        borders: noBorders(BorderStyle),
+        columnWidths: [3200, 6400],
+        borders: {
+          top: metaBorder,
+          bottom: metaBorder,
+          left: metaBorder,
+          right: metaBorder,
+          insideHorizontal: metaHairline,
+          insideVertical: metaHairline,
+        },
         rows: input.meta.map(
           ({ label, value }) =>
             new TableRow({
               cantSplit: true,
               children: [
                 new TableCell({
-                  width: { size: 30, type: WidthType.PERCENTAGE },
+                  width: { size: 33, type: WidthType.PERCENTAGE },
                   verticalAlign: VerticalAlign.CENTER,
-                  margins: { top: 100, bottom: 100, left: 0, right: 120 },
+                  shading: { type: ShadingType.CLEAR, color: "auto", fill: "F8FAFC" },
+                  margins: { top: 140, bottom: 140, left: 200, right: 160 },
                   children: [
                     new Paragraph({
                       spacing: { before: 0, after: 0 },
                       children: [
                         new TextRun({
                           text: label.toUpperCase(),
+                          bold: true,
                           size: 14, // 7pt
-                          color: "94A3B8",
+                          color: "475569",
                           characterSpacing: 60,
                         }),
                       ],
@@ -385,9 +408,9 @@ export async function exportToWord(input: WordExportInput): Promise<void> {
                   ],
                 }),
                 new TableCell({
-                  width: { size: 70, type: WidthType.PERCENTAGE },
+                  width: { size: 67, type: WidthType.PERCENTAGE },
                   verticalAlign: VerticalAlign.CENTER,
-                  margins: { top: 100, bottom: 100, left: 0, right: 0 },
+                  margins: { top: 140, bottom: 140, left: 200, right: 200 },
                   children: [
                     new Paragraph({
                       spacing: { before: 0, after: 0 },
@@ -523,24 +546,165 @@ export async function exportToWord(input: WordExportInput): Promise<void> {
   );
   children.push(new Paragraph({ children: [new PageBreak()] }));
 
-  // ─── Sections ───────────────────────────────────────────────
-  for (const section of input.sections) {
+  // ─── Page 3 — Préambule narratif (intro, constats, leviers) ──
+  if (input.lead) {
+    const lead = input.lead;
     children.push(
       new Paragraph({
-        heading: HeadingLevel.HEADING_1,
-        spacing: { before: 320, after: 120 },
+        spacing: { before: 0, after: 120 },
         children: [
-          new TextRun({ text: section.titre, bold: true, size: 28, color: ACCENT }),
+          new TextRun({
+            text: "PRÉAMBULE",
+            bold: true,
+            size: 16,
+            color: ACCENT,
+            characterSpacing: 120,
+          }),
+        ],
+      }),
+    );
+    children.push(
+      new Paragraph({
+        spacing: { before: 0, after: 360 },
+        children: [
+          new TextRun({
+            text: lead.titre ?? "Synthèse et orientations",
+            bold: true,
+            size: 40, // 20pt
+            color: BRAND_NAVY,
+          }),
         ],
       }),
     );
 
-    if (section.description) {
+    // Paragraphes d'introduction (justifié, navy clair)
+    if (lead.intro && lead.intro.length > 0) {
+      for (const p of lead.intro) {
+        children.push(
+          new Paragraph({
+            alignment: AlignmentType.JUSTIFIED,
+            spacing: { before: 0, after: 200, line: 320 },
+            children: [
+              new TextRun({ text: p, size: 22, color: "1F2937" }),
+            ],
+          }),
+        );
+      }
+    }
+
+    // Constats — bloc encadré gauche par filet accent
+    if (lead.constats && lead.constats.length > 0) {
       children.push(
         new Paragraph({
-          spacing: { after: 200 },
+          spacing: { before: 240, after: 100 },
           children: [
-            new TextRun({ text: section.description, italics: true, size: 18, color: "737373" }),
+            new TextRun({
+              text: "CONSTATS",
+              bold: true,
+              size: 14,
+              color: ACCENT,
+              characterSpacing: 80,
+            }),
+          ],
+        }),
+      );
+      for (const c of lead.constats) {
+        children.push(
+          new Paragraph({
+            spacing: { before: 0, after: 100, line: 280 },
+            indent: { left: 200 },
+            children: [
+              new TextRun({ text: "·  ", bold: true, size: 22, color: ACCENT }),
+              new TextRun({ text: c, size: 22, color: BRAND_NAVY }),
+            ],
+          }),
+        );
+      }
+    }
+
+    // Leviers / pistes
+    if (lead.leviers && lead.leviers.length > 0) {
+      children.push(
+        new Paragraph({
+          spacing: { before: 240, after: 100 },
+          children: [
+            new TextRun({
+              text: "LEVIERS PRIORITAIRES",
+              bold: true,
+              size: 14,
+              color: ACCENT,
+              characterSpacing: 80,
+            }),
+          ],
+        }),
+      );
+      for (const l of lead.leviers) {
+        children.push(
+          new Paragraph({
+            spacing: { before: 0, after: 100, line: 280 },
+            indent: { left: 200 },
+            children: [
+              new TextRun({ text: "·  ", bold: true, size: 22, color: ACCENT }),
+              new TextRun({ text: l, size: 22, color: BRAND_NAVY }),
+            ],
+          }),
+        );
+      }
+    }
+
+    children.push(new Paragraph({ children: [new PageBreak()] }));
+  }
+
+  // ─── Sections ───────────────────────────────────────────────
+  for (let sIdx = 0; sIdx < input.sections.length; sIdx++) {
+    const section = input.sections[sIdx];
+
+    // Kicker tracked : "SECTION 01"
+    children.push(
+      new Paragraph({
+        spacing: { before: 320, after: 80 },
+        children: [
+          new TextRun({
+            text: `SECTION ${String(sIdx + 1).padStart(2, "0")}`,
+            bold: true,
+            size: 14,
+            color: ACCENT,
+            characterSpacing: 100,
+          }),
+        ],
+      }),
+    );
+
+    // Titre navy + ancre HEADING_1 (sans styling lourd qui doublonnait)
+    children.push(
+      new Paragraph({
+        heading: HeadingLevel.HEADING_1,
+        spacing: { before: 0, after: 80 },
+        children: [
+          new TextRun({ text: section.titre, bold: true, size: 32, color: BRAND_NAVY }),
+        ],
+      }),
+    );
+
+    // Filet accent fin sous le titre
+    children.push(
+      new Paragraph({
+        spacing: { before: 0, after: 200 },
+        border: {
+          bottom: { color: ACCENT, size: 6, style: BorderStyle.SINGLE, space: 1 },
+        },
+        children: [],
+      }),
+    );
+
+    if (section.description) {
+      // Justifié, italique, line height généreuse → lecture naturelle
+      children.push(
+        new Paragraph({
+          alignment: AlignmentType.JUSTIFIED,
+          spacing: { after: 240, line: 320 },
+          children: [
+            new TextRun({ text: section.description, italics: true, size: 20, color: "475569" }),
           ],
         }),
       );
@@ -673,26 +837,37 @@ export async function exportToWord(input: WordExportInput): Promise<void> {
       }
     }
 
-    // Paragraphes (textarea)
+    // Paragraphes (textarea ou prose) — justifié, leading 1.4 pour lecture naturelle
     if (section.paragraphs) {
       for (const p of section.paragraphs) {
         if (p.label) {
           children.push(
             new Paragraph({
-              spacing: { before: 160, after: 60 },
+              spacing: { before: 200, after: 80 },
               children: [
-                new TextRun({ text: p.label, bold: true, size: 20, color: "404040" }),
+                new TextRun({
+                  text: p.label.toUpperCase(),
+                  bold: true,
+                  size: 16,
+                  color: BRAND_NAVY,
+                  characterSpacing: 60,
+                }),
               ],
             }),
           );
         }
-        // Préserver les sauts de ligne
+        // Préserver les sauts de ligne ; sauter les lignes vides
         const lines = p.text.split(/\r?\n/);
         for (const line of lines) {
+          if (!line.trim()) {
+            children.push(new Paragraph({ spacing: { after: 80 }, children: [] }));
+            continue;
+          }
           children.push(
             new Paragraph({
-              spacing: { after: 80 },
-              children: [new TextRun({ text: line, size: 20 })],
+              alignment: AlignmentType.JUSTIFIED,
+              spacing: { after: 120, line: 320 },
+              children: [new TextRun({ text: line, size: 22, color: "1F2937" })],
             }),
           );
         }

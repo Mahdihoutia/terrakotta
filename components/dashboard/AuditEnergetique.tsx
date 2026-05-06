@@ -1720,6 +1720,46 @@ export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props
         });
       }
 
+      // ─── Préambule narratif (constats + leviers) — aligné sur le PDF ──
+      const consoM2 = parseFloat(values.conso_par_m2 || "0");
+      const co2M2 = parseFloat(values.emissions_co2_m2 || "0");
+      const factureAn = parseFloat(values.facture_annuelle || "0");
+      const shab = parseFloat(values.surface_habitable || "0");
+      const euroM2 = shab > 0 && factureAn > 0 ? factureAn / shab : 0;
+
+      const constats: string[] = [];
+      if (consoM2 > 0) constats.push(`Consommation de ${consoM2} kWhEP/m².an — classe énergétique ${(values.dpe_actuel || "G").charAt(0)}.`);
+      if (co2M2 > 0)   constats.push(`Émissions de ${co2M2} kgCO₂/m².an — classe environnementale ${(values.ges_actuel || "G").charAt(0)}.`);
+      if (euroM2 > 0)  constats.push(`Facture énergétique de ${euroM2.toFixed(0)} €/m².an${factureAn > 0 ? `, soit ${Math.round(factureAn)} €/an` : ""}.`);
+      if (values.annee_construction) constats.push(`Bâtiment construit en ${values.annee_construction}, structure ${values.type_structure || "non précisée"}.`);
+      if (values.chauffage_type && values.chauffage_annee) constats.push(`Générateur de chauffage ${values.chauffage_type} installé en ${values.chauffage_annee}.`);
+      if (values.ventilation_type && values.ventilation_type !== "Aucune") constats.push(`Ventilation ${values.ventilation_type}.`);
+      if (values.murs_isolation === "Non isolé") constats.push("Murs non isolés : poste majeur de déperdition.");
+      if (values.toiture_isolation === "Non isolé") constats.push("Toiture non isolée : priorité forte d'intervention.");
+
+      const topActions = [...preconisations]
+        .sort((a, b) => (b.opportunite || 0) - (a.opportunite || 0))
+        .slice(0, 5);
+      const leviers: string[] = topActions.length > 0
+        ? topActions.map((a) => {
+            const euro = a.economiesEuro ? ` — ${Math.round(a.economiesEuro)} €/an` : "";
+            const tri  = a.tri ? `, TRI ${a.tri.toFixed(1)} ans` : "";
+            return `${a.code} · ${a.titre}${euro}${tri}`;
+          })
+        : [];
+
+      const lead = (constats.length > 0 || leviers.length > 0)
+        ? {
+            titre: "Synthèse et orientations",
+            intro: [
+              "Le présent audit énergétique a pour objet de dresser un diagnostic complet du bâtiment, d'identifier les postes de déperditions prioritaires et de proposer un bouquet de scénarios de rénovation cohérent avec les usages, les contraintes patrimoniales et le budget du bénéficiaire.",
+              "La démarche s'appuie sur un relevé in situ, l'exploitation des factures énergétiques disponibles et un calcul thermique conforme aux référentiels DPE 2021 et RE2020. Les ordres de grandeur économiques (économies, retour sur investissement) sont indicatifs et devront être affinés en phase études d'exécution.",
+            ],
+            constats,
+            leviers,
+          }
+        : undefined;
+
       await exportToWord({
         title: "Audit énergétique",
         subtitle: "Diagnostic complet et scénarios de rénovation",
@@ -1732,6 +1772,7 @@ export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props
           { label: "Auditeur", value: values.redacteur || "—" },
           { label: "DPE actuel", value: values.dpe_actuel || "—" },
         ],
+        lead,
         sections: wordSections,
         filename: `Audit_Energetique_${values.ref_audit || "DRAFT"}_${new Date().toISOString().slice(0, 10)}.docx`,
       });

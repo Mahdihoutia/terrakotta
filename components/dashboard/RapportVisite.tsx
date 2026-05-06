@@ -733,6 +733,9 @@ export default function RapportVisite({ onBack, onSaved, existingDoc }: Props) {
       const wordSections: WordSectionInput[] = SECTIONS.map((section, sIdx) => {
         const rows: { label: string; value: string }[] = [];
         const paragraphs: { label?: string; text: string }[] = [];
+        // Prose contextuelle de la section (alignée sur le PDF) en tête de paragraphes
+        const prose = SECTION_PROSE[sIdx];
+        if (prose) paragraphs.push({ text: prose });
         for (const field of section.fields) {
           const val = values[field.id];
           if (!val || !val.trim()) continue;
@@ -769,6 +772,16 @@ export default function RapportVisite({ onBack, onSaved, existingDoc }: Props) {
           { label: "Rédacteur", value: values.redacteur || "—" },
           { label: "Téléphone", value: values.client_telephone || "—" },
         ],
+        // Préambule narratif aligné sur le PDF (intro · méthode · lecture)
+        lead: {
+          titre: "Préambule",
+          intro: [PREAMBULE_INTRO, PREAMBULE_METHODE, PREAMBULE_LECTURE],
+        },
+        // Mention finale : limites de la visite (cf. PDF)
+        closing: {
+          titre: "Méthodologie et limites",
+          paragraphs: [METHODOLOGIE_CLOSING],
+        },
         sections: wordSections,
         filename: `Rapport_Visite_${values.ref_rapport || "DRAFT"}_${new Date().toISOString().slice(0, 10)}.docx`,
       });
