@@ -21,6 +21,7 @@ import {
   Plus,
   Trash2,
   HelpCircle,
+  Lock,
 } from "lucide-react";
 import { exportToWord, type WordSectionInput } from "@/lib/word-export";
 import { BAR_TH_171, type FicheCalculResult } from "@/lib/thermal";
@@ -34,6 +35,35 @@ import {
 } from "@/components/ui/tooltip";
 
 // ─── Types ──────────────────────────────────────────────────────
+
+/**
+ * Champs systématiquement réécrits par les `useEffect` de calcul auto.
+ * Tout champ listé ici est rendu en lecture-seule visuelle (badge « Calculé »
+ * + icône cadenas + tooltip) pour signaler à l'utilisateur que sa saisie
+ * sera écrasée au prochain recalcul.
+ *
+ * NB : le champ reste éditable techniquement (l'utilisateur peut taper)
+ * mais la valeur sera reset au prochain changement d'input source.
+ * Pour figer une valeur, l'utilisateur doit retirer le champ source du
+ * calcul ou modifier la fonction `calculerXXX()` correspondante.
+ */
+const AUTO_CALCULATED_FIELDS: ReadonlySet<string> = new Set([
+  "conso_chauffage_apres",
+  "conso_electrique_apres",
+  "conso_evitee",
+  "chaleur_rejetee_annuelle",
+  "chaleur_recuperee_annuelle",
+  "gain_energetique_pct",
+  "gain_energetique_mwh",
+  "economie_euros",
+  "duree_retour",
+  "detail_calcul",
+  "reduction_co2",
+  "reduction_gradient",
+  "economie_cee_cumac",
+  "cee_cumac_calcule_mwh",
+  "cee_cumac_calcule_kwh",
+]);
 
 type FicheId = "BAT-TH-134" | "BAT-TH-163" | "BAT-TH-142" | "BAT-TH-139" | "BAR-TH-171" | "BAR-TH-159" | "BAR-EN-101" | "BAR-EN-102" | "BAR-EN-103" | "BAT-TH-116";
 
@@ -326,12 +356,12 @@ const METHODES_PAR_FICHE: Record<FicheId, MethodeOption[]> = {
   ],
   "BAT-TH-142": [
     { id: "BILAN_THERMIQUE", label: "Méthode forfaitaire (3% d'économie par °C de gradient réduit)", description: "Économie linéaire 3% par °C de gradient réduit (max 30%)" },
-    { id: "BIN", label: "Méthode bin déstratification", description: "Calcul horaire avec bins de température" },
-    { id: "FORFAITAIRE_CEE", label: "Forfait CEE BAT-TH-142", description: "Forfait kWh cumac par m² selon hauteur" },
+    // Méthodes BIN et FORFAITAIRE_CEE retirées : non implémentées dans calculer142().
+    // À ré-ajouter dès qu'un switch sera branché.
   ],
   "BAT-TH-139": [
     { id: "BILAN_THERMIQUE", label: "Bilan thermique (puissance × heures × taux de charge × taux de récup.)", description: "Chaleur récupérable = (P_froid + P_abs) × heures × τ_charge × τ_récup" },
-    { id: "FORFAITAIRE_CEE", label: "Forfait CEE BAT-TH-139", description: "Forfait par puissance frigorifique" },
+    // FORFAITAIRE_CEE retirée : non implémentée dans calculer139().
   ],
   "BAR-TH-171": [
     { id: "DJU", label: "DJU + besoins thermiques (G × V × DJU)", description: "Besoin = G × V × DJU, conso après = besoin / SCOP" },
@@ -339,9 +369,9 @@ const METHODES_PAR_FICHE: Record<FicheId, MethodeOption[]> = {
     { id: "FORFAITAIRE_CEE", label: "Forfait CEE BAR-TH-171", description: "Forfait selon zone climatique × surface chauffée" },
   ],
   "BAR-TH-159": [
-    { id: "BIN", label: "Méthode bin avec bascule PAC/chaudière", description: "Répartition heures sur bins avec température de bascule" },
-    { id: "DJU", label: "DJU + ratio PAC/appoint", description: "Besoin total puis split selon part PAC estimée" },
-    { id: "FORFAITAIRE_CEE", label: "Forfait CEE BAR-TH-159", description: "Forfait PAC hybride par zone et puissance" },
+    // Méthode actuelle : DJU + bins climatiques pour la bascule PAC/chaudière.
+    // Méthodes BIN et FORFAITAIRE_CEE retirées : non implémentées dans calculer159().
+    { id: "DJU", label: "DJU + bascule PAC/chaudière par bins", description: "Besoin G × V × DJU, split PAC/appoint selon T° de bascule par bin climatique" },
   ],
   "BAR-EN-101": [
     { id: "REGLEMENTAIRE_DELTA_U", label: "ΔU × S × DJU × 24 (réglementaire)", description: "Méthode officielle CEE — ΔU = 1/R_av − 1/R_ap" },
@@ -357,7 +387,7 @@ const METHODES_PAR_FICHE: Record<FicheId, MethodeOption[]> = {
   ],
   "BAT-TH-116": [
     { id: "EN_15232", label: "EN 15232 / ISO 52120-1 (forfaitaire par classe)", description: "Gain forfaitaire selon classe GTB (A=30%/20%, B=18%/14%)" },
-    { id: "BILAN_THERMIQUE", label: "Bilan énergétique détaillé", description: "Calcul poste par poste selon les fonctionnalités GTB activées" },
+    // BILAN_THERMIQUE retirée : non implémentée dans calculer116().
   ],
 };
 
@@ -3230,8 +3260,10 @@ interface Calcul142Result {
   consoApres: number;
   gainNetMwh: number;
   gainNetPct: number;
+  reductionCo2: number;
   economiEuros: number;
   dureeRetour: number | null;
+  cumacKWh: number;
   detailMethode: string;
 }
 
@@ -3260,11 +3292,21 @@ function calculer142(v: FormValues): Calcul142Result | null {
   const gainNetPct = (gainNetMwh / consoAvant) * 100;
 
   // Économie financière — prix par vecteur énergétique (réel 2025-2026)
-  const prix = prixEnergie(v.energie_chauffage || "Gaz");
+  const energieChauffage = v.energie_chauffage || "Gaz naturel";
+  const prix = prixEnergie(energieChauffage);
   const economiEuros = gainNetMwh * 1000 * prix;
+
+  // Réduction CO₂ — facteur d'émission du vecteur de chauffage
+  // (la conso élec des déstratificateurs est déjà déduite via gainNetMwh)
+  const facteurCo2 = FACTEUR_CO2[energieChauffage] || 0.200;
+  const reductionCo2 = (economieBrute * 1000 * facteurCo2 - consoDestrat * 1000 * FACTEUR_CO2_ELEC_CHAUFFAGE) / 1000;
 
   const coutInvest = parseFloat(v.cout_investissement || "0");
   const dureeRetour = coutInvest > 0 && economiEuros > 0 ? coutInvest / economiEuros : null;
+
+  // Volume CEE
+  const cumac = computeCumac("BAT-TH-142", gainNetMwh);
+  const cumacKWh = cumac?.cumacKWh ?? 0;
 
   const hauteur = parseFloat(v.hauteur_sous_plafond || "0");
   const detailMethode = [
@@ -3284,10 +3326,12 @@ function calculer142(v: FormValues): Calcul142Result | null {
     `  Gain NET = ${economieBrute.toFixed(1)} - ${consoDestrat.toFixed(2)} = ${gainNetMwh.toFixed(1)} MWh/an (${gainNetPct.toFixed(1)}%)`,
     "",
     `Conso AVANT: ${consoAvant.toFixed(1)} MWh/an → Conso APRÈS: ${consoApres.toFixed(1)} MWh/an`,
+    `Réduction CO₂: ${reductionCo2.toFixed(2)} tCO₂e/an (facteur ${facteurCo2} kgCO₂e/kWh ${energieChauffage})`,
     `Économie: ${Math.round(economiEuros)} €/an`,
-  ].join("\n");
+    cumac ? `Volume CEE = ${gainNetMwh.toFixed(1)} MWh × ${cumac.duree} ans × ${cumac.coefActu.toFixed(3)} = ${cumac.cumacMWh.toFixed(0)} MWh cumac` : "",
+  ].filter(Boolean).join("\n");
 
-  return { reductionGradient, gainBrutPct, consoDestrat, consoApres, gainNetMwh, gainNetPct, economiEuros, dureeRetour, detailMethode };
+  return { reductionGradient, gainBrutPct, consoDestrat, consoApres, gainNetMwh, gainNetPct, reductionCo2, economiEuros, dureeRetour, cumacKWh, detailMethode };
 }
 
 // ─── Calculs BAT-TH-139 — Récupération chaleur ─────────────────
@@ -3300,6 +3344,7 @@ interface Calcul139Result {
   reductionCo2: number;
   economiEuros: number;
   dureeRetour: number | null;
+  cumacKWh: number;
   detailMethode: string;
 }
 
@@ -3342,6 +3387,10 @@ function calculer139(v: FormValues): Calcul139Result | null {
   const coutInvest = parseFloat(v.cout_investissement || "0");
   const dureeRetour = coutInvest > 0 && economiEuros > 0 ? coutInvest / economiEuros : null;
 
+  // Volume CEE — gain = consoEvitee (énergie finale substituée)
+  const cumac = computeCumac("BAT-TH-139", consoEvitee);
+  const cumacKWh = cumac?.cumacKWh ?? 0;
+
   const detailMethode = [
     `Bilan thermique de récupération de chaleur sur groupe froid`,
     `Groupe froid: ${v.marque_groupe || "?"} · Pfroid = ${puissanceFroid} kW · Pélec = ${puissanceAbsorbee} kW`,
@@ -3361,9 +3410,10 @@ function calculer139(v: FormValues): Calcul139Result | null {
     "",
     `Réduction CO₂: ${reductionCo2.toFixed(1)} t/an`,
     `Économie: ${consoEvitee.toFixed(1)} MWh/an · ${Math.round(economiEuros)} €/an`,
-  ].join("\n");
+    cumac ? `Volume CEE = ${consoEvitee.toFixed(1)} MWh × ${cumac.duree} ans × ${cumac.coefActu.toFixed(3)} = ${cumac.cumacMWh.toFixed(0)} MWh cumac` : "",
+  ].filter(Boolean).join("\n");
 
-  return { chaleurRejetee, chaleurRecuperee, consoEvitee, gainPct, reductionCo2, economiEuros, dureeRetour, detailMethode };
+  return { chaleurRejetee, chaleurRecuperee, consoEvitee, gainPct, reductionCo2, economiEuros, dureeRetour, cumacKWh, detailMethode };
 }
 
 // ─── Helpers communs aux fiches résidentielles ─────────────────
@@ -3443,10 +3493,12 @@ function calculer159(v: FormValues): Calcul159Result | null {
   const zone = v.zone_climatique;
   const zoneData = zone ? ZONE_CLIMATIQUE_DATA[zone] : null;
   const annee = parseFloat(v.annee_construction || "0");
-  const cop = parseFloat(v.cop || "0");
-  if (surface <= 0 || !zoneData || cop <= 0) return null;
+  // Préférer SCOP si renseigné, fallback COP — cohérent avec BAR-TH-171.
+  const scopOrCop = parseFloat(v.scop || v.cop || "0");
+  if (surface <= 0 || !zoneData || scopOrCop <= 0) return null;
 
-  const hsp = 2.5;
+  // Hauteur sous plafond saisie ou défaut résidentiel 2,5 m.
+  const hsp = parseFloat(v.hauteur_plafond || "2.5") || 2.5;
   const volume = surface * hsp;
   const G = coeffGFromAnnee(annee);
   const besoinBrutKwh = (G * volume * zoneData.dju * 24) / 1000;
@@ -3468,8 +3520,10 @@ function calculer159(v: FormValues): Calcul159Result | null {
   const besoinPac = besoinKwh * partPac;
   const besoinChaud = besoinKwh * (1 - partPac);
 
-  // SCOP effectif estimé = COP × 0.85 (correction saisonnière)
-  const scopEff = cop * 0.85;
+  // SCOP effectif estimé = SCOP/COP × 0.85 (correction saisonnière à défaut de mesure).
+  // Si l'utilisateur a saisi v.scop directement, le facteur 0.85 sous-évalue ;
+  // mais on conserve la prudence pour un dossier non-mesuré.
+  const scopEff = scopOrCop * 0.85;
   const rendCondens = 0.95;
 
   const energieExistante = v.energie_existante || "Gaz naturel";
@@ -4511,10 +4565,12 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
       conso_chauffage_apres: calcul142.consoApres.toFixed(1),
       gain_energetique_pct: calcul142.gainNetPct.toFixed(1),
       gain_energetique_mwh: calcul142.gainNetMwh.toFixed(1),
+      reduction_co2: calcul142.reductionCo2.toFixed(2),
       economie_euros: String(Math.round(calcul142.economiEuros)),
       ...(calcul142.dureeRetour ? { duree_retour: calcul142.dureeRetour.toFixed(1) } : {}),
       detail_calcul: calcul142.detailMethode,
       reduction_gradient: calcul142.reductionGradient.toFixed(1),
+      economie_cee_cumac: (calcul142.cumacKWh / 1000).toFixed(0),
     }));
     setSaved(false);
   }, [selectedFiche, activeSection, calcul142]);
@@ -4568,6 +4624,7 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
       economie_euros: String(Math.round(calcul139.economiEuros)),
       ...(calcul139.dureeRetour ? { duree_retour: calcul139.dureeRetour.toFixed(1) } : {}),
       detail_calcul: calcul139.detailMethode,
+      economie_cee_cumac: (calcul139.cumacKWh / 1000).toFixed(0),
     }));
     setSaved(false);
   }, [selectedFiche, activeSection, calcul139]);
@@ -5087,7 +5144,9 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid gap-4 sm:grid-cols-2">
-                    {currentSection.fields.map((field) => (
+                    {currentSection.fields.map((field) => {
+                      const isAutoCalc = AUTO_CALCULATED_FIELDS.has(field.id);
+                      return (
                       <div
                         key={field.id}
                         className={cn("space-y-1.5", field.colSpan === 2 && "sm:col-span-2")}
@@ -5114,13 +5173,32 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
                               </Tooltip>
                             </TooltipProvider>
                           )}
+                          {isAutoCalc && (
+                            <TooltipProvider delay={150}>
+                              <Tooltip>
+                                <TooltipTrigger type="button" aria-label="Champ calculé automatiquement">
+                                  <Badge variant="outline" className="ml-1 gap-1 border-primary/40 bg-primary/5 text-[10px] font-medium uppercase tracking-wider text-primary">
+                                    <Lock className="h-2.5 w-2.5" />
+                                    Calculé
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs text-left leading-snug">
+                                  Ce champ est mis à jour automatiquement à partir des autres saisies.
+                                  Toute modification manuelle sera écrasée au prochain recalcul.
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
                         </label>
 
                         {field.type === "select" ? (
                           <select
                             value={values[field.id] || ""}
                             onChange={(e) => updateValue(field.id, e.target.value)}
-                            className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                            className={cn(
+                              "w-full rounded-lg border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none",
+                              isAutoCalc && "border-primary/30 bg-primary/5",
+                            )}
                           >
                             <option value="">— Sélectionner —</option>
                             {field.options?.map((opt) => (
@@ -5133,7 +5211,10 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
                             onChange={(e) => updateValue(field.id, e.target.value)}
                             rows={5}
                             placeholder={field.placeholder}
-                            className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none resize-none"
+                            className={cn(
+                              "w-full rounded-lg border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none resize-none",
+                              isAutoCalc && "border-primary/30 bg-primary/5 font-mono text-xs",
+                            )}
                           />
                         ) : (
                           <input
@@ -5141,11 +5222,15 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
                             value={values[field.id] || ""}
                             onChange={(e) => updateValue(field.id, e.target.value)}
                             placeholder={field.placeholder}
-                            className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                            className={cn(
+                              "w-full rounded-lg border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none",
+                              isAutoCalc && "border-primary/30 bg-primary/5 font-mono",
+                            )}
                           />
                         )}
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
 
                   {/* ─── Volume CEE — kWh cumac calculé automatiquement ─── */}
