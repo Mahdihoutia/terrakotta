@@ -57,6 +57,67 @@ const BRAND_NAME = "KILOWATER";
 const BRAND_TAGLINE = "Rénover l'existant, construire l'avenir.";
 const DEFAULT_LOGO_URL = "/brand/logo-noir.png";
 
+/**
+ * Génère l'éclair bleu (icône Zap du dashboard) en PNG, sans dépendance asset :
+ * carré arrondi bleu pâle + polygone blanc/bleu — identique au logo de la sidebar.
+ */
+function buildLightningIconPng(sizePx = 128): Uint8Array | null {
+  if (typeof document === "undefined") return null;
+  const canvas = document.createElement("canvas");
+  canvas.width = sizePx;
+  canvas.height = sizePx;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+
+  // Fond carré arrondi très pâle (rgba(59,130,246,0.12))
+  const radius = sizePx * 0.22;
+  ctx.fillStyle = "rgba(59,130,246,0.12)";
+  ctx.beginPath();
+  ctx.moveTo(radius, 0);
+  ctx.lineTo(sizePx - radius, 0);
+  ctx.quadraticCurveTo(sizePx, 0, sizePx, radius);
+  ctx.lineTo(sizePx, sizePx - radius);
+  ctx.quadraticCurveTo(sizePx, sizePx, sizePx - radius, sizePx);
+  ctx.lineTo(radius, sizePx);
+  ctx.quadraticCurveTo(0, sizePx, 0, sizePx - radius);
+  ctx.lineTo(0, radius);
+  ctx.quadraticCurveTo(0, 0, radius, 0);
+  ctx.closePath();
+  ctx.fill();
+
+  // Lucide Zap polygon : 13,2 3,14 12,14 11,22 21,10 12,10 13,2 (viewBox 24×24)
+  const scale = (sizePx * 0.6) / 24; // glyph occupe ~60% du carré
+  const cx = sizePx / 2;
+  const cy = sizePx / 2;
+  const pts: [number, number][] = [
+    [13, 2],
+    [3, 14],
+    [12, 14],
+    [11, 22],
+    [21, 10],
+    [12, 10],
+    [13, 2],
+  ];
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate((12 * Math.PI) / 180); // rotate-12 comme dans le dashboard
+  ctx.translate(-12 * scale, -12 * scale); // recentre depuis viewBox 24
+  ctx.fillStyle = "#3B82F6";
+  ctx.beginPath();
+  pts.forEach(([x, y], i) => {
+    const px = x * scale;
+    const py = y * scale;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  });
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  const dataUrl = canvas.toDataURL("image/png");
+  return dataUrlToUint8Array(dataUrl);
+}
+
 function dataUrlToUint8Array(dataUrl: string): Uint8Array {
   const base64 = dataUrl.includes(",") ? dataUrl.split(",")[1] : dataUrl;
   const binary = atob(base64);
@@ -132,8 +193,6 @@ export async function exportToWord(input: WordExportInput): Promise<void> {
     Header,
     Footer,
     PageNumber,
-    TableOfContents,
-    StyleLevel,
   } = docx;
 
   // Détection MIME image robuste (data:image/jpeg, jpg, png, gif, webp…)
@@ -160,18 +219,16 @@ export async function exportToWord(input: WordExportInput): Promise<void> {
   const children: InstanceType<typeof Paragraph | typeof Table>[] = [];
 
   // ─── Couverture (épurée) ────────────────────────────────────
-  // Logo éclair bleu en haut à gauche, beaucoup de respiration, info essentielle.
-  const logo = await loadImageBytes(input.logoUrl ?? DEFAULT_LOGO_URL);
-  const logoFitted = logo ? fitImage(logo.dims, 64, 64) : null;
-
-  if (logo && logoFitted) {
+  // Éclair bleu généré (identique à l'icône Zap du dashboard), sans logo Terrakotta.
+  const lightningBytes = buildLightningIconPng(128);
+  if (lightningBytes) {
     children.push(
       new Paragraph({
         spacing: { before: 200, after: 0 },
         children: [
           new ImageRun({
-            data: logo.bytes,
-            transformation: logoFitted,
+            data: lightningBytes,
+            transformation: { width: 56, height: 56 },
             type: "png",
           }),
         ],
@@ -294,10 +351,12 @@ export async function exportToWord(input: WordExportInput): Promise<void> {
 
   children.push(new Paragraph({ children: [new PageBreak()] }));
 
-  // ─── Page 2 — Sommaire (compact, 1 page) ──────────────────
+  // ─── Page 2 — Sommaire (statique, compatible Word + Pages Mac) ──
+  // Pas de TableOfContents (champ dynamique mal géré par Pages/Google Docs).
+  // À la place : liste numérotée navy → 1 page garantie, rendu identique partout.
   children.push(
     new Paragraph({
-      spacing: { before: 0, after: 160 },
+      spacing: { before: 0, after: 120 },
       children: [
         new TextRun({
           text: "Sommaire",
@@ -310,22 +369,35 @@ export async function exportToWord(input: WordExportInput): Promise<void> {
   );
   children.push(
     new Paragraph({
-      spacing: { before: 0, after: 240 },
+      spacing: { before: 0, after: 280 },
       border: {
         bottom: { color: ACCENT, size: 8, style: BorderStyle.SINGLE, space: 1 },
       },
       children: [],
     }),
   );
-  // TOC limité aux H1 — entrées plus larges et tient sur une page.
-  // Word/Pages calcule les numéros de page à l'ouverture (updateFields=true).
-  children.push(
-    new TableOfContents("Sommaire", {
-      hyperlink: true,
-      headingStyleRange: "1-1",
-      stylesWithLevels: [new StyleLevel("Heading1", 1)],
-    }),
-  );
+  input.sections.forEach((section, idx) => {
+    children.push(
+      new Paragraph({
+        spacing: { before: 0, after: 100 },
+        tabStops: [{ type: docx.TabStopType.RIGHT, position: 9600 }],
+        children: [
+          new TextRun({
+            text: String(idx + 1).padStart(2, "0"),
+            bold: true,
+            size: 18,
+            color: ACCENT,
+          }),
+          new TextRun({ text: "    ", size: 22 }),
+          new TextRun({
+            text: section.titre,
+            size: 22,
+            color: BRAND_NAVY,
+          }),
+        ],
+      }),
+    );
+  });
   children.push(new Paragraph({ children: [new PageBreak()] }));
 
   // ─── Sections ───────────────────────────────────────────────
