@@ -218,83 +218,142 @@ export async function exportToWord(input: WordExportInput): Promise<void> {
 
   const children: InstanceType<typeof Paragraph | typeof Table>[] = [];
 
-  // ─── Couverture (épurée) ────────────────────────────────────
-  // Éclair bleu généré (identique à l'icône Zap du dashboard), sans logo Terrakotta.
+  // ─── Couverture — Dossier technique BE ─────────────────────
+  // Bandeau de marque (slim, ~18mm) : éclair bleu + KILOWATER + tagline tracked.
   const lightningBytes = buildLightningIconPng(128);
-  if (lightningBytes) {
-    children.push(
-      new Paragraph({
-        spacing: { before: 200, after: 0 },
-        children: [
-          new ImageRun({
-            data: lightningBytes,
-            transformation: { width: 56, height: 56 },
-            type: "png",
-          }),
-        ],
-      }),
-    );
-  }
-
-  // Respiration importante au-dessus du titre
-  children.push(new Paragraph({ spacing: { before: 2400, after: 0 }, children: [] }));
-
-  // Eyebrow discret
   children.push(
-    new Paragraph({
-      spacing: { before: 0, after: 160 },
-      children: [
-        new TextRun({
-          text: (input.eyebrow ?? "Document de mission").toUpperCase(),
-          size: 14,
-          color: ACCENT,
-          characterSpacing: 80,
+    new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      layout: TableLayoutType.FIXED,
+      columnWidths: [9600],
+      borders: noBorders(BorderStyle),
+      rows: [
+        new TableRow({
+          cantSplit: true,
+          height: { value: 1100, rule: docx.HeightRule.ATLEAST },
+          children: [
+            new TableCell({
+              width: { size: 100, type: WidthType.PERCENTAGE },
+              shading: { type: ShadingType.CLEAR, color: "auto", fill: BRAND_NAVY },
+              verticalAlign: VerticalAlign.CENTER,
+              margins: { top: 200, bottom: 200, left: 360, right: 360 },
+              children: [
+                new Paragraph({
+                  spacing: { before: 0, after: 0 },
+                  children: [
+                    ...(lightningBytes
+                      ? [
+                          new ImageRun({
+                            data: lightningBytes,
+                            transformation: { width: 28, height: 28 },
+                            type: "png",
+                          }),
+                          new TextRun({ text: "    ", size: 24 }),
+                        ]
+                      : []),
+                    new TextRun({
+                      text: BRAND_NAME,
+                      bold: true,
+                      size: 22, // 11pt
+                      color: "FFFFFF",
+                      characterSpacing: 80,
+                    }),
+                    new TextRun({ text: "      ", size: 22 }),
+                    new TextRun({
+                      text: "BUREAU D'ÉTUDE · RÉNOVATION ÉNERGÉTIQUE",
+                      size: 14, // 7pt
+                      color: BRAND_LIGHT,
+                      characterSpacing: 60,
+                    }),
+                  ],
+                }),
+              ],
+            }),
+          ],
         }),
       ],
     }),
   );
 
-  // Titre principal — sobre, navy
+  // Grande respiration sous le bandeau (~50mm)
+  children.push(new Paragraph({ spacing: { before: 2800, after: 0 }, children: [] }));
+
+  // Eyebrow tracked : type de document + référence
+  children.push(
+    new Paragraph({
+      spacing: { before: 0, after: 200 },
+      children: [
+        new TextRun({
+          text: `${(input.eyebrow ?? "Dossier technique").toUpperCase()}   ·   ${(input.reference || "—").toUpperCase()}`,
+          bold: true,
+          size: 16, // 8pt
+          color: ACCENT,
+          characterSpacing: 100,
+        }),
+      ],
+    }),
+  );
+
+  // Titre principal — typo grand format, navy
   children.push(
     new Paragraph({
       alignment: AlignmentType.LEFT,
-      spacing: { before: 0, after: 100 },
+      spacing: { before: 0, after: 80 },
       children: [
         new TextRun({
           text: input.title,
           bold: true,
-          size: 56, // 28pt
+          size: 72, // 36pt
           color: BRAND_NAVY,
         }),
       ],
     }),
   );
 
+  // Sous-titre — italique gris
   if (input.subtitle) {
     children.push(
       new Paragraph({
-        spacing: { after: 280 },
+        spacing: { after: 240 },
         children: [
-          new TextRun({ text: input.subtitle, size: 22, color: "64748B" }),
+          new TextRun({
+            text: input.subtitle,
+            italics: true,
+            size: 26, // 13pt
+            color: "64748B",
+          }),
         ],
       }),
     );
   } else {
-    children.push(new Paragraph({ spacing: { after: 280 }, children: [] }));
+    children.push(new Paragraph({ spacing: { after: 240 }, children: [] }));
   }
 
-  // Filet accent fin
+  // Filet accent court (~60mm) — barre de marque
   children.push(
-    new Paragraph({
-      spacing: { before: 0, after: 320 },
-      border: {
-        bottom: { color: ACCENT, size: 8, style: BorderStyle.SINGLE, space: 1 },
-      },
-      children: [],
+    new Table({
+      width: { size: 3400, type: WidthType.DXA },
+      layout: TableLayoutType.FIXED,
+      columnWidths: [3400],
+      borders: noBorders(BorderStyle),
+      rows: [
+        new TableRow({
+          cantSplit: true,
+          height: { value: 60, rule: docx.HeightRule.EXACT },
+          children: [
+            new TableCell({
+              width: { size: 3400, type: WidthType.DXA },
+              shading: { type: ShadingType.CLEAR, color: "auto", fill: ACCENT },
+              children: [new Paragraph({ spacing: { before: 0, after: 0 }, children: [] })],
+            }),
+          ],
+        }),
+      ],
     }),
   );
+  children.push(new Paragraph({ spacing: { before: 0, after: 360 }, children: [] }));
 
-  // Méta couverture — liste épurée label/valeur, sans bordures ni shading
+  // Bloc méta — clean 2 colonnes, labels tracked gris-bleu, valeurs navy
   if (input.meta.length > 0) {
     children.push(
       new Table({
@@ -310,16 +369,16 @@ export async function exportToWord(input: WordExportInput): Promise<void> {
                 new TableCell({
                   width: { size: 30, type: WidthType.PERCENTAGE },
                   verticalAlign: VerticalAlign.CENTER,
-                  margins: { top: 80, bottom: 80, left: 0, right: 120 },
+                  margins: { top: 100, bottom: 100, left: 0, right: 120 },
                   children: [
                     new Paragraph({
                       spacing: { before: 0, after: 0 },
                       children: [
                         new TextRun({
                           text: label.toUpperCase(),
-                          size: 14,
+                          size: 14, // 7pt
                           color: "94A3B8",
-                          characterSpacing: 40,
+                          characterSpacing: 60,
                         }),
                       ],
                     }),
@@ -328,14 +387,14 @@ export async function exportToWord(input: WordExportInput): Promise<void> {
                 new TableCell({
                   width: { size: 70, type: WidthType.PERCENTAGE },
                   verticalAlign: VerticalAlign.CENTER,
-                  margins: { top: 80, bottom: 80, left: 0, right: 0 },
+                  margins: { top: 100, bottom: 100, left: 0, right: 0 },
                   children: [
                     new Paragraph({
                       spacing: { before: 0, after: 0 },
                       children: [
                         new TextRun({
                           text: value || "—",
-                          size: 20,
+                          size: 22, // 11pt
                           color: BRAND_NAVY,
                         }),
                       ],
@@ -349,55 +408,119 @@ export async function exportToWord(input: WordExportInput): Promise<void> {
     );
   }
 
+  // Mention de bas de couverture : indice + date d'édition tracked
+  children.push(new Paragraph({ spacing: { before: 1600, after: 0 }, children: [] }));
+  children.push(
+    new Paragraph({
+      alignment: AlignmentType.LEFT,
+      spacing: { before: 0, after: 0 },
+      children: [
+        new TextRun({
+          text: `INDICE A   ·   ÉDITION ${new Date()
+            .toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" })
+            .toUpperCase()}`,
+          size: 14, // 7pt
+          color: "94A3B8",
+          characterSpacing: 80,
+        }),
+      ],
+    }),
+  );
+
   children.push(new Paragraph({ children: [new PageBreak()] }));
 
-  // ─── Page 2 — Sommaire (statique, compatible Word + Pages Mac) ──
-  // Pas de TableOfContents (champ dynamique mal géré par Pages/Google Docs).
-  // À la place : liste numérotée navy → 1 page garantie, rendu identique partout.
+  // ─── Page 2 — Sommaire (index éditorial) ───────────────────
+  // Tableau à filets fins : numéro accent | titre navy. Rendu identique
+  // sur Word, Pages Mac et Google Docs (pas de champ TOC dynamique).
   children.push(
     new Paragraph({
       spacing: { before: 0, after: 120 },
       children: [
         new TextRun({
-          text: "Sommaire",
+          text: "SOMMAIRE",
           bold: true,
-          size: 32, // 16pt
-          color: BRAND_NAVY,
+          size: 16, // 8pt
+          color: ACCENT,
+          characterSpacing: 120,
         }),
       ],
     }),
   );
   children.push(
     new Paragraph({
-      spacing: { before: 0, after: 280 },
-      border: {
-        bottom: { color: ACCENT, size: 8, style: BorderStyle.SINGLE, space: 1 },
-      },
-      children: [],
+      spacing: { before: 0, after: 360 },
+      children: [
+        new TextRun({
+          text: "Table des matières",
+          bold: true,
+          size: 40, // 20pt
+          color: BRAND_NAVY,
+        }),
+      ],
     }),
   );
-  input.sections.forEach((section, idx) => {
-    children.push(
-      new Paragraph({
-        spacing: { before: 0, after: 100 },
-        tabStops: [{ type: docx.TabStopType.RIGHT, position: 9600 }],
-        children: [
-          new TextRun({
-            text: String(idx + 1).padStart(2, "0"),
-            bold: true,
-            size: 18,
-            color: ACCENT,
+
+  const tocHairline = { style: BorderStyle.SINGLE, size: 4, color: "E2E8F0" };
+  const tocNoBorder = { style: BorderStyle.NONE, size: 0, color: "FFFFFF" };
+  children.push(
+    new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      layout: TableLayoutType.FIXED,
+      columnWidths: [800, 8800],
+      borders: {
+        top: tocHairline,
+        bottom: tocHairline,
+        left: tocNoBorder,
+        right: tocNoBorder,
+        insideHorizontal: tocHairline,
+        insideVertical: tocNoBorder,
+      },
+      rows: input.sections.map(
+        (section, idx) =>
+          new TableRow({
+            cantSplit: true,
+            children: [
+              new TableCell({
+                width: { size: 800, type: WidthType.DXA },
+                verticalAlign: VerticalAlign.CENTER,
+                margins: { top: 140, bottom: 140, left: 0, right: 200 },
+                children: [
+                  new Paragraph({
+                    spacing: { before: 0, after: 0 },
+                    children: [
+                      new TextRun({
+                        text: String(idx + 1).padStart(2, "0"),
+                        bold: true,
+                        size: 22, // 11pt
+                        color: ACCENT,
+                        characterSpacing: 40,
+                      }),
+                    ],
+                  }),
+                ],
+              }),
+              new TableCell({
+                width: { size: 8800, type: WidthType.DXA },
+                verticalAlign: VerticalAlign.CENTER,
+                margins: { top: 140, bottom: 140, left: 0, right: 0 },
+                children: [
+                  new Paragraph({
+                    spacing: { before: 0, after: 0 },
+                    children: [
+                      new TextRun({
+                        text: section.titre,
+                        size: 22, // 11pt
+                        color: BRAND_NAVY,
+                      }),
+                    ],
+                  }),
+                ],
+              }),
+            ],
           }),
-          new TextRun({ text: "    ", size: 22 }),
-          new TextRun({
-            text: section.titre,
-            size: 22,
-            color: BRAND_NAVY,
-          }),
-        ],
-      }),
-    );
-  });
+      ),
+    }),
+  );
   children.push(new Paragraph({ children: [new PageBreak()] }));
 
   // ─── Sections ───────────────────────────────────────────────
