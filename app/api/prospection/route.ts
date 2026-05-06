@@ -342,7 +342,7 @@ async function scrapeSirene(
       const response = await fetch(apiUrl, {
         headers: {
           "Accept": "application/json",
-          "User-Agent": "Terrakotta-Prospection/1.0 (contact@terrakotta.fr)",
+          "User-Agent": "Kilowater-Prospection/1.0 (contact@kilowater.fr)",
         },
         signal: AbortSignal.timeout(10000),
       });
@@ -425,7 +425,7 @@ async function scrapeDpeAdeme(
       const response = await fetch(apiUrl, {
         headers: {
           "Accept": "application/json",
-          "User-Agent": "Terrakotta-Prospection/1.0 (contact@terrakotta.fr)",
+          "User-Agent": "Kilowater-Prospection/1.0 (contact@kilowater.fr)",
         },
         signal: AbortSignal.timeout(15000),
       });

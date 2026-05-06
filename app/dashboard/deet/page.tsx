@@ -82,7 +82,7 @@ export default function DeetPage() {
   const [items, setItems] = useState<DeetSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filters, setFilters] = useLocalStorage<Filters>("terrakotta:deet:filters", {
+  const [filters, setFilters] = useLocalStorage<Filters>("kilowater:deet:filters", {
     search: "",
     statut: "TOUS",
   });

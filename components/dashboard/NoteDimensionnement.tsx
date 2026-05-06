@@ -4427,7 +4427,7 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
     if (existingDoc) return;
     try {
       const raw = typeof window !== "undefined"
-        ? localStorage.getItem("terrakotta:audit-to-note-prefill")
+        ? localStorage.getItem("kilowater:audit-to-note-prefill")
         : null;
       if (!raw) return;
       const parsed = JSON.parse(raw) as { fiche?: FicheId; values?: Record<string, string>; ref?: string | null };
@@ -4435,7 +4435,7 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
       if (parsed.values) {
         setValues((prev) => ({ ...parsed.values, ...prev }));
       }
-      localStorage.removeItem("terrakotta:audit-to-note-prefill");
+      localStorage.removeItem("kilowater:audit-to-note-prefill");
     } catch { /* ignore */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

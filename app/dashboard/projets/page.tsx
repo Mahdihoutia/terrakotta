@@ -166,11 +166,11 @@ export default function ProjetsPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [filterStatut, setFilterStatut] = useLocalStorage<string>(
-    "terrakotta:projets:filterStatut",
+    "kilowater:projets:filterStatut",
     "TOUS"
   );
   const [viewMode, setViewMode] = useLocalStorage<"liste" | "kanban">(
-    "terrakotta:projets:viewMode",
+    "kilowater:projets:viewMode",
     "liste"
   );
   const [showForm, setShowForm] = useState(false);

@@ -116,7 +116,7 @@ export default function ParoisPage() {
   const [loading, setLoading] = useState(true);
   const [migrationPending, setMigrationPending] = useState(false);
   const [filters, setFilters] = useLocalStorage<Filters>(
-    "terrakotta:parois:filters",
+    "kilowater:parois:filters",
     { type: "TOUTES", search: "" },
   );
 

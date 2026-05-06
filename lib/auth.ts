@@ -18,7 +18,7 @@ function resolveAdminRole(): Role {
 }
 
 /**
- * NextAuth.js v4 — Terrakotta dashboard.
+ * NextAuth.js v4 — Kilowater dashboard.
  *
  * Authentification multi-utilisateurs :
  *   1. Recherche d'abord en base (`prisma.user`) — comptes créés depuis

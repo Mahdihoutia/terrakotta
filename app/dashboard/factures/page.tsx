@@ -80,7 +80,7 @@ export default function FacturesListPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [filterStatut, setFilterStatut] = useLocalStorage<FactureStatutFilter>(
-    "terrakotta:factures:filterStatut",
+    "kilowater:factures:filterStatut",
     "TOUS"
   );
 

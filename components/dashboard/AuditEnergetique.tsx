@@ -1526,7 +1526,7 @@ export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props
       const prefill = mapAuditToNote(values, fiche);
       try {
         localStorage.setItem(
-          "terrakotta:audit-to-note-prefill",
+          "kilowater:audit-to-note-prefill",
           JSON.stringify({ fiche, values: prefill, ref: values.ref_audit || null }),
         );
       } catch { /* localStorage unavailable */ }
@@ -1541,7 +1541,7 @@ export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props
     const prefill = mapAuditToNote(values, fiche);
     try {
       localStorage.setItem(
-        "terrakotta:audit-to-note-prefill",
+        "kilowater:audit-to-note-prefill",
         JSON.stringify({ fiche, values: prefill, ref: values.ref_audit || null }),
       );
     } catch { /* localStorage unavailable */ }

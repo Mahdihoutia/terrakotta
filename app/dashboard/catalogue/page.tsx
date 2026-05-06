@@ -57,7 +57,7 @@ export default function CataloguePage() {
   const [postes, setPostes] = useState<PosteCatalogue[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useLocalStorage<Filters>(
-    "terrakotta:catalogue:filters",
+    "kilowater:catalogue:filters",
     { categorie: "TOUTES", search: "" },
   );
 

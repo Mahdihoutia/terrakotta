@@ -89,11 +89,11 @@ export default function ContactsPage() {
   const { contacts, loading, error, addContact, deleteContact } = useContacts();
   const [formError, setFormError] = useState<string | null>(null);
   const [filterType, setFilterType] = useLocalStorage<string>(
-    "terrakotta:contacts:filterType",
+    "kilowater:contacts:filterType",
     "TOUS"
   );
   const [search, setSearch] = useLocalStorage<string>(
-    "terrakotta:contacts:search",
+    "kilowater:contacts:search",
     ""
   );
   const [showForm, setShowForm] = useState(false);
@@ -102,7 +102,7 @@ export default function ContactsPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const [filterStatut, setFilterStatut] = useLocalStorage<string>(
-    "terrakotta:contacts:filterStatut",
+    "kilowater:contacts:filterStatut",
     "TOUS"
   );
 

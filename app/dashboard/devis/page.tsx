@@ -99,7 +99,7 @@ export default function DevisListPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [filterStatut, setFilterStatut] = useLocalStorage<DevisStatutFilter>(
-    "terrakotta:devis:filterStatut",
+    "kilowater:devis:filterStatut",
     "TOUS"
   );
   const [showForm, setShowForm] = useState(false);

@@ -79,7 +79,7 @@ export default function LeadsPage() {
   const [converting, setConverting] = useState<string | null>(null);
 
   const [filterStatut, setFilterStatut] = useLocalStorage<string>(
-    "terrakotta:leads:filterStatut",
+    "kilowater:leads:filterStatut",
     "TOUS"
   );
   const [showForm, setShowForm] = useState(false);

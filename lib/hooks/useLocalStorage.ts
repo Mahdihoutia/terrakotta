@@ -12,9 +12,12 @@ type SetValue<T> = T | ((prev: T) => T);
  *
  * Synchronisation cross-onglets via l'event `storage`.
  *
- *   const [filters, setFilters] = useLocalStorage("terrakotta:projets:filters", {
+ *   const [filters, setFilters] = useLocalStorage("kilowater:projets:filters", {
  *     statut: "ALL", search: ""
  *   });
+ *
+ * Migration legacy : les clés "terrakotta:*" sont automatiquement re-lues si
+ * la nouvelle clé "kilowater:*" est absente, puis recopiées et purgées.
  */
 export function useLocalStorage<T>(
   key: string,
@@ -27,7 +30,17 @@ export function useLocalStorage<T>(
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
-      const raw = window.localStorage.getItem(key);
+      let raw = window.localStorage.getItem(key);
+      // Migration "terrakotta:" → "kilowater:" (one-shot, transparente)
+      if (raw === null && key.startsWith("kilowater:")) {
+        const legacyKey = "terrakotta:" + key.slice("kilowater:".length);
+        const legacy = window.localStorage.getItem(legacyKey);
+        if (legacy !== null) {
+          window.localStorage.setItem(key, legacy);
+          window.localStorage.removeItem(legacyKey);
+          raw = legacy;
+        }
+      }
       if (raw !== null) {
         setValue(JSON.parse(raw) as T);
       }

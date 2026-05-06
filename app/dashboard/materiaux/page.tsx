@@ -102,7 +102,7 @@ export default function MateriauxPage() {
   const [migrationPending, setMigrationPending] = useState(false);
   const [seeding, setSeeding] = useState(false);
   const [filters, setFilters] = useLocalStorage<Filters>(
-    "terrakotta:materiaux:filters",
+    "kilowater:materiaux:filters",
     { categorie: "TOUTES", search: "" },
   );
 
