@@ -55,7 +55,7 @@ const BRAND_NAVY = "0D1B35";    // navy — bandeau couverture / footer du site
 const BRAND_LIGHT = "60A5FA";   // blue-400 — eyebrow / accent secondaire
 const BRAND_NAME = "KILOWATER";
 const BRAND_TAGLINE = "Rénover l'existant, construire l'avenir.";
-const DEFAULT_LOGO_URL = "/brand/logo-blanc.png";
+const DEFAULT_LOGO_URL = "/brand/logo-noir.png";
 
 function dataUrlToUint8Array(dataUrl: string): Uint8Array {
   const base64 = dataUrl.includes(",") ? dataUrl.split(",")[1] : dataUrl;
@@ -159,119 +159,54 @@ export async function exportToWord(input: WordExportInput): Promise<void> {
 
   const children: InstanceType<typeof Paragraph | typeof Table>[] = [];
 
-  // ─── Couverture ─────────────────────────────────────────────
-  // Bandeau navy plein-largeur : logo blanc à gauche, nom de marque à droite
+  // ─── Couverture (épurée) ────────────────────────────────────
+  // Logo éclair bleu en haut à gauche, beaucoup de respiration, info essentielle.
   const logo = await loadImageBytes(input.logoUrl ?? DEFAULT_LOGO_URL);
-  const logoFitted = logo ? fitImage(logo.dims, 160, 56) : null;
+  const logoFitted = logo ? fitImage(logo.dims, 64, 64) : null;
 
-  children.push(
-    new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      layout: TableLayoutType.FIXED,
-      columnWidths: [3000, 6600],
-      borders: noBorders(BorderStyle),
-      rows: [
-        new TableRow({
-          cantSplit: true,
-          height: { value: 1400, rule: docx.HeightRule.ATLEAST },
-          children: [
-            new TableCell({
-              width: { size: 32, type: WidthType.PERCENTAGE },
-              shading: { type: ShadingType.CLEAR, color: "auto", fill: BRAND_NAVY },
-              verticalAlign: VerticalAlign.CENTER,
-              margins: { top: 280, bottom: 280, left: 360, right: 200 },
-              children: [
-                new Paragraph({
-                  alignment: AlignmentType.LEFT,
-                  spacing: { before: 0, after: 0 },
-                  children:
-                    logo && logoFitted
-                      ? [
-                          new ImageRun({
-                            data: logo.bytes,
-                            transformation: logoFitted,
-                            type: "png",
-                          }),
-                        ]
-                      : [
-                          new TextRun({
-                            text: BRAND_NAME,
-                            bold: true,
-                            size: 28,
-                            color: "FFFFFF",
-                          }),
-                        ],
-                }),
-              ],
-            }),
-            new TableCell({
-              width: { size: 68, type: WidthType.PERCENTAGE },
-              shading: { type: ShadingType.CLEAR, color: "auto", fill: BRAND_NAVY },
-              verticalAlign: VerticalAlign.CENTER,
-              margins: { top: 280, bottom: 280, left: 200, right: 360 },
-              children: [
-                new Paragraph({
-                  alignment: AlignmentType.RIGHT,
-                  spacing: { before: 0, after: 60 },
-                  children: [
-                    new TextRun({
-                      text: BRAND_NAME,
-                      bold: true,
-                      size: 22,
-                      color: "FFFFFF",
-                      characterSpacing: 60,
-                    }),
-                  ],
-                }),
-                new Paragraph({
-                  alignment: AlignmentType.RIGHT,
-                  spacing: { before: 0, after: 0 },
-                  children: [
-                    new TextRun({
-                      text: "Bureau d'étude · Rénovation énergétique",
-                      italics: true,
-                      size: 16,
-                      color: "BFDBFE",
-                    }),
-                  ],
-                }),
-              ],
-            }),
-          ],
-        }),
-      ],
-    }),
-  );
+  if (logo && logoFitted) {
+    children.push(
+      new Paragraph({
+        spacing: { before: 200, after: 0 },
+        children: [
+          new ImageRun({
+            data: logo.bytes,
+            transformation: logoFitted,
+            type: "png",
+          }),
+        ],
+      }),
+    );
+  }
 
-  // Espace respiration sous bandeau
-  children.push(new Paragraph({ spacing: { before: 800, after: 0 }, children: [] }));
+  // Respiration importante au-dessus du titre
+  children.push(new Paragraph({ spacing: { before: 2400, after: 0 }, children: [] }));
 
-  // Eyebrow tracked
+  // Eyebrow discret
   children.push(
     new Paragraph({
-      spacing: { before: 0, after: 200 },
+      spacing: { before: 0, after: 160 },
       children: [
         new TextRun({
           text: (input.eyebrow ?? "Document de mission").toUpperCase(),
-          bold: true,
-          size: 16,
-          color: BRAND_LIGHT,
+          size: 14,
+          color: ACCENT,
           characterSpacing: 80,
         }),
       ],
     }),
   );
 
-  // Titre principal — typo large, navy
+  // Titre principal — sobre, navy
   children.push(
     new Paragraph({
       alignment: AlignmentType.LEFT,
-      spacing: { before: 0, after: 120 },
+      spacing: { before: 0, after: 100 },
       children: [
         new TextRun({
           text: input.title,
           bold: true,
-          size: 64, // 32pt
+          size: 56, // 28pt
           color: BRAND_NAVY,
         }),
       ],
@@ -281,58 +216,35 @@ export async function exportToWord(input: WordExportInput): Promise<void> {
   if (input.subtitle) {
     children.push(
       new Paragraph({
-        spacing: { after: 480 },
+        spacing: { after: 280 },
         children: [
-          new TextRun({ text: input.subtitle, italics: true, size: 26, color: "525252" }),
+          new TextRun({ text: input.subtitle, size: 22, color: "64748B" }),
         ],
       }),
     );
   } else {
-    children.push(new Paragraph({ spacing: { after: 480 }, children: [] }));
+    children.push(new Paragraph({ spacing: { after: 280 }, children: [] }));
   }
 
-  // Filet horizontal accent (séparateur visuel)
+  // Filet accent fin
   children.push(
     new Paragraph({
-      spacing: { before: 0, after: 280 },
+      spacing: { before: 0, after: 320 },
       border: {
-        bottom: { color: ACCENT, size: 12, style: BorderStyle.SINGLE, space: 1 },
+        bottom: { color: ACCENT, size: 8, style: BorderStyle.SINGLE, space: 1 },
       },
       children: [],
     }),
   );
 
-  // Réf. badge
-  children.push(
-    new Paragraph({
-      spacing: { before: 0, after: 280 },
-      children: [
-        new TextRun({
-          text: `RÉFÉRENCE  ·  ${input.reference || "—"}`,
-          bold: true,
-          size: 18,
-          color: ACCENT,
-          characterSpacing: 40,
-        }),
-      ],
-    }),
-  );
-
-  // Méta couverture en tableau 2 colonnes — ligne accent à gauche pour effet card
+  // Méta couverture — liste épurée label/valeur, sans bordures ni shading
   if (input.meta.length > 0) {
     children.push(
       new Table({
         width: { size: 100, type: WidthType.PERCENTAGE },
         layout: TableLayoutType.FIXED,
         columnWidths: [2880, 6720],
-        borders: {
-          top: { style: BorderStyle.SINGLE, size: 4, color: "E7E5E4" },
-          bottom: { style: BorderStyle.SINGLE, size: 4, color: "E7E5E4" },
-          left: { style: BorderStyle.SINGLE, size: 24, color: ACCENT },
-          right: { style: BorderStyle.SINGLE, size: 4, color: "E7E5E4" },
-          insideHorizontal: { style: BorderStyle.SINGLE, size: 2, color: "F1F5F9" },
-          insideVertical: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
-        },
+        borders: noBorders(BorderStyle),
         rows: input.meta.map(
           ({ label, value }) =>
             new TableRow({
@@ -341,18 +253,16 @@ export async function exportToWord(input: WordExportInput): Promise<void> {
                 new TableCell({
                   width: { size: 30, type: WidthType.PERCENTAGE },
                   verticalAlign: VerticalAlign.CENTER,
-                  shading: { type: ShadingType.CLEAR, color: "auto", fill: "F8FAFC" },
-                  margins: { top: 120, bottom: 120, left: 200, right: 120 },
+                  margins: { top: 80, bottom: 80, left: 0, right: 120 },
                   children: [
                     new Paragraph({
                       spacing: { before: 0, after: 0 },
                       children: [
                         new TextRun({
                           text: label.toUpperCase(),
-                          bold: true,
-                          size: 16,
-                          color: "64748B",
-                          characterSpacing: 30,
+                          size: 14,
+                          color: "94A3B8",
+                          characterSpacing: 40,
                         }),
                       ],
                     }),
@@ -361,14 +271,14 @@ export async function exportToWord(input: WordExportInput): Promise<void> {
                 new TableCell({
                   width: { size: 70, type: WidthType.PERCENTAGE },
                   verticalAlign: VerticalAlign.CENTER,
-                  margins: { top: 120, bottom: 120, left: 160, right: 200 },
+                  margins: { top: 80, bottom: 80, left: 0, right: 0 },
                   children: [
                     new Paragraph({
                       spacing: { before: 0, after: 0 },
                       children: [
                         new TextRun({
                           text: value || "—",
-                          size: 22,
+                          size: 20,
                           color: BRAND_NAVY,
                         }),
                       ],
@@ -382,47 +292,17 @@ export async function exportToWord(input: WordExportInput): Promise<void> {
     );
   }
 
-  // Tagline en bas de couverture
-  children.push(
-    new Paragraph({
-      spacing: { before: 800, after: 0 },
-      alignment: AlignmentType.LEFT,
-      children: [
-        new TextRun({
-          text: BRAND_TAGLINE,
-          italics: true,
-          size: 22,
-          color: ACCENT,
-        }),
-      ],
-    }),
-  );
-
   children.push(new Paragraph({ children: [new PageBreak()] }));
 
-  // ─── Page 2 — Sommaire ─────────────────────────────────────
+  // ─── Page 2 — Sommaire (compact, 1 page) ──────────────────
   children.push(
     new Paragraph({
-      spacing: { before: 0, after: 80 },
+      spacing: { before: 0, after: 160 },
       children: [
         new TextRun({
-          text: "SOMMAIRE",
+          text: "Sommaire",
           bold: true,
-          size: 16,
-          color: BRAND_LIGHT,
-          characterSpacing: 80,
-        }),
-      ],
-    }),
-  );
-  children.push(
-    new Paragraph({
-      spacing: { before: 0, after: 200 },
-      children: [
-        new TextRun({
-          text: "Table des matières",
-          bold: true,
-          size: 48,
+          size: 32, // 16pt
           color: BRAND_NAVY,
         }),
       ],
@@ -430,33 +310,20 @@ export async function exportToWord(input: WordExportInput): Promise<void> {
   );
   children.push(
     new Paragraph({
-      spacing: { before: 0, after: 320 },
+      spacing: { before: 0, after: 240 },
       border: {
-        bottom: { color: ACCENT, size: 12, style: BorderStyle.SINGLE, space: 1 },
+        bottom: { color: ACCENT, size: 8, style: BorderStyle.SINGLE, space: 1 },
       },
       children: [],
     }),
   );
-  // Le TOC est rempli automatiquement à l'ouverture du document (Word/Pages
-  // demande à l'utilisateur de mettre à jour les champs ; sinon F9).
+  // TOC limité aux H1 — entrées plus larges et tient sur une page.
+  // Word/Pages calcule les numéros de page à l'ouverture (updateFields=true).
   children.push(
     new TableOfContents("Sommaire", {
       hyperlink: true,
-      headingStyleRange: "1-2",
-      stylesWithLevels: [new StyleLevel("Heading1", 1), new StyleLevel("Heading2", 2)],
-    }),
-  );
-  children.push(
-    new Paragraph({
-      spacing: { before: 200, after: 0 },
-      children: [
-        new TextRun({
-          text: "Astuce : si la table des matières est vide, faites un clic-droit dessus puis « Mettre à jour les champs ».",
-          italics: true,
-          size: 16,
-          color: "94A3B8",
-        }),
-      ],
+      headingStyleRange: "1-1",
+      stylesWithLevels: [new StyleLevel("Heading1", 1)],
     }),
   );
   children.push(new Paragraph({ children: [new PageBreak()] }));
@@ -816,19 +683,19 @@ export async function exportToWord(input: WordExportInput): Promise<void> {
                               new TextRun({
                                 text: BRAND_NAME,
                                 bold: true,
-                                size: 16,
+                                size: 12, // 6pt — discret
                                 color: BRAND_NAVY,
-                                characterSpacing: 60,
+                                characterSpacing: 40,
                               }),
                               new TextRun({
                                 text: "  ·  ",
-                                size: 16,
+                                size: 14,
                                 color: "CBD5E1",
                               }),
                               new TextRun({
                                 text: BRAND_TAGLINE,
                                 italics: true,
-                                size: 16,
+                                size: 14,
                                 color: "64748B",
                               }),
                             ],
