@@ -61,9 +61,29 @@ export async function POST(
       case "leads":
         await prisma.lead.update({ where: { id }, data });
         break;
-      case "projets":
-        await prisma.projet.update({ where: { id }, data });
+      case "projets": {
+        // Restaure le projet ET la cohorte d'enfants soft-deletés au
+        // même instant (±1s) — voir DELETE /api/projets/[id].
+        const projet = await prisma.projet.findUnique({ where: { id }, select: { deletedAt: true } });
+        if (!projet?.deletedAt) {
+          return NextResponse.json({ error: "Projet introuvable" }, { status: 404 });
+        }
+        const t = projet.deletedAt;
+        const lo = new Date(t.getTime() - 1000);
+        const hi = new Date(t.getTime() + 1000);
+        const cohort = { projetId: id, deletedAt: { gte: lo, lte: hi } };
+        await prisma.$transaction([
+          prisma.projet.update({ where: { id }, data }),
+          prisma.devis.updateMany({ where: cohort, data }),
+          prisma.facture.updateMany({ where: cohort, data }),
+          prisma.aide.updateMany({ where: cohort, data }),
+          prisma.document.updateMany({ where: cohort, data }),
+          prisma.batiment.updateMany({ where: cohort, data }),
+          prisma.systeme.updateMany({ where: cohort, data }),
+          prisma.variante.updateMany({ where: cohort, data }),
+        ]);
         break;
+      }
       case "devis":
         await prisma.devis.update({ where: { id }, data });
         break;

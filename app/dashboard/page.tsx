@@ -77,21 +77,22 @@ async function fetchKpis() {
   try {
     // ── Ligne 1 : KPIs principaux ──────────────────────────────
 
-    // Projets actifs (mois en cours)
+    // Projets actifs (mois en cours) — tous les KPIs filtrent les soft-deleted
     const projetsActifs = await prisma.projet.count({
-      where: { statut: { in: ["EN_ATTENTE", "EN_COURS", "EN_PAUSE"] } },
+      where: { statut: { in: ["EN_ATTENTE", "EN_COURS", "EN_PAUSE"] }, deletedAt: null },
     });
     const projetsActifsPrev = await prisma.projet.count({
       where: {
         statut: { in: ["EN_ATTENTE", "EN_COURS", "EN_PAUSE"] },
         createdAt: { lt: startOfMonth },
+        deletedAt: null,
       },
     });
 
     // CA devis acceptés
     const caDevisResult = await prisma.devis.aggregate({
       _sum: { montantHT: true },
-      where: { statut: "ACCEPTE" },
+      where: { statut: "ACCEPTE", deletedAt: null },
     });
     const caDevis = Number(caDevisResult._sum.montantHT ?? 0);
     const caDevisPrevResult = await prisma.devis.aggregate({
@@ -99,18 +100,20 @@ async function fetchKpis() {
       where: {
         statut: "ACCEPTE",
         dateEmis: { lt: startOfMonth },
+        deletedAt: null,
       },
     });
     const caDevisPrev = Number(caDevisPrevResult._sum.montantHT ?? 0);
 
     // Leads en cours
     const leadsEnCours = await prisma.lead.count({
-      where: { statut: { notIn: ["GAGNE", "PERDU"] } },
+      where: { statut: { notIn: ["GAGNE", "PERDU"] }, deletedAt: null },
     });
     const leadsEnCoursPrev = await prisma.lead.count({
       where: {
         statut: { notIn: ["GAGNE", "PERDU"] },
         dateCreation: { lt: startOfMonth },
+        deletedAt: null,
       },
     });
 
@@ -119,21 +122,23 @@ async function fetchKpis() {
       where: {
         type: "VISITE",
         date: { gte: startOfMonth },
+        deletedAt: null,
       },
     });
     const visitesMoisPrev = await prisma.evenement.count({
       where: {
         type: "VISITE",
         date: { gte: startOfPrevMonth, lte: endOfPrevMonth },
+        deletedAt: null,
       },
     });
 
     // ── Ligne 2 : KPIs secondaires ─────────────────────────────
 
     // Taux de conversion leads
-    const totalLeads = await prisma.lead.count();
+    const totalLeads = await prisma.lead.count({ where: { deletedAt: null } });
     const leadsGagnes = await prisma.lead.count({
-      where: { statut: "GAGNE" },
+      where: { statut: "GAGNE", deletedAt: null },
     });
     const tauxConversion = totalLeads > 0
       ? Math.round((leadsGagnes / totalLeads) * 100)
@@ -141,12 +146,13 @@ async function fetchKpis() {
 
     // Taux conversion mois précédent
     const totalLeadsPrev = await prisma.lead.count({
-      where: { dateCreation: { lt: startOfMonth } },
+      where: { dateCreation: { lt: startOfMonth }, deletedAt: null },
     });
     const leadsGagnesPrev = await prisma.lead.count({
       where: {
         statut: "GAGNE",
         dateCreation: { lt: startOfMonth },
+        deletedAt: null,
       },
     });
     const tauxConversionPrev = totalLeadsPrev > 0
@@ -155,34 +161,37 @@ async function fetchKpis() {
 
     // Devis en attente
     const devisEnAttente = await prisma.devis.count({
-      where: { statut: { in: ["BROUILLON", "ENVOYE"] } },
+      where: { statut: { in: ["BROUILLON", "ENVOYE"] }, deletedAt: null },
     });
     const devisEnAttentePrev = await prisma.devis.count({
       where: {
         statut: { in: ["BROUILLON", "ENVOYE"] },
         createdAt: { lt: startOfMonth },
+        deletedAt: null,
       },
     });
 
     // Aides en instruction
     const aidesEnInstruction = await prisma.aide.count({
-      where: { statut: { in: ["EN_ATTENTE", "DEPOSE", "EN_INSTRUCTION"] } },
+      where: { statut: { in: ["EN_ATTENTE", "DEPOSE", "EN_INSTRUCTION"] }, deletedAt: null },
     });
     const aidesEnInstructionPrev = await prisma.aide.count({
       where: {
         statut: { in: ["EN_ATTENTE", "DEPOSE", "EN_INSTRUCTION"] },
         createdAt: { lt: startOfMonth },
+        deletedAt: null,
       },
     });
 
     // Projets terminés
     const projetsTermines = await prisma.projet.count({
-      where: { statut: "TERMINE" },
+      where: { statut: "TERMINE", deletedAt: null },
     });
     const projetsTerminesPrev = await prisma.projet.count({
       where: {
         statut: "TERMINE",
         updatedAt: { lt: startOfMonth },
+        deletedAt: null,
       },
     });
 

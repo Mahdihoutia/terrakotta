@@ -324,17 +324,27 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 }
 
-/** DELETE /api/projets/[id] — Soft delete (corbeille) */
+/** DELETE /api/projets/[id] — Soft delete (corbeille) avec cascade
+ * sur les enfants à soft-delete : devis, factures, aides, documents,
+ * batiments, systemes, variantes. Le timestamp commun permet une
+ * restauration cascade cohérente côté /api/corbeille/.../restore. */
 export async function DELETE(_request: Request, context: RouteContext) {
   const guard = await ensureRole(DESTRUCTIVE_ROLES);
   if (guard) return guard;
 
   const { id } = await context.params;
+  const now = new Date();
   try {
-    await prisma.projet.update({
-      where: { id },
-      data: { deletedAt: new Date() },
-    });
+    await prisma.$transaction([
+      prisma.projet.update({ where: { id }, data: { deletedAt: now } }),
+      prisma.devis.updateMany({ where: { projetId: id, deletedAt: null }, data: { deletedAt: now } }),
+      prisma.facture.updateMany({ where: { projetId: id, deletedAt: null }, data: { deletedAt: now } }),
+      prisma.aide.updateMany({ where: { projetId: id, deletedAt: null }, data: { deletedAt: now } }),
+      prisma.document.updateMany({ where: { projetId: id, deletedAt: null }, data: { deletedAt: now } }),
+      prisma.batiment.updateMany({ where: { projetId: id, deletedAt: null }, data: { deletedAt: now } }),
+      prisma.systeme.updateMany({ where: { projetId: id, deletedAt: null }, data: { deletedAt: now } }),
+      prisma.variante.updateMany({ where: { projetId: id, deletedAt: null }, data: { deletedAt: now } }),
+    ]);
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Projet introuvable" }, { status: 404 });

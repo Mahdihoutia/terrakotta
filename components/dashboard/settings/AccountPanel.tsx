@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, KeyRound, UserCircle } from "lucide-react";
 import { toast } from "sonner";
+import { signOut } from "next-auth/react";
 import { showApiError, showNetworkError } from "@/lib/api-errors";
 import { cn } from "@/lib/utils";
 
@@ -64,9 +65,14 @@ export default function AccountPanel({ currentUser }: { currentUser: CurrentUser
         await showApiError(res, "Changement de mot de passe impossible");
         return;
       }
-      toast.success("Mot de passe mis à jour");
+      toast.success("Mot de passe mis à jour. Reconnectez-vous.", {
+        description:
+          "Toutes les sessions actives ont été invalidées pour des raisons de sécurité.",
+      });
       setPassword("");
       setConfirm("");
+      // Révoque la session actuelle — les autres devices repassent par /auth/login
+      await signOut({ callbackUrl: "/auth/login" });
     } catch (err) {
       showNetworkError(err);
     } finally {

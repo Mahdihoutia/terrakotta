@@ -322,12 +322,21 @@ export default function ProjetsPage() {
   async function handleDelete(id: string, e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
+    if (
+      !confirm(
+        "Supprimer ce projet et ses documents associés ? Il sera placé dans la corbeille.",
+      )
+    )
+      return;
     try {
       const res = await fetch(`/api/projets/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Erreur lors de la suppression");
+      if (!res.ok) {
+        await showApiError(res, "Suppression du projet impossible");
+        return;
+      }
       setProjets((prev) => prev.filter((p) => p.id !== id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur inconnue");
+      showNetworkError(err, "Suppression du projet impossible");
     }
   }
 

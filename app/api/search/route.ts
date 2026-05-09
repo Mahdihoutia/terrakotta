@@ -15,6 +15,7 @@ export async function GET(req: NextRequest) {
     const [leads, clients, evenements] = await Promise.all([
       prisma.lead.findMany({
         where: {
+          deletedAt: null,
           OR: [
             { nom: { contains: q, mode: "insensitive" } },
             { prenom: { contains: q, mode: "insensitive" } },
@@ -38,6 +39,7 @@ export async function GET(req: NextRequest) {
       }),
       prisma.client.findMany({
         where: {
+          deletedAt: null,
           OR: [
             { nom: { contains: q, mode: "insensitive" } },
             { prenom: { contains: q, mode: "insensitive" } },
@@ -60,6 +62,7 @@ export async function GET(req: NextRequest) {
       }),
       prisma.evenement.findMany({
         where: {
+          deletedAt: null,
           OR: [
             { titre: { contains: q, mode: "insensitive" } },
             { lieu: { contains: q, mode: "insensitive" } },

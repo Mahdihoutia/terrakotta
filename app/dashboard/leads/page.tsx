@@ -30,6 +30,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useLocalStorage } from "@/lib/hooks/useLocalStorage";
 import { useLeads } from "@/lib/hooks/use-leads";
+import { toast } from "sonner";
 import { exportToExcel, exportToPdf } from "@/lib/export-leads";
 import type { LeadStatus, LeadSource, ClientType } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
@@ -95,7 +96,18 @@ export default function LeadsPage() {
   const statuts = ["TOUS", "NOUVEAU", "CONTACTE", "QUALIFIE", "PROPOSITION", "GAGNE", "PERDU"];
 
   async function handleCreate() {
-    if (!form.nom.trim() || !form.email.trim()) return;
+    if (!form.nom.trim()) {
+      toast.error("Le nom du lead est requis.");
+      return;
+    }
+    if (!form.email.trim()) {
+      toast.error("L'email du lead est requis.");
+      return;
+    }
+    if (form.budgetEstime && !Number.isFinite(Number(form.budgetEstime))) {
+      toast.error("Budget estimé invalide.");
+      return;
+    }
     setSubmitting(true);
     await addLead({
       nom: form.nom,

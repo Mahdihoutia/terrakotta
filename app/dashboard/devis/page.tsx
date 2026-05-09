@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLocalStorage } from "@/lib/hooks/useLocalStorage";
+import { showApiError, showNetworkError } from "@/lib/api-errors";
+import { toast } from "sonner";
 import type { Devis, DevisStatut, DevisClient, DevisProjet } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -180,10 +182,19 @@ export default function DevisListPage() {
   }
 
   async function handleCreate() {
-    if (!formObjet.trim() || !formClientId) return;
-
-    const montantHT = computeMontantHT();
+    if (!formObjet.trim()) {
+      toast.error("L'objet du devis est requis.");
+      return;
+    }
+    if (!formClientId) {
+      toast.error("Sélectionnez un client.");
+      return;
+    }
     const tauxTVA = parseFloat(formTauxTVA);
+    if (!Number.isFinite(tauxTVA) || tauxTVA < 0) {
+      toast.error("Taux de TVA invalide.");
+      return;
+    }
 
     const lignes = formLignes
       .filter((l) => l.designation.trim() && l.prixUnitHT)
@@ -195,6 +206,12 @@ export default function DevisListPage() {
         tauxTVA,
         ordre: index,
       }));
+    if (lignes.length === 0) {
+      toast.error("Ajoutez au moins une ligne avec un prix unitaire.");
+      return;
+    }
+
+    const montantHT = computeMontantHT();
 
     setSubmitting(true);
     try {
@@ -210,13 +227,17 @@ export default function DevisListPage() {
           lignes,
         }),
       });
-      if (!res.ok) throw new Error("Erreur lors de la creation");
+      if (!res.ok) {
+        await showApiError(res, "Création du devis impossible");
+        return;
+      }
       const created: Devis = await res.json();
-      setDevisList([created, ...devisList]);
+      setDevisList((prev) => [created, ...prev]);
       resetForm();
       setShowForm(false);
-    } catch {
-      setError("Erreur lors de la creation du devis");
+      toast.success("Devis créé.");
+    } catch (err) {
+      showNetworkError(err, "Création du devis impossible");
     } finally {
       setSubmitting(false);
     }
@@ -225,12 +246,16 @@ export default function DevisListPage() {
   async function handleDelete(id: string, e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
+    if (!confirm("Supprimer ce devis ? Il sera placé dans la corbeille.")) return;
     try {
       const res = await fetch(`/api/devis/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Erreur");
-      setDevisList(devisList.filter((d) => d.id !== id));
-    } catch {
-      setError("Erreur lors de la suppression");
+      if (!res.ok) {
+        await showApiError(res, "Suppression du devis impossible");
+        return;
+      }
+      setDevisList((prev) => prev.filter((d) => d.id !== id));
+    } catch (err) {
+      showNetworkError(err, "Suppression du devis impossible");
     }
   }
 

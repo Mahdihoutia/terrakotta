@@ -22,6 +22,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useLocalStorage } from "@/lib/hooks/useLocalStorage";
 import { showApiError, showNetworkError } from "@/lib/api-errors";
+import { toast } from "sonner";
 import type { Facture, FactureStatut } from "@/types";
 
 type FactureStatutFilter = FactureStatut | "TOUS";
@@ -135,7 +136,20 @@ export default function FacturesListPage() {
   }
 
   async function handleCreate() {
-    if (!formClientId || !formMontantHT) return;
+    if (!formClientId) {
+      toast.error("Sélectionnez un client.");
+      return;
+    }
+    const montantHT = parseFloat(formMontantHT);
+    if (!Number.isFinite(montantHT) || montantHT <= 0) {
+      toast.error("Montant HT invalide.");
+      return;
+    }
+    const tauxTVA = parseFloat(formTauxTVA);
+    if (!Number.isFinite(tauxTVA) || tauxTVA < 0) {
+      toast.error("Taux de TVA invalide.");
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await fetch("/api/factures", {
@@ -144,8 +158,8 @@ export default function FacturesListPage() {
         body: JSON.stringify({
           objet: formObjet || undefined,
           clientId: formClientId,
-          montantHT: parseFloat(formMontantHT),
-          tauxTVA: parseFloat(formTauxTVA),
+          montantHT,
+          tauxTVA,
         }),
       });
       if (!res.ok) {

@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { showApiError, showNetworkError } from "@/lib/api-errors";
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -59,6 +60,7 @@ interface Evenement {
 
 interface FormData {
   titre: string;
+  date: string; // YYYY-MM-DD — capturée à l'ouverture du form pour ne pas suivre la nav
   heureDebut: string;
   heureFin: string;
   type: EvenementType;
@@ -70,6 +72,7 @@ interface FormData {
 
 const EMPTY_FORM: FormData = {
   titre: "",
+  date: "",
   heureDebut: "09:00",
   heureFin: "10:00",
   type: "RDV_CLIENT",
@@ -202,12 +205,14 @@ export default function CalendrierPage() {
   const fetchEvenements = useCallback(async () => {
     try {
       const res = await fetch(`/api/evenements?mois=${moisKey}`);
-      if (res.ok) {
-        const data: Evenement[] = await res.json();
-        setEvenements(data);
+      if (!res.ok) {
+        await showApiError(res, "Chargement des événements impossible");
+        return;
       }
-    } catch {
-      // silently fail
+      const data: Evenement[] = await res.json();
+      setEvenements(data);
+    } catch (err) {
+      showNetworkError(err, "Chargement des événements impossible");
     } finally {
       setLoading(false);
     }
@@ -221,19 +226,28 @@ export default function CalendrierPage() {
   // ─── Fetch clients & leads (une seule fois) ──────────────
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/clients").then((r) => r.json()),
-      fetch("/api/leads").then((r) => r.json()),
-    ])
-      .then(([c, l]) => {
-        setClients(
-          (c as AssignedEntity[]).map((x) => ({ id: x.id, nom: x.nom, prenom: x.prenom, type: x.type }))
-        );
-        setLeads(
-          (l as AssignedEntity[]).map((x) => ({ id: x.id, nom: x.nom, prenom: x.prenom, type: x.type }))
-        );
-      })
-      .catch(() => {});
+    (async () => {
+      try {
+        const [resClients, resLeads] = await Promise.all([
+          fetch("/api/clients"),
+          fetch("/api/leads"),
+        ]);
+        if (!resClients.ok) {
+          await showApiError(resClients, "Chargement des clients impossible");
+          return;
+        }
+        if (!resLeads.ok) {
+          await showApiError(resLeads, "Chargement des leads impossible");
+          return;
+        }
+        const c = (await resClients.json()) as AssignedEntity[];
+        const l = (await resLeads.json()) as AssignedEntity[];
+        setClients(c.map((x) => ({ id: x.id, nom: x.nom, prenom: x.prenom, type: x.type })));
+        setLeads(l.map((x) => ({ id: x.id, nom: x.nom, prenom: x.prenom, type: x.type })));
+      } catch (err) {
+        showNetworkError(err, "Chargement clients/leads impossible");
+      }
+    })();
   }, []);
 
   // ─── Événements du jour ───────────────────────────────────
@@ -301,7 +315,7 @@ export default function CalendrierPage() {
 
   function openCreate() {
     setEditingId(null);
-    setForm(EMPTY_FORM);
+    setForm({ ...EMPTY_FORM, date: selectedKey });
     setShowForm(true);
   }
 
@@ -309,6 +323,7 @@ export default function CalendrierPage() {
     setEditingId(evt.id);
     setForm({
       titre: evt.titre,
+      date: evt.date.slice(0, 10),
       heureDebut: evt.heureDebut,
       heureFin: evt.heureFin,
       type: evt.type,
@@ -334,7 +349,7 @@ export default function CalendrierPage() {
 
     const payload = {
       titre: form.titre,
-      date: selectedKey,
+      date: form.date || selectedKey,
       heureDebut: form.heureDebut,
       heureFin: form.heureFin,
       type: form.type,
@@ -693,7 +708,8 @@ export default function CalendrierPage() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base">
-                    {editingId ? "Modifier le rendez-vous" : "Nouveau rendez-vous"} — {formatDateFr(selectedDate)}
+                    {editingId ? "Modifier le rendez-vous" : "Nouveau rendez-vous"}
+                    {form.date ? ` — ${formatDateFr(new Date(form.date))}` : ""}
                   </CardTitle>
                   <Button variant="ghost" size="icon" className="h-7 w-7" onClick={closeForm}>
                     <X className="h-4 w-4" />
