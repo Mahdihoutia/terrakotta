@@ -17,6 +17,7 @@ import {
   Filter,
   ArrowRight,
   Trash2,
+  Copy,
   X,
   Loader2,
   Briefcase,
@@ -338,6 +339,30 @@ export default function ProjetsPage() {
       setProjets((prev) => prev.filter((p) => p.id !== id));
     } catch (err) {
       showNetworkError(err, "Suppression du projet impossible");
+    }
+  }
+
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+  async function handleDuplicate(id: string, e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (duplicatingId) return;
+    setDuplicatingId(id);
+    try {
+      const res = await fetch(`/api/projets/${id}/duplicate`, { method: "POST" });
+      if (!res.ok) {
+        await showApiError(res, "Duplication impossible");
+        return;
+      }
+      const created: { id: string; titre: string } = await res.json();
+      toast.success(`Projet dupliqué — « ${created.titre} »`);
+      // Recharge la liste pour voir la copie en tête (updatedAt récent).
+      const listRes = await fetch("/api/projets");
+      if (listRes.ok) setProjets(await listRes.json());
+    } catch (err) {
+      showNetworkError(err, "Duplication impossible");
+    } finally {
+      setDuplicatingId(null);
     }
   }
 
@@ -845,6 +870,21 @@ export default function ProjetsPage() {
                           <ArrowRight className="h-3.5 w-3.5" />
                         </Button>
                       </Link>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-tk-text-muted hover:text-tk-text"
+                        onClick={(e) => handleDuplicate(projet.id, e)}
+                        disabled={duplicatingId === projet.id}
+                        title="Dupliquer le projet (bâti, systèmes, variantes)"
+                        aria-label="Dupliquer le projet"
+                      >
+                        {duplicatingId === projet.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Copy className="h-3.5 w-3.5" />
+                        )}
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
