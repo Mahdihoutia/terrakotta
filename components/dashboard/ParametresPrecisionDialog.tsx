@@ -8,6 +8,7 @@ import { showApiError, showNetworkError } from "@/lib/api-errors";
 import { toast } from "sonner";
 
 type Inertie = "LEGERE" | "MOYENNE" | "LOURDE";
+type ZoneRevenu = "IDF" | "AUTRES";
 
 interface InitialValues {
   nbOccupants: number | null;
@@ -16,6 +17,9 @@ interface InitialValues {
   permeabiliteAir: number | null;
   consoFactureChauffage: number | null;
   consoFactureECS: number | null;
+  nbPersonnesFoyer: number | null;
+  rfrFoyer: number | null;
+  zoneRevenuFoyer: ZoneRevenu | null;
 }
 
 interface Props {
@@ -34,6 +38,9 @@ export default function ParametresPrecisionDialog({ projetId, initial }: Props) 
   const [permea, setPermea] = useState(initial.permeabiliteAir?.toString() ?? "");
   const [conChauf, setConChauf] = useState(initial.consoFactureChauffage?.toString() ?? "");
   const [conEcs, setConEcs] = useState(initial.consoFactureECS?.toString() ?? "");
+  const [nbFoyer, setNbFoyer] = useState(initial.nbPersonnesFoyer?.toString() ?? "");
+  const [rfr, setRfr] = useState(initial.rfrFoyer?.toString() ?? "");
+  const [zoneFoyer, setZoneFoyer] = useState<ZoneRevenu | "">(initial.zoneRevenuFoyer ?? "");
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -46,6 +53,9 @@ export default function ParametresPrecisionDialog({ projetId, initial }: Props) 
         permeabiliteAir: permea ? Number(permea) : null,
         consoFactureChauffage: conChauf ? Number(conChauf) : null,
         consoFactureECS: conEcs ? Number(conEcs) : null,
+        nbPersonnesFoyer: nbFoyer ? Number(nbFoyer) : null,
+        rfrFoyer: rfr ? Number(rfr) : null,
+        zoneRevenuFoyer: zoneFoyer || null,
       };
       const res = await fetch(`/api/projets/${projetId}`, {
         method: "PATCH",
@@ -166,6 +176,53 @@ export default function ParametresPrecisionDialog({ projetId, initial }: Props) 
                     placeholder="ex: 2 500"
                     className="h-9 w-full rounded-md border border-tk-border bg-tk-input px-3 text-[13px] tabular-nums"
                   />
+                </Field>
+              </div>
+            </section>
+
+            <section className="space-y-3 border-t border-tk-border pt-4 mt-4">
+              <div className="flex items-center gap-2">
+                <p className="field-label-tiny mb-0">Foyer demandeur — MaPrimeRénov&apos;</p>
+                <span className="inline-flex items-center gap-1 rounded-full bg-tk-primary/10 px-2 py-0.5 text-[10px] font-medium text-tk-primary">
+                  <Info className="h-2.5 w-2.5" />
+                  Catégorie ressources
+                </span>
+              </div>
+              <p className="text-[11px] text-tk-text-muted">
+                Détermine la catégorie BLEU / JAUNE / VIOLET / ROSE et donc les forfaits MPR
+                appliqués au plan de financement. Sans ces valeurs, les montants affichés sont
+                indicatifs (foyer démo).
+              </p>
+              <div className="grid grid-cols-3 gap-3">
+                <Field label="Personnes du foyer">
+                  <input
+                    type="number" min="1" max="15" step="1"
+                    value={nbFoyer}
+                    onChange={(e) => setNbFoyer(e.target.value)}
+                    placeholder="ex: 4"
+                    className="h-9 w-full rounded-md border border-tk-border bg-tk-input px-3 text-[13px] tabular-nums"
+                  />
+                </Field>
+                <Field label="RFR (€/an)">
+                  <input
+                    type="number" min="0" step="500"
+                    value={rfr}
+                    onChange={(e) => setRfr(e.target.value)}
+                    placeholder="ex: 28 000"
+                    className="h-9 w-full rounded-md border border-tk-border bg-tk-input px-3 text-[13px] tabular-nums"
+                  />
+                  <Hint>Revenu fiscal de référence</Hint>
+                </Field>
+                <Field label="Zone géographique">
+                  <select
+                    value={zoneFoyer}
+                    onChange={(e) => setZoneFoyer(e.target.value as ZoneRevenu | "")}
+                    className="h-9 w-full rounded-md border border-tk-border bg-tk-input px-2 text-[13px]"
+                  >
+                    <option value="">— Choisir —</option>
+                    <option value="IDF">Île-de-France</option>
+                    <option value="AUTRES">Autres régions</option>
+                  </select>
                 </Field>
               </div>
             </section>

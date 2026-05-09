@@ -42,8 +42,8 @@ interface Props {
 
 export default async function LivrablesTabPage({ params }: Props) {
   const { id } = await params;
-  const projet = await prisma.projet.findUnique({
-    where: { id },
+  const projet = await prisma.projet.findFirst({
+    where: { id, deletedAt: null },
     select: { id: true, titre: true },
   });
   if (!projet) notFound();

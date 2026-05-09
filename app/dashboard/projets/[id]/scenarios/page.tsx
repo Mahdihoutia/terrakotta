@@ -15,8 +15,11 @@ import {
   type VarianteIndicators,
 } from "@/lib/calcul-variante";
 
-/* Foyer démo — catégorie JAUNE (modeste) en province. */
-const FOYER_DEMO: FoyerDemandeur = {
+/* Foyer fallback — utilisé tant que les ressources foyer ne sont pas
+ * saisies sur le projet (Précision → onglet Foyer demandeur). Catégorie
+ * JAUNE (modeste) en province : valeurs neutres, mais explicitement
+ * signalées dans l'UI comme "à renseigner". */
+const FOYER_FALLBACK: FoyerDemandeur = {
   zone: "AUTRES",
   nbPersonnes: 4,
   rfr: 28000,
@@ -63,6 +66,7 @@ function buildDbScenario(
   v: VarianteDb,
   baseline: BaselineState | null,
   baselineIndicators: VarianteIndicators | null,
+  foyer: FoyerDemandeur,
 ): Scenario {
   const gestes: Geste[] = (v.inputs?.gestes ?? []).map((g) => ({
     code: g.code as GesteCode,
@@ -70,7 +74,7 @@ function buildDbScenario(
     coutHT: g.coutHT,
   }));
 
-  const aides = calculerAides(gestes, FOYER_DEMO);
+  const aides = calculerAides(gestes, foyer);
 
   // Si la baseline n'est pas calculable (saisie incomplète), retombe sur indicateurs neutres
   let indicateurs: Scenario["indicateurs"];
@@ -129,14 +133,30 @@ function buildDbScenario(
 export default async function ScenariosTabPage({ params }: PageProps) {
   const { id: projetId } = await params;
 
-  const [baselineRes, dbVariantes] = await Promise.all([
+  const [baselineRes, dbVariantes, projetFoyer] = await Promise.all([
     buildProjetBaseline(projetId),
     prisma.variante.findMany({
       where: { projetId, deletedAt: null, type: "VARIANTE" },
       orderBy: { createdAt: "asc" },
       select: { id: true, nom: true, description: true, inputsJson: true },
     }),
+    prisma.projet.findFirst({
+      where: { id: projetId, deletedAt: null },
+      select: { nbPersonnesFoyer: true, rfrFoyer: true, zoneRevenuFoyer: true },
+    }),
   ]);
+
+  const foyerComplet =
+    projetFoyer?.nbPersonnesFoyer != null &&
+    projetFoyer?.rfrFoyer != null &&
+    projetFoyer?.zoneRevenuFoyer != null;
+  const foyer: FoyerDemandeur = foyerComplet
+    ? {
+        nbPersonnes: projetFoyer!.nbPersonnesFoyer!,
+        rfr: Number(projetFoyer!.rfrFoyer!),
+        zone: projetFoyer!.zoneRevenuFoyer!,
+      }
+    : FOYER_FALLBACK;
 
   const baseline = baselineRes?.baseline ?? null;
   const hasEnvelope = baselineRes?.hasEnvelope ?? false;
@@ -222,6 +242,7 @@ export default async function ScenariosTabPage({ params }: PageProps) {
       { id: v.id, nom: v.nom, description: v.description, inputs },
       baseline,
       baselineIndicators,
+      foyer,
     );
   });
 
@@ -234,7 +255,7 @@ export default async function ScenariosTabPage({ params }: PageProps) {
         <h1 className="section-title-dense">Scénarios de rénovation</h1>
         <p className="text-[13px] text-tk-text-muted">
           État existant calculé depuis la saisie projet · Aides calculées sur barèmes {BAREMES_VERSION}
-          · Foyer {FOYER_DEMO.nbPersonnes} pers., RFR {FOYER_DEMO.rfr.toLocaleString("fr-FR")} €
+          · Foyer {foyer.nbPersonnes} pers., RFR {foyer.rfr.toLocaleString("fr-FR")} € ({foyer.zone === "IDF" ? "Île-de-France" : "Autres régions"})
           {dbVariantes.length > 0 && (
             <>
               {" "}· <span className="text-tk-primary">
@@ -249,6 +270,13 @@ export default async function ScenariosTabPage({ params }: PageProps) {
           )}
         </p>
       </div>
+      {!foyerComplet && (
+        <div className="rounded-md border border-amber-500/30 bg-amber-500/5 px-4 py-2.5 text-[12px] text-amber-700 dark:text-amber-400">
+          <strong>Foyer demandeur non renseigné</strong> — les montants MaPrimeRénov&apos; affichés
+          utilisent un foyer démo ({FOYER_FALLBACK.nbPersonnes} personnes, RFR {FOYER_FALLBACK.rfr.toLocaleString("fr-FR")} €,
+          hors IDF). Ouvre <em>Précision</em> dans l&apos;onglet Calcul pour saisir les vraies ressources.
+        </div>
+      )}
       <ScenarioComparator
         scenarios={SCENARIOS}
         surface={surface}

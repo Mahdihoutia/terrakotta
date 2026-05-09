@@ -269,6 +269,7 @@ export default function ProjetsPage() {
   const statuts: string[] = ["TOUS", "EN_ATTENTE", "EN_COURS", "EN_PAUSE", "TERMINE", "ANNULE"];
 
   async function handleCreate() {
+    if (submitting) return;
     if (!form.titre.trim()) {
       toast.error("Le titre du projet est requis.");
       return;

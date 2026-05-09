@@ -114,12 +114,13 @@ const TYPE_LABEL: Record<ParoiType, string> = {
 
 export default async function CalculTabPage({ params }: Props) {
   const { id } = await params;
-  const projet = await prisma.projet.findUnique({
-    where: { id },
+  const projet = await prisma.projet.findFirst({
+    where: { id, deletedAt: null },
     select: {
       id: true, titre: true,
       nbOccupants: true, inertie: true, intermittenceChauffage: true,
       permeabiliteAir: true, consoFactureChauffage: true, consoFactureECS: true,
+      nbPersonnesFoyer: true, rfrFoyer: true, zoneRevenuFoyer: true,
     },
   });
   if (!projet) notFound();
@@ -367,6 +368,9 @@ export default async function CalculTabPage({ params }: Props) {
               permeabiliteAir: projet.permeabiliteAir != null ? Number(projet.permeabiliteAir) : null,
               consoFactureChauffage: projet.consoFactureChauffage != null ? Number(projet.consoFactureChauffage) : null,
               consoFactureECS: projet.consoFactureECS != null ? Number(projet.consoFactureECS) : null,
+              nbPersonnesFoyer: projet.nbPersonnesFoyer,
+              rfrFoyer: projet.rfrFoyer != null ? Number(projet.rfrFoyer) : null,
+              zoneRevenuFoyer: projet.zoneRevenuFoyer,
             }}
           />
           <RapportProjetExportButton projetId={id} />

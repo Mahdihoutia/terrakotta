@@ -29,24 +29,37 @@ interface CreateCalculInput {
   baremesVersion?: string;
 }
 
-/** Persiste un calcul immutable. Le résultat n'est jamais modifié. */
+/** Persiste un calcul immutable. Le résultat n'est jamais modifié.
+ *
+ * Bump `projet.updatedAt` dans la même transaction afin que la liste
+ * projets (triée `updatedAt desc`) remonte les projets fraîchement
+ * recalculés — un export PDF, une exécution moteur ou un calcul d'aides
+ * comptent comme une activité utilisateur. */
 export async function snapshotCalcul(input: CreateCalculInput) {
-  return prisma.calcul.create({
-    data: {
-      projetId: input.projetId,
-      varianteId: input.varianteId ?? null,
-      type: input.type,
-      inputsJson: JSON.stringify(input.inputs),
-      outputsJson: JSON.stringify(input.outputs),
-      moteurVersion: input.moteurVersion ?? MOTEUR_THERMIQUE_VERSION,
-      baremesVersion: input.baremesVersion ?? null,
-      notes: input.notes ?? null,
-    },
-    select: {
-      id: true, type: true, moteurVersion: true, baremesVersion: true,
-      createdAt: true,
-    },
-  });
+  const [calcul] = await prisma.$transaction([
+    prisma.calcul.create({
+      data: {
+        projetId: input.projetId,
+        varianteId: input.varianteId ?? null,
+        type: input.type,
+        inputsJson: JSON.stringify(input.inputs),
+        outputsJson: JSON.stringify(input.outputs),
+        moteurVersion: input.moteurVersion ?? MOTEUR_THERMIQUE_VERSION,
+        baremesVersion: input.baremesVersion ?? null,
+        notes: input.notes ?? null,
+      },
+      select: {
+        id: true, type: true, moteurVersion: true, baremesVersion: true,
+        createdAt: true,
+      },
+    }),
+    prisma.projet.update({
+      where: { id: input.projetId },
+      data: { updatedAt: new Date() },
+      select: { id: true },
+    }),
+  ]);
+  return calcul;
 }
 
 /** Persiste un calcul aides — utilise BAREMES_VERSION par défaut. */

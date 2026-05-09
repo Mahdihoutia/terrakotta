@@ -267,16 +267,29 @@ export function generateRapportProjetPdf(data: RapportProjetData): Uint8Array {
   doc.addPage();
   y = drawSectionHeader(doc, "État du bâti existant", PDF_LAYOUT.topMargin, undefined, { number: 2 });
 
-  // Métriques globales
+  // Métriques globales — surface=0 = saisie incomplète, on n'affiche pas
+  // un kWh/m² calculé sur 1 m² (faux à plusieurs ordres de grandeur).
+  const bchM2 = data.surface > 0
+    ? `${formatNumberPdf(data.bilan.besoinChauffage / data.surface, { maximumFractionDigits: 0 })} kWh/m²·an`
+    : "— (surface non renseignée)";
   y = drawCallout(
     doc,
     `Coefficient GV ${formatNumberPdf(data.bilan.gv)} W/K · U bat ${data.bilan.ubat.toFixed(2)} W/m²·K · ` +
       `Pertes T_base ${(data.bilan.pertesTBase / 1000).toFixed(1)} kW · ` +
-      `Besoin chauffage net ${formatNumberPdf(data.bilan.besoinChauffage / Math.max(data.surface, 1), { maximumFractionDigits: 0 })} kWh/m²·an`,
+      `Besoin chauffage net ${bchM2}`,
     y,
     { title: "Indicateurs déperditifs" },
   );
   y += 4;
+  if (data.surface <= 0) {
+    y = drawCallout(
+      doc,
+      "La surface habitable du projet est nulle ou non saisie. Les ratios par m² ne peuvent pas être calculés ; saisis les zones de chaque bâtiment dans l'onglet Bâti pour obtenir un livrable complet.",
+      y,
+      { title: "⚠ Saisie incomplète — ratios indisponibles" },
+    );
+    y += 4;
+  }
 
   // Tableau parois
   autoTable(doc, {

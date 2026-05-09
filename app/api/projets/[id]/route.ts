@@ -255,6 +255,10 @@ const updateProjetSchema = z.object({
   // Calibration facture
   consoFactureChauffage: z.number().nonnegative().nullable().optional(),
   consoFactureECS: z.number().nonnegative().nullable().optional(),
+  // Foyer demandeur (catégorie MaPrimeRénov')
+  nbPersonnesFoyer: z.number().int().min(1).max(15).nullable().optional(),
+  rfrFoyer: z.number().nonnegative().nullable().optional(),
+  zoneRevenuFoyer: z.enum(["IDF", "AUTRES"]).nullable().optional(),
 });
 
 /** PATCH /api/projets/[id] — Mettre à jour un projet */

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { ensureRole, MUTATION_ROLES } from "@/lib/auth-helpers";
-import { generateRapportProjetPdf } from "@/lib/pdf-rapport-projet";
+import { generateRapportProjetDocx } from "@/lib/word-rapport-projet";
 import { buildRapportProjetContext } from "@/lib/rapport-projet-data";
 import { snapshotCalcul, MOTEUR_THERMIQUE_VERSION } from "@/lib/calcul-snapshot";
 
@@ -23,9 +23,8 @@ export async function GET(req: Request, ctx: RouteContext) {
   const { data, varianteNom, reference } = built;
 
   try {
-    const pdfBytes = generateRapportProjetPdf(data);
+    const docxBytes = await generateRapportProjetDocx(data);
 
-    // Snapshot immuable (audit trail / rejouabilité) — non bloquant.
     await snapshotCalcul({
       projetId: id,
       varianteId: varianteId ?? undefined,
@@ -33,6 +32,7 @@ export async function GET(req: Request, ctx: RouteContext) {
       inputs: {
         reference,
         varianteNom,
+        format: "docx",
         surface: data.surface,
         volume: data.volume,
         bilan: data.bilan,
@@ -43,21 +43,22 @@ export async function GET(req: Request, ctx: RouteContext) {
         aides: data.aides ?? null,
       },
       moteurVersion: MOTEUR_THERMIQUE_VERSION,
-      notes: `Rapport PDF généré (${reference})${varianteNom ? ` — variante ${varianteNom}` : ""}`,
+      notes: `Rapport Word généré (${reference})${varianteNom ? ` — variante ${varianteNom}` : ""}`,
     }).catch((err) => {
-      console.error("[rapport-pdf] snapshot failed:", err);
+      console.error("[rapport-word] snapshot failed:", err);
     });
 
-    return new Response(pdfBytes as unknown as ArrayBuffer, {
+    return new Response(docxBytes as unknown as ArrayBuffer, {
       status: 200,
       headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="rapport-audit-${reference}.pdf"`,
+        "Content-Type":
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "Content-Disposition": `attachment; filename="rapport-audit-${reference}.docx"`,
         "Cache-Control": "no-store",
       },
     });
   } catch (err) {
-    console.error("[rapport-pdf] generation error", err);
+    console.error("[rapport-word] generation error", err);
     return NextResponse.json(
       { error: "ServerError", message: err instanceof Error ? err.message : "Erreur" },
       { status: 500 },

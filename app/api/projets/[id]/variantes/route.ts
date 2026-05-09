@@ -51,6 +51,19 @@ export async function POST(req: Request, ctx: RouteContext) {
   });
   if (!projet) return NextResponse.json({ error: "Projet introuvable" }, { status: 404 });
 
+  if (parsed.data.parentId) {
+    const parent = await prisma.variante.findFirst({
+      where: { id: parsed.data.parentId, projetId: id, deletedAt: null },
+      select: { id: true },
+    });
+    if (!parent) {
+      return NextResponse.json(
+        { error: "ValidationError", message: "parentId ne correspond à aucune variante de ce projet" },
+        { status: 422 },
+      );
+    }
+  }
+
   try {
     const created = await prisma.variante.create({
       data: {

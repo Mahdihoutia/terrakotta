@@ -29,8 +29,8 @@ interface Props {
 export default async function ProjetWorkspaceLayout({ children, params }: Props) {
   const { id } = await params;
 
-  const projet = await prisma.projet.findUnique({
-    where: { id },
+  const projet = await prisma.projet.findFirst({
+    where: { id, deletedAt: null },
     select: {
       id: true,
       titre: true,
