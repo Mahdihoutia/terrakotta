@@ -46,6 +46,25 @@ export const updateOrganisationSchema = z.object({
     .or(z.literal("")),
   conditionsPaiement: z.string().optional().nullable(),
   cgvUrl: z.string().url().optional().nullable().or(z.literal("")),
+  // Préférences numérotation
+  prefixDevis: z
+    .string()
+    .regex(/^[A-Z0-9]{1,6}$/, "1-6 lettres ou chiffres en majuscules")
+    .optional()
+    .nullable()
+    .or(z.literal("")),
+  prefixFacture: z
+    .string()
+    .regex(/^[A-Z0-9]{1,6}$/, "1-6 lettres ou chiffres en majuscules")
+    .optional()
+    .nullable()
+    .or(z.literal("")),
+  formatAnnee: z.enum(["ANNEE_4", "ANNEE_2"]).optional().nullable(),
+  paddingNumero: z.number().int().min(2).max(6).optional().nullable(),
+  // Défauts fiscaux
+  tvaDefaut: z.number().min(0).max(100).optional().nullable(),
+  delaiPaiementJours: z.number().int().min(0).max(365).optional().nullable(),
+  penaliteRetardTaux: z.number().min(0).max(100).optional().nullable(),
 });
 
 export type UpdateOrganisationInput = z.infer<typeof updateOrganisationSchema>;

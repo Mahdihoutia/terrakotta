@@ -30,6 +30,7 @@ import {
 import { toast } from "sonner";
 import { showApiError, showNetworkError } from "@/lib/api-errors";
 import { cn } from "@/lib/utils";
+import { ROLE_META, ROLES_ORDER } from "./role-meta";
 
 type RoleValue = "ADMIN" | "COLLABORATEUR" | "LECTURE_SEULE";
 
@@ -45,25 +46,8 @@ interface Props {
   currentUserId: string;
 }
 
-const ROLE_DESCRIPTIONS: Record<RoleValue, { label: string; tone: string; description: string }> = {
-  ADMIN: {
-    label: "Administrateur",
-    tone: "bg-blue-50 text-blue-700 border-blue-200",
-    description: "Accès complet, gestion des utilisateurs, suppressions.",
-  },
-  COLLABORATEUR: {
-    label: "Collaborateur",
-    tone: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    description: "Création et modification, pas de gestion des comptes.",
-  },
-  LECTURE_SEULE: {
-    label: "Lecture seule",
-    tone: "bg-zinc-100 text-zinc-700 border-zinc-200",
-    description: "Consultation uniquement, aucune modification.",
-  },
-};
-
-const ROLES: RoleValue[] = ["ADMIN", "COLLABORATEUR", "LECTURE_SEULE"];
+const ROLE_DESCRIPTIONS = ROLE_META;
+const ROLES: RoleValue[] = ROLES_ORDER;
 
 function generatePassword(length = 14): string {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!?@#";

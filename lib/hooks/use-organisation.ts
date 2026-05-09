@@ -30,6 +30,15 @@ export interface OrganisationInfo {
   couleurAccent: string | null;
   conditionsPaiement: string | null;
   cgvUrl: string | null;
+  // Préférences numérotation
+  prefixDevis: string | null;
+  prefixFacture: string | null;
+  formatAnnee: string | null;
+  paddingNumero: number | null;
+  // Défauts fiscaux
+  tvaDefaut: number | null;
+  delaiPaiementJours: number | null;
+  penaliteRetardTaux: number | null;
 }
 
 // Cache module-level — l'organisation change rarement, on évite de re-fetcher

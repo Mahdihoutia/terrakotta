@@ -20,6 +20,7 @@ import {
   Loader2,
   Save,
   AlertCircle,
+  Hash,
 } from "lucide-react";
 import { toast } from "sonner";
 import { showApiError, showNetworkError } from "@/lib/api-errors";
@@ -54,6 +55,14 @@ interface OrganisationDto {
   couleurAccent: string | null;
   conditionsPaiement: string | null;
   cgvUrl: string | null;
+  // Préférences exports
+  prefixDevis: string | null;
+  prefixFacture: string | null;
+  formatAnnee: string | null;
+  paddingNumero: number | null;
+  tvaDefaut: number | null;
+  delaiPaiementJours: number | null;
+  penaliteRetardTaux: number | null;
 }
 
 const REGIMES_TVA: { value: string; label: string; mention?: string }[] = [
@@ -97,6 +106,13 @@ function emptyForm(): OrganisationDto {
     couleurAccent: "#2563EB",
     conditionsPaiement: null,
     cgvUrl: null,
+    prefixDevis: "DV",
+    prefixFacture: "FA",
+    formatAnnee: "ANNEE_4",
+    paddingNumero: 3,
+    tvaDefaut: 20,
+    delaiPaiementJours: 30,
+    penaliteRetardTaux: null,
   };
 }
 
@@ -465,6 +481,95 @@ export default function BureauPanel() {
             onChange={(v) => update("cgvUrl", v || null)}
             type="url"
             placeholder="https://…/cgv.pdf"
+          />
+        </CardContent>
+      </Card>
+
+      {/* ─── Numérotation & défauts ──────────────────────────── */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Hash className="h-4 w-4 text-primary" />
+            Numérotation & défauts
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-2">
+          <Field
+            label="Préfixe devis"
+            value={form.prefixDevis ?? ""}
+            onChange={(v) => update("prefixDevis", v.toUpperCase() || null)}
+            placeholder="DV"
+            className="font-mono text-xs"
+          />
+          <Field
+            label="Préfixe facture"
+            value={form.prefixFacture ?? ""}
+            onChange={(v) => update("prefixFacture", v.toUpperCase() || null)}
+            placeholder="FA"
+            className="font-mono text-xs"
+          />
+          <div className="space-y-1.5">
+            <Label className="text-xs">Format de l&apos;année</Label>
+            <select
+              value={form.formatAnnee ?? "ANNEE_4"}
+              onChange={(e) => update("formatAnnee", e.target.value)}
+              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              <option value="ANNEE_4">4 chiffres (2026)</option>
+              <option value="ANNEE_2">2 chiffres (26)</option>
+            </select>
+          </div>
+          <Field
+            label="Padding du numéro (chiffres)"
+            value={form.paddingNumero == null ? "" : String(form.paddingNumero)}
+            onChange={(v) => update("paddingNumero", v ? Number(v) : null)}
+            type="number"
+            placeholder="3"
+            inputMode="numeric"
+          />
+          <div className="sm:col-span-2 rounded-md bg-muted/40 p-3 text-xs text-muted-foreground">
+            Aperçu :{" "}
+            <span className="font-mono text-foreground">
+              {(form.prefixDevis || "DV")}-
+              {form.formatAnnee === "ANNEE_2"
+                ? String(new Date().getFullYear()).slice(-2)
+                : new Date().getFullYear()}
+              -
+              {String(1).padStart(form.paddingNumero ?? 3, "0")}
+            </span>
+            {" · "}
+            <span className="font-mono text-foreground">
+              {(form.prefixFacture || "FA")}-
+              {form.formatAnnee === "ANNEE_2"
+                ? String(new Date().getFullYear()).slice(-2)
+                : new Date().getFullYear()}
+              -
+              {String(1).padStart(form.paddingNumero ?? 3, "0")}
+            </span>
+          </div>
+          <Field
+            label="TVA par défaut (%)"
+            value={form.tvaDefaut == null ? "" : String(form.tvaDefaut)}
+            onChange={(v) => update("tvaDefaut", v ? Number(v) : null)}
+            type="number"
+            placeholder="20"
+            inputMode="decimal"
+          />
+          <Field
+            label="Délai de paiement (jours)"
+            value={form.delaiPaiementJours == null ? "" : String(form.delaiPaiementJours)}
+            onChange={(v) => update("delaiPaiementJours", v ? Number(v) : null)}
+            type="number"
+            placeholder="30"
+            inputMode="numeric"
+          />
+          <Field
+            label="Pénalité de retard (% annuel)"
+            value={form.penaliteRetardTaux == null ? "" : String(form.penaliteRetardTaux)}
+            onChange={(v) => update("penaliteRetardTaux", v ? Number(v) : null)}
+            type="number"
+            placeholder="10"
+            inputMode="decimal"
           />
         </CardContent>
       </Card>

@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { useLocalStorage } from "@/lib/hooks/useLocalStorage";
 import { showApiError, showNetworkError } from "@/lib/api-errors";
 import { toast } from "sonner";
+import { useOrganisation } from "@/lib/hooks/use-organisation";
 import type { Facture, FactureStatut } from "@/types";
 
 type FactureStatutFilter = FactureStatut | "TOUS";
@@ -87,10 +88,20 @@ export default function FacturesListPage() {
 
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  const organisation = useOrganisation();
+  const tvaDefautStr = organisation?.tvaDefaut != null ? String(organisation.tvaDefaut) : "20";
+
   const [formObjet, setFormObjet] = useState("");
   const [formClientId, setFormClientId] = useState("");
   const [formMontantHT, setFormMontantHT] = useState("");
-  const [formTauxTVA, setFormTauxTVA] = useState("20");
+  const [formTauxTVA, setFormTauxTVA] = useState(tvaDefautStr);
+
+  useEffect(() => {
+    if (organisation?.tvaDefaut != null) {
+      setFormTauxTVA((prev) => (prev === "20" ? String(organisation.tvaDefaut) : prev));
+    }
+  }, [organisation?.tvaDefaut]);
 
   const fetchFactures = useCallback(async () => {
     try {
@@ -132,7 +143,7 @@ export default function FacturesListPage() {
     setFormObjet("");
     setFormClientId("");
     setFormMontantHT("");
-    setFormTauxTVA("20");
+    setFormTauxTVA(tvaDefautStr);
   }
 
   async function handleCreate() {

@@ -72,6 +72,15 @@ model Organisation {
   // Préférences exports
   conditionsPaiement  String?   @map("conditions_paiement")     // multi-ligne, par défaut sur devis
   cgvUrl              String?   @map("cgv_url")
+  // Préférences numérotation (défauts utilisés par lib/numerotation.ts)
+  prefixDevis         String?   @map("prefix_devis")             // ex. "DV" → "DV-2026-001"
+  prefixFacture       String?   @map("prefix_facture")           // ex. "FA"
+  formatAnnee         String?   @map("format_annee")             // "ANNEE_4" (2026) | "ANNEE_2" (26)
+  paddingNumero       Int?      @map("padding_numero")           // 3 → 001, 4 → 0001
+  // Préférences fiscales / paiement par défaut (utilisées sur la création devis)
+  tvaDefaut           Decimal?  @db.Decimal(5, 2) @map("tva_defaut")            // 20.00
+  delaiPaiementJours  Int?      @map("delai_paiement_jours")    // 30
+  penaliteRetardTaux  Decimal?  @db.Decimal(5, 2) @map("penalite_retard_taux")  // % annuel, ex. 10.00
   // Métadonnées
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @updatedAt      @map("updated_at")

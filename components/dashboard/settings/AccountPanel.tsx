@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { signOut } from "next-auth/react";
 import { showApiError, showNetworkError } from "@/lib/api-errors";
 import { cn } from "@/lib/utils";
+import { ROLE_META } from "./role-meta";
 
 type RoleValue = "ADMIN" | "COLLABORATEUR" | "LECTURE_SEULE";
 
@@ -26,18 +27,12 @@ interface CurrentUser {
   role: RoleValue;
 }
 
-const ROLE_LABEL: Record<RoleValue, { label: string; tone: string }> = {
-  ADMIN: { label: "Administrateur", tone: "bg-blue-50 text-blue-700 border-blue-200" },
-  COLLABORATEUR: { label: "Collaborateur", tone: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-  LECTURE_SEULE: { label: "Lecture seule", tone: "bg-zinc-100 text-zinc-700 border-zinc-200" },
-};
-
 export default function AccountPanel({ currentUser }: { currentUser: CurrentUser }) {
   const [currentPassword, setCurrentPassword] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const role = ROLE_LABEL[currentUser.role];
+  const role = ROLE_META[currentUser.role];
 
   async function handleChangePassword() {
     if (!currentPassword) {
@@ -116,8 +111,6 @@ export default function AccountPanel({ currentUser }: { currentUser: CurrentUser
           </div>
           <p className="pt-2 text-xs text-muted-foreground">
             Pour modifier votre nom ou votre email, demandez à un administrateur.
-            <br />
-            TODO — préférences (notifications email, langue) à venir.
           </p>
         </CardContent>
       </Card>

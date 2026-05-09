@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { useLocalStorage } from "@/lib/hooks/useLocalStorage";
 import { showApiError, showNetworkError } from "@/lib/api-errors";
 import { toast } from "sonner";
+import { useOrganisation } from "@/lib/hooks/use-organisation";
 import type { Devis, DevisStatut, DevisClient, DevisProjet } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -107,12 +108,23 @@ export default function DevisListPage() {
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const organisation = useOrganisation();
+  const tvaDefautStr = organisation?.tvaDefaut != null ? String(organisation.tvaDefaut) : "20";
+
   // Form state
   const [formObjet, setFormObjet] = useState("");
   const [formClientId, setFormClientId] = useState("");
   const [formProjetId, setFormProjetId] = useState("");
-  const [formTauxTVA, setFormTauxTVA] = useState("20");
+  const [formTauxTVA, setFormTauxTVA] = useState(tvaDefautStr);
   const [formLignes, setFormLignes] = useState<LigneForm[]>([{ ...EMPTY_LIGNE }]);
+
+  // Quand l'organisation se charge après le mount, si l'utilisateur n'a pas
+  // déjà touché au champ, on applique le défaut.
+  useEffect(() => {
+    if (organisation?.tvaDefaut != null) {
+      setFormTauxTVA((prev) => (prev === "20" ? String(organisation.tvaDefaut) : prev));
+    }
+  }, [organisation?.tvaDefaut]);
 
   const fetchDevis = useCallback(async () => {
     try {
@@ -177,7 +189,7 @@ export default function DevisListPage() {
     setFormObjet("");
     setFormClientId("");
     setFormProjetId("");
-    setFormTauxTVA("20");
+    setFormTauxTVA(tvaDefautStr);
     setFormLignes([{ ...EMPTY_LIGNE }]);
   }
 

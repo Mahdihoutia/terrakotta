@@ -38,12 +38,21 @@ function serialize(o: {
   couleurAccent: string | null;
   conditionsPaiement: string | null;
   cgvUrl: string | null;
+  prefixDevis: string | null;
+  prefixFacture: string | null;
+  formatAnnee: string | null;
+  paddingNumero: number | null;
+  tvaDefaut: Prisma.Decimal | null;
+  delaiPaiementJours: number | null;
+  penaliteRetardTaux: Prisma.Decimal | null;
   createdAt: Date;
   updatedAt: Date;
 }) {
   return {
     ...o,
     capital: o.capital ? Number(o.capital) : null,
+    tvaDefaut: o.tvaDefaut ? Number(o.tvaDefaut) : null,
+    penaliteRetardTaux: o.penaliteRetardTaux ? Number(o.penaliteRetardTaux) : null,
     rgeValiditeJusqu: o.rgeValiditeJusqu?.toISOString() ?? null,
     createdAt: o.createdAt.toISOString(),
     updatedAt: o.updatedAt.toISOString(),
