@@ -433,7 +433,7 @@ export default function BureauPanel() {
             placeholder="https://…/logo.png"
           />
           <div>
-            <Label className="text-xs">Couleur d'accent</Label>
+            <Label className="text-xs">Couleur d&apos;accent</Label>
             <div className="mt-1 flex items-center gap-2">
               <input
                 type="color"
