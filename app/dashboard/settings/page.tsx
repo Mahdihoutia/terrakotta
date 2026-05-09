@@ -1,10 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, ShieldAlert, UserCog } from "lucide-react";
+import { ShieldAlert } from "lucide-react";
 import { getSession } from "@/lib/auth-helpers";
 import { Role } from "@prisma/client";
 import UsersPanel from "@/components/dashboard/settings/UsersPanel";
 import AccountPanel from "@/components/dashboard/settings/AccountPanel";
+import BureauPanel from "@/components/dashboard/settings/BureauPanel";
 
 export default async function SettingsPage() {
   const session = await getSession();
@@ -69,26 +70,7 @@ export default async function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="bureau" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Building2 className="h-4 w-4 text-primary" />
-                Informations du bureau
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm text-muted-foreground">
-              <p className="flex items-center gap-2">
-                <UserCog className="h-4 w-4" />À venir — raison sociale, SIRET,
-                qualifications RGE, logo et coordonnées utilisés dans les
-                exports PDF (devis, factures, audits).
-              </p>
-              <p>
-                Ces informations seront stockées dans une table dédiée
-                (`organisation`) et chargées en en-tête de tous les documents
-                générés.
-              </p>
-            </CardContent>
-          </Card>
+          <BureauPanel />
         </TabsContent>
       </Tabs>
     </div>

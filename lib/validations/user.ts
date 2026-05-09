@@ -26,6 +26,12 @@ export const updateUserSchema = z.object({
     .string()
     .min(8, "8 caractères minimum")
     .optional(),
+  /**
+   * Mot de passe actuel — requis quand un utilisateur change SON propre mot
+   * de passe (vérifié serveur via bcrypt.compare). Non requis pour un ADMIN
+   * qui réinitialise le mdp d'un autre user.
+   */
+  currentPassword: z.string().min(1).optional(),
 });
 
 export type CreateUserInput = z.infer<typeof createUserSchema>;

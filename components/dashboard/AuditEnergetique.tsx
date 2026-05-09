@@ -25,6 +25,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { exportToWord, type WordSectionInput, type WordChart } from "@/lib/word-export";
+import { useOrganisation } from "@/lib/hooks/use-organisation";
 import ValidationBanner, { type ValidationItem } from "./audit/ValidationBanner";
 import SuggestionsPanel from "./audit/SuggestionsPanel";
 import BatimentTypePicker from "./audit/BatimentTypePicker";
@@ -1324,6 +1325,7 @@ function ApplyButton({ onClick, label = "Appliquer ces valeurs" }: ApplyButtonPr
 
 export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props) {
   const router = useRouter();
+  const organisation = useOrganisation();
   const [activeSection, setActiveSection] = useState(0);
   const [showBatimentPicker, setShowBatimentPicker] = useState(false);
   const [ficheCandidates, setFicheCandidates] = useState<FicheCandidate[]>([]);
@@ -1776,6 +1778,7 @@ export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props
         : undefined;
 
       await exportToWord({
+        organisation: organisation ?? undefined,
         title: "Audit énergétique",
         subtitle: "Diagnostic complet et scénarios de rénovation",
         reference: values.ref_audit || "DRAFT",

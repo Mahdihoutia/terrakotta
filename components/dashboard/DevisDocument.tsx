@@ -22,6 +22,7 @@ import {
   FileType,
 } from "lucide-react";
 import { exportToWord, type WordSectionInput } from "@/lib/word-export";
+import { useOrganisation } from "@/lib/hooks/use-organisation";
 import { cn } from "@/lib/utils";
 import { showApiError, showNetworkError } from "@/lib/api-errors";
 import { toast } from "sonner";
@@ -741,6 +742,7 @@ function AutosaveIndicator({
 // ─── Component ──────────────────────────────────────────────────
 
 export default function DevisDocument({ onBack, onSaved, existingDoc }: Props) {
+  const organisation = useOrganisation();
   const [activeSection, setActiveSection] = useState(0);
   const [values, setValues] = useState<FormValues>(() => {
     if (existingDoc?.donnees) {
@@ -1105,6 +1107,7 @@ export default function DevisDocument({ onBack, onSaved, existingDoc }: Props) {
         iso ? new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" }) : "—";
 
       await exportToWord({
+        organisation: organisation ?? undefined,
         title: "Devis",
         subtitle: values.client_nom ? `Pour ${values.client_nom}` : undefined,
         reference: values.ref_devis || "DV-DRAFT",

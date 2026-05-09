@@ -174,6 +174,29 @@ export async function PATCH(req: Request, ctx: RouteContext) {
       }
     }
     if (d.password !== undefined) {
+      // Auto-changement de mdp : exige et vérifie le mdp actuel.
+      // Un ADMIN qui réinitialise le mdp d'un autre user n'est pas concerné.
+      if (isSelf) {
+        if (!d.currentPassword) {
+          return NextResponse.json(
+            {
+              error: "CurrentPasswordRequired",
+              message: "Le mot de passe actuel est requis.",
+            },
+            { status: 400 },
+          );
+        }
+        const ok = await bcrypt.compare(d.currentPassword, existing.password);
+        if (!ok) {
+          return NextResponse.json(
+            {
+              error: "CurrentPasswordInvalid",
+              message: "Mot de passe actuel incorrect.",
+            },
+            { status: 403 },
+          );
+        }
+      }
       updateData.password = await bcrypt.hash(d.password, 12);
     }
 

@@ -31,6 +31,74 @@ enum Role {
   LECTURE_SEULE
 }
 
+// ─── Organisation (singleton) ───────────────────────────────────
+// Métadonnées du bureau d'étude utilisées dans tous les exports
+// (devis, factures, audits, rapports). Une seule ligne attendue —
+// l'API /api/organisation gère un singleton via upsert.
+
+model Organisation {
+  id                  String    @id @default(cuid())
+  // Identité
+  raisonSociale       String    @map("raison_sociale")
+  formeJuridique      String?   @map("forme_juridique")        // SAS, SARL, EI…
+  siret               String?
+  codeApe             String?   @map("code_ape")
+  capital             Decimal?  @db.Decimal(12, 2)
+  // Coordonnées
+  adresse             String?
+  codePostal          String?   @map("code_postal")
+  ville               String?
+  pays                String?   @default("France")
+  email               String?
+  telephone           String?
+  siteWeb             String?   @map("site_web")
+  // Fiscal / bancaire
+  regimeTVA           String?   @map("regime_tva")              // "NORMAL", "FRANCHISE_BASE"
+  mentionTVA          String?   @map("mention_tva")             // ex. "TVA non applicable, art. 293B du CGI"
+  iban                String?
+  bic                 String?
+  banqueNom           String?   @map("banque_nom")
+  // Qualifications & assurances
+  rgeNumero           String?   @map("rge_numero")
+  rgeValiditeJusqu    DateTime? @map("rge_validite_jusqu")
+  decennaleCompagnie  String?   @map("decennale_compagnie")
+  decennalePolice     String?   @map("decennale_police")
+  rcpCompagnie        String?   @map("rcp_compagnie")
+  rcpPolice           String?   @map("rcp_police")
+  certifications      Json?                                     // [{ nom, numero, validite }]
+  // Branding
+  logoUrl             String?   @map("logo_url")
+  couleurAccent       String?   @map("couleur_accent")          // hex (#2563EB par défaut)
+  // Préférences exports
+  conditionsPaiement  String?   @map("conditions_paiement")     // multi-ligne, par défaut sur devis
+  cgvUrl              String?   @map("cgv_url")
+  // Métadonnées
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt      @map("updated_at")
+
+  @@map("organisation")
+}
+
+// ─── Invitation utilisateur (magic-link) ────────────────────────
+// Permet d'inviter un nouveau collaborateur par email — il définit
+// son mot de passe via /auth/set-password?token=...
+
+model UserInvitation {
+  id        String    @id @default(cuid())
+  email     String
+  name      String?
+  role      Role
+  token     String    @unique
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  invitedBy String?   @map("invited_by")
+
+  @@index([token])
+  @@index([email])
+  @@map("user_invitations")
+}
+
 // ─── Client ─────────────────────────────────────────────────────
 
 model Client {

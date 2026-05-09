@@ -24,6 +24,7 @@ import {
   Lock,
 } from "lucide-react";
 import { exportToWord, type WordSectionInput } from "@/lib/word-export";
+import { useOrganisation } from "@/lib/hooks/use-organisation";
 import {
   BAR_TH_171,
   BAR_TH_159,
@@ -3314,6 +3315,7 @@ async function generatePDF(
 // ─── Component ──────────────────────────────────────────────────
 
 export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Props) {
+  const organisation = useOrganisation();
   const [selectedFiche, setSelectedFiche] = useState<FicheId | null>(() => {
     if (existingDoc?.donnees) {
       try {
@@ -3990,6 +3992,7 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
         iso ? new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" }) : "—";
 
       await exportToWord({
+        organisation: organisation ?? undefined,
         title: "Note de dimensionnement",
         subtitle: `Fiche CEE : ${fiche.id} — ${fiche.sousTitre}`,
         reference: values.ref_projet || "DRAFT",

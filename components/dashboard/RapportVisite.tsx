@@ -19,6 +19,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { exportToWord, type WordSectionInput } from "@/lib/word-export";
+import { useOrganisation } from "@/lib/hooks/use-organisation";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -572,6 +573,7 @@ async function generatePDF(
 // ─── Component ──────────────────────────────────────────────────
 
 export default function RapportVisite({ onBack, onSaved, existingDoc }: Props) {
+  const organisation = useOrganisation();
   const [activeSection, setActiveSection] = useState(0);
   const [values, setValues] = useState<FormValues>(() => {
     if (existingDoc?.donnees) {
@@ -761,6 +763,7 @@ export default function RapportVisite({ onBack, onSaved, existingDoc }: Props) {
       }).filter((s) => (s.rows?.length ?? 0) + (s.paragraphs?.length ?? 0) + (s.photos?.length ?? 0) > 0);
 
       await exportToWord({
+        organisation: organisation ?? undefined,
         title: "Rapport de visite technique",
         subtitle: "Constat de l'existant et préconisations de travaux",
         reference: values.ref_rapport || "DRAFT",

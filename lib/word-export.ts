@@ -33,12 +33,43 @@ export interface WordSectionInput {
   tables?: { caption?: string; headers: string[]; rows: string[][] }[];
 }
 
+/**
+ * Métadonnées du bureau émetteur — injectées en pied de couverture, en
+ * bandeau de footer et (pour les devis/factures) dans une section
+ * « Conditions & coordonnées » automatique. Toutes les valeurs sont
+ * optionnelles : absence → la section correspondante n'est pas rendue.
+ */
+export interface WordOrganisation {
+  raisonSociale?: string;
+  formeJuridique?: string | null;
+  siret?: string | null;
+  codeApe?: string | null;
+  adresse?: string | null;
+  codePostal?: string | null;
+  ville?: string | null;
+  email?: string | null;
+  telephone?: string | null;
+  siteWeb?: string | null;
+  mentionTVA?: string | null;
+  iban?: string | null;
+  bic?: string | null;
+  banqueNom?: string | null;
+  rgeNumero?: string | null;
+  decennaleCompagnie?: string | null;
+  decennalePolice?: string | null;
+  rcpCompagnie?: string | null;
+  rcpPolice?: string | null;
+  conditionsPaiement?: string | null;
+}
+
 export interface WordExportInput {
   title: string;
   subtitle?: string;
   reference: string;
   /** Méta-données affichées sur la couverture (Bénéficiaire, Adresse, Date…) */
   meta: WordKeyValue[];
+  /** Bureau émetteur — injecté dans la couverture, le footer et la clôture. */
+  organisation?: WordOrganisation;
   sections: WordSectionInput[];
   /**
    * Préambule narratif inséré entre le sommaire et la 1ʳᵉ section.
@@ -960,6 +991,161 @@ export async function exportToWord(input: WordExportInput): Promise<void> {
     }
   }
 
+  // ─── Émetteur (organisation) ────────────────────────────────
+  // Section automatique en fin de document quand le bureau a été configuré
+  // dans /dashboard/settings → onglet Bureau. Regroupe identité, coordonnées,
+  // mention TVA, RIB, qualifications et conditions de paiement.
+  const org = input.organisation;
+  const hasOrg =
+    !!org &&
+    Object.values(org).some((v) => v !== null && v !== undefined && v !== "");
+  if (hasOrg && org) {
+    const orgRows: WordKeyValue[] = [];
+    const ident = [org.raisonSociale, org.formeJuridique].filter(Boolean).join(" · ");
+    if (ident) orgRows.push({ label: "Émetteur", value: ident });
+    const adresseLignes = [
+      org.adresse,
+      [org.codePostal, org.ville].filter(Boolean).join(" "),
+    ]
+      .filter(Boolean)
+      .join("\n");
+    if (adresseLignes) orgRows.push({ label: "Adresse", value: adresseLignes });
+    if (org.siret) orgRows.push({ label: "SIRET", value: org.siret });
+    if (org.codeApe) orgRows.push({ label: "Code APE", value: org.codeApe });
+    if (org.telephone) orgRows.push({ label: "Téléphone", value: org.telephone });
+    if (org.email) orgRows.push({ label: "Email", value: org.email });
+    if (org.siteWeb) orgRows.push({ label: "Site web", value: org.siteWeb });
+    if (org.rgeNumero) orgRows.push({ label: "Qualification RGE", value: org.rgeNumero });
+    if (org.decennaleCompagnie || org.decennalePolice) {
+      orgRows.push({
+        label: "Garantie décennale",
+        value: [org.decennaleCompagnie, org.decennalePolice && `n° ${org.decennalePolice}`]
+          .filter(Boolean)
+          .join(" · "),
+      });
+    }
+    if (org.rcpCompagnie || org.rcpPolice) {
+      orgRows.push({
+        label: "RC professionnelle",
+        value: [org.rcpCompagnie, org.rcpPolice && `n° ${org.rcpPolice}`]
+          .filter(Boolean)
+          .join(" · "),
+      });
+    }
+    if (org.iban) {
+      orgRows.push({
+        label: "Coordonnées bancaires",
+        value: [org.banqueNom, `IBAN ${org.iban}`, org.bic && `BIC ${org.bic}`]
+          .filter(Boolean)
+          .join("\n"),
+      });
+    }
+    if (org.mentionTVA) orgRows.push({ label: "Mention TVA", value: org.mentionTVA });
+
+    children.push(
+      new Paragraph({
+        spacing: { before: 480, after: 120 },
+        children: [
+          new TextRun({
+            text: "ÉMETTEUR",
+            bold: true,
+            size: 16,
+            color: ACCENT,
+            characterSpacing: 120,
+          }),
+        ],
+      }),
+    );
+    children.push(
+      new Paragraph({
+        spacing: { before: 0, after: 200 },
+        children: [
+          new TextRun({
+            text: "Coordonnées du bureau et conditions",
+            bold: true,
+            size: 28,
+            color: BRAND_NAVY,
+          }),
+        ],
+      }),
+    );
+    if (orgRows.length > 0) {
+      children.push(
+        new Table({
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          layout: TableLayoutType.FIXED,
+          borders: dataTableBorders,
+          columnWidths: [3200, 6400],
+          rows: orgRows.map(
+            ({ label, value }) =>
+              new TableRow({
+                cantSplit: true,
+                children: [
+                  new TableCell({
+                    width: { size: 33, type: WidthType.PERCENTAGE },
+                    verticalAlign: VerticalAlign.CENTER,
+                    shading: { type: ShadingType.CLEAR, color: "auto", fill: "F8FAFC" },
+                    margins: { top: 100, bottom: 100, left: 160, right: 120 },
+                    children: [
+                      new Paragraph({
+                        spacing: { before: 0, after: 0 },
+                        children: [
+                          new TextRun({
+                            text: label.toUpperCase(),
+                            bold: true,
+                            size: 14,
+                            color: "475569",
+                            characterSpacing: 60,
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                  new TableCell({
+                    width: { size: 67, type: WidthType.PERCENTAGE },
+                    verticalAlign: VerticalAlign.CENTER,
+                    margins: { top: 100, bottom: 100, left: 160, right: 160 },
+                    children: value.split("\n").map(
+                      (line) =>
+                        new Paragraph({
+                          spacing: { before: 0, after: 0 },
+                          children: [new TextRun({ text: line, size: 20, color: BRAND_NAVY })],
+                        }),
+                    ),
+                  }),
+                ],
+              }),
+          ),
+        }),
+      );
+    }
+    if (org.conditionsPaiement) {
+      children.push(
+        new Paragraph({
+          spacing: { before: 200, after: 80 },
+          children: [
+            new TextRun({
+              text: "CONDITIONS DE PAIEMENT",
+              bold: true,
+              size: 14,
+              color: ACCENT,
+              characterSpacing: 80,
+            }),
+          ],
+        }),
+      );
+      for (const line of org.conditionsPaiement.split(/\r?\n/)) {
+        if (!line.trim()) continue;
+        children.push(
+          new Paragraph({
+            spacing: { after: 80, line: 280 },
+            children: [new TextRun({ text: line, size: 20, color: "1F2937" })],
+          }),
+        );
+      }
+    }
+  }
+
   // ─── Clôture ────────────────────────────────────────────────
   if (input.closing) {
     children.push(
@@ -1051,7 +1237,7 @@ export async function exportToWord(input: WordExportInput): Promise<void> {
                             spacing: { before: 0, after: 0 },
                             children: [
                               new TextRun({
-                                text: BRAND_NAME,
+                                text: (input.organisation?.raisonSociale || BRAND_NAME).toUpperCase(),
                                 bold: true,
                                 size: 12, // 6pt — discret
                                 color: BRAND_NAVY,
@@ -1063,7 +1249,15 @@ export async function exportToWord(input: WordExportInput): Promise<void> {
                                 color: "CBD5E1",
                               }),
                               new TextRun({
-                                text: BRAND_TAGLINE,
+                                text: (() => {
+                                  const o = input.organisation;
+                                  if (!o) return BRAND_TAGLINE;
+                                  const parts = [
+                                    o.siret && `SIRET ${o.siret}`,
+                                    o.rgeNumero && `RGE ${o.rgeNumero}`,
+                                  ].filter(Boolean);
+                                  return parts.length > 0 ? parts.join(" · ") : BRAND_TAGLINE;
+                                })(),
                                 italics: true,
                                 size: 14,
                                 color: "64748B",

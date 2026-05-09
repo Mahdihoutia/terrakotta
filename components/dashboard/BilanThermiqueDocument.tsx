@@ -21,6 +21,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { exportToWord, type WordSectionInput, type WordChart } from "@/lib/word-export";
+import { useOrganisation } from "@/lib/hooks/use-organisation";
 import { showApiError, showNetworkError } from "@/lib/api-errors";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -300,6 +301,7 @@ function renderBesoinsParZoneBarChart(
 // ─── Composant principal ─────────────────────────────────────────
 
 export default function BilanThermiqueDocument({ onBack, onSaved, existingDoc }: Props) {
+  const organisation = useOrganisation();
   const [form, setForm] = useState<BilanForm>(() => {
     const f = emptyForm();
     if (existingDoc) {
@@ -912,6 +914,7 @@ export default function BilanThermiqueDocument({ onBack, onSaved, existingDoc }:
       }
 
       await exportToWord({
+        organisation: organisation ?? undefined,
         title: "Bilan thermique",
         subtitle: "Simulation horaire 8760h — méthode 5R1C ISO 13790",
         reference: ref,

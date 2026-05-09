@@ -33,18 +33,27 @@ const ROLE_LABEL: Record<RoleValue, { label: string; tone: string }> = {
 };
 
 export default function AccountPanel({ currentUser }: { currentUser: CurrentUser }) {
+  const [currentPassword, setCurrentPassword] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const role = ROLE_LABEL[currentUser.role];
 
   async function handleChangePassword() {
+    if (!currentPassword) {
+      toast.error("Mot de passe actuel requis.");
+      return;
+    }
     if (password.length < 8) {
-      toast.error("Mot de passe : 8 caractères minimum.");
+      toast.error("Nouveau mot de passe : 8 caractères minimum.");
       return;
     }
     if (password !== confirm) {
       toast.error("Les mots de passe ne correspondent pas.");
+      return;
+    }
+    if (password === currentPassword) {
+      toast.error("Le nouveau mot de passe doit différer de l'actuel.");
       return;
     }
     if (currentUser.id === "admin-env") {
@@ -59,7 +68,7 @@ export default function AccountPanel({ currentUser }: { currentUser: CurrentUser
       const res = await fetch(`/api/users/${currentUser.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ password, currentPassword }),
       });
       if (!res.ok) {
         await showApiError(res, "Changement de mot de passe impossible");
@@ -69,6 +78,7 @@ export default function AccountPanel({ currentUser }: { currentUser: CurrentUser
         description:
           "Toutes les sessions actives ont été invalidées pour des raisons de sécurité.",
       });
+      setCurrentPassword("");
       setPassword("");
       setConfirm("");
       // Révoque la session actuelle — les autres devices repassent par /auth/login
@@ -121,6 +131,17 @@ export default function AccountPanel({ currentUser }: { currentUser: CurrentUser
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="space-y-1.5">
+            <Label htmlFor="current-password">Mot de passe actuel</Label>
+            <Input
+              id="current-password"
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              autoComplete="current-password"
+              placeholder="Pour confirmer votre identité"
+            />
+          </div>
+          <div className="space-y-1.5">
             <Label htmlFor="new-password">Nouveau mot de passe</Label>
             <Input
               id="new-password"
@@ -143,7 +164,7 @@ export default function AccountPanel({ currentUser }: { currentUser: CurrentUser
           </div>
           <Button
             onClick={handleChangePassword}
-            disabled={submitting || password.length < 8}
+            disabled={submitting || !currentPassword || password.length < 8}
             size="sm"
           >
             {submitting && (

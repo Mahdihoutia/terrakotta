@@ -283,7 +283,7 @@ export default function UsersPanel({ currentUserId }: Props) {
   );
 }
 
-/* ─────────── Create dialog ─────────── */
+/* ─────────── Create dialog (magic-link invitation) ─────────── */
 
 function CreateUserDialog({
   open,
@@ -296,53 +296,59 @@ function CreateUserDialog({
 }) {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
-  const [password, setPassword] = useState("");
   const [role, setRole] = useState<RoleValue>("COLLABORATEUR");
   const [submitting, setSubmitting] = useState(false);
+  const [fallbackLink, setFallbackLink] = useState<string | null>(null);
 
   function reset() {
     setEmail("");
     setName("");
-    setPassword("");
     setRole("COLLABORATEUR");
+    setFallbackLink(null);
   }
 
   async function handleSubmit() {
-    if (!email.trim() || password.length < 8) {
-      toast.error("Email requis et mot de passe ≥ 8 caractères.");
+    if (!email.trim()) {
+      toast.error("Email requis.");
       return;
     }
     setSubmitting(true);
+    setFallbackLink(null);
     try {
-      const res = await fetch("/api/users", {
+      const res = await fetch("/api/users/invite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: email.trim(),
           name: name.trim() || null,
-          password,
           role,
         }),
       });
       if (!res.ok) {
-        await showApiError(res, "Création impossible");
+        await showApiError(res, "Invitation impossible");
         return;
       }
-      // Copie le mot de passe dans le presse-papiers.
-      try {
-        await navigator.clipboard.writeText(password);
-        toast.success("Utilisateur créé", {
-          description:
-            "Le mot de passe a été copié dans le presse-papiers. Transmettez-le par un canal sécurisé.",
+      const data = (await res.json()) as {
+        emailSent: boolean;
+        emailError: string | null;
+        link: string;
+      };
+      onCreated();
+      if (data.emailSent) {
+        toast.success("Invitation envoyée", {
+          description: `Un email a été envoyé à ${email.trim()}. Lien valable 72 h.`,
         });
-      } catch {
-        toast.success("Utilisateur créé", {
-          description: `Mot de passe : ${password}`,
+        reset();
+        onOpenChange(false);
+      } else {
+        // Fallback : pas de Resend configuré ou échec d'envoi → on affiche
+        // le lien à transmettre manuellement.
+        setFallbackLink(data.link);
+        toast.warning("Email non envoyé", {
+          description:
+            data.emailError ?? "Copiez le lien ci-dessous pour le transmettre manuellement.",
         });
       }
-      reset();
-      onOpenChange(false);
-      onCreated();
     } catch (err) {
       showNetworkError(err);
     } finally {
@@ -351,13 +357,19 @@ function CreateUserDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        if (!v) reset();
+        onOpenChange(v);
+      }}
+    >
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Inviter un utilisateur</DialogTitle>
           <DialogDescription>
-            Crée un compte avec un mot de passe initial. L&apos;utilisateur
-            pourra le modifier depuis l&apos;onglet « Compte ».
+            Un lien d&apos;activation sera envoyé par email. L&apos;invité
+            définira son mot de passe (lien valable 72 h).
           </DialogDescription>
         </DialogHeader>
 
@@ -384,48 +396,6 @@ function CreateUserDialog({
                 autoComplete="off"
               />
             </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="user-password">Mot de passe</Label>
-            <div className="flex gap-2">
-              <Input
-                id="user-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Minimum 8 caractères"
-                autoComplete="new-password"
-                className="font-mono text-xs"
-              />
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => setPassword(generatePassword())}
-              >
-                <Sparkles className="mr-1 h-3.5 w-3.5" />
-                Générer
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={!password}
-                onClick={async () => {
-                  try {
-                    await navigator.clipboard.writeText(password);
-                    toast.success("Copié");
-                  } catch {
-                    toast.error("Copie impossible");
-                  }
-                }}
-              >
-                <Copy className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-            <p className="text-[11px] text-muted-foreground">
-              Le mot de passe sera copié dans le presse-papiers à la création.
-            </p>
           </div>
 
           <div className="space-y-2">
@@ -462,21 +432,57 @@ function CreateUserDialog({
               })}
             </div>
           </div>
+
+          {fallbackLink && (
+            <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs">
+              <p className="font-medium text-amber-900">
+                Lien d&apos;activation (à transmettre manuellement)
+              </p>
+              <div className="mt-2 flex gap-2">
+                <Input
+                  value={fallbackLink}
+                  readOnly
+                  className="font-mono text-[11px]"
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(fallbackLink);
+                      toast.success("Copié");
+                    } catch {
+                      toast.error("Copie impossible");
+                    }
+                  }}
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              <p className="mt-2 text-[11px] text-amber-800">
+                Configure RESEND_API_KEY pour envoyer automatiquement les
+                invitations.
+              </p>
+            </div>
+          )}
         </div>
 
         <DialogFooter>
           <Button
             variant="outline"
-            onClick={() => onOpenChange(false)}
+            onClick={() => {
+              reset();
+              onOpenChange(false);
+            }}
             disabled={submitting}
           >
-            Annuler
+            Fermer
           </Button>
-          <Button onClick={handleSubmit} disabled={submitting}>
+          <Button onClick={handleSubmit} disabled={submitting || !email.trim()}>
             {submitting && (
               <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
             )}
-            Créer
+            Envoyer l&apos;invitation
           </Button>
         </DialogFooter>
       </DialogContent>
