@@ -779,8 +779,12 @@ export default function BilanThermiqueDocument({ onBack, onSaved, existingDoc }:
     setGeneratingWord(true);
     try {
       const ref = form.reference.trim() || generateReference();
-      const fmt1 = (n: number) => n.toLocaleString("fr-FR", { maximumFractionDigits: 1 });
-      const fmt0 = (n: number) => n.toLocaleString("fr-FR", { maximumFractionDigits: 0 });
+      const fmt1 = (n: number | null | undefined) =>
+        Number.isFinite(n)
+          ? (n as number).toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+          : "—";
+      const fmt0 = (n: number | null | undefined) =>
+        Number.isFinite(n) ? (n as number).toLocaleString("fr-FR", { maximumFractionDigits: 0 }) : "—";
 
       const sections: WordSectionInput[] = [];
 
@@ -854,22 +858,51 @@ export default function BilanThermiqueDocument({ onBack, onSaved, existingDoc }:
         tables: [{
           headers: ["Zone", "Solaires (MWh)", "Internes (MWh)", "Total (MWh)"],
           rows: bilan.zones.map((z) => {
-            const total = z.result.apportsSolairesMWh + z.result.apportsInternesMWh;
+            const sol = safeNum(z.result.apportsSolairesMWh);
+            const int = safeNum(z.result.apportsInternesMWh);
             return [
               z.nom,
-              fmt1(z.result.apportsSolairesMWh),
-              fmt1(z.result.apportsInternesMWh),
-              fmt1(total),
+              fmt1(sol),
+              fmt1(int),
+              fmt1(sol + int),
             ];
           }),
         }],
       });
 
-      // Section 6 — Heures de surchauffe (si dispo)
+      // Section 6 — Enveloppe (parois par zone)
+      const paroiById = new Map(parois.map((p) => [p.id, p]));
+      const enveloppeRows: string[][] = [];
+      for (const z of form.zones) {
+        for (const p of z.parois) {
+          if (!p.paroiId) continue;
+          const ref = paroiById.get(p.paroiId);
+          enveloppeRows.push([
+            z.nom || "—",
+            ref?.nom ?? "—",
+            ref?.type ?? "—",
+            p.orientation || "—",
+            fmt1(safeNum(p.surface)),
+            ref?.uCache != null ? ref.uCache.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—",
+          ]);
+        }
+      }
+      if (enveloppeRows.length > 0) {
+        sections.push({
+          titre: "6. Enveloppe — détail des parois",
+          description: "Surfaces et coefficients U (W/m²·K) par paroi",
+          tables: [{
+            headers: ["Zone", "Paroi", "Type", "Orientation", "Surface (m²)", "U (W/m²·K)"],
+            rows: enveloppeRows,
+          }],
+        });
+      }
+
+      // Section 7 — Heures de surchauffe (si dispo)
       const surchaufZones = bilan.zones.filter((z) => z.result.heuresSurchauffe != null);
       if (surchaufZones.length > 0) {
         sections.push({
-          titre: "6. Heures de surchauffe",
+          titre: `${enveloppeRows.length > 0 ? "7" : "6"}. Heures de surchauffe`,
           description: "Heures > 28 °C en occupation — indicateur de risque inconfort estival",
           tables: [{
             headers: ["Zone", "Heures > 28 °C"],

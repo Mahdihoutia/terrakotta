@@ -1036,40 +1036,73 @@ export default function DevisDocument({ onBack, onSaved, existingDoc }: Props) {
 
       // Tableau des lignes de devis (cœur du document)
       if (lignes.length > 0) {
-        const totalHT = lignes.reduce(
-          (sum, l) => sum + (parseFloat(l.quantite) || 0) * (parseFloat(l.prixUnitaire) || 0),
+        const fmtEuro = (n: number) =>
+          (Number.isFinite(n) ? n : 0).toLocaleString("fr-FR", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }) + " €";
+        const fmtQte = (n: number) =>
+          (Number.isFinite(n) ? n : 0).toLocaleString("fr-FR", {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 3,
+          });
+
+        // Totaux par taux de TVA — respecte le taux saisi sur chaque ligne
+        const totalsByTaux = new Map<number, number>();
+        let totalHT = 0;
+        for (const l of lignes) {
+          const qte = parseFloat(l.quantite) || 0;
+          const pu = parseFloat(l.prixUnitaire) || 0;
+          const ht = qte * pu;
+          const taux = parseFloat(l.tva);
+          const tauxNorm = Number.isFinite(taux) ? taux : 20;
+          totalHT += ht;
+          totalsByTaux.set(tauxNorm, (totalsByTaux.get(tauxNorm) ?? 0) + ht);
+        }
+        const totalTVA = Array.from(totalsByTaux.entries()).reduce(
+          (sum, [taux, ht]) => sum + ht * (taux / 100),
           0,
         );
-        const tvaRate = values.tva_applicable?.includes("5,5") ? 5.5
-          : values.tva_applicable?.includes("10%") ? 10 : 20;
-        const totalTVA = totalHT * (tvaRate / 100);
         const totalTTC = totalHT + totalTVA;
-        const fmt = (n: number) =>
-          n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
+
+        const totauxRows: { label: string; value: string }[] = [
+          { label: "Total HT", value: fmtEuro(totalHT) },
+        ];
+        const tauxTries = Array.from(totalsByTaux.keys()).sort((a, b) => a - b);
+        for (const taux of tauxTries) {
+          const baseHT = totalsByTaux.get(taux) ?? 0;
+          totauxRows.push({
+            label: `TVA ${taux.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}% sur ${fmtEuro(baseHT)}`,
+            value: fmtEuro(baseHT * (taux / 100)),
+          });
+        }
+        totauxRows.push({ label: "Total TTC", value: fmtEuro(totalTTC) });
 
         wordSections.unshift({
           titre: "Détail du devis",
           tables: [{
-            headers: ["Désignation", "Unité", "Qté", "PU HT", "Total HT"],
-            rows: lignes.map((l) => {
+            headers: ["#", "Désignation", "Unité", "Qté", "PU HT", "TVA", "Total HT"],
+            rows: lignes.map((l, i) => {
               const qte = parseFloat(l.quantite) || 0;
               const pu = parseFloat(l.prixUnitaire) || 0;
+              const taux = parseFloat(l.tva);
               return [
+                String(i + 1).padStart(2, "0"),
                 l.designation || "—",
                 l.unite || "—",
-                qte.toString(),
-                fmt(pu),
-                fmt(qte * pu),
+                fmtQte(qte),
+                fmtEuro(pu),
+                Number.isFinite(taux) ? `${taux.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} %` : "—",
+                fmtEuro(qte * pu),
               ];
             }),
           }],
-          rows: [
-            { label: "Total HT", value: fmt(totalHT) },
-            { label: `TVA (${tvaRate}%)`, value: fmt(totalTVA) },
-            { label: "Total TTC", value: fmt(totalTTC) },
-          ],
+          rows: totauxRows,
         });
       }
+
+      const formatDateMeta = (iso: string | undefined) =>
+        iso ? new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" }) : "—";
 
       await exportToWord({
         title: "Devis",
@@ -1077,8 +1110,8 @@ export default function DevisDocument({ onBack, onSaved, existingDoc }: Props) {
         reference: values.ref_devis || "DV-DRAFT",
         meta: [
           { label: "Référence", value: values.ref_devis || "—" },
-          { label: "Date d'émission", value: values.date_emission || "—" },
-          { label: "Date de validité", value: values.date_validite || "—" },
+          { label: "Date d'émission", value: formatDateMeta(values.date_emission) },
+          { label: "Date de validité", value: formatDateMeta(values.date_validite) },
           { label: "Client", value: values.client_nom || "—" },
           { label: "Adresse client", value: values.client_adresse || "—" },
           { label: "Adresse chantier", value: values.adresse_chantier || values.client_adresse || "—" },

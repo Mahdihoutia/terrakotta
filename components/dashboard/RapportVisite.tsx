@@ -768,7 +768,7 @@ export default function RapportVisite({ onBack, onSaved, existingDoc }: Props) {
           { label: "Référence", value: values.ref_rapport || "—" },
           { label: "Bénéficiaire", value: values.client_nom || "—" },
           { label: "Adresse", value: values.adresse || "—" },
-          { label: "Date visite", value: values.date_visite || "—" },
+          { label: "Date visite", value: values.date_visite ? new Date(values.date_visite).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" }) : "—" },
           { label: "Rédacteur", value: values.redacteur || "—" },
           { label: "Téléphone", value: values.client_telephone || "—" },
         ],

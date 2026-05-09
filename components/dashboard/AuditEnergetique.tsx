@@ -1630,11 +1630,11 @@ export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props
 
       // Charts identiques à la sortie PDF (mêmes inputs)
       try {
-        const chauffage = parseFloat(values.conso_chauffage || "0");
-        const ecs = parseFloat(values.conso_ecs || "0");
-        const refroidissement = parseFloat(values.conso_refroidissement || "0");
-        const eclairage = parseFloat(values.conso_eclairage || "0");
-        const auxiliaires = parseFloat(values.conso_auxiliaires || "0");
+        const chauffage = parseFloat(values.poste_chauffage || "0");
+        const ecs = parseFloat(values.poste_ecs || "0");
+        const refroidissement = parseFloat(values.poste_refroidissement || "0");
+        const eclairage = parseFloat(values.poste_eclairage || "0");
+        const auxiliaires = parseFloat(values.poste_auxiliaires || "0");
         if ([chauffage, ecs, refroidissement, eclairage, auxiliaires].some((v) => v > 0)) {
           const png = renderPostesChart({ chauffage, ecs, refroidissement, eclairage, auxiliaires });
           (sectionCharts[6] = sectionCharts[6] || []).push({ title: "Répartition des consommations", dataUrl: png });
@@ -1707,14 +1707,29 @@ export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props
           titre: "Préconisations",
           description: "Actions de rénovation priorisées",
           tables: [{
-            headers: ["Code", "Action", "Famille", "Horizon", "Coût (€)", "Économies (€/an)"],
+            headers: [
+              "Code",
+              "Action",
+              "Famille",
+              "Horizon",
+              "Faisabilité",
+              "Coût (€)",
+              "Aides (€)",
+              "Économies (€/an)",
+              "TRI (ans)",
+              "CO₂ évité (kg/an)",
+            ],
             rows: preconisations.map((a) => [
               a.code || "—",
               a.titre || "—",
               a.famille || "—",
               a.horizon || "—",
-              a.coutTravaux ? Math.round(a.coutTravaux).toString() : "—",
-              a.economiesEuro ? Math.round(a.economiesEuro).toString() : "—",
+              a.faisabilite || "—",
+              Number.isFinite(a.coutTravaux) && a.coutTravaux ? Math.round(a.coutTravaux).toLocaleString("fr-FR") : "—",
+              Number.isFinite(a.aides) && a.aides ? Math.round(a.aides!).toLocaleString("fr-FR") : "—",
+              Number.isFinite(a.economiesEuro) && a.economiesEuro ? Math.round(a.economiesEuro).toLocaleString("fr-FR") : "—",
+              Number.isFinite(a.tri) && a.tri ? a.tri!.toFixed(1) : "—",
+              Number.isFinite(a.co2Evite) && a.co2Evite ? Math.round(a.co2Evite!).toLocaleString("fr-FR") : "—",
             ]),
           }],
         });
@@ -1768,9 +1783,10 @@ export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props
           { label: "Référence", value: values.ref_audit || "—" },
           { label: "Bénéficiaire", value: values.client_nom || "—" },
           { label: "Adresse", value: values.adresse || "—" },
-          { label: "Date visite", value: values.date_visite || "—" },
+          { label: "Date visite", value: values.date_visite ? new Date(values.date_visite).toLocaleDateString("fr-FR") : "—" },
           { label: "Auditeur", value: values.redacteur || "—" },
-          { label: "DPE actuel", value: values.dpe_actuel || "—" },
+          { label: "DPE actuel", value: (values.dpe_actuel || "—").charAt(0) },
+          { label: "GES actuel", value: (values.ges_actuel || "—").charAt(0) },
         ],
         lead,
         sections: wordSections,

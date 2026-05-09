@@ -3913,8 +3913,9 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
         const rows: { label: string; value: string }[] = [];
         const paragraphs: { label?: string; text: string }[] = [];
         for (const field of section.fields) {
-          const val = values[field.id];
-          if (!val || !val.trim()) continue;
+          const raw = values[field.id];
+          const val = raw == null ? "" : String(raw);
+          if (!val.trim()) continue;
           if (field.type === "textarea") {
             paragraphs.push({ label: field.label, text: val.trim() });
           } else {
@@ -3922,13 +3923,71 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
             rows.push({ label, value: val });
           }
         }
-        const photos = (sectionPhotos[sIdx] || []).map((p) => ({
-          dataUrl: p.preview,
-          categorie: p.categorie,
-          legende: p.legende,
-        }));
+        const photos = (sectionPhotos[sIdx] || [])
+          .filter((p) => typeof p.preview === "string" && p.preview.startsWith("data:"))
+          .map((p) => ({
+            dataUrl: p.preview,
+            categorie: p.categorie,
+            legende: p.legende,
+          }));
         return { titre: section.titre, description: section.description, rows, paragraphs, photos };
       }).filter((s) => (s.rows?.length ?? 0) + (s.paragraphs?.length ?? 0) + (s.photos?.length ?? 0) > 0);
+
+      // Section synthétique « Résultats du calcul » — capture les valeurs calculées
+      // qui n'existent pas dans le questionnaire (COP moyens, décomposition des
+      // déperditions). Évite les pertes silencieuses si l'utilisateur n'a pas
+      // cliqué « Appliquer les résultats ».
+      const fmt1 = (n: number) =>
+        Number.isFinite(n)
+          ? n.toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+          : "—";
+      const fmt2 = (n: number) =>
+        Number.isFinite(n)
+          ? n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+          : "—";
+      if (selectedFiche === "BAT-TH-134") {
+        const c = calculer134(values);
+        if (c) {
+          wordSections.push({
+            titre: "Résultats du calcul (BAT-TH-134)",
+            description: "Valeurs dérivées des saisies — non éditables",
+            rows: [
+              { label: "COP moyen AVANT (HP fixe)", value: fmt2(c.copMoyenAvant) },
+              { label: "COP moyen APRÈS (HP flottante)", value: fmt2(c.copMoyenApres) },
+              { label: "Conso après (MWh/an)", value: fmt1(c.consoApres) },
+              { label: "Gain énergétique (%)", value: fmt1(c.gainPct) },
+              { label: "Gain énergétique (MWh/an)", value: fmt1(c.gainMwh) },
+              { label: "Économie (€/an)", value: Number.isFinite(c.economiEuros) ? Math.round(c.economiEuros).toLocaleString("fr-FR") : "—" },
+              ...(c.dureeRetour != null ? [{ label: "Durée de retour (ans)", value: fmt1(c.dureeRetour) }] : []),
+            ],
+          });
+        }
+      } else if (selectedFiche === "BAT-TH-163") {
+        const c = calculer163(values);
+        if (c) {
+          wordSections.push({
+            titre: "Résultats du calcul (BAT-TH-163)",
+            description: "Décomposition des déperditions et bilan",
+            rows: [
+              { label: "Déperditions parois (kW)", value: fmt1(c.deperditionsParois) },
+              { label: "Déperditions ventilation (kW)", value: fmt1(c.deperditionsVentilation) },
+              { label: "Déperditions totales (kW)", value: fmt1(c.deperditionsTotales) },
+              { label: "Déperditions par m² (W/m²)", value: fmt1(c.deperditionsParM2) },
+              { label: "Coefficient G (W/m³·K)", value: fmt2(c.coeffG) },
+              { label: "Besoin chauffage (MWh/an)", value: fmt1(c.besoinChauffage) },
+              { label: "Conso avant (MWh/an)", value: fmt1(c.consoAvant) },
+              { label: "Conso après (MWh/an)", value: fmt1(c.consoApres) },
+              { label: "Gain énergétique (%)", value: fmt1(c.gainPct) },
+              { label: "Réduction CO₂ (t/an)", value: fmt1(c.reductionCo2) },
+              { label: "Économie (€/an)", value: Number.isFinite(c.economiEuros) ? Math.round(c.economiEuros).toLocaleString("fr-FR") : "—" },
+              ...(c.dureeRetour != null ? [{ label: "Durée de retour (ans)", value: fmt1(c.dureeRetour) }] : []),
+            ],
+          });
+        }
+      }
+
+      const formatDateMeta = (iso: string | undefined) =>
+        iso ? new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" }) : "—";
 
       await exportToWord({
         title: "Note de dimensionnement",
@@ -3938,8 +3997,8 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
           { label: "Référence", value: values.ref_projet || "—" },
           { label: "Bénéficiaire", value: values.client_nom || "—" },
           { label: "Adresse", value: values.adresse || "—" },
-          { label: "Date visite", value: values.date_visite || "—" },
-          { label: "Date de note", value: values.date_note || "—" },
+          { label: "Date visite", value: formatDateMeta(values.date_visite) },
+          { label: "Date de note", value: formatDateMeta(values.date_note) },
           { label: "Rédacteur", value: values.redacteur || "—" },
         ],
         sections: wordSections,
