@@ -37,6 +37,8 @@ export interface RapportProjetData {
     adresseChantier: string | null;
     dateAudit: string;
     client: { nom: string; prenom: string | null };
+    /** Catégorie de cible du projet — conditionne l'inclusion MPR dans le rapport. */
+    categorieCible: string;
   };
   surface: number;
   volume: number;
@@ -522,7 +524,9 @@ export function generateRapportProjetPdf(data: RapportProjetData): Uint8Array {
   } else {
     drawCallout(
       doc,
-      "Renseignez les gestes de travaux dans l'onglet Scénarios pour obtenir une estimation MaPrimeRénov' / CEE / Eco-PTZ.",
+      data.projet.categorieCible === "PARTICULIER"
+        ? "Renseignez les gestes de travaux dans l'onglet Scénarios pour obtenir une estimation MaPrimeRénov' / CEE / Eco-PTZ."
+        : "Renseignez les gestes de travaux dans l'onglet Scénarios pour obtenir une estimation CEE / Eco-PTZ.",
       y,
       { title: "Aides à chiffrer" },
     );
@@ -551,7 +555,9 @@ export function generateRapportProjetPdf(data: RapportProjetData): Uint8Array {
     "",
     "Étiquette finale = pire des deux étiquettes énergie et climat (règle DPE 2021 art. 4).",
     "",
-    "Aides : barèmes MaPrimeRénov' 2025 (forfaits par geste, plafond global % TTC selon catégorie ressources), CEE (forfaits indicatifs offre publique), TVA 5,5 % (gestes éligibles, logement principal > 2 ans), Eco-PTZ (15/25/30 k€ selon nombre d'actions, 50 k€ rénovation globale).",
+    data.projet.categorieCible === "PARTICULIER"
+      ? "Aides : barèmes MaPrimeRénov' 2025 (forfaits par geste, plafond global % TTC selon catégorie ressources), CEE (forfaits indicatifs offre publique), TVA 5,5 % (gestes éligibles, logement principal > 2 ans), Eco-PTZ (15/25/30 k€ selon nombre d'actions, 50 k€ rénovation globale)."
+      : "Aides : CEE (forfaits indicatifs offre publique), TVA 5,5 % (gestes éligibles), Eco-PTZ (15/25/30 k€ selon nombre d'actions, 50 k€ rénovation globale). MaPrimeRénov' non applicable (cible non-particulier).",
     "",
     "Coefficient d'utilisation des apports gratuits η_gn (Th-BCE 2008 / ISO 13790) selon γ = apports/pertes et inertie thermique du bâti (Légère a=0.8, Moyenne a=1.0, Lourde a=2.5).",
     "",

@@ -63,7 +63,8 @@ export interface AideLigne {
 
 /** Synthèse aides pour une variante. */
 export interface AidesResult {
-  categorie: CategorieRessources;
+  /** Null si le foyer demandeur n'a pas été fourni (cible non-particulier ou saisie absente). */
+  categorie: CategorieRessources | null;
   coutTravauxHT: number;
   coutTravauxTTC: number;
   totalAides: number;

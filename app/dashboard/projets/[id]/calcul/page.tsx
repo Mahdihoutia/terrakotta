@@ -117,7 +117,7 @@ export default async function CalculTabPage({ params }: Props) {
   const projet = await prisma.projet.findFirst({
     where: { id, deletedAt: null },
     select: {
-      id: true, titre: true,
+      id: true, titre: true, categorieCible: true,
       nbOccupants: true, inertie: true, intermittenceChauffage: true,
       permeabiliteAir: true, consoFactureChauffage: true, consoFactureECS: true,
       nbPersonnesFoyer: true, rfrFoyer: true, zoneRevenuFoyer: true,
@@ -361,6 +361,7 @@ export default async function CalculTabPage({ params }: Props) {
         <div className="flex items-center gap-2">
           <ParametresPrecisionDialog
             projetId={id}
+            categorieCible={projet.categorieCible}
             initial={{
               nbOccupants: projet.nbOccupants,
               inertie: projet.inertie,

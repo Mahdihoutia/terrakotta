@@ -66,7 +66,7 @@ function buildDbScenario(
   v: VarianteDb,
   baseline: BaselineState | null,
   baselineIndicators: VarianteIndicators | null,
-  foyer: FoyerDemandeur,
+  foyer: FoyerDemandeur | undefined,
 ): Scenario {
   const gestes: Geste[] = (v.inputs?.gestes ?? []).map((g) => ({
     code: g.code as GesteCode,
@@ -142,21 +142,31 @@ export default async function ScenariosTabPage({ params }: PageProps) {
     }),
     prisma.projet.findFirst({
       where: { id: projetId, deletedAt: null },
-      select: { nbPersonnesFoyer: true, rfrFoyer: true, zoneRevenuFoyer: true },
+      select: {
+        categorieCible: true,
+        nbPersonnesFoyer: true,
+        rfrFoyer: true,
+        zoneRevenuFoyer: true,
+      },
     }),
   ]);
 
+  const isParticulier = projetFoyer?.categorieCible === "PARTICULIER";
   const foyerComplet =
+    isParticulier &&
     projetFoyer?.nbPersonnesFoyer != null &&
     projetFoyer?.rfrFoyer != null &&
     projetFoyer?.zoneRevenuFoyer != null;
-  const foyer: FoyerDemandeur = foyerComplet
-    ? {
-        nbPersonnes: projetFoyer!.nbPersonnesFoyer!,
-        rfr: Number(projetFoyer!.rfrFoyer!),
-        zone: projetFoyer!.zoneRevenuFoyer!,
-      }
-    : FOYER_FALLBACK;
+  // Pour les cibles non-particulier, MPR n'est pas applicable : on passe foyer = undefined.
+  const foyer: FoyerDemandeur | undefined = !isParticulier
+    ? undefined
+    : foyerComplet
+      ? {
+          nbPersonnes: projetFoyer!.nbPersonnesFoyer!,
+          rfr: Number(projetFoyer!.rfrFoyer!),
+          zone: projetFoyer!.zoneRevenuFoyer!,
+        }
+      : FOYER_FALLBACK;
 
   const baseline = baselineRes?.baseline ?? null;
   const hasEnvelope = baselineRes?.hasEnvelope ?? false;
@@ -255,7 +265,9 @@ export default async function ScenariosTabPage({ params }: PageProps) {
         <h1 className="section-title-dense">Scénarios de rénovation</h1>
         <p className="text-[13px] text-tk-text-muted">
           État existant calculé depuis la saisie projet · Aides calculées sur barèmes {BAREMES_VERSION}
-          · Foyer {foyer.nbPersonnes} pers., RFR {foyer.rfr.toLocaleString("fr-FR")} € ({foyer.zone === "IDF" ? "Île-de-France" : "Autres régions"})
+          {foyer
+            ? <> · Foyer {foyer.nbPersonnes} pers., RFR {foyer.rfr.toLocaleString("fr-FR")} € ({foyer.zone === "IDF" ? "Île-de-France" : "Autres régions"})</>
+            : <> · Cible non-particulier — MaPrimeRénov&apos; non applicable</>}
           {dbVariantes.length > 0 && (
             <>
               {" "}· <span className="text-tk-primary">
@@ -270,7 +282,7 @@ export default async function ScenariosTabPage({ params }: PageProps) {
           )}
         </p>
       </div>
-      {!foyerComplet && (
+      {isParticulier && !foyerComplet && (
         <div className="rounded-md border border-amber-500/30 bg-amber-500/5 px-4 py-2.5 text-[12px] text-amber-700 dark:text-amber-400">
           <strong>Foyer demandeur non renseigné</strong> — les montants MaPrimeRénov&apos; affichés
           utilisent un foyer démo ({FOYER_FALLBACK.nbPersonnes} personnes, RFR {FOYER_FALLBACK.rfr.toLocaleString("fr-FR")} €,

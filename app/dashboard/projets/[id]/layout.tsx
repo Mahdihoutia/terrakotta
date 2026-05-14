@@ -21,6 +21,14 @@ const STATUT_LABELS: Record<string, string> = {
   ANNULE: "Annulé",
 };
 
+const CATEGORIE_CIBLE_LABELS: Record<string, string> = {
+  PARTICULIER: "Particulier",
+  RESIDENTIEL_COLLECTIF: "Résidentiel collectif",
+  TERTIAIRE: "Tertiaire",
+  INDUSTRIE: "Industrie",
+  AGRICULTURE: "Agriculture",
+};
+
 interface Props {
   children: React.ReactNode;
   params: Promise<{ id: string }>;
@@ -35,6 +43,7 @@ export default async function ProjetWorkspaceLayout({ children, params }: Props)
       id: true,
       titre: true,
       statut: true,
+      categorieCible: true,
       typeTravaux: true,
       adresseChantier: true,
       client: { select: { id: true, nom: true, prenom: true } },
@@ -70,6 +79,12 @@ export default async function ProjetWorkspaceLayout({ children, params }: Props)
                 )}
               >
                 {STATUT_LABELS[projet.statut] ?? projet.statut}
+              </span>
+              <span
+                className="inline-flex shrink-0 items-center rounded-full border border-tk-border bg-tk-surface px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-tk-text-secondary"
+                title="Catégorie de cible — conditionne l'éligibilité MaPrimeRénov'"
+              >
+                {CATEGORIE_CIBLE_LABELS[projet.categorieCible] ?? projet.categorieCible}
               </span>
             </div>
             <div className="mt-1 flex items-center gap-2.5 text-[11.5px] text-tk-text-faint">

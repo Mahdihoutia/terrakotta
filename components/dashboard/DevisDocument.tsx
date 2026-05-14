@@ -183,11 +183,8 @@ const SECTIONS: QuestionSection[] = [
     titre: "5. Aides financières mobilisables",
     description: "Informations sur les aides et subventions applicables",
     fields: [
-      {
-        id: "maprimereno", label: "MaPrimeRénov'", type: "select",
-        options: ["Non applicable", "Bleu (très modestes)", "Jaune (modestes)", "Violet (intermédiaires)", "Rose (supérieurs)", "À déterminer"],
-      },
-      { id: "maprimereno_montant", label: "Montant estimé MaPrimeRénov'", type: "number", placeholder: "0", unit: "€" },
+      // MPR masqué : le composant Devis est standalone (sans projet lié) — traité
+      // comme non-PARTICULIER conformément au gating MaPrimeRénov'.
       { id: "cee_montant", label: "Prime CEE estimée", type: "number", placeholder: "0", unit: "€" },
       { id: "autres_aides", label: "Autres aides (collectivités, ANAH...)", type: "text", placeholder: "Préciser les aides complémentaires", colSpan: 2 },
       { id: "reste_a_charge", label: "Reste à charge estimé", type: "number", placeholder: "0", unit: "€" },
@@ -523,12 +520,7 @@ async function generatePDF(
 
   // ─── F. Bloc aides financières (carte verte) ───────────────
   const aidesItems: string[] = [];
-  if (values.maprimereno && values.maprimereno !== "Non applicable" && has(values.maprimereno)) {
-    const mt = has(values.maprimereno_montant)
-      ? ` — ${fmtEur(parseFloat(values.maprimereno_montant) || 0)}`
-      : "";
-    aidesItems.push(`MaPrimeRénov' (${txt(values.maprimereno)})${mt}`);
-  }
+  // Bloc MPR retiré : DevisDocument standalone est traité non-PARTICULIER.
   if (has(values.cee_montant) && parseFloat(values.cee_montant) > 0) {
     aidesItems.push(`Prime CEE — ${fmtEur(parseFloat(values.cee_montant) || 0)}`);
   }

@@ -79,6 +79,7 @@ export async function buildRapportProjetContext(
       description: true,
       typeTravaux: true,
       adresseChantier: true,
+      categorieCible: true,
       consoFactureChauffage: true,
       nbPersonnesFoyer: true,
       rfrFoyer: true,
@@ -88,9 +89,13 @@ export async function buildRapportProjetContext(
   });
   if (!projet) return null;
 
-  // Foyer demandeur — priorité au projet (B3), sinon variante.inputs.foyer, sinon fallback.
+  const isParticulier = projet.categorieCible === "PARTICULIER";
+  // Foyer demandeur — uniquement pour cible particulier ; sinon MPR non applicable.
   const foyerProjet: FoyerDemandeur | null =
-    projet.nbPersonnesFoyer != null && projet.rfrFoyer != null && projet.zoneRevenuFoyer != null
+    isParticulier &&
+    projet.nbPersonnesFoyer != null &&
+    projet.rfrFoyer != null &&
+    projet.zoneRevenuFoyer != null
       ? {
           nbPersonnes: projet.nbPersonnesFoyer,
           rfr: Number(projet.rfrFoyer),
@@ -105,8 +110,8 @@ export async function buildRapportProjetContext(
   // Variante (optionnelle) — applique les gestes à la baseline.
   let varianteNom: string | null = null;
   let gestes: Geste[] = [];
-  // Priorité : foyer du projet (saisi en BDD) > foyer dans inputs variante > fallback démo.
-  let foyer: FoyerDemandeur = foyerProjet ?? FOYER_FALLBACK;
+  // Priorité : foyer du projet (saisi en BDD) > foyer dans inputs variante (PARTICULIER seulement) > fallback démo si PARTICULIER, sinon undefined.
+  let foyer: FoyerDemandeur | undefined = foyerProjet ?? (isParticulier ? FOYER_FALLBACK : undefined);
   if (varianteId) {
     const variante = await prisma.variante.findFirst({
       where: { id: varianteId, projetId, deletedAt: null },
@@ -126,7 +131,7 @@ export async function buildRapportProjetContext(
         }));
         // Le foyer du projet (BDD) prime ; on n'écrase qu'en l'absence
         // de saisie projet pour préserver une éventuelle saisie historique.
-        if (!foyerProjet && inputs.foyer) foyer = inputs.foyer;
+        if (!foyerProjet && isParticulier && inputs.foyer) foyer = inputs.foyer;
       } catch {
         /* JSON corrompu — ignore, traite comme variante vide */
       }
@@ -288,6 +293,7 @@ export async function buildRapportProjetContext(
       adresseChantier: projet.adresseChantier,
       dateAudit: new Date().toISOString(),
       client: { nom: projet.client.nom, prenom: projet.client.prenom },
+      categorieCible: projet.categorieCible,
     },
     surface: surfaceTotale,
     volume: volumeTotale,

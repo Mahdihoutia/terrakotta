@@ -36,6 +36,20 @@ import ProjetsKanban from "@/components/dashboard/ProjetsKanban";
 
 type ProjetStatut = "EN_ATTENTE" | "EN_COURS" | "EN_PAUSE" | "TERMINE" | "ANNULE";
 type ClientType = "PARTICULIER" | "PROFESSIONNEL" | "COLLECTIVITE";
+type CategorieCible =
+  | "PARTICULIER"
+  | "RESIDENTIEL_COLLECTIF"
+  | "TERTIAIRE"
+  | "INDUSTRIE"
+  | "AGRICULTURE";
+
+const CATEGORIE_CIBLE_LABELS: Record<CategorieCible, string> = {
+  PARTICULIER: "Particulier",
+  RESIDENTIEL_COLLECTIF: "Résidentiel collectif",
+  TERTIAIRE: "Tertiaire",
+  INDUSTRIE: "Industrie",
+  AGRICULTURE: "Agriculture",
+};
 
 interface Projet {
   id: string;
@@ -43,6 +57,7 @@ interface Projet {
   description: string | null;
   statut: ProjetStatut;
   typeClient: ClientType;
+  categorieCible: CategorieCible;
   typeTravaux: string | null;
   adresseChantier: string | null;
   budgetPrevu: number | null;
@@ -152,6 +167,7 @@ const EMPTY_FORM = {
   description: "",
   clientId: "",
   typeClient: "PARTICULIER" as ClientType,
+  categorieCible: "" as CategorieCible | "",
   typeTravaux: "",
   adresseChantier: "",
   budgetPrevu: "",
@@ -279,6 +295,10 @@ export default function ProjetsPage() {
       toast.error("Sélectionnez un client avant de créer le projet.");
       return;
     }
+    if (!form.categorieCible) {
+      toast.error("Sélectionnez une catégorie de cible.");
+      return;
+    }
     setSubmitting(true);
 
     const payload: Record<string, unknown> = {
@@ -286,6 +306,7 @@ export default function ProjetsPage() {
       description: form.description || undefined,
       clientId: form.clientId,
       typeClient: form.typeClient,
+      categorieCible: form.categorieCible,
       typeTravaux: form.typeTravaux || undefined,
       adresseChantier: form.adresseChantier || undefined,
       budgetPrevu: form.budgetPrevu ? Number(form.budgetPrevu) : undefined,
@@ -456,6 +477,28 @@ export default function ProjetsPage() {
                     <option value="PROFESSIONNEL">Professionnel</option>
                     <option value="COLLECTIVITE">Collectivité</option>
                   </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-tk-text-muted">
+                    Catégorie de cible <span className="text-red-400">*</span>
+                  </label>
+                  <select
+                    value={form.categorieCible}
+                    onChange={(e) =>
+                      setForm({ ...form, categorieCible: e.target.value as CategorieCible | "" })
+                    }
+                    className="w-full rounded-lg border border-tk-border bg-tk-surface px-3 py-2 text-sm text-tk-text"
+                  >
+                    <option value="">Sélectionner…</option>
+                    {(Object.keys(CATEGORIE_CIBLE_LABELS) as CategorieCible[]).map((c) => (
+                      <option key={c} value={c}>
+                        {CATEGORIE_CIBLE_LABELS[c]}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-[10.5px] text-tk-text-faint">
+                    Conditionne l&apos;éligibilité MaPrimeRénov&apos; (particulier uniquement).
+                  </p>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-tk-text-muted">Type de travaux</label>

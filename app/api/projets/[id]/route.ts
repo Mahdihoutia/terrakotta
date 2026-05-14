@@ -18,6 +18,7 @@ function serializeProjetDetail(p: {
   description: string | null;
   statut: string;
   typeClient: string;
+  categorieCible: string;
   typeTravaux: string | null;
   adresseChantier: string | null;
   budgetPrevu: unknown;
@@ -88,6 +89,7 @@ function serializeProjetDetail(p: {
     description: p.description,
     statut: p.statut,
     typeClient: p.typeClient,
+    categorieCible: p.categorieCible,
     typeTravaux: p.typeTravaux,
     adresseChantier: p.adresseChantier,
     budgetPrevu: p.budgetPrevu ? Number(p.budgetPrevu) : null,
@@ -239,6 +241,15 @@ const updateProjetSchema = z.object({
     .optional(),
   typeClient: z
     .enum(["PARTICULIER", "PROFESSIONNEL", "COLLECTIVITE"])
+    .optional(),
+  categorieCible: z
+    .enum([
+      "PARTICULIER",
+      "RESIDENTIEL_COLLECTIF",
+      "TERTIAIRE",
+      "INDUSTRIE",
+      "AGRICULTURE",
+    ])
     .optional(),
   typeTravaux: z.string().nullable().optional(),
   adresseChantier: z.string().nullable().optional(),

@@ -83,9 +83,12 @@ function appliquerForfait(
  */
 export function calculerAides(
   gestes: Geste[],
-  foyer: FoyerDemandeur,
+  foyer?: FoyerDemandeur,
 ): AidesResult {
-  const categorie = categorieMaPrimeRenov(foyer.rfr, foyer.nbPersonnes, foyer.zone);
+  // MPR n'est calculé que pour un foyer particulier identifié.
+  const categorie: CategorieRessources | null = foyer
+    ? categorieMaPrimeRenov(foyer.rfr, foyer.nbPersonnes, foyer.zone)
+    : null;
   const lignes: AideLigne[] = [];
 
   /* TVA ----------------------------------------------------------------- */
@@ -112,44 +115,48 @@ export function calculerAides(
     });
   }
 
-  /* MaPrimeRénov' par geste -------------------------------------------- */
-  let totalMPRBrut = 0;
-  for (const g of gestes) {
-    const forfait = FORFAITS_MPR[g.code];
-    if (!forfait) continue;
-    const { montant, base } = appliquerForfait(forfait, g, categorie);
-    if (montant <= 0) continue;
-    totalMPRBrut += montant;
-    lignes.push({
-      type: "MAPRIMERENOV",
-      geste: g.code,
-      libelle: `MaPrimeRénov' — ${LIBELLES_GESTES[g.code]}`,
-      montant,
-      base,
-    });
-  }
-
-  /* Plafond global MPR : % du coût TTC ----------------------------------- */
-  const plafondMPR = coutTravauxTTC * PLAFOND_MPR_PCT_TTC[categorie];
-  if (totalMPRBrut > plafondMPR) {
-    const ecreteur = plafondMPR / totalMPRBrut;
-    for (const l of lignes) {
-      if (l.type === "MAPRIMERENOV") l.montant = Math.round(l.montant * ecreteur);
+  /* MaPrimeRénov' par geste — uniquement pour foyer particulier --------- */
+  if (categorie) {
+    let totalMPRBrut = 0;
+    for (const g of gestes) {
+      const forfait = FORFAITS_MPR[g.code];
+      if (!forfait) continue;
+      const { montant, base } = appliquerForfait(forfait, g, categorie);
+      if (montant <= 0) continue;
+      totalMPRBrut += montant;
+      lignes.push({
+        type: "MAPRIMERENOV",
+        geste: g.code,
+        libelle: `MaPrimeRénov' — ${LIBELLES_GESTES[g.code]}`,
+        montant,
+        base,
+      });
     }
-    lignes.push({
-      type: "MAPRIMERENOV",
-      geste: null,
-      libelle: `Écrêtement plafond MPR (${(PLAFOND_MPR_PCT_TTC[categorie] * 100).toFixed(0)}% TTC)`,
-      montant: 0,
-      base: `Plafond appliqué : ${plafondMPR.toFixed(0)} €`,
-    });
+
+    /* Plafond global MPR : % du coût TTC -------------------------------- */
+    const plafondMPR = coutTravauxTTC * PLAFOND_MPR_PCT_TTC[categorie];
+    if (totalMPRBrut > plafondMPR) {
+      const ecreteur = plafondMPR / totalMPRBrut;
+      for (const l of lignes) {
+        if (l.type === "MAPRIMERENOV") l.montant = Math.round(l.montant * ecreteur);
+      }
+      lignes.push({
+        type: "MAPRIMERENOV",
+        geste: null,
+        libelle: `Écrêtement plafond MPR (${(PLAFOND_MPR_PCT_TTC[categorie] * 100).toFixed(0)}% TTC)`,
+        montant: 0,
+        base: `Plafond appliqué : ${plafondMPR.toFixed(0)} €`,
+      });
+    }
   }
 
-  /* CEE par geste ------------------------------------------------------- */
+  /* CEE par geste — barème indépendant du foyer (catégorie ressources
+   * MPR utilisée comme proxy ; en l'absence, on prend ROSE par défaut). */
+  const categorieCEE: CategorieRessources = categorie ?? "ROSE";
   for (const g of gestes) {
     const forfait = FORFAITS_CEE[g.code];
     if (!forfait) continue;
-    const { montant, base } = appliquerForfait(forfait, g, categorie);
+    const { montant, base } = appliquerForfait(forfait, g, categorieCEE);
     if (montant <= 0) continue;
     lignes.push({
       type: "CEE",

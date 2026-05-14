@@ -149,6 +149,19 @@ describe("calculerAides — Eco-PTZ", () => {
   });
 });
 
+describe("calculerAides — sans foyer (cible non particulier)", () => {
+  it("ne calcule aucune ligne MPR, categorie null", () => {
+    const r = calculerAides([
+      { code: "ISOLATION_MURS_ITE", quantite: 100, coutHT: 20000 },
+    ]);
+    expect(r.categorie).toBeNull();
+    expect(r.lignes.find((l) => l.type === "MAPRIMERENOV")).toBeUndefined();
+    // CEE et TVA restent calculés.
+    expect(r.lignes.find((l) => l.type === "CEE")).toBeDefined();
+    expect(r.lignes.find((l) => l.type === "TVA_REDUITE")).toBeDefined();
+  });
+});
+
 describe("calculerAides — invariants", () => {
   it("reste à charge = TTC − total aides, ≥ 0", () => {
     const r = calculerAides(

@@ -25,9 +25,12 @@ interface InitialValues {
 interface Props {
   projetId: string;
   initial: InitialValues;
+  /** Catégorie de cible du projet — n'affiche la section foyer MPR que pour PARTICULIER. */
+  categorieCible: string;
 }
 
-export default function ParametresPrecisionDialog({ projetId, initial }: Props) {
+export default function ParametresPrecisionDialog({ projetId, initial, categorieCible }: Props) {
+  const showFoyer = categorieCible === "PARTICULIER";
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -53,9 +56,9 @@ export default function ParametresPrecisionDialog({ projetId, initial }: Props) 
         permeabiliteAir: permea ? Number(permea) : null,
         consoFactureChauffage: conChauf ? Number(conChauf) : null,
         consoFactureECS: conEcs ? Number(conEcs) : null,
-        nbPersonnesFoyer: nbFoyer ? Number(nbFoyer) : null,
-        rfrFoyer: rfr ? Number(rfr) : null,
-        zoneRevenuFoyer: zoneFoyer || null,
+        nbPersonnesFoyer: showFoyer && nbFoyer ? Number(nbFoyer) : null,
+        rfrFoyer: showFoyer && rfr ? Number(rfr) : null,
+        zoneRevenuFoyer: showFoyer ? (zoneFoyer || null) : null,
       };
       const res = await fetch(`/api/projets/${projetId}`, {
         method: "PATCH",
@@ -180,6 +183,7 @@ export default function ParametresPrecisionDialog({ projetId, initial }: Props) 
               </div>
             </section>
 
+            {showFoyer && (
             <section className="space-y-3 border-t border-tk-border pt-4 mt-4">
               <div className="flex items-center gap-2">
                 <p className="field-label-tiny mb-0">Foyer demandeur — MaPrimeRénov&apos;</p>
@@ -226,6 +230,7 @@ export default function ParametresPrecisionDialog({ projetId, initial }: Props) 
                 </Field>
               </div>
             </section>
+            )}
 
             <div className="mt-5 flex justify-end gap-2">
               <Button type="button" size="sm" variant="outline" onClick={() => setOpen(false)} disabled={saving}>Annuler</Button>

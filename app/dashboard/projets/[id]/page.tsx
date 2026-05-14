@@ -39,6 +39,19 @@ import { motion, AnimatePresence } from "framer-motion";
 
 type ProjetStatut = "EN_ATTENTE" | "EN_COURS" | "EN_PAUSE" | "TERMINE" | "ANNULE";
 type ClientType = "PARTICULIER" | "PROFESSIONNEL" | "COLLECTIVITE";
+type CategorieCible =
+  | "PARTICULIER"
+  | "RESIDENTIEL_COLLECTIF"
+  | "TERTIAIRE"
+  | "INDUSTRIE"
+  | "AGRICULTURE";
+const CATEGORIE_CIBLE_LABELS: Record<CategorieCible, string> = {
+  PARTICULIER: "Particulier",
+  RESIDENTIEL_COLLECTIF: "Résidentiel collectif",
+  TERTIAIRE: "Tertiaire",
+  INDUSTRIE: "Industrie",
+  AGRICULTURE: "Agriculture",
+};
 type DevisStatut = "BROUILLON" | "ENVOYE" | "ACCEPTE" | "REFUSE";
 type AideStatut = string;
 
@@ -103,6 +116,7 @@ interface ProjetDetail {
   description: string | null;
   statut: ProjetStatut;
   typeClient: ClientType;
+  categorieCible: CategorieCible;
   typeTravaux: string | null;
   adresseChantier: string | null;
   budgetPrevu: number | null;
@@ -293,6 +307,7 @@ export default function ProjetDetailPage({ params }: Props) {
     description: "",
     statut: "EN_ATTENTE" as ProjetStatut,
     typeClient: "PARTICULIER" as ClientType,
+    categorieCible: "TERTIAIRE" as CategorieCible,
     typeTravaux: "",
     adresseChantier: "",
     budgetPrevu: "",
@@ -325,6 +340,7 @@ export default function ProjetDetailPage({ params }: Props) {
       description: p.description ?? "",
       statut: p.statut,
       typeClient: p.typeClient,
+      categorieCible: p.categorieCible,
       typeTravaux: p.typeTravaux ?? "",
       adresseChantier: p.adresseChantier ?? "",
       budgetPrevu: p.budgetPrevu != null ? String(p.budgetPrevu) : "",
@@ -366,6 +382,7 @@ export default function ProjetDetailPage({ params }: Props) {
           description: form.description.trim() || null,
           statut: form.statut,
           typeClient: form.typeClient,
+          categorieCible: form.categorieCible,
           typeTravaux: form.typeTravaux.trim() || null,
           adresseChantier: form.adresseChantier.trim() || null,
           budgetPrevu,
@@ -807,6 +824,22 @@ export default function ProjetDetailPage({ params }: Props) {
                 <option value="PARTICULIER">Particulier</option>
                 <option value="PROFESSIONNEL">Professionnel</option>
                 <option value="COLLECTIVITE">Collectivité</option>
+              </select>
+            </div>
+            <div>
+              <label className={labelClass}>Catégorie de cible</label>
+              <select
+                value={form.categorieCible}
+                onChange={(e) =>
+                  setForm({ ...form, categorieCible: e.target.value as CategorieCible })
+                }
+                className={inputClass}
+              >
+                {(Object.keys(CATEGORIE_CIBLE_LABELS) as CategorieCible[]).map((c) => (
+                  <option key={c} value={c}>
+                    {CATEGORIE_CIBLE_LABELS[c]}
+                  </option>
+                ))}
               </select>
             </div>
             <div>

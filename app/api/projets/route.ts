@@ -10,6 +10,7 @@ function serializeProjet(p: {
   description: string | null;
   statut: string;
   typeClient: string;
+  categorieCible: string;
   typeTravaux: string | null;
   adresseChantier: string | null;
   budgetPrevu: unknown;
@@ -30,6 +31,7 @@ function serializeProjet(p: {
     description: p.description,
     statut: p.statut,
     typeClient: p.typeClient,
+    categorieCible: p.categorieCible,
     typeTravaux: p.typeTravaux,
     adresseChantier: p.adresseChantier,
     budgetPrevu: p.budgetPrevu ? Number(p.budgetPrevu) : null,
@@ -81,6 +83,13 @@ const createProjetSchema = z.object({
     .enum(["EN_ATTENTE", "EN_COURS", "EN_PAUSE", "TERMINE", "ANNULE"])
     .default("EN_ATTENTE"),
   typeClient: z.enum(["PARTICULIER", "PROFESSIONNEL", "COLLECTIVITE"]),
+  categorieCible: z.enum([
+    "PARTICULIER",
+    "RESIDENTIEL_COLLECTIF",
+    "TERTIAIRE",
+    "INDUSTRIE",
+    "AGRICULTURE",
+  ]),
   typeTravaux: z.string().optional(),
   adresseChantier: z.string().optional(),
   budgetPrevu: z.number().nullable().optional(),
@@ -143,6 +152,7 @@ export async function POST(request: Request) {
         description: data.description || null,
         statut: data.statut,
         typeClient: data.typeClient,
+        categorieCible: data.categorieCible,
         typeTravaux: data.typeTravaux || null,
         adresseChantier: data.adresseChantier || null,
         budgetPrevu: data.budgetPrevu ?? null,

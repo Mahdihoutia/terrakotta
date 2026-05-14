@@ -370,7 +370,7 @@ const SECTIONS: QuestionSection[] = [
     titre: "11. Plan de financement et aides",
     description: "Aides mobilisables et reste à charge pour chaque scénario",
     fields: [
-      { id: "mprenov_montant", label: "MaPrimeRénov' estimée", type: "number", placeholder: "Ex: 10000", unit: "€", help: "Selon revenus et travaux — barème en vigueur" },
+      // MPR masqué : composant standalone (sans projet lié) — traité non-PARTICULIER.
       { id: "cee_montant", label: "Prime CEE estimée", type: "number", placeholder: "Ex: 4000", unit: "€" },
       { id: "eco_ptz", label: "Éco-PTZ mobilisable", type: "number", placeholder: "Ex: 30000", unit: "€", help: "Plafond 50 000€ pour rénovation globale" },
       { id: "aides_locales", label: "Aides locales / départementales", type: "number", placeholder: "Ex: 2000", unit: "€" },

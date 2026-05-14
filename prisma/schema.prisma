@@ -182,6 +182,8 @@ model Projet {
   description     String?
   statut          ProjetStatut @default(EN_ATTENTE)
   typeClient      ClientType   @map("type_client")
+  /// Catégorie de cible — détermine notamment l'éligibilité MaPrimeRénov' (PARTICULIER uniquement).
+  categorieCible  CategorieCible @default(TERTIAIRE) @map("categorie_cible")
   typeTravaux     String?      @map("type_travaux")
   adresseChantier String?      @map("adresse_chantier")
   budgetPrevu     Decimal?     @map("budget_prevu")
@@ -902,4 +904,12 @@ enum TypeIsolation {
 enum ZoneRevenuFoyer {
   IDF
   AUTRES
+}
+
+enum CategorieCible {
+  PARTICULIER
+  RESIDENTIEL_COLLECTIF
+  TERTIAIRE
+  INDUSTRIE
+  AGRICULTURE
 }
