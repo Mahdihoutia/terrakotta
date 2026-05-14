@@ -330,7 +330,7 @@ export default function ImportDialog({ open, onOpenChange, onDone }: Props) {
           <div className="space-y-4">
             <div>
               <h2 className="text-lg font-semibold text-tk-text">Aperçu</h2>
-              <p className="text-xs text-tk-text-faint">Vérifiez avant d'importer</p>
+              <p className="text-xs text-tk-text-faint">Vérifiez avant d&apos;importer</p>
             </div>
             <div className="grid grid-cols-3 gap-2">
               <div className="rounded-xl border border-tk-border bg-tk-surface p-3">
@@ -387,7 +387,7 @@ export default function ImportDialog({ open, onOpenChange, onDone }: Props) {
             {status && status.status === "FAILED" && (
               <div className="flex items-center gap-2 text-red-400">
                 <AlertCircle className="h-5 w-5" />
-                <span className="text-sm">Une erreur est survenue pendant l'import</span>
+                <span className="text-sm">Une erreur est survenue pendant l&apos;import</span>
               </div>
             )}
             {status && status.status !== "DONE" && status.status !== "FAILED" && (
