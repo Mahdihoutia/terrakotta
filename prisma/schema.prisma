@@ -108,6 +108,35 @@ model UserInvitation {
   @@map("user_invitations")
 }
 
+// ─── Imports asynchrones (CSV / XLSX) ──────────────────────────
+
+enum ImportStatus {
+  PENDING
+  RUNNING
+  DONE
+  FAILED
+}
+
+model Import {
+  id            String       @id @default(cuid())
+  entity        String // "CONTACT" pour le MVP
+  filename      String
+  status        ImportStatus @default(PENDING)
+  totalRows     Int          @default(0) @map("total_rows")
+  processedRows Int          @default(0) @map("processed_rows")
+  importedRows  Int          @default(0) @map("imported_rows")
+  skippedRows   Int          @default(0) @map("skipped_rows")
+  errorRows     Int          @default(0) @map("error_rows")
+  errorsJson    Json?        @map("errors_json")
+  mappingJson   Json?        @map("mapping_json")
+  rowsJson      Json?        @map("rows_json") // payload normalisé à traiter, supprimé après DONE
+  startedAt     DateTime?    @map("started_at")
+  finishedAt    DateTime?    @map("finished_at")
+  createdAt     DateTime     @default(now()) @map("created_at")
+
+  @@map("imports")
+}
+
 // ─── Client ─────────────────────────────────────────────────────
 
 model Client {

@@ -29,7 +29,9 @@ import {
   Download,
   FileSpreadsheet,
   FileText,
+  Upload,
 } from "lucide-react";
+import { ImportDialog } from "@/components/dashboard/imports";
 import { cn } from "@/lib/utils";
 import { useContacts } from "@/lib/hooks/use-contacts";
 import { useLocalStorage } from "@/lib/hooks/useLocalStorage";
@@ -86,7 +88,8 @@ const EMPTY_FORM = {
 };
 
 export default function ContactsPage() {
-  const { contacts, loading, error, addContact, deleteContact } = useContacts();
+  const { contacts, loading, error, addContact, deleteContact, refresh } = useContacts();
+  const [showImport, setShowImport] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [filterType, setFilterType] = useLocalStorage<string>(
     "kilowater:contacts:filterType",
@@ -235,12 +238,28 @@ export default function ContactsPage() {
               )}
             </AnimatePresence>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowImport(true)}
+            className="border-tk-border bg-tk-surface text-tk-text-secondary hover:bg-tk-hover"
+          >
+            <Upload className="mr-2 h-4 w-4" />
+            Importer
+          </Button>
           <Button size="sm" onClick={() => setShowForm(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Nouveau contact
           </Button>
         </div>
       </div>
+
+      <ImportDialog
+        entity="contact"
+        open={showImport}
+        onOpenChange={setShowImport}
+        onDone={() => void refresh()}
+      />
 
       {/* Formulaire nouveau contact */}
       <AnimatePresence>
