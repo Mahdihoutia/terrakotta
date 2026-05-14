@@ -74,125 +74,88 @@ async function fetchKpis() {
   const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const endOfPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
 
+  // Flux du mois courant : [startOfMonth, now]
+  // Flux du mois précédent : [startOfPrevMonth, endOfPrevMonth]
+  const monthRange = { gte: startOfMonth };
+  const prevMonthRange = { gte: startOfPrevMonth, lte: endOfPrevMonth };
+
   try {
-    // ── Ligne 1 : KPIs principaux ──────────────────────────────
+    // ── Ligne 1 : Activité du mois (KPIs de flux) ──────────────
 
-    // Projets actifs (mois en cours) — tous les KPIs filtrent les soft-deleted
-    const projetsActifs = await prisma.projet.count({
-      where: { statut: { in: ["EN_ATTENTE", "EN_COURS", "EN_PAUSE"] }, deletedAt: null },
+    // Nouveaux projets créés ce mois
+    const nouveauxProjets = await prisma.projet.count({
+      where: { createdAt: monthRange, deletedAt: null },
     });
-    const projetsActifsPrev = await prisma.projet.count({
-      where: {
-        statut: { in: ["EN_ATTENTE", "EN_COURS", "EN_PAUSE"] },
-        createdAt: { lt: startOfMonth },
-        deletedAt: null,
-      },
+    const nouveauxProjetsPrev = await prisma.projet.count({
+      where: { createdAt: prevMonthRange, deletedAt: null },
     });
 
-    // CA devis acceptés
+    // CA devis acceptés émis ce mois
     const caDevisResult = await prisma.devis.aggregate({
       _sum: { montantHT: true },
-      where: { statut: "ACCEPTE", deletedAt: null },
+      where: { statut: "ACCEPTE", dateEmis: monthRange, deletedAt: null },
     });
     const caDevis = Number(caDevisResult._sum.montantHT ?? 0);
     const caDevisPrevResult = await prisma.devis.aggregate({
       _sum: { montantHT: true },
-      where: {
-        statut: "ACCEPTE",
-        dateEmis: { lt: startOfMonth },
-        deletedAt: null,
-      },
+      where: { statut: "ACCEPTE", dateEmis: prevMonthRange, deletedAt: null },
     });
     const caDevisPrev = Number(caDevisPrevResult._sum.montantHT ?? 0);
 
-    // Leads en cours
-    const leadsEnCours = await prisma.lead.count({
-      where: { statut: { notIn: ["GAGNE", "PERDU"] }, deletedAt: null },
+    // Nouveaux leads créés ce mois
+    const nouveauxLeads = await prisma.lead.count({
+      where: { dateCreation: monthRange, deletedAt: null },
     });
-    const leadsEnCoursPrev = await prisma.lead.count({
-      where: {
-        statut: { notIn: ["GAGNE", "PERDU"] },
-        dateCreation: { lt: startOfMonth },
-        deletedAt: null,
-      },
+    const nouveauxLeadsPrev = await prisma.lead.count({
+      where: { dateCreation: prevMonthRange, deletedAt: null },
     });
 
     // Visites ce mois
     const visitesCeMois = await prisma.evenement.count({
-      where: {
-        type: "VISITE",
-        date: { gte: startOfMonth },
-        deletedAt: null,
-      },
+      where: { type: "VISITE", date: monthRange, deletedAt: null },
     });
     const visitesMoisPrev = await prisma.evenement.count({
-      where: {
-        type: "VISITE",
-        date: { gte: startOfPrevMonth, lte: endOfPrevMonth },
-        deletedAt: null,
-      },
+      where: { type: "VISITE", date: prevMonthRange, deletedAt: null },
     });
 
-    // ── Ligne 2 : KPIs secondaires ─────────────────────────────
+    // ── Ligne 2 : Conversion & production (KPIs de flux) ───────
 
-    // Taux de conversion leads
-    const totalLeads = await prisma.lead.count({ where: { deletedAt: null } });
-    const leadsGagnes = await prisma.lead.count({
-      where: { statut: "GAGNE", deletedAt: null },
+    // Taux de conversion : leads gagnés / leads créés sur le mois
+    const leadsGagnesMois = await prisma.lead.count({
+      where: { statut: "GAGNE", dateCreation: monthRange, deletedAt: null },
     });
-    const tauxConversion = totalLeads > 0
-      ? Math.round((leadsGagnes / totalLeads) * 100)
+    const leadsGagnesPrevMois = await prisma.lead.count({
+      where: { statut: "GAGNE", dateCreation: prevMonthRange, deletedAt: null },
+    });
+    const tauxConversion = nouveauxLeads > 0
+      ? Math.round((leadsGagnesMois / nouveauxLeads) * 100)
+      : 0;
+    const tauxConversionPrev = nouveauxLeadsPrev > 0
+      ? Math.round((leadsGagnesPrevMois / nouveauxLeadsPrev) * 100)
       : 0;
 
-    // Taux conversion mois précédent
-    const totalLeadsPrev = await prisma.lead.count({
-      where: { dateCreation: { lt: startOfMonth }, deletedAt: null },
+    // Devis émis ce mois (tous statuts confondus, hors corbeille)
+    const devisEmis = await prisma.devis.count({
+      where: { dateEmis: monthRange, deletedAt: null },
     });
-    const leadsGagnesPrev = await prisma.lead.count({
-      where: {
-        statut: "GAGNE",
-        dateCreation: { lt: startOfMonth },
-        deletedAt: null,
-      },
-    });
-    const tauxConversionPrev = totalLeadsPrev > 0
-      ? Math.round((leadsGagnesPrev / totalLeadsPrev) * 100)
-      : 0;
-
-    // Devis en attente
-    const devisEnAttente = await prisma.devis.count({
-      where: { statut: { in: ["BROUILLON", "ENVOYE"] }, deletedAt: null },
-    });
-    const devisEnAttentePrev = await prisma.devis.count({
-      where: {
-        statut: { in: ["BROUILLON", "ENVOYE"] },
-        createdAt: { lt: startOfMonth },
-        deletedAt: null,
-      },
+    const devisEmisPrev = await prisma.devis.count({
+      where: { dateEmis: prevMonthRange, deletedAt: null },
     });
 
-    // Aides en instruction
-    const aidesEnInstruction = await prisma.aide.count({
-      where: { statut: { in: ["EN_ATTENTE", "DEPOSE", "EN_INSTRUCTION"] }, deletedAt: null },
+    // Aides déposées ce mois
+    const aidesDeposees = await prisma.aide.count({
+      where: { createdAt: monthRange, deletedAt: null },
     });
-    const aidesEnInstructionPrev = await prisma.aide.count({
-      where: {
-        statut: { in: ["EN_ATTENTE", "DEPOSE", "EN_INSTRUCTION"] },
-        createdAt: { lt: startOfMonth },
-        deletedAt: null,
-      },
+    const aidesDeposeesPrev = await prisma.aide.count({
+      where: { createdAt: prevMonthRange, deletedAt: null },
     });
 
-    // Projets terminés
+    // Projets passés à TERMINE ce mois (proxy via updatedAt — quand le statut a basculé)
     const projetsTermines = await prisma.projet.count({
-      where: { statut: "TERMINE", deletedAt: null },
+      where: { statut: "TERMINE", updatedAt: monthRange, deletedAt: null },
     });
     const projetsTerminesPrev = await prisma.projet.count({
-      where: {
-        statut: "TERMINE",
-        updatedAt: { lt: startOfMonth },
-        deletedAt: null,
-      },
+      where: { statut: "TERMINE", updatedAt: prevMonthRange, deletedAt: null },
     });
 
     // ── Projets récents ────────────────────────────────────────
@@ -207,9 +170,9 @@ async function fetchKpis() {
     return {
       row1: [
         {
-          label: "Projets actifs",
-          value: projetsActifs,
-          change: computeChange(projetsActifs, projetsActifsPrev),
+          label: "Nouveaux projets",
+          value: nouveauxProjets,
+          change: computeChange(nouveauxProjets, nouveauxProjetsPrev),
           changeLabel: "vs mois dernier",
           icon: "briefcase",
         },
@@ -221,9 +184,9 @@ async function fetchKpis() {
           icon: "trending",
         },
         {
-          label: "Leads en cours",
-          value: leadsEnCours,
-          change: computeChange(leadsEnCours, leadsEnCoursPrev),
+          label: "Nouveaux leads",
+          value: nouveauxLeads,
+          change: computeChange(nouveauxLeads, nouveauxLeadsPrev),
           changeLabel: "vs mois dernier",
           icon: "users",
         },
@@ -244,21 +207,21 @@ async function fetchKpis() {
           icon: "target",
         },
         {
-          label: "Devis en attente",
-          value: devisEnAttente,
-          change: computeChange(devisEnAttente, devisEnAttentePrev),
+          label: "Devis émis",
+          value: devisEmis,
+          change: computeChange(devisEmis, devisEmisPrev),
           changeLabel: "vs mois dernier",
           icon: "filetext",
         },
         {
-          label: "Aides en instruction",
-          value: aidesEnInstruction,
-          change: computeChange(aidesEnInstruction, aidesEnInstructionPrev),
+          label: "Aides déposées",
+          value: aidesDeposees,
+          change: computeChange(aidesDeposees, aidesDeposeesPrev),
           changeLabel: "vs mois dernier",
           icon: "handcoins",
         },
         {
-          label: "Projets terminés",
+          label: "Projets livrés",
           value: projetsTermines,
           change: computeChange(projetsTermines, projetsTerminesPrev),
           changeLabel: "vs mois dernier",
@@ -277,16 +240,16 @@ async function fetchKpis() {
     // Base de données indisponible : valeurs par défaut
     return {
       row1: [
-        { label: "Projets actifs", value: 0, change: 0, changeLabel: "vs mois dernier", icon: "briefcase" },
+        { label: "Nouveaux projets", value: 0, change: 0, changeLabel: "vs mois dernier", icon: "briefcase" },
         { label: "CA devis acceptés", value: formatEuro(0), change: 0, changeLabel: "vs mois dernier", icon: "trending" },
-        { label: "Leads en cours", value: 0, change: 0, changeLabel: "vs mois dernier", icon: "users" },
+        { label: "Nouveaux leads", value: 0, change: 0, changeLabel: "vs mois dernier", icon: "users" },
         { label: "Visites ce mois", value: 0, change: 0, changeLabel: "vs mois dernier", icon: "calendar" },
       ],
       row2: [
         { label: "Taux de conversion", value: "0%", change: 0, changeLabel: "vs mois dernier", icon: "target" },
-        { label: "Devis en attente", value: 0, change: 0, changeLabel: "vs mois dernier", icon: "filetext" },
-        { label: "Aides en instruction", value: 0, change: 0, changeLabel: "vs mois dernier", icon: "handcoins" },
-        { label: "Projets terminés", value: 0, change: 0, changeLabel: "vs mois dernier", icon: "check" },
+        { label: "Devis émis", value: 0, change: 0, changeLabel: "vs mois dernier", icon: "filetext" },
+        { label: "Aides déposées", value: 0, change: 0, changeLabel: "vs mois dernier", icon: "handcoins" },
+        { label: "Projets livrés", value: 0, change: 0, changeLabel: "vs mois dernier", icon: "check" },
       ],
       projetsRecents: [],
     };
