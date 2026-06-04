@@ -29,6 +29,11 @@ import {
   ClipboardCheck,
   Calculator,
   Ruler,
+  Zap,
+  Leaf,
+  Activity,
+  ArrowUpRight,
+  Gauge,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { showApiError, showNetworkError } from "@/lib/api-errors";
@@ -136,9 +141,45 @@ interface ProjetDetail {
   devis: Devis[];
   aides: Aide[];
   documents: ProjetDocument[];
+  indicateursEnergetiques: IndicateursEnergetiques | null;
   createdAt: string;
   updatedAt: string;
 }
+
+type ClasseDpe = "A" | "B" | "C" | "D" | "E" | "F" | "G";
+
+interface IndicateursEnergetiques {
+  cepKwhM2: number | null;
+  gesKgM2: number | null;
+  classeDpe: ClasseDpe | null;
+  classeGes: ClasseDpe | null;
+  classeFinale: ClasseDpe | null;
+  hTotalWK: number | null;
+  pertesTBaseW: number | null;
+  calculeLe: string | null;
+  moteurVersion: string | null;
+}
+
+/** Couleurs officielles DPE (étiquette énergie). */
+const DPE_COLORS: Record<ClasseDpe, string> = {
+  A: "bg-emerald-500 text-white",
+  B: "bg-lime-500 text-white",
+  C: "bg-yellow-400 text-slate-900",
+  D: "bg-amber-400 text-slate-900",
+  E: "bg-orange-500 text-white",
+  F: "bg-red-500 text-white",
+  G: "bg-red-700 text-white",
+};
+
+const GES_COLORS: Record<ClasseDpe, string> = {
+  A: "bg-violet-200 text-violet-900",
+  B: "bg-violet-300 text-violet-900",
+  C: "bg-violet-400 text-white",
+  D: "bg-violet-500 text-white",
+  E: "bg-violet-600 text-white",
+  F: "bg-violet-700 text-white",
+  G: "bg-violet-900 text-white",
+};
 
 interface AvailableDocument {
   id: string;
@@ -974,6 +1015,12 @@ export default function ProjetDetailPage({ params }: Props) {
               </div>
             </div>
 
+            {/* Indicateurs énergétiques (Action 2) */}
+            <IndicateursEnergetiquesBlock
+              projetId={projet.id}
+              indicateurs={projet.indicateursEnergetiques}
+            />
+
             {/* Jalons */}
             <div className="glass rounded-2xl p-6">
               <h2 className="text-sm font-semibold text-tk-text mb-4 flex items-center gap-2">
@@ -1504,6 +1551,153 @@ export default function ProjetDetailPage({ params }: Props) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/** Bloc "Indicateurs énergétiques" — lit le dernier Calcul DPE/DEPERDITIONS du projet.
+ *  Empty state si aucun calcul, sinon 3 KPIs (DPE, GES, H total) + lien détail. */
+function IndicateursEnergetiquesBlock({
+  projetId,
+  indicateurs,
+}: {
+  projetId: string;
+  indicateurs: IndicateursEnergetiques | null;
+}) {
+  const empty = !indicateurs || (
+    !indicateurs.classeDpe &&
+    !indicateurs.classeGes &&
+    indicateurs.hTotalWK === null
+  );
+
+  return (
+    <div className="glass rounded-2xl p-6">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Gauge className="h-4 w-4 text-tk-text-faint" />
+          <h2 className="text-sm font-semibold text-tk-text">Indicateurs énergétiques</h2>
+          {indicateurs?.calculeLe && (
+            <span className="ml-2 text-[11px] text-tk-text-faint">
+              · calculé le {formatDate(indicateurs.calculeLe)}
+              {indicateurs.moteurVersion ? ` · ${indicateurs.moteurVersion}` : ""}
+            </span>
+          )}
+        </div>
+        <Link
+          href={`/dashboard/projets/${projetId}/calcul`}
+          className="focus-ring inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs text-tk-text-faint transition-colors hover:bg-tk-hover hover:text-tk-text"
+        >
+          Voir le détail
+          <ArrowUpRight className="h-3.5 w-3.5" />
+        </Link>
+      </div>
+
+      {empty ? (
+        <div className="flex flex-col items-start gap-3 rounded-xl border border-dashed border-tk-border/60 bg-tk-surface/30 p-5 text-sm text-tk-text-secondary">
+          <div className="flex items-center gap-2 text-tk-text">
+            <Zap className="h-4 w-4 text-tk-text-faint" />
+            <span className="font-medium">Aucun calcul énergétique</span>
+          </div>
+          <p className="text-tk-text-faint">
+            Renseigne le bâti et les systèmes du projet, puis lance le moteur thermique
+            pour générer un DPE et les déperditions.
+          </p>
+          <Link
+            href={`/dashboard/projets/${projetId}/calcul`}
+            className="focus-ring inline-flex items-center gap-1.5 rounded-lg bg-tk-accent px-3 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90"
+          >
+            Lancer un calcul
+            <ArrowUpRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-3">
+          <IndicateurDpeCard
+            icon={<Zap className="h-3.5 w-3.5" />}
+            label="Classe DPE"
+            classe={indicateurs!.classeDpe}
+            colorMap={DPE_COLORS}
+            sub={
+              indicateurs!.cepKwhM2 !== null
+                ? `${Math.round(indicateurs!.cepKwhM2)} kWh EP/m²·an`
+                : "—"
+            }
+          />
+          <IndicateurDpeCard
+            icon={<Leaf className="h-3.5 w-3.5" />}
+            label="Classe GES"
+            classe={indicateurs!.classeGes}
+            colorMap={GES_COLORS}
+            sub={
+              indicateurs!.gesKgM2 !== null
+                ? `${Math.round(indicateurs!.gesKgM2)} kg CO₂e/m²·an`
+                : "—"
+            }
+          />
+          <div className="flex flex-col gap-2 rounded-xl border border-tk-border/60 bg-tk-surface/40 p-4">
+            <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-tk-text-faint">
+              <Activity className="h-3.5 w-3.5" />
+              Déperditions
+            </div>
+            {indicateurs!.hTotalWK !== null ? (
+              <>
+                <div className="text-2xl font-semibold tabular-nums text-tk-text">
+                  {Math.round(indicateurs!.hTotalWK)}
+                  <span className="ml-1 text-xs font-normal text-tk-text-faint">W/K</span>
+                </div>
+                <div className="text-xs text-tk-text-faint">
+                  {indicateurs!.pertesTBaseW !== null
+                    ? `${Math.round(indicateurs!.pertesTBaseW).toLocaleString("fr-FR")} W à T base`
+                    : "H total du bâti"}
+                </div>
+              </>
+            ) : (
+              <div className="text-sm text-tk-text-faint">Non calculé</div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function IndicateurDpeCard({
+  icon,
+  label,
+  classe,
+  colorMap,
+  sub,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  classe: ClasseDpe | null;
+  colorMap: Record<ClasseDpe, string>;
+  sub: string;
+}) {
+  return (
+    <div className="flex flex-col gap-2 rounded-xl border border-tk-border/60 bg-tk-surface/40 p-4">
+      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-tk-text-faint">
+        {icon}
+        {label}
+      </div>
+      <div className="flex items-center gap-3">
+        {classe ? (
+          <span
+            className={cn(
+              "inline-flex h-10 w-10 items-center justify-center rounded-lg text-xl font-bold tabular-nums shadow-sm",
+              colorMap[classe],
+            )}
+            aria-label={`Classe ${classe}`}
+          >
+            {classe}
+          </span>
+        ) : (
+          <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-tk-surface text-xl font-bold text-tk-text-faint">
+            —
+          </span>
+        )}
+        <div className="text-xs text-tk-text-secondary">{sub}</div>
+      </div>
     </div>
   );
 }

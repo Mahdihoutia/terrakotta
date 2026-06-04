@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import Link from "next/link";
 import {
   Table,
@@ -15,6 +15,8 @@ import {
   FolderKanban,
   Plus,
   Filter,
+  Search,
+  SlidersHorizontal,
   ArrowRight,
   Trash2,
   Copy,
@@ -79,6 +81,24 @@ interface ClientOption {
   prenom: string | null;
   type: string;
 }
+
+interface AdvancedFilters {
+  categorieCible: CategorieCible | "";
+  clientId: string;
+  budgetMin: string;
+  budgetMax: string;
+  dateDebutFrom: string;
+  dateDebutTo: string;
+}
+
+const EMPTY_ADV_FILTERS: AdvancedFilters = {
+  categorieCible: "",
+  clientId: "",
+  budgetMin: "",
+  budgetMax: "",
+  dateDebutFrom: "",
+  dateDebutTo: "",
+};
 
 const STATUT_COLORS: Record<ProjetStatut, string> = {
   EN_ATTENTE: "bg-amber-500/15 text-amber-400 border-amber-500/20",
@@ -190,15 +210,82 @@ export default function ProjetsPage() {
     "kilowater:projets:viewMode",
     "liste"
   );
+  const [advFilters, setAdvFilters] = useLocalStorage<AdvancedFilters>(
+    "kilowater:projets:filters",
+    EMPTY_ADV_FILTERS,
+  );
+  const [searchInput, setSearchInput] = useLocalStorage<string>(
+    "kilowater:projets:search",
+    "",
+  );
+  const [debouncedSearch, setDebouncedSearch] = useState(searchInput);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  // Brouillon édité dans le popover — les changements ne sont commités à
+  // `advFilters` (et donc envoyés au serveur) qu'au clic sur "Appliquer".
+  const [draftFilters, setDraftFilters] = useState<AdvancedFilters>(advFilters);
+  const filtersPopoverRef = useRef<HTMLDivElement | null>(null);
+
+  // À chaque ouverture du popover, on resynchronise le brouillon depuis l'état
+  // appliqué (annulant les modifications non-appliquées de la session précédente).
+  useEffect(() => {
+    if (filtersOpen) setDraftFilters(advFilters);
+  }, [filtersOpen, advFilters]);
+
+  // Debounce search input (250ms) avant de déclencher un fetch
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchInput), 250);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  // Click outside / Escape pour fermer le popover Filtres
+  useEffect(() => {
+    if (!filtersOpen) return;
+    function onClick(e: MouseEvent) {
+      if (filtersPopoverRef.current && !filtersPopoverRef.current.contains(e.target as Node)) {
+        setFiltersOpen(false);
+      }
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setFiltersOpen(false);
+    }
+    document.addEventListener("mousedown", onClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [filtersOpen]);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
   const [aidesCEE, setAidesCEE] = useState<AideCEE[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
+  const buildProjetsQuery = useCallback(
+    (statut: string, q: string, adv: AdvancedFilters): string => {
+      const params = new URLSearchParams();
+      if (statut && statut !== "TOUS") params.set("statut", statut);
+      if (q.trim()) params.set("q", q.trim());
+      if (adv.categorieCible) params.set("categorieCible", adv.categorieCible);
+      if (adv.clientId) params.set("clientId", adv.clientId);
+      if (adv.budgetMin) params.set("budgetMin", adv.budgetMin);
+      if (adv.budgetMax) params.set("budgetMax", adv.budgetMax);
+      if (adv.dateDebutFrom) {
+        params.set("dateDebutFrom", new Date(adv.dateDebutFrom).toISOString());
+      }
+      if (adv.dateDebutTo) {
+        params.set("dateDebutTo", new Date(adv.dateDebutTo).toISOString());
+      }
+      const qs = params.toString();
+      return qs ? `/api/projets?${qs}` : "/api/projets";
+    },
+    [],
+  );
+
   const fetchProjets = useCallback(async () => {
     try {
-      const res = await fetch("/api/projets");
+      const url = buildProjetsQuery(filterStatut, debouncedSearch, advFilters);
+      const res = await fetch(url);
       if (!res.ok) {
         const payload = await res.json().catch(() => null);
         const detail = payload?.message ?? payload?.error ?? `HTTP ${res.status}`;
@@ -206,10 +293,11 @@ export default function ProjetsPage() {
       }
       const data: Projet[] = await res.json();
       setProjets(data);
+      setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur inconnue");
     }
-  }, []);
+  }, [buildProjetsQuery, filterStatut, debouncedSearch, advFilters]);
 
   const fetchClients = useCallback(async () => {
     try {
@@ -233,14 +321,22 @@ export default function ProjetsPage() {
     }
   }, []);
 
+  // Initial : clients + documents (chargés une seule fois)
   useEffect(() => {
-    async function init() {
-      setLoading(true);
-      await Promise.all([fetchProjets(), fetchClients(), fetchDocuments()]);
-      setLoading(false);
-    }
-    init();
-  }, [fetchProjets, fetchClients, fetchDocuments]);
+    Promise.all([fetchClients(), fetchDocuments()]);
+  }, [fetchClients, fetchDocuments]);
+
+  // Projets : re-fetch à chaque changement de filtre (debounce sur search déjà appliqué)
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetchProjets().finally(() => {
+      if (!cancelled) setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchProjets]);
 
   // CEE totals (live simulation)
   const totalKwhCumac = aidesCEE.reduce((s, a) => s + (a.kwhCumac || 0), 0);
@@ -278,12 +374,67 @@ export default function ProjetsPage() {
     setSelectedDocIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
 
-  const filteredProjets =
-    filterStatut === "TOUS"
-      ? projets
-      : projets.filter((p) => p.statut === filterStatut);
+  // Le serveur applique désormais tous les filtres ; on liste tel quel.
+  const filteredProjets = projets;
 
   const statuts: string[] = ["TOUS", "EN_ATTENTE", "EN_COURS", "EN_PAUSE", "TERMINE", "ANNULE"];
+
+  /** Nombre de filtres avancés actifs (hors statut, hors search). */
+  const activeAdvCount = useMemo(() => {
+    let n = 0;
+    if (advFilters.categorieCible) n++;
+    if (advFilters.clientId) n++;
+    if (advFilters.budgetMin) n++;
+    if (advFilters.budgetMax) n++;
+    if (advFilters.dateDebutFrom) n++;
+    if (advFilters.dateDebutTo) n++;
+    return n;
+  }, [advFilters]);
+
+  const hasAnyFilter =
+    activeAdvCount > 0 || filterStatut !== "TOUS" || debouncedSearch.trim().length > 0;
+
+  /** Nombre de filtres en cours d'édition (brouillon) — pour le footer du popover. */
+  const draftCount = useMemo(() => {
+    let n = 0;
+    if (draftFilters.categorieCible) n++;
+    if (draftFilters.clientId) n++;
+    if (draftFilters.budgetMin) n++;
+    if (draftFilters.budgetMax) n++;
+    if (draftFilters.dateDebutFrom) n++;
+    if (draftFilters.dateDebutTo) n++;
+    return n;
+  }, [draftFilters]);
+
+  /** Y a-t-il des modifications non-appliquées dans le popover ? */
+  const draftDirty = useMemo(
+    () =>
+      draftFilters.categorieCible !== advFilters.categorieCible ||
+      draftFilters.clientId !== advFilters.clientId ||
+      draftFilters.budgetMin !== advFilters.budgetMin ||
+      draftFilters.budgetMax !== advFilters.budgetMax ||
+      draftFilters.dateDebutFrom !== advFilters.dateDebutFrom ||
+      draftFilters.dateDebutTo !== advFilters.dateDebutTo,
+    [draftFilters, advFilters],
+  );
+
+  function applyDraftFilters() {
+    setAdvFilters(draftFilters);
+    setFiltersOpen(false);
+  }
+
+  function resetAdvFilters() {
+    // Réinitialise immédiatement (clear all) et ferme — convention SaaS.
+    setDraftFilters(EMPTY_ADV_FILTERS);
+    setAdvFilters(EMPTY_ADV_FILTERS);
+    setFiltersOpen(false);
+  }
+
+  function resetAllFilters() {
+    setAdvFilters(EMPTY_ADV_FILTERS);
+    setSearchInput("");
+    setFilterStatut("TOUS");
+  }
 
   async function handleCreate() {
     if (submitting) return;
@@ -730,7 +881,223 @@ export default function ProjetsPage() {
         )}
       </AnimatePresence>
 
-      {/* Filters + view toggle */}
+      {/* Ligne 1 : Search + bouton Filtres avancés */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-[240px] max-w-[480px]">
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-tk-text-faint"
+            aria-hidden
+          />
+          <input
+            type="search"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Rechercher un projet, un client, une adresse…"
+            aria-label="Rechercher dans les projets"
+            className="focus-ring w-full rounded-lg border border-tk-border bg-tk-surface py-1.5 pl-9 pr-8 text-sm text-tk-text placeholder:text-tk-text-faint"
+          />
+          {searchInput && (
+            <button
+              type="button"
+              onClick={() => setSearchInput("")}
+              aria-label="Effacer la recherche"
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-tk-text-faint transition-colors hover:bg-tk-hover hover:text-tk-text"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+
+        <div className="relative" ref={filtersPopoverRef}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setFiltersOpen((o) => !o)}
+            aria-expanded={filtersOpen}
+            aria-haspopup="dialog"
+            className={cn(
+              "border-tk-border bg-tk-surface text-xs text-tk-text-secondary hover:bg-tk-hover",
+              activeAdvCount > 0 && "border-tk-accent/40 text-tk-text",
+            )}
+          >
+            <SlidersHorizontal className="mr-2 h-3.5 w-3.5" />
+            Filtres
+            {activeAdvCount > 0 && (
+              <span className="ml-2 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-tk-accent px-1 text-[10px] font-semibold text-white">
+                {activeAdvCount}
+              </span>
+            )}
+          </Button>
+          <AnimatePresence>
+            {filtersOpen && (
+              <motion.div
+                role="dialog"
+                aria-label="Filtres avancés"
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.12 }}
+                className="glass absolute right-0 z-30 mt-2 w-[340px] rounded-xl border border-tk-border p-4 shadow-xl"
+              >
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-tk-text-faint">
+                    Filtres avancés
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setFiltersOpen(false)}
+                    aria-label="Fermer les filtres"
+                    className="rounded p-1 text-tk-text-faint hover:bg-tk-hover hover:text-tk-text"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    applyDraftFilters();
+                  }}
+                >
+                  <div className="space-y-3">
+                    <div>
+                      <label className="mb-1 block text-[10px] uppercase tracking-wider text-tk-text-faint">
+                        Catégorie cible
+                      </label>
+                      <select
+                        value={draftFilters.categorieCible}
+                        onChange={(e) =>
+                          setDraftFilters({
+                            ...draftFilters,
+                            categorieCible: e.target.value as CategorieCible | "",
+                          })
+                        }
+                        className="focus-ring w-full rounded-lg border border-tk-border bg-tk-surface px-2 py-1.5 text-sm text-tk-text"
+                      >
+                        <option value="">Toutes</option>
+                        {(Object.keys(CATEGORIE_CIBLE_LABELS) as CategorieCible[]).map((k) => (
+                          <option key={k} value={k}>
+                            {CATEGORIE_CIBLE_LABELS[k]}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block text-[10px] uppercase tracking-wider text-tk-text-faint">
+                        Client
+                      </label>
+                      <select
+                        value={draftFilters.clientId}
+                        onChange={(e) =>
+                          setDraftFilters({ ...draftFilters, clientId: e.target.value })
+                        }
+                        className="focus-ring w-full rounded-lg border border-tk-border bg-tk-surface px-2 py-1.5 text-sm text-tk-text"
+                      >
+                        <option value="">Tous les clients</option>
+                        {clients.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.prenom ? `${c.prenom} ${c.nom}` : c.nom}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block text-[10px] uppercase tracking-wider text-tk-text-faint">
+                        Budget prévu (€)
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          min={0}
+                          value={draftFilters.budgetMin}
+                          onChange={(e) =>
+                            setDraftFilters({ ...draftFilters, budgetMin: e.target.value })
+                          }
+                          placeholder="Min"
+                          aria-label="Budget minimum"
+                          className="focus-ring rounded-lg border border-tk-border bg-tk-surface px-2 py-1.5 text-sm text-tk-text placeholder:text-tk-text-faint"
+                        />
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          min={0}
+                          value={draftFilters.budgetMax}
+                          onChange={(e) =>
+                            setDraftFilters({ ...draftFilters, budgetMax: e.target.value })
+                          }
+                          placeholder="Max"
+                          aria-label="Budget maximum"
+                          className="focus-ring rounded-lg border border-tk-border bg-tk-surface px-2 py-1.5 text-sm text-tk-text placeholder:text-tk-text-faint"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block text-[10px] uppercase tracking-wider text-tk-text-faint">
+                        Date de début
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          type="date"
+                          value={draftFilters.dateDebutFrom}
+                          onChange={(e) =>
+                            setDraftFilters({ ...draftFilters, dateDebutFrom: e.target.value })
+                          }
+                          aria-label="Date de début minimale"
+                          className="focus-ring rounded-lg border border-tk-border bg-tk-surface px-2 py-1.5 text-sm text-tk-text"
+                        />
+                        <input
+                          type="date"
+                          value={draftFilters.dateDebutTo}
+                          onChange={(e) =>
+                            setDraftFilters({ ...draftFilters, dateDebutTo: e.target.value })
+                          }
+                          aria-label="Date de début maximale"
+                          className="focus-ring rounded-lg border border-tk-border bg-tk-surface px-2 py-1.5 text-sm text-tk-text"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-between gap-2 border-t border-tk-border pt-3">
+                    <button
+                      type="button"
+                      onClick={resetAdvFilters}
+                      disabled={activeAdvCount === 0 && draftCount === 0}
+                      className="text-xs text-tk-text-faint transition-colors hover:text-tk-text disabled:opacity-40"
+                    >
+                      Réinitialiser
+                    </button>
+                    <Button
+                      type="submit"
+                      size="sm"
+                      disabled={!draftDirty}
+                      className="text-xs"
+                      title={
+                        draftDirty
+                          ? "Appliquer les filtres"
+                          : "Aucune modification à appliquer"
+                      }
+                    >
+                      Appliquer
+                      {draftCount > 0 && (
+                        <span className="ml-2 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-white/20 px-1 text-[10px] font-semibold">
+                          {draftCount}
+                        </span>
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      {/* Ligne 2 : Chips statut + view toggle */}
       <div className="flex items-center justify-between gap-3 overflow-x-auto pb-1">
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4 shrink-0 text-tk-text-faint" />
@@ -944,7 +1311,22 @@ export default function ProjetsPage() {
             {filteredProjets.length === 0 && (
               <TableRow>
                 <TableCell colSpan={6} className="py-12 text-center text-tk-text-faint">
-                  Aucun projet trouvé pour ce filtre
+                  <div className="flex flex-col items-center gap-2">
+                    <span>
+                      {hasAnyFilter
+                        ? "Aucun projet ne correspond aux filtres."
+                        : "Aucun projet pour le moment."}
+                    </span>
+                    {hasAnyFilter && (
+                      <button
+                        type="button"
+                        onClick={resetAllFilters}
+                        className="text-xs text-tk-accent transition-opacity hover:opacity-80"
+                      >
+                        Réinitialiser tous les filtres
+                      </button>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             )}

@@ -6,6 +6,91 @@ import {
   MUTATION_ROLES,
   ensureRole,
 } from "@/lib/auth-helpers";
+import { getLatestCalcul, readCalcul } from "@/lib/calcul-snapshot";
+
+interface IndicateursEnergetiques {
+  cepKwhM2: number | null;
+  gesKgM2: number | null;
+  classeDpe: string | null;
+  classeGes: string | null;
+  classeFinale: string | null;
+  hTotalWK: number | null;
+  pertesTBaseW: number | null;
+  calculeLe: string | null;
+  moteurVersion: string | null;
+}
+
+/** Charge le dernier snapshot DPE + le dernier snapshot DEPERDITIONS
+ *  et expose un objet plat lisible côté UI (null si rien à montrer). */
+async function loadIndicateursEnergetiques(
+  projetId: string,
+): Promise<IndicateursEnergetiques | null> {
+  const [dpeCalc, depCalc] = await Promise.all([
+    getLatestCalcul(projetId, "DPE"),
+    getLatestCalcul(projetId, "DEPERDITIONS"),
+  ]);
+
+  if (!dpeCalc && !depCalc) return null;
+
+  let cepKwhM2: number | null = null;
+  let gesKgM2: number | null = null;
+  let classeDpe: string | null = null;
+  let classeGes: string | null = null;
+  let classeFinale: string | null = null;
+  let calculeLe: string | null = null;
+  let moteurVersion: string | null = null;
+
+  if (dpeCalc) {
+    try {
+      const { outputs } = readCalcul<unknown, {
+        cep_kwh_m2?: number;
+        ges_kg_m2?: number;
+        classe_dpe?: string;
+        classe_ges?: string;
+        classe_finale?: string;
+      }>(dpeCalc);
+      cepKwhM2 = Number.isFinite(outputs.cep_kwh_m2) ? Number(outputs.cep_kwh_m2) : null;
+      gesKgM2 = Number.isFinite(outputs.ges_kg_m2) ? Number(outputs.ges_kg_m2) : null;
+      classeDpe = outputs.classe_dpe ?? null;
+      classeGes = outputs.classe_ges ?? null;
+      classeFinale = outputs.classe_finale ?? null;
+      calculeLe = dpeCalc.createdAt.toISOString();
+      moteurVersion = dpeCalc.moteurVersion;
+    } catch {
+      // outputsJson corrompu — on ignore plutôt que de casser la fiche
+    }
+  }
+
+  let hTotalWK: number | null = null;
+  let pertesTBaseW: number | null = null;
+  if (depCalc) {
+    try {
+      const { outputs } = readCalcul<unknown, {
+        hTotal?: number;
+        pertesT_base?: number;
+      }>(depCalc);
+      hTotalWK = Number.isFinite(outputs.hTotal) ? Number(outputs.hTotal) : null;
+      pertesTBaseW = Number.isFinite(outputs.pertesT_base) ? Number(outputs.pertesT_base) : null;
+      // Si pas de DPE, on remonte la date/version du dernier calcul disponible.
+      if (!calculeLe) calculeLe = depCalc.createdAt.toISOString();
+      if (!moteurVersion) moteurVersion = depCalc.moteurVersion;
+    } catch {
+      // idem
+    }
+  }
+
+  return {
+    cepKwhM2,
+    gesKgM2,
+    classeDpe,
+    classeGes,
+    classeFinale,
+    hTotalWK,
+    pertesTBaseW,
+    calculeLe,
+    moteurVersion,
+  };
+}
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -230,7 +315,12 @@ export async function GET(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Projet introuvable" }, { status: 404 });
   }
 
-  return NextResponse.json(serializeProjetDetail(projet));
+  const indicateursEnergetiques = await loadIndicateursEnergetiques(id);
+
+  return NextResponse.json({
+    ...serializeProjetDetail(projet),
+    indicateursEnergetiques,
+  });
 }
 
 const updateProjetSchema = z.object({
@@ -333,7 +423,11 @@ export async function PATCH(request: Request, context: RouteContext) {
       data: prismaData,
       include: includeDetailRelations,
     });
-    return NextResponse.json(serializeProjetDetail(projet));
+    const indicateursEnergetiques = await loadIndicateursEnergetiques(id);
+    return NextResponse.json({
+      ...serializeProjetDetail(projet),
+      indicateursEnergetiques,
+    });
   } catch {
     return NextResponse.json({ error: "Projet introuvable" }, { status: 404 });
   }

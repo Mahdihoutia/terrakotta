@@ -55,18 +55,81 @@ const includeRelations = {
   aides: { select: { id: true } },
 };
 
-/** GET /api/projets — Liste tous les projets avec filtrage optionnel par statut + clientId */
+const STATUTS_VALIDES = ["EN_ATTENTE", "EN_COURS", "EN_PAUSE", "TERMINE", "ANNULE"] as const;
+const CATEGORIES_VALIDES = [
+  "PARTICULIER",
+  "RESIDENTIEL_COLLECTIF",
+  "TERTIAIRE",
+  "INDUSTRIE",
+  "AGRICULTURE",
+] as const;
+
+function parsePositiveNumber(raw: string | null): number | null {
+  if (!raw) return null;
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 0 ? n : null;
+}
+
+function parseIsoDate(raw: string | null): Date | null {
+  if (!raw) return null;
+  const d = new Date(raw);
+  return Number.isFinite(d.getTime()) ? d : null;
+}
+
+/** GET /api/projets — Liste filtrable : statut, clientId, q (search),
+ *  categorieCible, budgetMin/Max, dateDebutFrom/To. */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const statut = searchParams.get("statut");
   const clientId = searchParams.get("clientId");
+  const q = searchParams.get("q")?.trim();
+  const categorieCible = searchParams.get("categorieCible");
+  const budgetMin = parsePositiveNumber(searchParams.get("budgetMin"));
+  const budgetMax = parsePositiveNumber(searchParams.get("budgetMax"));
+  const dateDebutFrom = parseIsoDate(searchParams.get("dateDebutFrom"));
+  const dateDebutTo = parseIsoDate(searchParams.get("dateDebutTo"));
+
+  const where: Record<string, unknown> = { deletedAt: null };
+
+  if (statut && statut !== "TOUS" && (STATUTS_VALIDES as readonly string[]).includes(statut)) {
+    where.statut = statut;
+  }
+  if (clientId) where.clientId = clientId;
+  if (
+    categorieCible &&
+    (CATEGORIES_VALIDES as readonly string[]).includes(categorieCible)
+  ) {
+    where.categorieCible = categorieCible;
+  }
+
+  // SQLite ne supporte pas `mode: "insensitive"` — on s'appuie sur le collation
+  // par défaut (NOCASE) pour les champs texte usuels.
+  if (q && q.length > 0) {
+    where.OR = [
+      { titre: { contains: q } },
+      { description: { contains: q } },
+      { adresseChantier: { contains: q } },
+      { client: { is: { nom: { contains: q } } } },
+      { client: { is: { prenom: { contains: q } } } },
+    ];
+  }
+
+  if (budgetMin !== null || budgetMax !== null) {
+    const range: Record<string, number> = {};
+    if (budgetMin !== null) range.gte = budgetMin;
+    if (budgetMax !== null) range.lte = budgetMax;
+    where.budgetPrevu = range;
+  }
+
+  if (dateDebutFrom || dateDebutTo) {
+    const range: Record<string, Date> = {};
+    if (dateDebutFrom) range.gte = dateDebutFrom;
+    if (dateDebutTo) range.lte = dateDebutTo;
+    where.dateDebut = range;
+  }
 
   const projets = await prisma.projet.findMany({
-    where: {
-      deletedAt: null,
-      ...(statut && statut !== "TOUS" ? { statut: statut as never } : {}),
-      ...(clientId ? { clientId } : {}),
-    },
+    where: where as never,
     include: includeRelations,
     orderBy: { updatedAt: "desc" },
   });
