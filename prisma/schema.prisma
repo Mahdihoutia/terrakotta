@@ -206,21 +206,21 @@ model Lead {
 // ─── Projet ─────────────────────────────────────────────────────
 
 model Projet {
-  id              String       @id @default(cuid())
+  id              String         @id @default(cuid())
   titre           String
   description     String?
-  statut          ProjetStatut @default(EN_ATTENTE)
-  typeClient      ClientType   @map("type_client")
+  statut          ProjetStatut   @default(EN_ATTENTE)
+  typeClient      ClientType     @map("type_client")
   /// Catégorie de cible — détermine notamment l'éligibilité MaPrimeRénov' (PARTICULIER uniquement).
   categorieCible  CategorieCible @default(TERTIAIRE) @map("categorie_cible")
-  typeTravaux     String?      @map("type_travaux")
-  adresseChantier String?      @map("adresse_chantier")
-  budgetPrevu     Decimal?     @map("budget_prevu")
-  budgetDepense   Decimal?     @default(0) @map("budget_depense")
-  dateDebut       DateTime?    @map("date_debut")
-  dateFin         DateTime?    @map("date_fin")
-  clientId        String       @map("client_id")
-  client          Client       @relation(fields: [clientId], references: [id])
+  typeTravaux     String?        @map("type_travaux")
+  adresseChantier String?        @map("adresse_chantier")
+  budgetPrevu     Decimal?       @map("budget_prevu")
+  budgetDepense   Decimal?       @default(0) @map("budget_depense")
+  dateDebut       DateTime?      @map("date_debut")
+  dateFin         DateTime?      @map("date_fin")
+  clientId        String         @map("client_id")
+  client          Client         @relation(fields: [clientId], references: [id])
   jalons          Jalon[]
   devis           Devis[]
   factures        Facture[]
@@ -230,6 +230,8 @@ model Projet {
   systemes        Systeme[]
   variantes       Variante[]
   calculs         Calcul[]
+  consosRelevees  ConsoRelevee[]
+  calibrations    Calibration[]
 
   // Précision thermique (quick wins ingénieur)
   /// Nombre d'occupants — utilisé pour ECS (Nadeq) et apports internes.
@@ -941,4 +943,106 @@ enum CategorieCible {
   TERTIAIRE
   INDUSTRIE
   AGRICULTURE
+}
+
+// ─── Consos réelles (calibration) ─────────────────────────────
+
+/// Un relevé mensuel de consommation énergétique — chauffage / ECS / gaz / élec.
+/// Alimente la calibration du modèle thermique sur données terrain.
+model ConsoRelevee {
+  id           String         @id @default(cuid())
+  projetId     String         @map("projet_id")
+  projet       Projet         @relation(fields: [projetId], references: [id], onDelete: Cascade)
+  /// Vecteur énergétique concerné (gaz, élec, fioul…).
+  vecteur      SystemeVecteur
+  /// Date de début de la période couverte par le relevé.
+  periodeDebut DateTime       @map("periode_debut")
+  /// Date de fin de la période (exclusive).
+  periodeFin   DateTime       @map("periode_fin")
+  /// Énergie consommée sur la période, en kWh (PCS pour gaz, EF pour élec).
+  kwh          Decimal
+  /// Source du relevé — R = relevé compteur réel, E = estimé, F = facture manuelle.
+  source       SourceReleve   @default(R)
+  /// Numéro de compteur / PCE / PDL (optionnel).
+  compteurRef  String?        @map("compteur_ref")
+  notes        String?
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+  deletedAt    DateTime?      @map("deleted_at")
+
+  @@index([projetId])
+  @@index([deletedAt])
+  @@index([projetId, periodeDebut])
+  @@map("consos_relevees")
+}
+
+enum SourceReleve {
+  R // Relevé réel compteur
+  E // Estimé
+  F // Facture manuelle
+}
+
+/// Résultat d'une calibration énergétique — méthode degrés-heures ERA5.
+/// Stocke la puissance calée, les indicateurs statistiques (ASHRAE Guideline 14)
+/// et les paramètres retenus (Ti dynamique, période, rendement, seuil chauffage).
+model Calibration {
+  id               String   @id @default(cuid())
+  projetId         String   @map("projet_id")
+  projet           Projet   @relation(fields: [projetId], references: [id], onDelete: Cascade)
+  /// Période analysée.
+  periodeDebut     DateTime @map("periode_debut")
+  periodeFin       DateTime @map("periode_fin")
+  /// Coordonnées GPS utilisées pour ERA5.
+  latitude         Decimal
+  longitude        Decimal
+  /// Rendement générateur utilisé (0-1, PCS pour gaz).
+  rendement        Decimal
+  /// Température d'arrêt chauffage (°C).
+  tArretChauffage  Decimal  @map("t_arret_chauffage")
+  /// Température de base (°C) — souvent -7 en H1.
+  tBase            Decimal  @map("t_base")
+  /// Somme des degrés-heures horaires sur la période (°C·h).
+  sommeDh          Decimal  @map("somme_dh")
+  /// Énergie relevée sur la période (kWh, cohérent avec vecteur).
+  energieRelevee   Decimal  @map("energie_relevee")
+  /// Puissance calée retenue (kW) — approche degrés-heures.
+  pCaleeDh         Decimal  @map("p_calee_dh")
+  /// Puissance calée par régression linéaire mensuelle (kW).
+  pCaleeRegression Decimal? @map("p_calee_regression")
+  /// Écart % entre les deux méthodes.
+  ecartMethodes    Decimal? @map("ecart_methodes")
+  /// Indicateurs stat ASHRAE Guideline 14.
+  r2               Decimal?
+  rmse             Decimal?
+  cvRmse           Decimal? @map("cv_rmse")
+  nmbe             Decimal?
+  /// Verdict conformité ASHRAE G14 (CV(RMSE)<=15% et |NMBE|<=5%).
+  conformeAshrae   Boolean  @default(false) @map("conforme_ashrae")
+  /// Payload JSON complet (paramètres, séries, scénarios balayés).
+  payloadJson      Json     @map("payload_json")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@index([projetId])
+  @@map("calibrations")
+}
+
+// ─── Cache météo horaire (ERA5 via Open-Meteo Archive) ─────────
+
+/// Cache d'une extraction météo horaire ERA5 pour une zone géographique.
+/// Clé composite (lat_r, lon_r, période) — évite de re-solliciter l'API pour la même zone.
+model MeteoHoraireCache {
+  id           String   @id @default(cuid())
+  /// Latitude arrondie à 0.1° (résolution ERA5 ~0.25°).
+  latR         Decimal  @map("lat_r")
+  /// Longitude arrondie à 0.1°.
+  lonR         Decimal  @map("lon_r")
+  periodeDebut DateTime @map("periode_debut")
+  periodeFin   DateTime @map("periode_fin")
+  /// Payload {timestamps: string[], tExt: number[]} — heures UTC.
+  payloadJson  Json     @map("payload_json")
+  source       String   @default("open-meteo-archive")
+  fetchedAt    DateTime @default(now()) @map("fetched_at")
+
+  @@unique([latR, lonR, periodeDebut, periodeFin], name: "meteo_zone_periode")
+  @@map("meteo_horaire_cache")
 }

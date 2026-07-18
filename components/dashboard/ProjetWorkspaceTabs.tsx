@@ -10,6 +10,8 @@ import {
   GitCompare,
   Calculator,
   FileOutput,
+  Gauge,
+  Snowflake,
 } from "lucide-react";
 
 interface Tab {
@@ -49,6 +51,18 @@ const TABS: Tab[] = [
     label: "Calcul",
     icon: Calculator,
     match: (p, base) => p.startsWith(`${base}/calcul`),
+  },
+  {
+    href: "/calibration",
+    label: "Calibration",
+    icon: Gauge,
+    match: (p, base) => p.startsWith(`${base}/calibration`),
+  },
+  {
+    href: "/pac",
+    label: "PAC",
+    icon: Snowflake,
+    match: (p, base) => p.startsWith(`${base}/pac`),
   },
   {
     href: "/livrables",
