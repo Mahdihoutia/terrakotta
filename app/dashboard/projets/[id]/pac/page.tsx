@@ -9,6 +9,7 @@ import {
   X,
   Info,
   FileDown,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { showApiError, showNetworkError } from "@/lib/api-errors";
@@ -121,7 +122,7 @@ export default function PacPage({ params }: Props) {
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<Response | null>(null);
   const [hasCalibration, setHasCalibration] = useState<boolean | null>(null);
-  const [downloading, setDownloading] = useState(false);
+  const [downloading, setDownloading] = useState<"pdf" | "word" | null>(null);
   const [scenarioRetenuIdx, setScenarioRetenuIdx] = useState(0);
   const [categorie, setCategorie] = useState<"TERTIAIRE" | "RESIDENTIEL_COLLECTIF">(
     "TERTIAIRE",
@@ -234,64 +235,65 @@ export default function PacPage({ params }: Props) {
     }
   }
 
-  async function downloadNote() {
+  async function downloadNote(format: "pdf" | "word") {
     if (!result || scenarios.length === 0) return;
-    setDownloading(true);
+    setDownloading(format);
     try {
       const scenarioRetenu = scenarios[scenarioRetenuIdx] ?? scenarios[0];
       const autresScenarios = scenarios.filter((_, i) => i !== scenarioRetenuIdx);
-      const res = await fetch(
-        `/api/projets/${projetId}/note-dimensionnement-pac`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            categorie,
-            scenarioRetenu,
-            autresScenarios,
-            marges,
-            site: {
-              generateurExistantMarque: site.generateurExistantMarque,
-              generateurExistantModele: site.generateurExistantModele,
-              generateurExistantNb: Number(site.generateurExistantNb),
-              generateurExistantPuissanceKw: Number(site.generateurExistantPuissanceKw),
-              generateurExistantVecteur: site.generateurExistantVecteur,
-              surfaceChauffee: Number(site.surfaceChauffee),
-              zoneClimatique: site.zoneClimatique,
-              usage: site.usage,
-              fournisseurEnergie: site.fournisseurEnergie,
-              compteurRef: site.compteurRef,
-            },
-            cee: ceeActif
-              ? {
-                  forfaitKwhcParM2: Number(cee.forfaitKwhcParM2),
-                  facteurCorrectifSecteur: Number(cee.facteurCorrectifSecteur),
-                  facteurR: Number(cee.facteurR),
-                  bonificationCoupDePouce: Number(cee.bonificationCoupDePouce),
-                  primeEurMWhc: Number(cee.primeEurMWhc),
-                }
-              : null,
-          }),
-        },
-      );
+      const endpoint =
+        format === "pdf"
+          ? "note-dimensionnement-pac"
+          : "note-dimensionnement-pac-word";
+      const res = await fetch(`/api/projets/${projetId}/${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          categorie,
+          scenarioRetenu,
+          autresScenarios,
+          marges,
+          site: {
+            generateurExistantMarque: site.generateurExistantMarque,
+            generateurExistantModele: site.generateurExistantModele,
+            generateurExistantNb: Number(site.generateurExistantNb),
+            generateurExistantPuissanceKw: Number(site.generateurExistantPuissanceKw),
+            generateurExistantVecteur: site.generateurExistantVecteur,
+            surfaceChauffee: Number(site.surfaceChauffee),
+            zoneClimatique: site.zoneClimatique,
+            usage: site.usage,
+            fournisseurEnergie: site.fournisseurEnergie,
+            compteurRef: site.compteurRef,
+          },
+          cee: ceeActif
+            ? {
+                forfaitKwhcParM2: Number(cee.forfaitKwhcParM2),
+                facteurCorrectifSecteur: Number(cee.facteurCorrectifSecteur),
+                facteurR: Number(cee.facteurR),
+                bonificationCoupDePouce: Number(cee.bonificationCoupDePouce),
+                primeEurMWhc: Number(cee.primeEurMWhc),
+              }
+            : null,
+        }),
+      });
       if (!res.ok) {
-        await showApiError(res, "Génération PDF");
+        await showApiError(res, `Génération ${format.toUpperCase()}`);
         return;
       }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `note-dimensionnement-pac-${projetId.slice(-8)}.pdf`;
+      a.download = `note-dimensionnement-pac-${projetId.slice(-8)}.${format === "pdf" ? "pdf" : "docx"}`;
       document.body.appendChild(a);
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      toast.success("Note de dimensionnement générée");
+      toast.success(`Note ${format.toUpperCase()} téléchargée`);
     } catch (err) {
       showNetworkError(err);
     } finally {
-      setDownloading(false);
+      setDownloading(null);
     }
   }
 
@@ -833,18 +835,37 @@ export default function PacPage({ params }: Props) {
               </div>
             </div>
 
-            <Button
-              onClick={downloadNote}
-              disabled={downloading}
-              className="w-full"
-            >
-              {downloading ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <FileDown className="h-3.5 w-3.5" />
-              )}
-              Télécharger la note de dimensionnement PDF
-            </Button>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <Button
+                onClick={() => downloadNote("pdf")}
+                disabled={downloading !== null}
+                className="w-full"
+              >
+                {downloading === "pdf" ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <FileDown className="h-3.5 w-3.5" />
+                )}
+                Télécharger PDF
+              </Button>
+              <Button
+                onClick={() => downloadNote("word")}
+                disabled={downloading !== null}
+                variant="outline"
+                className="w-full"
+              >
+                {downloading === "word" ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <FileText className="h-3.5 w-3.5" />
+                )}
+                Télécharger Word (.docx)
+              </Button>
+            </div>
+            <p className="text-[11px] text-tk-text-faint">
+              PDF pour opposabilité / archivage. Word (.docx) pour envoi client
+              éditable et intégration dans dossier CEE.
+            </p>
           </section>
 
           {/* Histogramme couverture par plage T° */}

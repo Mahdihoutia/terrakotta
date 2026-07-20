@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { ensureRole, MUTATION_ROLES } from "@/lib/auth-helpers";
-import { generateNoteDimensionnementPacPdf } from "@/lib/pdf-note-dimensionnement-pac";
+import { generateNoteDimensionnementPacDocx } from "@/lib/word-note-dimensionnement-pac";
 import { buildNotePacData } from "@/lib/note-pac-data";
 
 const scenarioSchema = z.object({
@@ -100,19 +100,20 @@ export async function POST(req: Request, ctx: Ctx) {
       return NextResponse.json({ error: result.error }, { status: result.status });
     }
 
-    const pdfBytes = generateNoteDimensionnementPacPdf(result.data);
-    const filename = `note-dimensionnement-pac-${result.data.reference}.pdf`;
-    return new Response(pdfBytes as unknown as ArrayBuffer, {
+    const docxBytes = await generateNoteDimensionnementPacDocx(result.data);
+    const filename = `note-dimensionnement-pac-${result.data.reference}.docx`;
+    return new Response(docxBytes as unknown as ArrayBuffer, {
       status: 200,
       headers: {
-        "Content-Type": "application/pdf",
+        "Content-Type":
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         "Content-Disposition": `attachment; filename="${filename}"`,
         "Cache-Control": "no-store",
       },
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Erreur génération PDF";
-    console.error("[/api/projets/:id/note-dimensionnement-pac POST] error:", err);
-    return NextResponse.json({ error: "PdfError", message }, { status: 500 });
+    const message = err instanceof Error ? err.message : "Erreur génération Word";
+    console.error("[/api/projets/:id/note-dimensionnement-pac-word POST] error:", err);
+    return NextResponse.json({ error: "WordError", message }, { status: 500 });
   }
 }
