@@ -58,11 +58,6 @@ function euro(n: number | null | undefined): string {
   return `${formatNumberPdf(Math.round(n))} €`;
 }
 
-function pct(n: number | null | undefined, dec = 1): string {
-  if (n == null) return "—";
-  return `${fmt(n, dec)} %`;
-}
-
 function iso(dateStr: string): string {
   try {
     return new Date(dateStr).toLocaleDateString("fr-FR", {
@@ -111,8 +106,8 @@ export function generateAuditReglementairePdf(data: AuditReglementaireData): Uin
 
   // ─── 1. Contexte ─────────────────────────────────────
   {
-    let y = addSection("1. Contexte de la mission");
-    y = drawProse(
+    const y = addSection("1. Contexte de la mission");
+    drawProse(
       doc,
       `La présente mission d'audit énergétique porte sur ${data.siteNom.toLowerCase()}, ` +
         `${data.adresse}, ${data.codePostal} ${data.ville}, d'une surface chauffée de ` +
@@ -129,7 +124,7 @@ export function generateAuditReglementairePdf(data: AuditReglementaireData): Uin
 
   // ─── 2. Présentation du site ────────────────────────
   {
-    let y = addSection("2. Présentation du site");
+    const y = addSection("2. Présentation du site");
     autoTable(doc, {
       ...getInfoTableConfig(
         y + 2,
@@ -200,8 +195,8 @@ export function generateAuditReglementairePdf(data: AuditReglementaireData): Uin
 
   // ─── 4. Scénarios ───────────────────────────────────
   {
-    let y = addSection("4. Solutions d'amélioration — 3 scénarios obligatoires");
-    y = drawProse(
+    const y = addSection("4. Solutions d'amélioration — 3 scénarios obligatoires");
+    drawProse(
       doc,
       `Conformément à la réglementation, trois scénarios de travaux sont présentés, correspondant ` +
         `à des niveaux de gains croissants. Chaque scénario est chiffré (coût, aides, reste à charge, ` +
@@ -216,7 +211,7 @@ export function generateAuditReglementairePdf(data: AuditReglementaireData): Uin
 
   // ─── 5. Plan de financement ─────────────────────────
   {
-    let y = addSection("5. Plan de financement — comparaison scénarios");
+    const y = addSection("5. Plan de financement — comparaison scénarios");
     autoTable(doc, {
       ...getInfoTableConfig(
         y + 2,
@@ -256,8 +251,8 @@ export function generateAuditReglementairePdf(data: AuditReglementaireData): Uin
 
   // ─── 6. Phasage ─────────────────────────────────────
   {
-    let y = addSection("6. Phasage et mise en œuvre");
-    y = drawProse(
+    const y = addSection("6. Phasage et mise en œuvre");
+    drawProse(
       doc,
       `Le phasage recommandé dépend du budget disponible et de la stratégie du maître d'ouvrage. ` +
         `Trois logiques types :\n\n` +
