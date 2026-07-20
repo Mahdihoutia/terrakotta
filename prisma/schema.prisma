@@ -232,6 +232,7 @@ model Projet {
   calculs         Calcul[]
   consosRelevees  ConsoRelevee[]
   calibrations    Calibration[]
+  deetProfil      DeetProfil?
 
   // Précision thermique (quick wins ingénieur)
   /// Nombre d'occupants — utilisé pour ECS (Nadeq) et apports internes.
@@ -1045,4 +1046,58 @@ model MeteoHoraireCache {
 
   @@unique([latR, lonR, periodeDebut, periodeFin], name: "meteo_zone_periode")
   @@map("meteo_horaire_cache")
+}
+
+// ─── Décret Tertiaire (DEET) ───────────────────────────────────
+
+/// Profil DEET d'un projet — assujettissement, méthode retenue et cible.
+/// Un projet a au plus un profil DEET (relation 1-1).
+model DeetProfil {
+  id                    String       @id @default(cuid())
+  projetId              String       @unique @map("projet_id")
+  projet                Projet       @relation(fields: [projetId], references: [id], onDelete: Cascade)
+  /// Le bâtiment est-il assujetti au DEET (surface tertiaire > 1 000 m²) ?
+  assujetti             Boolean      @default(true)
+  /// Méthode d'objectif retenue : relative (baseline × pourcentages) ou absolue (Cabs).
+  methode               DeetMethode  @default(RELATIVE)
+  /// Code activité DEET normalisé (bureaux, enseignement, hospitalier…).
+  activite              DeetActivite
+  /// Zone climatique (H1/H2/H3) — impacte les Cabs.
+  zoneClimatique        String       @map("zone_climatique")
+  /// Surface plancher soumise au DEET (m²).
+  surfacePlancher       Decimal      @map("surface_plancher")
+  /// Année de référence choisie (2010-2019).
+  anneeReference        Int          @map("annee_reference")
+  /// Consommation de référence en énergie finale (kWhEF/m²/an).
+  consoReferenceKwhEfM2 Decimal      @map("conso_reference_kwh_ef_m2")
+  /// Consommation actuelle mesurée (kWhEF/m²/an) — la plus récente déclarée.
+  consoActuelleKwhEfM2  Decimal?     @map("conso_actuelle_kwh_ef_m2")
+  /// Année de la dernière conso déclarée.
+  anneeActuelle         Int?         @map("annee_actuelle")
+  /// Notes libres (contexte, remarques MO).
+  notes                 String?
+  createdAt             DateTime     @default(now()) @map("created_at")
+  updatedAt             DateTime     @updatedAt @map("updated_at")
+
+  @@index([projetId])
+  @@map("deet_profils")
+}
+
+enum DeetMethode {
+  RELATIVE // −40 % en 2030 / −50 % en 2040 / −60 % en 2050 vs. baseline
+  ABSOLUE // Respect du Cabs (kWhEF/m²/an) par activité + zone
+}
+
+/// Catégories d'activité DEET (arrêté 24 novembre 2020 modifié).
+/// Liste simplifiée regroupant les usages les plus courants.
+enum DeetActivite {
+  BUREAUX
+  ENSEIGNEMENT
+  HOSPITALIER
+  HOTELLERIE_RESTAURATION
+  COMMERCE
+  LOGISTIQUE_INDUSTRIE
+  SPORT_LOISIRS
+  CULTURE
+  AUTRE_TERTIAIRE
 }

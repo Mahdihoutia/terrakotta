@@ -12,6 +12,7 @@ import {
   FileOutput,
   Gauge,
   Snowflake,
+  TrendingDown,
 } from "lucide-react";
 
 interface Tab {
@@ -63,6 +64,12 @@ const TABS: Tab[] = [
     label: "PAC",
     icon: Snowflake,
     match: (p, base) => p.startsWith(`${base}/pac`),
+  },
+  {
+    href: "/deet",
+    label: "DEET",
+    icon: TrendingDown,
+    match: (p, base) => p.startsWith(`${base}/deet`),
   },
   {
     href: "/livrables",

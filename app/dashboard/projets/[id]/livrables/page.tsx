@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { cn } from "@/lib/utils";
+import AuditReglementaireGenerator from "@/components/dashboard/AuditReglementaireGenerator";
 
 type DocType = "RAPPORT_VISITE" | "NOTE_DIMENSIONNEMENT" | "DEVIS" | "AUDIT" | "BILAN_THERMIQUE";
 type DocStatut = "BROUILLON" | "EN_COURS" | "TERMINE" | "ENVOYE";
@@ -89,6 +90,9 @@ export default async function LivrablesTabPage({ params }: Props) {
           Nouveau document
         </Link>
       </div>
+
+      {/* Générateur audit réglementaire */}
+      <AuditReglementaireGenerator projetId={id} />
 
       {/* Synthèse par type */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
