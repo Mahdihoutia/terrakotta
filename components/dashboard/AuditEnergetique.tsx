@@ -105,6 +105,7 @@ interface DocumentRecord {
   statut: string;
   clientNom: string | null;
   donnees: string | null;
+  projetId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -1341,6 +1342,35 @@ export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props
     }
     return {};
   });
+  // Projet de rattachement — renseigné si l'audit est ouvert depuis un projet
+  // (via le prefill) ou si le document existant y est déjà lié. C'est le
+  // chaînon qui fait apparaître l'audit dans l'onglet Livrables du projet.
+  const [linkedProjetId, setLinkedProjetId] = useState<string | null>(
+    existingDoc?.projetId ?? null,
+  );
+
+  // ─── Pré-remplissage depuis un projet ──────────────────────────
+  // Si l'utilisateur arrive via « Audit (pré-rempli) » depuis un projet,
+  // on charge les valeurs mappées (identité, bâti, systèmes, DPE,
+  // déperditions, DEET, consos) puis on purge le storage.
+  useEffect(() => {
+    if (existingDoc) return;
+    try {
+      const raw = typeof window !== "undefined"
+        ? localStorage.getItem("kilowater:projet-to-audit-prefill")
+        : null;
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as {
+        values?: Record<string, string>;
+        ref?: string | null;
+        projetId?: string | null;
+      };
+      if (parsed.values) setValues((prev) => ({ ...parsed.values, ...prev }));
+      if (parsed.projetId) setLinkedProjetId(parsed.projetId);
+      localStorage.removeItem("kilowater:projet-to-audit-prefill");
+    } catch { /* ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [preconisations, setPreconisations] = useState<PreconisationAction[]>(() => {
     if (existingDoc?.donnees) {
       try {
@@ -1583,7 +1613,7 @@ export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props
         const res = await fetch(`/api/documents/${docId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ titre, reference, clientNom: values.client_nom || null, donnees, statut: "EN_COURS" }) });
         if (res.ok) { setSaved(true); setTimeout(() => setSaved(false), 2000); onSaved?.(); }
       } else {
-        const res = await fetch("/api/documents", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ titre, reference, type: "AUDIT", statut: "EN_COURS", clientNom: values.client_nom || null, donnees }) });
+        const res = await fetch("/api/documents", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ titre, reference, type: "AUDIT", statut: "EN_COURS", clientNom: values.client_nom || null, donnees, projetId: linkedProjetId }) });
         if (res.ok) { const created = await res.json(); setDocId(created.id); setSaved(true); setTimeout(() => setSaved(false), 2000); onSaved?.(); }
       }
     } catch { /* silently fail */ } finally { setSaving(false); }
@@ -1852,6 +1882,12 @@ export default function AuditEnergetique({ onBack, onSaved, existingDoc }: Props
             <h2 className="text-lg font-semibold">Audit énergétique</h2>
             <p className="text-sm text-muted-foreground">{completionPct}% complété — {filledRequired.length}/{allRequired.length} champs obligatoires{totalPhotos > 0 && ` — ${totalPhotos} photo${totalPhotos > 1 ? "s" : ""}`}</p>
           </div>
+          {linkedProjetId && (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[11px] font-medium text-amber-700 dark:text-amber-300">
+              <FileText className="h-3 w-3" />
+              Lié au projet · pré-rempli
+            </span>
+          )}
         </div>
         <div className="flex gap-2 flex-wrap">
           <Button variant="outline" size="sm" onClick={() => setShowBatimentPicker(true)}>

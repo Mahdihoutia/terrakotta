@@ -132,6 +132,10 @@ function DocumentsPageInner() {
       setSelectedType("NOTE_DIMENSIONNEMENT");
       setEditingDoc(null);
       setActiveTab("generate");
+    } else if (create === "audit") {
+      setSelectedType("AUDIT");
+      setEditingDoc(null);
+      setActiveTab("generate");
     }
   }, [searchParams]);
 

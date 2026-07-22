@@ -11,7 +11,8 @@ import {
 } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { cn } from "@/lib/utils";
-import AuditReglementaireGenerator from "@/components/dashboard/AuditReglementaireGenerator";
+import NoteFromProjetButton from "@/components/dashboard/NoteFromProjetButton";
+import AuditFromProjetButton from "@/components/dashboard/AuditFromProjetButton";
 
 type DocType = "RAPPORT_VISITE" | "NOTE_DIMENSIONNEMENT" | "DEVIS" | "AUDIT" | "BILAN_THERMIQUE";
 type DocStatut = "BROUILLON" | "EN_COURS" | "TERMINE" | "ENVOYE";
@@ -82,17 +83,18 @@ export default async function LivrablesTabPage({ params }: Props) {
               : `${documents.length} document${documents.length > 1 ? "s" : ""} rattaché${documents.length > 1 ? "s" : ""} — ${countByStatut(documents, "TERMINE") + countByStatut(documents, "ENVOYE")} finalisé${countByStatut(documents, "TERMINE") + countByStatut(documents, "ENVOYE") > 1 ? "s" : ""}`}
           </p>
         </div>
-        <Link
-          href="/dashboard/documents"
-          className="inline-flex items-center gap-1.5 rounded-md border border-tk-border bg-tk-surface px-3 py-1.5 text-[12px] font-medium text-tk-text-secondary hover:border-tk-border-hover hover:text-tk-text"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          Nouveau document
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <NoteFromProjetButton projetId={id} />
+          <AuditFromProjetButton projetId={id} />
+          <Link
+            href="/dashboard/documents"
+            className="inline-flex items-center gap-1.5 rounded-md border border-tk-border bg-tk-surface px-3 py-1.5 text-[12px] font-medium text-tk-text-secondary hover:border-tk-border-hover hover:text-tk-text"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Nouveau document
+          </Link>
+        </div>
       </div>
-
-      {/* Générateur audit réglementaire */}
-      <AuditReglementaireGenerator projetId={id} />
 
       {/* Synthèse par type */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">

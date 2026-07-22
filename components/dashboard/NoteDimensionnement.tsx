@@ -3138,6 +3138,7 @@ interface DocumentRecord {
   statut: string;
   clientNom: string | null;
   donnees: string | null;
+  projetId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -3336,6 +3337,12 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
     }
     return {};
   });
+  // Projet de rattachement — renseigné si la note est ouverte depuis un
+  // projet (via le prefill) ou si le document existant y est déjà lié.
+  // C'est le chaînon qui fait apparaître la note dans l'onglet Livrables.
+  const [linkedProjetId, setLinkedProjetId] = useState<string | null>(
+    existingDoc?.projetId ?? null,
+  );
 
   // ─── Pré-remplissage depuis l'audit (C3) ───────────────────────
   // Si l'utilisateur arrive via « Créer la note CEE associée » depuis
@@ -3348,11 +3355,12 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
         ? localStorage.getItem("kilowater:audit-to-note-prefill")
         : null;
       if (!raw) return;
-      const parsed = JSON.parse(raw) as { fiche?: FicheId; values?: Record<string, string>; ref?: string | null };
+      const parsed = JSON.parse(raw) as { fiche?: FicheId; values?: Record<string, string>; ref?: string | null; projetId?: string | null };
       if (parsed.fiche) setSelectedFiche(parsed.fiche);
       if (parsed.values) {
         setValues((prev) => ({ ...parsed.values, ...prev }));
       }
+      if (parsed.projetId) setLinkedProjetId(parsed.projetId);
       localStorage.removeItem("kilowater:audit-to-note-prefill");
     } catch { /* ignore */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -3841,6 +3849,7 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
             statut: "EN_COURS",
             clientNom: values.client_nom || null,
             donnees,
+            projetId: linkedProjetId,
           }),
         });
         if (res.ok) {
@@ -4068,6 +4077,12 @@ export default function NoteDimensionnement({ onBack, onSaved, existingDoc }: Pr
               Sélectionnez la fiche CEE à remplir
             </p>
           </div>
+          {linkedProjetId && (
+            <span className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-violet-500/30 bg-violet-500/10 px-2.5 py-1 text-[11px] font-medium text-violet-700 dark:text-violet-300">
+              <Ruler className="h-3 w-3" />
+              Liée au projet · pré-remplie
+            </span>
+          )}
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
