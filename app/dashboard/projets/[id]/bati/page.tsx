@@ -4,6 +4,7 @@ import { Building2, ExternalLink, MapPin } from "lucide-react";
 import { prisma } from "@/lib/db";
 import BatimentCreateDialog from "@/components/dashboard/BatimentCreateDialog";
 import BatimentDeleteButton from "@/components/dashboard/BatimentDeleteButton";
+import MethodeInfo from "@/components/dashboard/MethodeInfo";
 import PontsThermiquesPanel from "@/components/dashboard/PontsThermiquesPanel";
 
 interface Props {
@@ -54,6 +55,17 @@ export default async function BatiTabPage({ params }: Props) {
         </div>
         <BatimentCreateDialog projetId={id} />
       </div>
+
+      <MethodeInfo
+        precision="saisie enveloppe"
+        methode="Le Bâti décrit l'enveloppe thermique : bâtiments → zones → parois affectées (murs, toiture, plancher, vitrages). Chaque paroi porte une surface et un coefficient U (transmission thermique). C'est la donnée d'entrée des déperditions calculées dans l'onglet Calcul."
+        points={[
+          "Découpe en zones thermiques (usage, surface, hauteur, consignes)",
+          "Parois affectées depuis la Bibliothèque → U calculé par composition de couches",
+          "Ponts thermiques ψ×L saisis au niveau bâtiment (ou forfait 5 %)",
+          "Plus la saisie est fine (U réels, ponts, orientation), plus le calcul est précis.",
+        ]}
+      />
 
       {batiments.length === 0 ? (
         <div className="rounded-xl border border-dashed border-tk-border bg-tk-surface/40 p-10 text-center">

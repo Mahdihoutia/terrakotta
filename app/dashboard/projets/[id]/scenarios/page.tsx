@@ -4,6 +4,7 @@ import ScenarioComparator, {
 } from "@/components/dashboard/ScenarioComparator";
 import VarianteCreateDialog from "@/components/dashboard/VarianteCreateDialog";
 import VarianteManageList from "@/components/dashboard/VarianteManageList";
+import MethodeInfo from "@/components/dashboard/MethodeInfo";
 import { calculerAides, BAREMES_VERSION } from "@/lib/aides";
 import type { Geste, FoyerDemandeur, GesteCode } from "@/lib/aides";
 import { prisma } from "@/lib/db";
@@ -290,6 +291,17 @@ export default async function ScenariosTabPage({ params }: PageProps) {
           hors IDF). Ouvre <em>Précision</em> dans l&apos;onglet Calcul pour saisir les vraies ressources.
         </div>
       )}
+      <MethodeInfo
+        precision="±10 % + barèmes officiels"
+        methode="Chaque variante applique ses gestes de travaux à l'état existant, puis recalcule les indicateurs (Cep, Cef, GES, DPE) avec le même moteur 3CL-DPE que l'onglet Calcul. Les aides sont chiffrées sur les barèmes officiels en vigueur."
+        points={[
+          "Gain énergétique = écart entre indicateurs après travaux et état existant",
+          "Isolation → U cible réglementaire ; PAC → SCOP saisonnier substitué au générateur",
+          `Aides : CEE (forfait cumac × surface) + MaPrimeRénov' selon foyer — barèmes ${BAREMES_VERSION}`,
+          "Économie annuelle = Δ conso × tarif énergie ; temps de retour = reste à charge ÷ économie",
+        ]}
+        calibrationHref={`/dashboard/projets/${projetId}/calibration`}
+      />
       <VarianteManageList
         projetId={projetId}
         variantes={dbVariantes.map((v) => {

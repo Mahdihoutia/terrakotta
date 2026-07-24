@@ -20,6 +20,7 @@ import Metric from "@/components/dashboard/Metric";
 import DpeBadge from "@/components/dashboard/DpeBadge";
 import RapportProjetExportButton from "@/components/dashboard/RapportProjetExportButton";
 import ParametresPrecisionDialog from "@/components/dashboard/ParametresPrecisionDialog";
+import MethodeInfo from "@/components/dashboard/MethodeInfo";
 import { buildProjetBaseline } from "@/lib/calcul-projet";
 
 type SystemePrisma = "ELEC" | "GAZ_NATUREL" | "FIOUL" | "BOIS" | "PROPANE" | "RESEAU_CHALEUR";
@@ -377,6 +378,18 @@ export default async function CalculTabPage({ params }: Props) {
           <RapportProjetExportButton projetId={id} />
         </div>
       </div>
+
+      <MethodeInfo
+        precision="±10 %"
+        methode="Le calcul thermique s'appuie sur une méthode 3CL-DPE simplifiée : déperditions de l'enveloppe (U×S par paroi), renouvellement d'air et ponts thermiques, croisés avec les degrés-jours (DJU) de la zone climatique. Les consommations sont ensuite converties en énergie primaire (Cep) et en émissions (GES)."
+        points={[
+          "Déperditions = Σ (U × Surface) par paroi + ventilation + infiltrations",
+          "Besoin chauffage = déperditions × DJU, corrigé des apports solaires/internes",
+          "Cep / GES via les coefficients réglementaires par vecteur (élec ×2,3 en EP)",
+          "Précision non réglementaire (±10 %) — suffisant pour un dimensionnement, à recaler sur factures pour un livrable opposable.",
+        ]}
+        calibrationHref={`/dashboard/projets/${id}/calibration`}
+      />
 
       {(projetBaseline?.calibrationApplied || projetBaseline?.calibrationECSApplied) && (
         <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 px-4 py-2.5 text-[12px] text-emerald-700 dark:text-emerald-400 space-y-1">

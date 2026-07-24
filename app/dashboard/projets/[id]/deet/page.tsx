@@ -28,6 +28,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { showApiError, showNetworkError } from "@/lib/api-errors";
 import Metric from "@/components/dashboard/Metric";
+import MethodeInfo from "@/components/dashboard/MethodeInfo";
 import { cn } from "@/lib/utils";
 
 type Activite =
@@ -271,6 +272,17 @@ export default function DeetPage({ params }: Props) {
           respect d&apos;un seuil absolu Cabs. Déclaration OPERAT chaque année avant le 30 septembre.
         </p>
       </div>
+
+      <MethodeInfo
+        precision="arrêtés DEET"
+        methode="La trajectoire est calculée selon l'arrêté du 24 novembre 2020 modifié. Deux méthodes au choix : Relative (réduction en % vs. une année de référence 2010-2019) ou Absolue (respect d'un seuil Cabs propre à l'activité et à la zone climatique)."
+        points={[
+          "Méthode Relative : baseline × 0,60 (2030) / 0,50 (2040) / 0,40 (2050)",
+          "Méthode Absolue : Cabs 2030 par activité × zone, puis −16,7 % (2040) et −33,3 % (2050)",
+          "Statut d'alignement = écart entre conso actuelle et la cible interpolée à l'année en cours",
+          "Valeurs Cabs indicatives simplifiées — se référer à l'annexe de l'arrêté en vigueur pour un dépôt OPERAT.",
+        ]}
+      />
 
       {/* Alerte prochaine déclaration */}
       {prochaineDeclarationOperat && (
