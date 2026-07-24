@@ -1,7 +1,7 @@
 "use client";
 
 import { use, useEffect, useState, useCallback } from "react";
-import { Cog, Plus, Trash2, Loader2, Flame, Droplets, Wind, Snowflake, X, Sun } from "lucide-react";
+import { Cog, Plus, Trash2, Loader2, Flame, Droplets, Wind, Snowflake, X, Sun, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { showApiError, showNetworkError } from "@/lib/api-errors";
 import { toast } from "sonner";
@@ -73,6 +73,73 @@ export default function SystemesTabPage({ params }: PageProps) {
   const [submitting, setSubmitting] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  // Id du système en cours d'édition (null = mode création).
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  /** Ouvre le formulaire pré-rempli pour modifier un système existant. */
+  function startEdit(s: Systeme) {
+    setForm({
+      type: s.type,
+      vecteur: s.vecteur,
+      nom: s.nom,
+      rendement: String(s.rendement),
+      partCouverture: String(s.partCouverture),
+      cop: s.cop != null ? String(s.cop) : "",
+      puissanceKwc: EMPTY_FORM.puissanceKwc,
+      tauxAutoconso: EMPTY_FORM.tauxAutoconso,
+    });
+    setEditingId(s.id);
+    setShowForm(true);
+  }
+
+  function closeForm() {
+    setShowForm(false);
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+  }
+
+  /** Enregistre la modification d'un système existant (PATCH). */
+  async function handleUpdate() {
+    if (!editingId) return;
+    if (!form.nom.trim()) {
+      toast.error("Nom du système requis");
+      return;
+    }
+    const rendement = parseFloat(form.rendement);
+    const partCouverture = parseFloat(form.partCouverture);
+    const cop = form.cop ? parseFloat(form.cop) : null;
+    if (Number.isNaN(rendement) || rendement <= 0) {
+      toast.error("Rendement invalide");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const isPV = form.type === "PHOTOVOLTAIQUE";
+      const res = await fetch(`/api/systemes/${editingId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: form.type,
+          vecteur: isPV ? "ELEC" : form.vecteur,
+          nom: form.nom.trim(),
+          rendement,
+          partCouverture: Number.isNaN(partCouverture) ? 1 : partCouverture,
+          cop: !isPV && cop && !Number.isNaN(cop) ? cop : null,
+        }),
+      });
+      if (!res.ok) {
+        await showApiError(res, "Modification impossible");
+        return;
+      }
+      toast.success("Système modifié");
+      closeForm();
+      await refresh();
+    } catch (err) {
+      showNetworkError(err, "Erreur réseau");
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -168,7 +235,7 @@ export default function SystemesTabPage({ params }: PageProps) {
             Équipements de production de chaleur, ECS, ventilation et climatisation. Alimente le calcul Cep + DPE.
           </p>
         </div>
-        <Button size="sm" onClick={() => setShowForm((v) => !v)} className="h-8">
+        <Button size="sm" onClick={() => (showForm ? closeForm() : setShowForm(true))} className="h-8">
           {showForm ? <X className="mr-1 h-3.5 w-3.5" /> : <Plus className="mr-1 h-3.5 w-3.5" />}
           {showForm ? "Annuler" : "Ajouter"}
         </Button>
@@ -256,12 +323,17 @@ export default function SystemesTabPage({ params }: PageProps) {
               className="h-8 w-full rounded-md border border-tk-border bg-tk-input px-2 text-[12px]"
             />
           </Field>
-          <div className="flex justify-end gap-2 pt-1">
-            <Button size="sm" variant="outline" onClick={() => setShowForm(false)}>Annuler</Button>
-            <Button size="sm" onClick={handleCreate} disabled={submitting}>
-              {submitting ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Plus className="mr-1 h-3.5 w-3.5" />}
-              Créer
-            </Button>
+          <div className="flex items-center justify-between gap-2 pt-1">
+            <span className="text-[11px] text-tk-text-faint">
+              {editingId ? "Modification du système" : "Nouveau système"}
+            </span>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={closeForm}>Annuler</Button>
+              <Button size="sm" onClick={editingId ? handleUpdate : handleCreate} disabled={submitting}>
+                {submitting ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Plus className="mr-1 h-3.5 w-3.5" />}
+                {editingId ? "Enregistrer" : "Créer"}
+              </Button>
+            </div>
           </div>
         </div>
       )}
@@ -312,15 +384,25 @@ export default function SystemesTabPage({ params }: PageProps) {
                         <td className="num font-mono">{s.rendement.toFixed(2)}</td>
                         <td className="num font-mono">{(s.partCouverture * 100).toFixed(0)} %</td>
                         <td className="col-narrow text-right">
-                          <Button
-                            variant="ghost" size="icon"
-                            className="h-6 w-6 text-destructive hover:text-destructive"
-                            onClick={() => handleDelete(s)}
-                            disabled={busyId === s.id}
-                            aria-label="Supprimer"
-                          >
-                            {busyId === s.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
-                          </Button>
+                          <div className="flex items-center justify-end gap-0.5">
+                            <Button
+                              variant="ghost" size="icon"
+                              className="h-6 w-6 text-tk-text-faint hover:text-tk-text"
+                              onClick={() => startEdit(s)}
+                              aria-label="Modifier"
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost" size="icon"
+                              className="h-6 w-6 text-destructive hover:text-destructive"
+                              onClick={() => handleDelete(s)}
+                              disabled={busyId === s.id}
+                              aria-label="Supprimer"
+                            >
+                              {busyId === s.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))}

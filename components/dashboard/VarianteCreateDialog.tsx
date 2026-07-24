@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Loader2, X, Trash2 } from "lucide-react";
+import { Plus, Loader2, X, Trash2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { showApiError, showNetworkError } from "@/lib/api-errors";
 import { toast } from "sonner";
@@ -31,23 +31,44 @@ interface GesteRow {
   coutHT: string;
 }
 
-interface Props {
-  projetId: string;
+interface ExistingVariante {
+  id: string;
+  nom: string;
+  description: string | null;
+  gestes: GesteRow[];
 }
 
-export default function VarianteCreateDialog({ projetId }: Props) {
+interface Props {
+  projetId: string;
+  /** Si fourni, le dialogue passe en mode ÉDITION (PATCH) et le déclencheur
+   *  devient un bouton crayon. Sinon mode CRÉATION (POST). */
+  existingVariante?: ExistingVariante;
+}
+
+const DEFAULT_GESTES: GesteRow[] = [
+  { code: "ISOLATION_MURS_ITE", quantite: "100", coutHT: "20000" },
+];
+
+export default function VarianteCreateDialog({ projetId, existingVariante }: Props) {
   const router = useRouter();
+  const isEdit = !!existingVariante;
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [nom, setNom] = useState("");
-  const [description, setDescription] = useState("");
-  const [gestes, setGestes] = useState<GesteRow[]>([
-    { code: "ISOLATION_MURS_ITE", quantite: "100", coutHT: "20000" },
-  ]);
+  const [nom, setNom] = useState(existingVariante?.nom ?? "");
+  const [description, setDescription] = useState(existingVariante?.description ?? "");
+  const [gestes, setGestes] = useState<GesteRow[]>(
+    existingVariante?.gestes?.length ? existingVariante.gestes : DEFAULT_GESTES,
+  );
 
   function reset() {
+    if (existingVariante) {
+      setNom(existingVariante.nom);
+      setDescription(existingVariante.description ?? "");
+      setGestes(existingVariante.gestes?.length ? existingVariante.gestes : DEFAULT_GESTES);
+      return;
+    }
     setNom(""); setDescription("");
-    setGestes([{ code: "ISOLATION_MURS_ITE", quantite: "100", coutHT: "20000" }]);
+    setGestes(DEFAULT_GESTES);
   }
 
   function addGeste() {
@@ -79,22 +100,25 @@ export default function VarianteCreateDialog({ projetId }: Props) {
     }
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/projets/${projetId}/variantes`, {
-        method: "POST",
+      const url = isEdit
+        ? `/api/projets/${projetId}/variantes/${existingVariante!.id}`
+        : `/api/projets/${projetId}/variantes`;
+      const res = await fetch(url, {
+        method: isEdit ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           nom: nom.trim(),
           description: description.trim() || null,
-          type: "VARIANTE",
+          ...(isEdit ? {} : { type: "VARIANTE" }),
           inputs: { gestes: parsedGestes },
         }),
       });
       if (!res.ok) {
-        await showApiError(res, "Création impossible");
+        await showApiError(res, isEdit ? "Modification impossible" : "Création impossible");
         return;
       }
-      toast.success(`Variante "${nom}" créée`);
-      reset();
+      toast.success(isEdit ? `Variante "${nom}" modifiée` : `Variante "${nom}" créée`);
+      if (!isEdit) reset();
       setOpen(false);
       router.refresh();
     } catch (err) {
@@ -106,14 +130,25 @@ export default function VarianteCreateDialog({ projetId }: Props) {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1 rounded-md border border-tk-border bg-tk-surface px-2.5 py-1 text-[12px] font-medium text-tk-text-secondary hover:border-tk-border-hover hover:text-tk-text"
-      >
-        <Plus className="h-3 w-3" />
-        Ajouter une variante
-      </button>
+      {isEdit ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-label="Modifier la variante"
+          className="inline-flex h-7 w-7 items-center justify-center rounded text-tk-text-faint hover:bg-tk-hover hover:text-tk-text"
+        >
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="inline-flex items-center gap-1 rounded-md border border-tk-border bg-tk-surface px-2.5 py-1 text-[12px] font-medium text-tk-text-secondary hover:border-tk-border-hover hover:text-tk-text"
+        >
+          <Plus className="h-3 w-3" />
+          Ajouter une variante
+        </button>
+      )}
 
       {open && (
         <div
@@ -126,7 +161,7 @@ export default function VarianteCreateDialog({ projetId }: Props) {
             className="w-full max-w-2xl rounded-xl border border-tk-border bg-tk-surface p-5 shadow-2xl max-h-[90vh] overflow-y-auto"
           >
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-[15px] font-semibold text-tk-text">Nouvelle variante de rénovation</h2>
+              <h2 className="text-[15px] font-semibold text-tk-text">{isEdit ? "Modifier la variante" : "Nouvelle variante de rénovation"}</h2>
               <button type="button" onClick={() => setOpen(false)} className="rounded p-1 text-tk-text-faint hover:bg-tk-hover">
                 <X className="h-4 w-4" />
               </button>
@@ -223,7 +258,7 @@ export default function VarianteCreateDialog({ projetId }: Props) {
               </Button>
               <Button type="submit" size="sm" disabled={submitting}>
                 {submitting ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Plus className="mr-1 h-3.5 w-3.5" />}
-                Créer la variante
+                {isEdit ? "Enregistrer" : "Créer la variante"}
               </Button>
             </div>
           </form>

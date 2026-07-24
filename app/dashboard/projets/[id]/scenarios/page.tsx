@@ -3,6 +3,7 @@ import ScenarioComparator, {
   Scenario,
 } from "@/components/dashboard/ScenarioComparator";
 import VarianteCreateDialog from "@/components/dashboard/VarianteCreateDialog";
+import VarianteManageList from "@/components/dashboard/VarianteManageList";
 import { calculerAides, BAREMES_VERSION } from "@/lib/aides";
 import type { Geste, FoyerDemandeur, GesteCode } from "@/lib/aides";
 import { prisma } from "@/lib/db";
@@ -289,6 +290,23 @@ export default async function ScenariosTabPage({ params }: PageProps) {
           hors IDF). Ouvre <em>Précision</em> dans l&apos;onglet Calcul pour saisir les vraies ressources.
         </div>
       )}
+      <VarianteManageList
+        projetId={projetId}
+        variantes={dbVariantes.map((v) => {
+          let gestes: { code: string; quantite: string; coutHT: string }[] = [];
+          try {
+            const parsed = JSON.parse(v.inputsJson) as {
+              gestes?: { code: string; quantite: number; coutHT: number }[];
+            };
+            gestes = (parsed.gestes ?? []).map((g) => ({
+              code: g.code,
+              quantite: String(g.quantite),
+              coutHT: String(g.coutHT),
+            }));
+          } catch {}
+          return { id: v.id, nom: v.nom, description: v.description, gestes };
+        })}
+      />
       <ScenarioComparator
         scenarios={SCENARIOS}
         surface={surface}

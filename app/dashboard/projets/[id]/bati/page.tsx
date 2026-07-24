@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Building2, ExternalLink, MapPin } from "lucide-react";
 import { prisma } from "@/lib/db";
 import BatimentCreateDialog from "@/components/dashboard/BatimentCreateDialog";
+import BatimentDeleteButton from "@/components/dashboard/BatimentDeleteButton";
 import PontsThermiquesPanel from "@/components/dashboard/PontsThermiquesPanel";
 
 interface Props {
@@ -111,13 +112,16 @@ export default async function BatiTabPage({ params }: Props) {
                       )}
                     </div>
                   </div>
-                  <Link
-                    href={`/dashboard/batiments/${b.id}`}
-                    aria-label="Ouvrir le bâtiment"
-                    className="inline-flex h-7 w-7 items-center justify-center rounded text-tk-text-faint hover:bg-tk-hover hover:text-tk-text"
-                  >
-                    <ExternalLink className="h-3.5 w-3.5" />
-                  </Link>
+                  <div className="flex items-center gap-1">
+                    <Link
+                      href={`/dashboard/batiments/${b.id}`}
+                      className="inline-flex items-center gap-1.5 rounded-md border border-tk-border bg-tk-bg/40 px-2.5 py-1 text-[11px] font-medium text-tk-text-secondary hover:border-tk-border-hover hover:text-tk-text"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      Éditer zones &amp; parois
+                    </Link>
+                    <BatimentDeleteButton batimentId={b.id} batimentNom={b.nom} />
+                  </div>
                 </header>
 
                 {b.zones.length === 0 ? (

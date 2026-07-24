@@ -240,6 +240,24 @@ export default function BatimentDetailPage({ params }: PageProps) {
     await load();
   }
 
+  /** Modifie une paroi affectée (surface / orientation). */
+  async function handleUpdateParoi(
+    zoneId: string,
+    paroiZoneId: string,
+    patch: { surface?: number; orientation?: string | null; cotePaire?: boolean },
+  ) {
+    const res = await fetch(`/api/zones/${zoneId}/parois/${paroiZoneId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    });
+    if (!res.ok) {
+      await showApiError(res);
+      return;
+    }
+    await load();
+  }
+
   async function handleCalculer() {
     setCalculating(true);
     try {
@@ -498,6 +516,9 @@ export default function BatimentDetailPage({ params }: PageProps) {
               onRemoveParoi={(paroiZoneId) =>
                 handleRemoveParoi(selectedZone.id, paroiZoneId)
               }
+              onUpdateParoi={(paroiZoneId, patch) =>
+                handleUpdateParoi(selectedZone.id, paroiZoneId, patch)
+              }
               onDelete={() => handleDeleteZone(selectedZone.id)}
             />
           ) : (
@@ -521,6 +542,7 @@ interface ZoneEditorProps {
   onUpdate: (patch: Partial<ZoneUI>) => void;
   onAddParoi: (paroiId: string, surface: number, orientation: string | null, cotePaire: boolean) => void;
   onRemoveParoi: (paroiZoneId: string) => void;
+  onUpdateParoi: (paroiZoneId: string, patch: { surface?: number; orientation?: string | null; cotePaire?: boolean }) => void;
   onDelete: () => void;
 }
 
@@ -531,6 +553,7 @@ function ZoneEditor({
   onUpdate,
   onAddParoi,
   onRemoveParoi,
+  onUpdateParoi,
   onDelete,
 }: ZoneEditorProps) {
   const [showAddParoi, setShowAddParoi] = useState(false);
@@ -801,17 +824,41 @@ function ZoneEditor({
                   <tr key={zp.id} className="border-t">
                     <td className="py-1.5">{zp.paroi?.nom ?? "—"}</td>
                     <td className="text-xs text-muted-foreground">{zp.paroi?.type}</td>
-                    <td className="text-right">{zp.surface.toFixed(0)} m²</td>
+                    <td className="text-right">
+                      <NumberInput
+                        value={zp.surface}
+                        onCommit={(v) => onUpdateParoi(zp.id, { surface: v })}
+                        className="w-20 border rounded px-1.5 py-0.5 text-xs text-right"
+                      />
+                    </td>
                     <td className="text-right">
                       {zp.paroi?.uCache != null ? zp.paroi.uCache.toFixed(2) : "—"}
                     </td>
-                    <td>{zp.orientation ?? "—"}</td>
-                    <td className="text-center">{zp.cotePaire ? "Oui" : "Non"}</td>
+                    <td>
+                      <input
+                        type="text"
+                        defaultValue={zp.orientation ?? ""}
+                        placeholder="—"
+                        onBlur={(e) => {
+                          const v = e.target.value.trim() || null;
+                          if (v !== (zp.orientation ?? null)) onUpdateParoi(zp.id, { orientation: v });
+                        }}
+                        className="w-16 border rounded px-1.5 py-0.5 text-xs"
+                      />
+                    </td>
+                    <td className="text-center">
+                      <input
+                        type="checkbox"
+                        checked={zp.cotePaire}
+                        onChange={(e) => onUpdateParoi(zp.id, { cotePaire: e.target.checked })}
+                      />
+                    </td>
                     <td className="text-right">
                       <button
                         type="button"
                         onClick={() => onRemoveParoi(zp.id)}
                         className="text-muted-foreground hover:text-red-600"
+                        aria-label="Retirer la paroi"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
@@ -840,10 +887,12 @@ function NumberInput({
   value,
   step = 1,
   onCommit,
+  className,
 }: {
   value: number;
   step?: number;
   onCommit: (v: number) => void;
+  className?: string;
 }) {
   const [local, setLocal] = useState(String(value));
   useEffect(() => {
@@ -859,7 +908,7 @@ function NumberInput({
         const n = Number(local);
         if (Number.isFinite(n) && n !== value) onCommit(n);
       }}
-      className="w-full border rounded px-2 py-1 text-sm"
+      className={className ?? "w-full border rounded px-2 py-1 text-sm"}
     />
   );
 }

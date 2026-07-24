@@ -4,12 +4,14 @@ import { ensureRole, MUTATION_ROLES, DESTRUCTIVE_ROLES } from "@/lib/auth-helper
 import { z } from "zod";
 
 const updateSchema = z.object({
-  type: z.enum(["CHAUFFAGE", "ECS", "VENTILATION", "CLIMATISATION"]).optional(),
+  type: z.enum(["CHAUFFAGE", "ECS", "VENTILATION", "CLIMATISATION", "PHOTOVOLTAIQUE"]).optional(),
   vecteur: z.enum(["ELEC", "GAZ_NATUREL", "FIOUL", "BOIS", "PROPANE", "RESEAU_CHALEUR"]).optional(),
   nom: z.string().min(1).optional(),
   rendement: z.number().positive().optional(),
   partCouverture: z.number().min(0).max(1).optional(),
   cop: z.number().positive().nullable().optional(),
+  puissanceKwc: z.number().positive().nullable().optional(),
+  tauxAutoconso: z.number().min(0).max(1).nullable().optional(),
   notes: z.string().nullable().optional(),
 });
 
