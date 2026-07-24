@@ -421,21 +421,27 @@ export default function BatimentDetailPage({ params }: PageProps) {
                     ))}
                   </select>
                   <div className="flex gap-2">
-                    <input
-                      type="number"
-                      placeholder="Surface m²"
-                      value={zoneForm.surface}
-                      onChange={(e) => setZoneForm({ ...zoneForm, surface: Number(e.target.value) })}
-                      className="w-full border rounded px-2 py-1 text-sm"
-                    />
-                    <input
-                      type="number"
-                      step="0.1"
-                      placeholder="HSP m"
-                      value={zoneForm.hauteurSousPlafond}
-                      onChange={(e) => setZoneForm({ ...zoneForm, hauteurSousPlafond: Number(e.target.value) })}
-                      className="w-full border rounded px-2 py-1 text-sm"
-                    />
+                    <label className="flex-1 text-[11px] text-muted-foreground">
+                      Surface au sol (m²)
+                      <input
+                        type="number"
+                        placeholder="Ex : 120"
+                        value={zoneForm.surface}
+                        onChange={(e) => setZoneForm({ ...zoneForm, surface: Number(e.target.value) })}
+                        className="mt-0.5 w-full border rounded px-2 py-1 text-sm text-foreground"
+                      />
+                    </label>
+                    <label className="flex-1 text-[11px] text-muted-foreground">
+                      Hauteur sous plafond (m)
+                      <input
+                        type="number"
+                        step="0.1"
+                        placeholder="Ex : 2,70"
+                        value={zoneForm.hauteurSousPlafond}
+                        onChange={(e) => setZoneForm({ ...zoneForm, hauteurSousPlafond: Number(e.target.value) })}
+                        className="mt-0.5 w-full border rounded px-2 py-1 text-sm text-foreground"
+                      />
+                    </label>
                   </div>
                   <div className="flex gap-2">
                     <Button type="submit" size="sm">Créer</Button>

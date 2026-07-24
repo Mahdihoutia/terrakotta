@@ -158,8 +158,19 @@ export default function VarianteCreateDialog({ projetId }: Props) {
                     + Ajouter un geste
                   </button>
                 </div>
+                {/* En-têtes de colonnes — libellés persistants */}
+                <div className="mb-1 flex items-center gap-2 px-0.5 text-[10px] uppercase tracking-wide text-tk-text-faint">
+                  <span className="flex-1">Type de geste</span>
+                  <span className="w-20 text-right">Quantité *</span>
+                  <span className="w-24 text-right">Coût € HT</span>
+                  <span className="w-[26px]" />
+                </div>
                 <div className="space-y-1.5">
-                  {gestes.map((g, i) => (
+                  {gestes.map((g, i) => {
+                    const uniteGeste =
+                      /ISOLATION|MENUISERIES/.test(g.code) ? "m²" :
+                      /PAC|CHAUDIERE|POELE|VMC|CHAUFFE_EAU|DEPOSE|AUDIT/.test(g.code) ? "u" : "";
+                    return (
                     <div key={i} className="flex items-center gap-2">
                       <select
                         value={g.code}
@@ -168,18 +179,28 @@ export default function VarianteCreateDialog({ projetId }: Props) {
                       >
                         {GESTES.map((opt) => <option key={opt.code} value={opt.code}>{opt.label}</option>)}
                       </select>
-                      <input
-                        type="number" value={g.quantite}
-                        onChange={(e) => updateGeste(i, { quantite: e.target.value })}
-                        placeholder="Qté"
-                        className="h-8 w-20 rounded-md border border-tk-border bg-tk-input px-2 text-[12px] tabular-nums"
-                      />
-                      <input
-                        type="number" value={g.coutHT}
-                        onChange={(e) => updateGeste(i, { coutHT: e.target.value })}
-                        placeholder="€ HT"
-                        className="h-8 w-24 rounded-md border border-tk-border bg-tk-input px-2 text-[12px] tabular-nums"
-                      />
+                      <div className="relative w-20">
+                        <input
+                          type="number" value={g.quantite}
+                          onChange={(e) => updateGeste(i, { quantite: e.target.value })}
+                          placeholder="0"
+                          aria-label="Quantité"
+                          className="h-8 w-full rounded-md border border-tk-border bg-tk-input px-2 pr-6 text-[12px] tabular-nums"
+                        />
+                        {uniteGeste && (
+                          <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-tk-text-faint">{uniteGeste}</span>
+                        )}
+                      </div>
+                      <div className="relative w-24">
+                        <input
+                          type="number" value={g.coutHT}
+                          onChange={(e) => updateGeste(i, { coutHT: e.target.value })}
+                          placeholder="0"
+                          aria-label="Coût HT"
+                          className="h-8 w-full rounded-md border border-tk-border bg-tk-input px-2 pr-5 text-[12px] tabular-nums"
+                        />
+                        <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-tk-text-faint">€</span>
+                      </div>
                       <button
                         type="button"
                         onClick={() => removeGeste(i)}
@@ -190,7 +211,8 @@ export default function VarianteCreateDialog({ projetId }: Props) {
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
