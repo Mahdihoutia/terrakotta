@@ -11,10 +11,10 @@ import { prisma } from "@/lib/db";
 import { cn } from "@/lib/utils";
 import {
   calculerDeperditions,
-  calculerBesoinsChauffage,
-  calculerDpe,
   getZoneData,
-  type Vecteur,
+  PSI_LIBRARY,
+  type TypeLiaison,
+  type TypeIsolation,
 } from "@/lib/thermal";
 import Metric from "@/components/dashboard/Metric";
 import DpeBadge from "@/components/dashboard/DpeBadge";
@@ -22,16 +22,7 @@ import RapportProjetExportButton from "@/components/dashboard/RapportProjetExpor
 import ParametresPrecisionDialog from "@/components/dashboard/ParametresPrecisionDialog";
 import MethodeInfo from "@/components/dashboard/MethodeInfo";
 import { buildProjetBaseline } from "@/lib/calcul-projet";
-
-type SystemePrisma = "ELEC" | "GAZ_NATUREL" | "FIOUL" | "BOIS" | "PROPANE" | "RESEAU_CHALEUR";
-const VECTEUR_MAP: Record<SystemePrisma, Vecteur> = {
-  ELEC: "elec",
-  GAZ_NATUREL: "gaz_naturel",
-  FIOUL: "fioul",
-  BOIS: "bois",
-  PROPANE: "propane",
-  RESEAU_CHALEUR: "reseau_chaleur",
-};
+import { computeIndicatorsFromState } from "@/lib/calcul-variante";
 
 type ParoiType = "MUR_EXT" | "MUR_INT" | "TOITURE" | "PLANCHER_BAS" | "PLANCHER_INTER" | "VITRAGE" | "PORTE";
 
@@ -139,6 +130,10 @@ export default async function CalculTabPage({ params }: Props) {
       id: true,
       nom: true,
       zoneClimatique: true,
+      pontsThermiques: {
+        where: { deletedAt: null },
+        select: { typo: true, isolation: true, longueur: true, psiOverride: true },
+      },
       zones: {
         select: {
           id: true,
@@ -237,6 +232,22 @@ export default async function CalculTabPage({ params }: Props) {
       };
     }
 
+    // Ponts thermiques réels (ψ×L saisis via Bâti), sinon forfait 5 % des parois opaques.
+    // Cohérent avec buildProjetBaseline (moteur de précision Scénarios).
+    let hPontsBat = 0;
+    for (const pt of b.pontsThermiques) {
+      const longueur = Number(pt.longueur);
+      const psi =
+        pt.psiOverride != null
+          ? Number(pt.psiOverride)
+          : PSI_LIBRARY[pt.typo as TypeLiaison]?.[pt.isolation as TypeIsolation] ?? 0;
+      hPontsBat += psi * longueur;
+    }
+    const hPontsThermiques =
+      b.pontsThermiques.length > 0
+        ? hPontsBat
+        : dep_ptForfait(agg.surfaceMurs + agg.surfaceToiture + agg.surfacePlancher);
+
     const dep = calculerDeperditions({
       surfaceMurs: agg.surfaceMurs,
       surfaceToiture: agg.surfaceToiture,
@@ -246,23 +257,11 @@ export default async function CalculTabPage({ params }: Props) {
       uToiture: agg.uToiture,
       uPlancher: agg.uPlancher,
       uVitree: agg.uVitree,
-      hPontsThermiques: dep_ptForfait(agg.surfaceMurs + agg.surfaceToiture + agg.surfacePlancher),
+      hPontsThermiques,
       volumeChauffe,
       renouvellementAir,
       efficaciteDoubleFlux: efficaciteDF,
       deltaT,
-    });
-
-    const besoins = calculerBesoinsChauffage({
-      zone: b.zoneClimatique,
-      surfaceHabitable,
-      volumeChauffe,
-      ubat: dep.ubatMoyen,
-      surfaceDeperditiveTotale: dep.surfaceDeperditiveTotale,
-      renouvellementAir,
-      apportsSolairesGratuits: 0, // sans saisie spécifique
-      apportsInternes: 5 * surfaceHabitable, // ~5 kWh/m²·an forfait
-      rendementInstallation: 0.85,
     });
 
     return {
@@ -277,75 +276,32 @@ export default async function CalculTabPage({ params }: Props) {
       consigneInt,
       renouvellementAir,
       efficaciteDF,
+      pontsThermiquesSaisis: b.pontsThermiques.length > 0,
       dep,
-      besoins,
       complete: true,
     };
   });
 
-  // Totaux projet
+  // Totaux projet — déperditions physiques (somme géométrique par bâtiment)
   const totalCompletes = calculs.filter((c) => c.complete);
   const totalSurface = calculs.reduce((s, c) => s + c.surfaceHabitable, 0);
   const totalH = totalCompletes.reduce((s, c) => s + (c.dep?.hTotal ?? 0), 0);
-  const totalBesoinBrut = totalCompletes.reduce((s, c) => s + (c.besoins?.besoinBrut ?? 0), 0);
-  const totalBesoinNet = totalCompletes.reduce((s, c) => s + (c.besoins?.besoinNet ?? 0), 0);
   const totalPertesTBase = totalCompletes.reduce((s, c) => s + (c.dep?.pertesT_base ?? 0), 0);
 
-  // Cep + étiquette DPE — branchement Systèmes
   const sysChauffage = systemes.filter((s) => s.type === "CHAUFFAGE");
-  const sysECS       = systemes.filter((s) => s.type === "ECS");
-  const sysClim      = systemes.filter((s) => s.type === "CLIMATISATION");
 
-  // Rendement chauffage moyen pondéré par partCouverture
-  function moyenneEff(arr: typeof systemes): { eff: number; vecteur: Vecteur } {
-    if (arr.length === 0) return { eff: 0.85, vecteur: "gaz_naturel" };
-    let sumPart = 0;
-    let sumPartEff = 0;
-    let dominantVect: Vecteur = VECTEUR_MAP[arr[0].vecteur as SystemePrisma];
-    let dominantPart = 0;
-    for (const s of arr) {
-      const p = Number(s.partCouverture);
-      const e = s.cop != null ? Number(s.cop) : Number(s.rendement);
-      sumPart += p;
-      sumPartEff += p * e;
-      if (p > dominantPart) {
-        dominantPart = p;
-        dominantVect = VECTEUR_MAP[s.vecteur as SystemePrisma];
-      }
-    }
-    return { eff: sumPart > 0 ? sumPartEff / sumPart : 0.85, vecteur: dominantVect };
-  }
+  // Besoin, Cep, étiquette DPE — MÊME moteur que l'onglet Scénarios
+  // (computeIndicatorsFromState via buildProjetBaseline) : intègre ponts thermiques
+  // saisis, occupants, inertie, intermittence, perméabilité, calibration facture.
+  const ind =
+    projetBaseline && projetBaseline.hasEnvelope && projetBaseline.hasSystems
+      ? computeIndicatorsFromState(projetBaseline.baseline)
+      : null;
 
-  const chauf = moyenneEff(sysChauffage);
-  const ecs   = moyenneEff(sysECS);
-
-  const chauffage_kwh = chauf.eff > 0 ? totalBesoinNet / chauf.eff : 0;
-  // ECS forfait DPE 2021 : 17.78 kWh/m²·an d'EF (besoin) — varie selon catégorie ECS
-  const besoinECS_kwh = totalSurface * 17.78;
-  const ecs_kwh = ecs.eff > 0 ? besoinECS_kwh / ecs.eff : 0;
-  // Auxiliaires VMC + circulateurs (élec) — forfait 5 kWh/m²·an
-  const auxiliaires_kwh = totalSurface * 5;
-  // Éclairage logement DPE 2021 — 1.4 kWh/m²·an (lampes LED)
-  const eclairage_kwh = totalSurface * 1.4;
-  // Refroidissement : sans calcul Bclim ici, on utilise 0 sauf si système clim présent (forfait 12)
-  const refroid_kwh = sysClim.length > 0 ? totalSurface * 12 : 0;
-
-  const dpeProjet = totalSurface > 0 && (chauffage_kwh > 0 || sysChauffage.length > 0)
-    ? calculerDpe(
-        {
-          chauffage_kwh,
-          chauffage_vecteur: chauf.vecteur,
-          ecs_kwh,
-          ecs_vecteur: ecs.vecteur,
-          refroidissement_kwh: refroid_kwh,
-          eclairage_kwh,
-          auxiliaires_kwh,
-        },
-        totalSurface,
-      )
-    : null;
-
-  const consoFinaleM2 = totalSurface > 0 ? (chauffage_kwh + ecs_kwh + auxiliaires_kwh + eclairage_kwh + refroid_kwh) / totalSurface : 0;
+  const dpeProjet = ind?.dpeResult ?? null;
+  const consoFinaleM2 = ind?.consoFinaleM2 ?? 0;
+  const besoinChauffageM2 = ind?.besoinChauffage ?? 0;
+  const usageProfil = projetBaseline?.baseline.usageProfil ?? null;
 
   return (
     <div className="space-y-6">
@@ -493,10 +449,14 @@ export default async function CalculTabPage({ params }: Props) {
           />
           <KpiCard
             label="Besoin chauffage"
-            value={totalBesoinNet / Math.max(totalSurface, 1)}
+            value={besoinChauffageM2}
             unit="kWh/m²·an"
             decimals={0}
-            hint={`Total ${totalBesoinNet.toFixed(0)} kWh/an net`}
+            hint={
+              ind
+                ? `Total ${(besoinChauffageM2 * totalSurface).toFixed(0)} kWh/an net`
+                : "Saisis un système chauffage"
+            }
           />
           <KpiCard
             label="Conso finale"
@@ -510,6 +470,21 @@ export default async function CalculTabPage({ params }: Props) {
             }
             tone={consoFinaleM2 < 100 ? "pos" : consoFinaleM2 < 200 ? "default" : "neg"}
           />
+        </div>
+      )}
+
+      {/* Profil d'usage tertiaire (forfaits ECS / apports internes / éclairage pondérés par zone) */}
+      {usageProfil && totalCompletes.length > 0 && (
+        <div className="rounded-md border border-tk-border bg-tk-surface/60 px-4 py-2.5">
+          <p className="field-label-tiny mb-2">Profil d&apos;usage tertiaire · forfaits pondérés par surface de zone</p>
+          <div className="flex flex-wrap gap-x-6 gap-y-1 text-[12px] text-tk-text-muted">
+            <span>ECS <span className="font-mono tabular-nums text-tk-text">{usageProfil.ecsKwhM2.toFixed(1)}</span> kWh/m²·an</span>
+            <span>Apports internes <span className="font-mono tabular-nums text-tk-text">{usageProfil.apportsInternesKwhM2.toFixed(0)}</span> kWh/m²·an</span>
+            <span>Éclairage <span className="font-mono tabular-nums text-tk-text">{usageProfil.eclairageKwhM2.toFixed(0)}</span> kWh/m²·an</span>
+          </div>
+          <p className="mt-1.5 text-[10.5px] text-tk-text-faint">
+            Déduits de la destination des zones (bureaux, restauration, commerce…) — remplacent les forfaits logement 3CL.
+          </p>
         </div>
       )}
 
@@ -588,10 +563,15 @@ export default async function CalculTabPage({ params }: Props) {
                 <Field label="Pertes T_base">
                   <Metric value={c.dep!.pertesT_base / 1000} unit="kW" size="sm" decimals={1} />
                 </Field>
-                <Field label="Besoin chauffage">
-                  <Metric value={c.besoins!.besoinNet / c.surfaceHabitable} unit="kWh/m²·an" size="sm" decimals={0} />
+                <Field label="Ponts thermiques">
+                  <Metric value={c.dep!.hPontsThermiques} unit="W/K" size="sm" decimals={0} />
                 </Field>
               </div>
+              {!c.pontsThermiquesSaisis && (
+                <p className="px-4 -mt-2 pb-1 text-[10.5px] text-tk-text-faint">
+                  Ponts thermiques estimés (forfait 5 %). Saisis les liaisons ψ×L dans Bâti pour affiner.
+                </p>
+              )}
 
               {/* Répartition des déperditions */}
               <div className="border-t border-tk-border px-4 py-4">
@@ -634,9 +614,9 @@ export default async function CalculTabPage({ params }: Props) {
 
       <div className="rounded-md border border-tk-border bg-tk-bg/40 px-4 py-3 text-[11px] leading-relaxed text-tk-text-muted">
         <CheckCircle2 className="mr-1.5 inline-block h-3 w-3 text-emerald-500" />
-        Méthode 3CL-DPE simplifiée — déperditions Th-BCE, besoin chauffage DJU, η 0,85 par défaut.
-        Pour un calcul Cep complet, il faut compléter la saisie systèmes (chauffage, ECS, ventilation,
-        éclairage) — non encore branchée.
+        Besoin, Cep et étiquette DPE calculés par le même moteur que l&apos;onglet Scénarios —
+        ponts thermiques saisis, occupants, inertie, intermittence, perméabilité et calibration
+        facture pris en compte. Les paramètres de précision impactent directement ces résultats.
       </div>
     </div>
   );

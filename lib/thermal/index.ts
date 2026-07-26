@@ -29,6 +29,7 @@ export * from "./dpe";
 export * from "./validation";
 export * from "./suggestions";
 export * from "./coefficient-utilisation";
+export * from "./usages-tertiaire";
 
 // ─── CEE / fiches d'opérations standardisées ──────────────────
 export type {

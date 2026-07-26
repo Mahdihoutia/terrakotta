@@ -25,14 +25,31 @@ import {
   besoinECSAnnuel,
   apportsInternesAnnuel,
   getZoneData,
+  parseZone,
+  FACTEUR_ZONE,
   type Vecteur,
   type ClasseDpe,
+  type DpeResult,
   type InertieClasse,
+  type UsageProfil,
 } from "./thermal";
 import type { Geste, GesteCode } from "./aides";
 
 function djuAnnuelZone(zoneClim: string): number {
   return getZoneData(zoneClim)?.dju ?? 2500;
+}
+
+/**
+ * Apport solaire net transmis pendant la saison de chauffe, par m² de vitrage.
+ * Forfait toutes orientations confondues (mix E/O/S), vitrage double g_eff≈0,4
+ * après cadre + salissure, saison OCT→AVR. Ajusté par le facteur d'ensoleillement
+ * de la zone climatique (FACTEUR_ZONE). Base ≈ 32 kWh/m²·vitré en zone de référence.
+ * Pour un calcul orientation-aware fin, voir calculerApportsSolaires (F·g·H_g).
+ */
+const APPORT_SOLAIRE_SAISON_KWH_M2 = 80 * 0.4;
+function apportsSolairesForfait(surfaceVitree: number, zoneClim: string): number {
+  const fZone = FACTEUR_ZONE[parseZone(zoneClim)] ?? 1.0;
+  return APPORT_SOLAIRE_SAISON_KWH_M2 * surfaceVitree * fZone;
 }
 
 export interface BaselineState {
@@ -78,6 +95,11 @@ export interface BaselineState {
   calibrationFactor?: number;
   /** Calibration facture ECS — facteur correcteur sur Becs. */
   calibrationFactorECS?: number;
+  /**
+   * Profil d'usage tertiaire pondéré (ECS, apports internes, éclairage en
+   * kWh/m²·an). Si fourni, remplace les forfaits résidentiels 3CL logement.
+   */
+  usageProfil?: UsageProfil | null;
 }
 
 export interface VarianteIndicators {
@@ -95,6 +117,8 @@ export interface VarianteIndicators {
   consoFinaleM2: number;
   /** Économie annuelle estimée vs baseline (€). */
   economieAnnuelle: number;
+  /** Résultat DPE complet (détail par usage EF/EP/CO₂) — pour affichage tableau. */
+  dpeResult: DpeResult;
 }
 
 /* ─── Cibles RT existant — U finaux après travaux (W/m²·K) ────── */
@@ -219,10 +243,12 @@ export function computeIndicatorsFromState(
     const dju = djuAnnuelZone(state.zoneClimatique);
     const besoinBrut = (dep.hTotal * dju * 24) / 1000; // kWh/an
 
-    // Apports gratuits — internes (forfait Th-BCE basé sur Nadeq) + solaires (forfait simple)
-    const apportsInternes = apportsInternesAnnuel(state.surfaceHabitable, nadeq);
-    // Forfait apports solaires simple : 80 kWh/m² vitré × surface vitrée × période chauffe (0.4)
-    const apportsSolaires = 80 * state.surfaceVitree * 0.4;
+    // Apports gratuits — internes (profil d'usage tertiaire si dispo, sinon
+    // forfait Th-BCE basé sur Nadeq) + solaires (forfait zone)
+    const apportsInternes = state.usageProfil
+      ? state.usageProfil.apportsInternesKwhM2 * state.surfaceHabitable
+      : apportsInternesAnnuel(state.surfaceHabitable, nadeq);
+    const apportsSolaires = apportsSolairesForfait(state.surfaceVitree, state.zoneClimatique);
     const apportsTotaux = apportsInternes + apportsSolaires;
 
     // Coefficient utilisation η_gn (Th-BCE / ISO 13790)
@@ -242,8 +268,11 @@ export function computeIndicatorsFromState(
     }
   }
 
-  // Besoin ECS — formule DPE 2021 ajustée par Nadeq vs surface
-  let besoinECSBrut = besoinECSAnnuel(state.surfaceHabitable, nadeq); // kWh/an
+  // Besoin ECS — profil d'usage tertiaire (kWh/m²·an) si dispo,
+  // sinon forfait DPE 2021 ajusté par Nadeq vs surface
+  let besoinECSBrut = state.usageProfil
+    ? state.usageProfil.ecsKwhM2 * state.surfaceHabitable
+    : besoinECSAnnuel(state.surfaceHabitable, nadeq); // kWh/an
   // Calibration facture ECS si renseignée
   if (state.calibrationFactorECS && state.calibrationFactorECS > 0) {
     besoinECSBrut *= state.calibrationFactorECS;
@@ -273,7 +302,7 @@ export function computeIndicatorsFromState(
   const auxCirc = isChauffHydraulique ? 2.0 : 0;
   const aux_kwh = state.surfaceHabitable * (auxVmc + auxCirc);
 
-  const ecl_kwh = state.surfaceHabitable * 1.4;
+  const ecl_kwh = state.surfaceHabitable * (state.usageProfil?.eclairageKwhM2 ?? 1.4);
   const refr_kwh = state.hasClim ? state.surfaceHabitable * 12 : 0;
 
   // PV autoconsommé : déduit des postes élec dans l'ordre auxiliaires →
@@ -340,6 +369,7 @@ export function computeIndicatorsFromState(
     gv: dep.hTotal,
     consoFinaleM2,
     economieAnnuelle,
+    dpeResult: dpe,
   };
 }
 

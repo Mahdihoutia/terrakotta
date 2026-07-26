@@ -8,6 +8,7 @@ import {
   getZoneData,
   parseZone,
   calculerPontsThermiques,
+  profilUsagePondere,
   PSI_LIBRARY,
   type Vecteur,
   type TypeLiaison,
@@ -66,6 +67,7 @@ export async function buildProjetBaseline(projetId: string): Promise<{
         },
         zones: {
           select: {
+            usage: true,
             surface: true,
             hauteurSousPlafond: true,
             consigneChauffageOcc: true,
@@ -117,6 +119,7 @@ export async function buildProjetBaseline(projetId: string): Promise<{
   let zoneClim = "H1a — Nord";
   let nbPonts = 0;
   let hPontsTotal = 0;
+  const zonesForProfil: Array<{ usage: string; surface: number }> = [];
 
   for (const b of batiments) {
     if (b.zoneClimatique) zoneClim = b.zoneClimatique;
@@ -135,6 +138,7 @@ export async function buildProjetBaseline(projetId: string): Promise<{
       const hZ = Number(z.hauteurSousPlafond);
       surfaceHabitable += sZ;
       volumeChauffe += sZ * hZ;
+      zonesForProfil.push({ usage: z.usage, surface: sZ });
       qVmcGlobal += Number(z.qVmcM3hM2) * sZ;
       effDFGlobal += Number(z.efficaciteDoubleFlux);
       consigneGlobale += Number(z.consigneChauffageOcc);
@@ -233,6 +237,7 @@ export async function buildProjetBaseline(projetId: string): Promise<{
     partSolaireECS: 0,
     hasClim: sysClim.length > 0,
     pvAutoconsoKwh: pvAutoconsoKwh > 0 ? pvAutoconsoKwh : undefined,
+    usageProfil: profilUsagePondere(zonesForProfil),
   };
 
   const surfaceOpaqueTotale = surfaceMurs + buckets.TOITURE.s + buckets.PLANCHER_BAS.s + buckets.VITRAGE.s;

@@ -37,7 +37,7 @@ export interface CalibrationInputs {
   rendement: number;
   /** ΔT base pour la formule physique = Ti_moyen_occupé − Te_base (°C). */
   deltaTBase: number;
-  /** Puissances Pmax à tester (kW). Défaut : 50…600 par pas de 5. */
+  /** Puissances Pmax à tester (kW). Défaut : 20…600 par pas de 5. */
   puissancesAtestees?: number[];
 }
 
