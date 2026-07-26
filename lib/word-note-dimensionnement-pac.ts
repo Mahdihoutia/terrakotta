@@ -754,9 +754,10 @@ export async function generateNoteDimensionnementPacDocx(
   children.push(...sectionTitle(12, "Bilan carbone Avant / Après"));
   children.push(
     prose(
-      `Facteurs d'émission ADEME retenus (Base Empreinte 2024, méthode ACV) : ` +
+      `Bilan carbone réel — facteurs Base Carbone ADEME (méthode ACV), distincts du ` +
+        `facteur conventionnel DPE (0,079) utilisé pour l'étiquette GES réglementaire : ` +
         `${VECTEUR_LABEL[data.generateurExistantVecteur]?.toLowerCase() ?? "combustible"} 0,227 kgCO₂/kWh PCI ` +
-        `pondéré par le rendement chaudière, et électricité 0,055 kgCO₂/kWh (mix France).`,
+        `pondéré par le rendement chaudière, et électricité 0,0599 kgCO₂/kWh (mix moyen France).`,
     ),
   );
   children.push(

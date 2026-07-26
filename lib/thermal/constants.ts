@@ -7,6 +7,8 @@
  *  - Prix : Pégase SDES, observatoire CEREN, FNCCR (millésime 2025-2026).
  */
 
+import type { Vecteur } from "./dpe";
+
 /** U mur (W/m²·K) selon état d'isolation. */
 export const U_MURS: Record<string, number> = {
   "Non isolés": 2.5,
@@ -73,12 +75,37 @@ export const FACTEUR_CO2: Record<string, number> = {
 
 export const FACTEUR_CO2_ELEC_CHAUFFAGE = 0.079;
 
-/** Prix moyens HT tertiaire France 2025-2026 (€/kWh EF). */
-export const PRIX_ELEC_KWH = 0.18;
-export const PRIX_GAZ_KWH = 0.09;
-export const PRIX_FIOUL_KWH = 0.11;
-export const PRIX_PROPANE_KWH = 0.14;
-export const PRIX_RESEAU_CHALEUR_KWH = 0.10;
+/**
+ * Facteurs CO₂ pour BILANS CARBONE RÉELS (note PAC), en kgCO₂e/kWh EF.
+ * Base Carbone ADEME (mix moyen France, méthode ACV) — DISTINCTS du facteur
+ * conventionnel DPE 0,079 utilisé pour l'étiquette GES réglementaire.
+ * L'électricité France est peu carbonée (nucléaire + renouvelables).
+ */
+export const FACTEUR_CO2_ELEC_MIX_ADEME = 0.0599;
+export const FACTEUR_CO2_GAZ_ADEME = 0.227;
+
+/**
+ * Prix moyens HT tertiaire France 2025-2026 (€/kWh EF) — SOURCE UNIQUE.
+ * Base HT car Kilowater est exclusivement B2B (le client récupère la TVA) :
+ * les économies annuelles et les gains fiches CEE se valorisent en HT.
+ * Toute autre table de tarifs (scénarios, audit, rapport) doit référencer
+ * celle-ci via TARIFS_ENERGIE_HT — ne pas dupliquer de valeurs en dur.
+ */
+export const TARIFS_ENERGIE_HT: Record<Vecteur, number> = {
+  elec:           0.18,
+  gaz_naturel:    0.09,
+  fioul:          0.11,
+  bois:           0.07,
+  propane:        0.14,
+  reseau_chaleur: 0.10,
+};
+
+export const PRIX_ELEC_KWH = TARIFS_ENERGIE_HT.elec;
+export const PRIX_GAZ_KWH = TARIFS_ENERGIE_HT.gaz_naturel;
+export const PRIX_FIOUL_KWH = TARIFS_ENERGIE_HT.fioul;
+export const PRIX_PROPANE_KWH = TARIFS_ENERGIE_HT.propane;
+export const PRIX_RESEAU_CHALEUR_KWH = TARIFS_ENERGIE_HT.reseau_chaleur;
+export const PRIX_BOIS_KWH = TARIFS_ENERGIE_HT.bois;
 
 export function prixEnergie(source: string): number {
   const s = source.toLowerCase();
@@ -86,6 +113,7 @@ export function prixEnergie(source: string): number {
   if (s.includes("fioul")) return PRIX_FIOUL_KWH;
   if (s.includes("propane") || s.includes("gpl")) return PRIX_PROPANE_KWH;
   if (s.includes("seau de chaleur")) return PRIX_RESEAU_CHALEUR_KWH;
+  if (s.includes("bois") || s.includes("granul") || s.includes("pellet")) return PRIX_BOIS_KWH;
   if (s.includes("gaz")) return PRIX_GAZ_KWH;
   return PRIX_GAZ_KWH;
 }

@@ -929,9 +929,10 @@ export function generateNoteDimensionnementPacPdf(data: NotePacData): Uint8Array
     let y = addSection("12. Bilan carbone Avant / Après");
     y = drawProseParagraph(
       doc,
-      `Facteurs d'émission ADEME retenus (Base Empreinte 2024, méthode ACV) : ` +
+      `Bilan carbone réel — facteurs Base Carbone ADEME (méthode ACV), distincts du ` +
+        `facteur conventionnel DPE (0,079) utilisé pour l'étiquette GES réglementaire : ` +
         `${VECTEUR_LABEL[data.generateurExistantVecteur].toLowerCase()} 0,227 kgCO2/kWh PCI (gaz naturel) ` +
-        `pondéré par le rendement chaudière, et électricité 0,055 kgCO2/kWh (mix France).`,
+        `pondéré par le rendement chaudière, et électricité 0,0599 kgCO2/kWh (mix moyen France).`,
       y + 2,
     );
 

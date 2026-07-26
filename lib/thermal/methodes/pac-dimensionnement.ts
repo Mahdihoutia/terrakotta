@@ -18,6 +18,7 @@
  */
 
 import type { DegreHeuresResultat, MeteoHoraireReel } from "../meteo-era5";
+import { FACTEUR_CO2_ELEC_MIX_ADEME, FACTEUR_CO2_GAZ_ADEME } from "../constants";
 
 // ─── Bibliothèque de courbes PAC ───────────────────────────────
 
@@ -159,12 +160,16 @@ export interface ScenarioPACResultat {
   }>;
 }
 
-// ─── Facteurs CO2 (ADEME) ──────────────────────────────────────
+// ─── Facteurs CO2 (Base Carbone ADEME) ─────────────────────────
 
-/** kgCO2/kWh — Base Empreinte ADEME 2024 (méthode ACV). */
+/**
+ * kgCO2/kWh — Base Carbone ADEME (méthode ACV), pour BILAN CARBONE RÉEL.
+ * Distincts du facteur conventionnel DPE 0,079 (étiquette GES réglementaire).
+ * Source unique : lib/thermal/constants.ts.
+ */
 const FACTEURS_CO2 = {
-  GAZ_PCI: 0.227,
-  ELEC: 0.055,
+  GAZ_PCI: FACTEUR_CO2_GAZ_ADEME,
+  ELEC: FACTEUR_CO2_ELEC_MIX_ADEME,
 };
 
 // ─── Simulation ────────────────────────────────────────────────

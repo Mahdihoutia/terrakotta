@@ -644,8 +644,9 @@ export default function PacPage({ params }: Props) {
             <p className="mt-3 flex items-start gap-1.5 rounded-md bg-tk-hover/40 p-2 text-[11px] text-tk-text-muted leading-relaxed">
               <Info className="mt-0.5 h-3 w-3 shrink-0" />
               Émissions Avant (chaudière existante) :{" "}
-              {nf(result.emissionsAvantPeriode / 1000, 2)} t CO₂ sur la période. Facteurs
-              ADEME : gaz 0.227 kgCO₂/kWh PCI, élec 0.055 kgCO₂/kWh (mix France ACV).
+              {nf(result.emissionsAvantPeriode / 1000, 2)} t CO₂ sur la période. Bilan réel —
+              facteurs Base Carbone ADEME (distincts du 0,079 conventionnel DPE) : gaz 0,227
+              kgCO₂/kWh PCI, élec 0,0599 kgCO₂/kWh (mix moyen France).
             </p>
           </section>
 

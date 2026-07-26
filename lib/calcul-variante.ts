@@ -27,6 +27,7 @@ import {
   getZoneData,
   parseZone,
   FACTEUR_ZONE,
+  TARIFS_ENERGIE_HT,
   type Vecteur,
   type ClasseDpe,
   type DpeResult,
@@ -374,14 +375,9 @@ export function computeIndicatorsFromState(
 }
 
 /**
- * Tarifs moyens 2025 (TTC) pour estimation économies.
- * Source : prix médian France métropolitaine, ordres de grandeur.
+ * Tarifs pour estimation des économies annuelles.
+ * Alias de la source unique HT tertiaire (constants.ts) : Kilowater étant B2B,
+ * les économies se valorisent en HT (le client récupère la TVA). Conservé sous
+ * ce nom pour compatibilité des imports existants.
  */
-export const TARIFS_ENERGIE_2025: Record<Vecteur, number> = {
-  elec:           0.255, // €/kWh — tarif bleu base
-  gaz_naturel:    0.110,
-  fioul:          0.130,
-  bois:           0.075,
-  propane:        0.165,
-  reseau_chaleur: 0.105,
-};
+export const TARIFS_ENERGIE_2025: Record<Vecteur, number> = TARIFS_ENERGIE_HT;
