@@ -16,6 +16,12 @@ import {
   type BaselineState,
   type VarianteIndicators,
 } from "@/lib/calcul-variante";
+import {
+  loadProjetZoneInputs,
+  simulerZonesAgg,
+  applyGestesToZoneInputs,
+  type ZoneInputMeta,
+} from "@/lib/calcul-projet-horaire";
 
 /* Foyer fallback — utilisé tant que les ressources foyer ne sont pas
  * saisies sur le projet (Précision → onglet Foyer demandeur). Catégorie
@@ -69,6 +75,7 @@ function buildDbScenario(
   baseline: BaselineState | null,
   baselineIndicators: VarianteIndicators | null,
   foyer: FoyerDemandeur | undefined,
+  zoneInputs: ZoneInputMeta[],
 ): Scenario {
   const gestes: Geste[] = (v.inputs?.gestes ?? []).map((g) => ({
     code: g.code as GesteCode,
@@ -83,9 +90,21 @@ function buildDbScenario(
   let economieAnnuelle = 0;
 
   if (baseline && baselineIndicators) {
+    // Gestes systèmes → état agrégé ; gestes d'enveloppe → simulation horaire par zone.
     const newState = applyGestesToBaseline(baseline, gestes);
+    let overrideState = newState;
+    if (zoneInputs.length > 0) {
+      const simV = simulerZonesAgg(applyGestesToZoneInputs(zoneInputs, gestes));
+      if (simV.surfaceTotale > 0) {
+        overrideState = {
+          ...newState,
+          besoinChauffageOverrideKwh: simV.besoinChauffageKWh,
+          besoinClimOverrideKwh: newState.hasClim ? simV.besoinClimKWh : 0,
+        };
+      }
+    }
     const ind = computeIndicatorsFromState(
-      newState,
+      overrideState,
       { tarifChauffage: TARIFS_ENERGIE_2025[baseline.chauffageVecteur], tarifECS: TARIFS_ENERGIE_2025[baseline.ecsVecteur] },
       baselineIndicators.consoFinaleM2,
     );
@@ -173,8 +192,26 @@ export default async function ScenariosTabPage({ params }: PageProps) {
   const baseline = baselineRes?.baseline ?? null;
   const hasEnvelope = baselineRes?.hasEnvelope ?? false;
   const hasSystems = baselineRes?.hasSystems ?? false;
-  const baselineIndicators = baseline && hasEnvelope && hasSystems
-    ? computeIndicatorsFromState(baseline)
+
+  // Moteur horaire 8760 h : zones chargées une fois, baseline simulée, besoin
+  // injecté dans computeIndicatorsFromState (même modèle de conso que Calcul).
+  const zoneInputs =
+    baseline && hasEnvelope && hasSystems
+      ? await loadProjetZoneInputs(projetId)
+      : [];
+  const baselineSim = zoneInputs.length > 0 ? simulerZonesAgg(zoneInputs) : null;
+
+  const baselineState: BaselineState | null =
+    baseline && baselineSim && baselineSim.surfaceTotale > 0
+      ? {
+          ...baseline,
+          besoinChauffageOverrideKwh: baselineSim.besoinChauffageKWh,
+          besoinClimOverrideKwh: baseline.hasClim ? baselineSim.besoinClimKWh : 0,
+        }
+      : baseline;
+
+  const baselineIndicators = baselineState && hasEnvelope && hasSystems
+    ? computeIndicatorsFromState(baselineState)
     : null;
 
   // Si la saisie projet est incomplète, on n'invente pas de chiffres :
@@ -255,6 +292,7 @@ export default async function ScenariosTabPage({ params }: PageProps) {
       baseline,
       baselineIndicators,
       foyer,
+      zoneInputs,
     );
   });
 

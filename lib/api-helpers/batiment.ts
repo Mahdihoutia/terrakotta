@@ -218,6 +218,7 @@ export async function buildZoneInputFromDb(
       orientation: zp.orientation,
       isVitrage,
       facteurSolaireG: isVitrage ? 0.6 : undefined,
+      paroiType: zp.paroi.type,
     };
   });
 

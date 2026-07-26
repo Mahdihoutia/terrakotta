@@ -299,14 +299,17 @@ export default async function CalculTabPage({ params }: Props) {
       ? computeIndicatorsFromState(projetBaseline.baseline)
       : null;
 
-  const dpeProjet = ind?.dpeResult ?? null;
-  const consoFinaleM2 = ind?.consoFinaleM2 ?? 0;
-  const besoinChauffageM2 = ind?.besoinChauffage ?? 0;
   const usageProfil = projetBaseline?.baseline.usageProfil ?? null;
 
-  // Simulation horaire 8760 h (haute-fidélité) — météo réelle, occupation,
-  // orientation. Additive : présentée en regard de la méthode mensuelle.
+  // Moteur principal : simulation horaire 8760 h (haute-fidélité) — météo réelle,
+  // occupation 7×24, apports internes réels, orientation. Repli sur la méthode
+  // mensuelle DJU (ind) si la simulation n'est pas disponible.
   const horaire = await simulerProjetHoraire(id);
+
+  const dpeProjet = horaire?.dpeResult ?? ind?.dpeResult ?? null;
+  const consoFinaleM2 = horaire?.consoFinaleM2 ?? ind?.consoFinaleM2 ?? 0;
+  const besoinChauffageM2 = horaire?.besoinChauffageM2 ?? ind?.besoinChauffage ?? 0;
+  const methodeLabel = horaire ? "simulation horaire 8760 h" : "méthode 3CL-DPE mensuelle";
 
   return (
     <div className="space-y-6">
@@ -314,7 +317,7 @@ export default async function CalculTabPage({ params }: Props) {
         <div>
           <h1 className="section-title-dense">Calcul thermique</h1>
           <p className="text-[13px] text-tk-text-muted">
-            Méthode 3CL-DPE simplifiée · {batiments.length} bâtiment{batiments.length > 1 ? "s" : ""}
+            {methodeLabel.charAt(0).toUpperCase() + methodeLabel.slice(1)} · {batiments.length} bâtiment{batiments.length > 1 ? "s" : ""}
             {totalCompletes.length < batiments.length && (
               <> · <span className="text-amber-500">{batiments.length - totalCompletes.length} incomplet{batiments.length - totalCompletes.length > 1 ? "s" : ""}</span></>
             )}
@@ -341,14 +344,27 @@ export default async function CalculTabPage({ params }: Props) {
       </div>
 
       <MethodeInfo
-        precision="±10 %"
-        methode="Le calcul thermique s'appuie sur une méthode 3CL-DPE simplifiée : déperditions de l'enveloppe (U×S par paroi), renouvellement d'air et ponts thermiques, croisés avec les degrés-jours (DJU) de la zone climatique. Les consommations sont ensuite converties en énergie primaire (Cep) et en émissions (GES)."
-        points={[
-          "Déperditions = Σ (U × Surface) par paroi + ventilation + infiltrations",
-          "Besoin chauffage = déperditions × DJU, corrigé des apports solaires/internes",
-          "Cep / GES via les coefficients réglementaires par vecteur (élec ×2,3 en EP)",
-          "Précision non réglementaire (±10 %) — suffisant pour un dimensionnement, à recaler sur factures pour un livrable opposable.",
-        ]}
+        precision={horaire ? "horaire ±10 %" : "±10 %"}
+        methode={
+          horaire
+            ? "Besoin, Cep et étiquette DPE issus d'une simulation dynamique 8760 h (bilan horaire 5R1C, ISO 13790) : météo horaire réelle, occupation 7×24, apports internes réels par zone (occupants, équipements, éclairage) et apports solaires par orientation de vitrage. Les consommations sont converties en énergie primaire (Cep) et émissions (GES) par les coefficients réglementaires."
+            : "Le calcul thermique s'appuie sur une méthode 3CL-DPE simplifiée : déperditions de l'enveloppe (U×S par paroi), renouvellement d'air et ponts thermiques, croisés avec les degrés-jours (DJU) de la zone climatique."
+        }
+        points={
+          horaire
+            ? [
+                "Bilan horaire par zone : pertes enveloppe + ventilation − apports internes − apports solaires",
+                "Occupation réelle : consignes occupé/réduit selon scénario hebdomadaire 7×24",
+                "Cep / GES via les coefficients réglementaires par vecteur (élec ×2,3 en EP)",
+                "Besoin de froid calculé (indicateur de confort) — compté au Cep si un système de clim est saisi.",
+              ]
+            : [
+                "Déperditions = Σ (U × Surface) par paroi + ventilation + infiltrations",
+                "Besoin chauffage = déperditions × DJU, corrigé des apports solaires/internes",
+                "Cep / GES via les coefficients réglementaires par vecteur (élec ×2,3 en EP)",
+                "Précision non réglementaire (±10 %) — à recaler sur factures pour un livrable opposable.",
+              ]
+        }
         calibrationHref={`/dashboard/projets/${id}/calibration`}
       />
 
@@ -493,16 +509,13 @@ export default async function CalculTabPage({ params }: Props) {
         </div>
       )}
 
-      {/* Simulation horaire 8760 h — haute-fidélité */}
+      {/* Détail énergétique — simulation horaire 8760 h */}
       {horaire && (
         <section className="overflow-hidden rounded-lg border border-tk-primary/30 bg-tk-primary/[0.03]">
           <header className="flex flex-wrap items-center justify-between gap-2 border-b border-tk-primary/20 bg-tk-primary/[0.06] px-4 py-2.5">
             <div className="flex items-center gap-2">
               <Calculator className="h-3.5 w-3.5 text-tk-primary" />
-              <h2 className="text-[13px] font-semibold text-tk-text">Simulation horaire 8760 h</h2>
-              <span className="rounded-full border border-tk-primary/30 bg-tk-primary/10 px-2 py-0.5 text-[10px] font-medium text-tk-primary">
-                haute-fidélité
-              </span>
+              <h2 className="text-[13px] font-semibold text-tk-text">Détail — simulation horaire 8760 h</h2>
             </div>
             <span className="text-[11px] text-tk-text-muted">
               météo horaire · occupation 7×24 · apports réels · orientation
@@ -510,42 +523,52 @@ export default async function CalculTabPage({ params }: Props) {
           </header>
 
           <div className="grid grid-cols-2 gap-3 px-4 py-4 sm:grid-cols-4">
-            <Field label="Besoin chauffage">
-              <Metric value={horaire.besoinChauffageM2} unit="kWh/m²·an" size="sm" decimals={0} />
-            </Field>
             <Field label="Besoin froid (confort)">
               <Metric value={horaire.besoinClimM2} unit="kWh/m²·an" size="sm" decimals={0} />
             </Field>
-            <Field label="Puissance crête">
+            <Field label="Puissance crête chauffage">
               <Metric value={horaire.puissanceCreteChauffageKW} unit="kW" size="sm" decimals={0} />
             </Field>
-            <Field label="Conso finale">
-              <Metric value={horaire.consoFinaleM2 ?? 0} unit="kWh/m²·an" size="sm" decimals={0} />
+            <Field label="Apports internes">
+              <Metric value={horaire.apportsInternesMWh} unit="MWh/an" size="sm" decimals={1} />
+            </Field>
+            <Field label="Apports solaires">
+              <Metric value={horaire.apportsSolairesMWh} unit="MWh/an" size="sm" decimals={1} />
             </Field>
           </div>
 
-          {horaire.dpeResult && horaire.classeDpe && horaire.classeGes && (
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-tk-primary/20 px-4 py-3">
-              <div className="flex items-center gap-2">
-                <span className="field-label-tiny">DPE</span>
-                <DpeBadge letter={horaire.classeDpe} className="!h-8 !min-w-8 !text-sm" />
-                <Metric value={horaire.cep ?? 0} unit={<>kWh<sub>ep</sub>/m²·an</>} size="sm" decimals={0} />
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="field-label-tiny">GES</span>
-                <DpeBadge letter={horaire.classeGes} className="!h-8 !min-w-8 !text-sm" />
-                <Metric value={horaire.ges ?? 0} unit={<>kgCO<sub>2</sub>/m²·an</>} size="sm" decimals={1} />
-              </div>
+          {horaire.parZone.length > 1 && (
+            <div className="border-t border-tk-primary/20">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Zone</th>
+                    <th>Usage</th>
+                    <th className="num">Surface</th>
+                    <th className="num">Besoin chauffage</th>
+                    <th className="num">Besoin froid</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {horaire.parZone.map((z, i) => (
+                    <tr key={i}>
+                      <td className="font-medium text-tk-text">{z.nom}</td>
+                      <td className="text-tk-text-muted">{z.usage.replace(/_/g, " ").toLowerCase()}</td>
+                      <td className="num font-mono">{z.surface.toFixed(0)} m²</td>
+                      <td className="num font-mono">{z.besoinChauffageKWhM2.toFixed(0)} kWh/m²</td>
+                      <td className="num font-mono">{z.besoinClimKWhM2.toFixed(0)} kWh/m²</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
 
           <div className="border-t border-tk-primary/20 px-4 py-2.5 text-[11px] leading-relaxed text-tk-text-muted">
-            Besoin chauffage <strong>{horaire.besoinChauffageM2.toFixed(0)}</strong> vs{" "}
-            <strong>{besoinChauffageM2.toFixed(0)}</strong> kWh/m²·an en méthode mensuelle ci-dessus :
-            l&apos;écart vient de la prise en compte du planning d&apos;occupation (consignes réduites
-            nuit/week-end), des apports internes réels par zone et de l&apos;ensoleillement horaire par
-            orientation. Le besoin de froid est un indicateur de confort — compté au Cep uniquement si un
-            système de climatisation est saisi.
+            Les indicateurs ci-dessus (besoin, Cep, DPE) sont issus de cette simulation dynamique :
+            planning d&apos;occupation (consignes réduites nuit/week-end), apports internes réels par zone
+            et ensoleillement horaire par orientation. Le besoin de froid est un indicateur de confort —
+            compté au Cep uniquement si un système de climatisation est saisi.
           </div>
         </section>
       )}

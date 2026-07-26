@@ -31,6 +31,9 @@ export interface ZoneParoiInput {
   orientation?: string | null;
   isVitrage: boolean;
   facteurSolaireG?: number; // 0..1 si vitrage
+  /** Type de paroi (MUR_EXT, TOITURE…) — porté pour l'application des gestes
+   *  de variante par type. Non utilisé par la simulation elle-même. */
+  paroiType?: string;
 }
 
 export interface ZoneInput {
