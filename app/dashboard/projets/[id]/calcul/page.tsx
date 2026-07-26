@@ -23,6 +23,7 @@ import ParametresPrecisionDialog from "@/components/dashboard/ParametresPrecisio
 import MethodeInfo from "@/components/dashboard/MethodeInfo";
 import { buildProjetBaseline } from "@/lib/calcul-projet";
 import { computeIndicatorsFromState } from "@/lib/calcul-variante";
+import { simulerProjetHoraire } from "@/lib/calcul-projet-horaire";
 
 type ParoiType = "MUR_EXT" | "MUR_INT" | "TOITURE" | "PLANCHER_BAS" | "PLANCHER_INTER" | "VITRAGE" | "PORTE";
 
@@ -303,6 +304,10 @@ export default async function CalculTabPage({ params }: Props) {
   const besoinChauffageM2 = ind?.besoinChauffage ?? 0;
   const usageProfil = projetBaseline?.baseline.usageProfil ?? null;
 
+  // Simulation horaire 8760 h (haute-fidélité) — météo réelle, occupation,
+  // orientation. Additive : présentée en regard de la méthode mensuelle.
+  const horaire = await simulerProjetHoraire(id);
+
   return (
     <div className="space-y-6">
       <div className="flex items-end justify-between gap-4">
@@ -486,6 +491,63 @@ export default async function CalculTabPage({ params }: Props) {
             Déduits de la destination des zones (bureaux, restauration, commerce…) — remplacent les forfaits logement 3CL.
           </p>
         </div>
+      )}
+
+      {/* Simulation horaire 8760 h — haute-fidélité */}
+      {horaire && (
+        <section className="overflow-hidden rounded-lg border border-tk-primary/30 bg-tk-primary/[0.03]">
+          <header className="flex flex-wrap items-center justify-between gap-2 border-b border-tk-primary/20 bg-tk-primary/[0.06] px-4 py-2.5">
+            <div className="flex items-center gap-2">
+              <Calculator className="h-3.5 w-3.5 text-tk-primary" />
+              <h2 className="text-[13px] font-semibold text-tk-text">Simulation horaire 8760 h</h2>
+              <span className="rounded-full border border-tk-primary/30 bg-tk-primary/10 px-2 py-0.5 text-[10px] font-medium text-tk-primary">
+                haute-fidélité
+              </span>
+            </div>
+            <span className="text-[11px] text-tk-text-muted">
+              météo horaire · occupation 7×24 · apports réels · orientation
+            </span>
+          </header>
+
+          <div className="grid grid-cols-2 gap-3 px-4 py-4 sm:grid-cols-4">
+            <Field label="Besoin chauffage">
+              <Metric value={horaire.besoinChauffageM2} unit="kWh/m²·an" size="sm" decimals={0} />
+            </Field>
+            <Field label="Besoin froid (confort)">
+              <Metric value={horaire.besoinClimM2} unit="kWh/m²·an" size="sm" decimals={0} />
+            </Field>
+            <Field label="Puissance crête">
+              <Metric value={horaire.puissanceCreteChauffageKW} unit="kW" size="sm" decimals={0} />
+            </Field>
+            <Field label="Conso finale">
+              <Metric value={horaire.consoFinaleM2 ?? 0} unit="kWh/m²·an" size="sm" decimals={0} />
+            </Field>
+          </div>
+
+          {horaire.dpeResult && horaire.classeDpe && horaire.classeGes && (
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-tk-primary/20 px-4 py-3">
+              <div className="flex items-center gap-2">
+                <span className="field-label-tiny">DPE</span>
+                <DpeBadge letter={horaire.classeDpe} className="!h-8 !min-w-8 !text-sm" />
+                <Metric value={horaire.cep ?? 0} unit={<>kWh<sub>ep</sub>/m²·an</>} size="sm" decimals={0} />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="field-label-tiny">GES</span>
+                <DpeBadge letter={horaire.classeGes} className="!h-8 !min-w-8 !text-sm" />
+                <Metric value={horaire.ges ?? 0} unit={<>kgCO<sub>2</sub>/m²·an</>} size="sm" decimals={1} />
+              </div>
+            </div>
+          )}
+
+          <div className="border-t border-tk-primary/20 px-4 py-2.5 text-[11px] leading-relaxed text-tk-text-muted">
+            Besoin chauffage <strong>{horaire.besoinChauffageM2.toFixed(0)}</strong> vs{" "}
+            <strong>{besoinChauffageM2.toFixed(0)}</strong> kWh/m²·an en méthode mensuelle ci-dessus :
+            l&apos;écart vient de la prise en compte du planning d&apos;occupation (consignes réduites
+            nuit/week-end), des apports internes réels par zone et de l&apos;ensoleillement horaire par
+            orientation. Le besoin de froid est un indicateur de confort — compté au Cep uniquement si un
+            système de climatisation est saisi.
+          </div>
+        </section>
       )}
 
       {/* Avertissement si pas de système */}

@@ -101,6 +101,15 @@ export interface BaselineState {
    * kWh/m²·an). Si fourni, remplace les forfaits résidentiels 3CL logement.
    */
   usageProfil?: UsageProfil | null;
+  /**
+   * Besoin de chauffage net (kWh/an) injecté depuis un moteur plus fin
+   * (simulation horaire 8760 h). Si fourni, court-circuite le calcul DJU
+   * interne — la calibration facture reste appliquée, l'intermittence non
+   * (déjà portée par le scénario d'occupation horaire).
+   */
+  besoinChauffageOverrideKwh?: number | null;
+  /** Besoin de refroidissement (kWh/an) injecté depuis la simulation horaire. */
+  besoinClimOverrideKwh?: number | null;
 }
 
 export interface VarianteIndicators {
@@ -237,7 +246,14 @@ export function computeIndicatorsFromState(
     : nadeqDepuisSurface(state.surfaceHabitable);
 
   let besoinChauffageNet = 0;
-  if (state.surfaceHabitable > 0 && dep.surfaceDeperditiveTotale > 0) {
+  if (state.besoinChauffageOverrideKwh != null) {
+    // Besoin issu de la simulation horaire 8760 h — la calibration facture
+    // reste appliquée, l'intermittence non (déjà dans le scénario horaire).
+    besoinChauffageNet = Math.max(0, state.besoinChauffageOverrideKwh);
+    if (state.calibrationFactor && state.calibrationFactor > 0) {
+      besoinChauffageNet *= state.calibrationFactor;
+    }
+  } else if (state.surfaceHabitable > 0 && dep.surfaceDeperditiveTotale > 0) {
     // DJU mensuels approximés : DJU annuel zone × 1 (calculerBesoinsChauffage utilise zone clim)
     // On reproduit ici Bch_brut = H_total × DJU × 24 / 1000 mais simplifié sans calculerBesoinsChauffage
     // pour pouvoir injecter η_gn correctement.
@@ -304,7 +320,12 @@ export function computeIndicatorsFromState(
   const aux_kwh = state.surfaceHabitable * (auxVmc + auxCirc);
 
   const ecl_kwh = state.surfaceHabitable * (state.usageProfil?.eclairageKwhM2 ?? 1.4);
-  const refr_kwh = state.hasClim ? state.surfaceHabitable * 12 : 0;
+  const refr_kwh =
+    state.besoinClimOverrideKwh != null
+      ? Math.max(0, state.besoinClimOverrideKwh)
+      : state.hasClim
+        ? state.surfaceHabitable * 12
+        : 0;
 
   // PV autoconsommé : déduit des postes élec dans l'ordre auxiliaires →
   // éclairage → refroidissement → ECS (si élec) → chauffage (si élec).
@@ -366,7 +387,12 @@ export function computeIndicatorsFromState(
     ges_class: dpe.classe_ges,
     besoinChauffage: state.surfaceHabitable > 0 ? besoinChauffageNet / state.surfaceHabitable : 0,
     besoinECS: state.surfaceHabitable > 0 ? besoinECSNet / state.surfaceHabitable : 0,
-    besoinClim: state.hasClim ? 12 : 0,
+    besoinClim:
+      state.besoinClimOverrideKwh != null && state.surfaceHabitable > 0
+        ? state.besoinClimOverrideKwh / state.surfaceHabitable
+        : state.hasClim
+          ? 12
+          : 0,
     gv: dep.hTotal,
     consoFinaleM2,
     economieAnnuelle,

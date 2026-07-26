@@ -198,16 +198,18 @@ export async function buildZoneInputFromDb(
     const masse = nReq(zp.paroi.masseSurfaciqueCache, 100);
     const isVitrage =
       zp.paroi.type === "VITRAGE" || zp.paroi.type === "PORTE";
-    // Inférence cotePaire (déperditive vers ext) depuis type si non saisi.
-    // Bug fix : les parois ext/toiture/plancher bas/vitrage/porte sont
-    // déperditives par défaut. Sans cette inférence, besoin chauffage ≈ 0.
-    const isDeperditiveByType =
+    // Caractère déperditif déterminé par le TYPE de paroi, pas par cotePaire :
+    // ce dernier n'est pas fiablement renseigné (des MUR_EXT sont à false en
+    // base). Le type est le signal robuste, cohérent avec l'agrégation projet.
+    // MUR_EXT/TOITURE/PLANCHER_BAS/VITRAGE/PORTE = déperditif ; MUR_INT/
+    // PLANCHER_INTER = non déperditif. (Un futur champ « donneSur » + coef b
+    // permettra de gérer finement LNC/sol/mitoyen.)
+    const cotePaire =
       zp.paroi.type === "MUR_EXT" ||
       zp.paroi.type === "TOITURE" ||
       zp.paroi.type === "PLANCHER_BAS" ||
       zp.paroi.type === "VITRAGE" ||
       zp.paroi.type === "PORTE";
-    const cotePaire = zp.cotePaire ?? isDeperditiveByType;
     return {
       surface: nReq(zp.surface),
       uValue: u,
@@ -219,20 +221,33 @@ export async function buildZoneInputFromDb(
     };
   });
 
+  // Garde-fous d'entrée : des valeurs aberrantes (ex. densité 0,1 m²/pers =
+  // 10 pers/m²) rendraient la simulation horaire absurde (apports internes ×100,
+  // besoin chauffage écrasé à 0). On borne aux plages physiquement plausibles ;
+  // hors plage → défaut générique tertiaire. Protège aussi le bilan bâtiment.
+  const clamp = (v: number, lo: number, hi: number, fallback: number): number =>
+    v >= lo && v <= hi ? v : fallback;
+  const densiteOccupation = clamp(nReq(z.densiteOccupation, 15), 1, 500, 15);
+  const apportsParPersonne = clamp(nReq(z.apportsParPersonne, 80), 30, 200, 80);
+  const apportsEquipements = clamp(nReq(z.apportsEquipements, 15), 0, 80, 15);
+  const apportsEclairage = clamp(nReq(z.apportsEclairage, 8), 0, 40, 8);
+  const qVmcM3hM2 = clamp(nReq(z.qVmcM3hM2, 2.5), 0, 15, 2.5);
+  const efficaciteDoubleFlux = clamp(nReq(z.efficaciteDoubleFlux, 0), 0, 0.95, 0);
+
   return {
     surface: nReq(z.surface),
-    hauteurSousPlafond: nReq(z.hauteurSousPlafond, 2.5),
+    hauteurSousPlafond: clamp(nReq(z.hauteurSousPlafond, 2.5), 2, 12, 2.5),
     zoneClimatique,
-    consigneChauffageOcc: nReq(z.consigneChauffageOcc, 20),
-    consigneChauffageRed: nReq(z.consigneChauffageRed, 16),
-    consigneClimOcc: nReq(z.consigneClimOcc, 26),
-    consigneClimRed: nReq(z.consigneClimRed, 28),
-    densiteOccupation: nReq(z.densiteOccupation, 15),
-    apportsParPersonne: nReq(z.apportsParPersonne, 80),
-    apportsEquipements: nReq(z.apportsEquipements, 15),
-    apportsEclairage: nReq(z.apportsEclairage, 8),
-    qVmcM3hM2: nReq(z.qVmcM3hM2, 2.5),
-    efficaciteDoubleFlux: nReq(z.efficaciteDoubleFlux, 0),
+    consigneChauffageOcc: clamp(nReq(z.consigneChauffageOcc, 20), 12, 28, 20),
+    consigneChauffageRed: clamp(nReq(z.consigneChauffageRed, 16), 8, 26, 16),
+    consigneClimOcc: clamp(nReq(z.consigneClimOcc, 26), 18, 32, 26),
+    consigneClimRed: clamp(nReq(z.consigneClimRed, 28), 20, 40, 28),
+    densiteOccupation,
+    apportsParPersonne,
+    apportsEquipements,
+    apportsEclairage,
+    qVmcM3hM2,
+    efficaciteDoubleFlux,
     scenarioPattern: pattern,
     parois,
   };
