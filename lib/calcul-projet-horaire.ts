@@ -20,8 +20,14 @@
 import { prisma } from "./db";
 import { buildZoneInputFromDb } from "./api-helpers/batiment";
 import { simulerZone, type ZoneInput } from "./thermal/zone-calc";
-import { computeIndicatorsFromState } from "./calcul-variante";
+import {
+  applyGestesToBaseline,
+  computeIndicatorsFromState,
+  type BaselineState,
+  type VarianteIndicators,
+} from "./calcul-variante";
 import { buildProjetBaseline } from "./calcul-projet";
+import type { Geste } from "./aides";
 import type { ClasseDpe, DpeResult } from "./thermal";
 
 export interface ProjetHoraireZone {
@@ -136,6 +142,40 @@ export function applyGestesToZoneInputs(
     }
   }
   return copy;
+}
+
+/**
+ * Calcule les indicateurs (Cep/DPE/besoin/économie) d'une variante — ou de la
+ * baseline (gestes = []) — en pilotant le besoin par la simulation horaire.
+ *
+ * Point d'entrée UNIQUE partagé par l'onglet Scénarios et les livrables (audit,
+ * rapport) : gestes d'enveloppe appliqués par zone/paroi puis re-simulés, gestes
+ * systèmes gérés par l'état agrégé. Repli DJU si aucune zone exploitable.
+ */
+export function computeVarianteHoraire(
+  baseline: BaselineState,
+  zoneInputs: ZoneInputMeta[],
+  gestes: Geste[],
+  opts?: {
+    tarifs?: { tarifChauffage: number; tarifECS: number };
+    consoBaselineM2?: number;
+  },
+): VarianteIndicators {
+  const state = applyGestesToBaseline(baseline, gestes);
+  let s = state;
+  if (zoneInputs.length > 0) {
+    const zonesV =
+      gestes.length > 0 ? applyGestesToZoneInputs(zoneInputs, gestes) : zoneInputs;
+    const sim = simulerZonesAgg(zonesV);
+    if (sim.surfaceTotale > 0) {
+      s = {
+        ...state,
+        besoinChauffageOverrideKwh: sim.besoinChauffageKWh,
+        besoinClimOverrideKwh: state.hasClim ? sim.besoinClimKWh : 0,
+      };
+    }
+  }
+  return computeIndicatorsFromState(s, opts?.tarifs, opts?.consoBaselineM2);
 }
 
 /** Simule un ensemble de zones et agrège les résultats. */

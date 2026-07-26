@@ -14,13 +14,15 @@ import { prisma } from "./db";
 import { buildProjetBaseline } from "./calcul-projet";
 import {
   applyGestesToBaseline,
-  computeIndicatorsFromState,
   TARIFS_ENERGIE_2025,
   type BaselineState,
 } from "./calcul-variante";
 import {
+  computeVarianteHoraire,
+  loadProjetZoneInputs,
+} from "./calcul-projet-horaire";
+import {
   calculerDeperditions,
-  calculerDpe,
   calculerApportsSolaires,
   estimerPontsForfaitaire,
   parseZone,
@@ -142,11 +144,14 @@ export async function buildRapportProjetContext(
     ? applyGestesToBaseline(baseline, gestes)
     : baseline;
 
-  // Indicateurs canoniques — strictement alignés sur l'onglet /calcul.
+  // Indicateurs canoniques — moteur horaire 8760 h, aligné sur l'onglet /calcul.
+  const zoneInputs = hasEnvelope && hasSystems ? await loadProjetZoneInputs(projetId) : [];
   const indicators = hasEnvelope && hasSystems
-    ? computeIndicatorsFromState(state, {
-        tarifChauffage: TARIFS_ENERGIE_2025[state.chauffageVecteur],
-        tarifECS: TARIFS_ENERGIE_2025[state.ecsVecteur],
+    ? computeVarianteHoraire(baseline, zoneInputs, gestes, {
+        tarifs: {
+          tarifChauffage: TARIFS_ENERGIE_2025[state.chauffageVecteur],
+          tarifECS: TARIFS_ENERGIE_2025[state.ecsVecteur],
+        },
       })
     : null;
 
@@ -175,27 +180,12 @@ export async function buildRapportProjetContext(
     deltaT: state.consigneInt - state.tBase,
   });
 
-  // DPE détaillé par usage — reconstruit à partir des indicateurs canoniques.
+  // Conso chauffage — sert à la calibration facture plus bas.
   const chauffage_kwh = state.chauffageEff > 0 ? besoinChauffageAnnuel / state.chauffageEff : 0;
-  const besoinECSAnnuel = indicators ? indicators.besoinECS * surfaceTotale : 0;
-  const ecs_kwh = state.ecsEff > 0 ? besoinECSAnnuel / state.ecsEff : 0;
-  const aux_kwh = surfaceTotale * 5;
-  const ecl_kwh = surfaceTotale * 1.4;
-  const refr_kwh = state.hasClim ? surfaceTotale * 12 : 0;
-  const dpeRes = surfaceTotale > 0 && hasSystems
-    ? calculerDpe(
-        {
-          chauffage_kwh,
-          chauffage_vecteur: state.chauffageVecteur,
-          ecs_kwh,
-          ecs_vecteur: state.ecsVecteur,
-          refroidissement_kwh: refr_kwh,
-          eclairage_kwh: ecl_kwh,
-          auxiliaires_kwh: aux_kwh,
-        },
-        surfaceTotale,
-      )
-    : null;
+
+  // DPE canonique — directement issu des indicateurs (moteur horaire), identique
+  // à l'onglet Calcul. Évite une reconstruction divergente (éclairage/aux/PV).
+  const dpeRes = indicators?.dpeResult ?? null;
 
   // Re-fetch parois (orientations vitrages) + systèmes pour les sections PDF/Word.
   const [batiments, systemes] = await Promise.all([

@@ -20,7 +20,7 @@
 
 import { prisma } from "./db";
 import { buildProjetBaseline } from "./calcul-projet";
-import { computeIndicatorsFromState } from "./calcul-variante";
+import { computeVarianteHoraire, loadProjetZoneInputs } from "./calcul-projet-horaire";
 import type { Vecteur } from "./thermal/dpe";
 
 export interface ProjetAuditPrefill {
@@ -106,8 +106,9 @@ export async function buildProjetAuditPrefill(
     values.ecs_type = VECTEUR_ECS_LABEL[baseline.ecsVecteur] ?? baseline.ecsVecteur;
     if (baseline.hasClim) values.climatisation = "Oui";
 
-    // Indicateurs (DPE, GES, conso)
-    const ind = computeIndicatorsFromState(baseline);
+    // Indicateurs (DPE, GES, conso) — moteur horaire 8760 h (repli DJU si pas de zones)
+    const zoneInputs = await loadProjetZoneInputs(projetId);
+    const ind = computeVarianteHoraire(baseline, zoneInputs, []);
     values.dpe_actuel = ind.dpe;
     values.ges_actuel = ind.ges_class;
     values.conso_totale = String(Math.round(ind.cep));

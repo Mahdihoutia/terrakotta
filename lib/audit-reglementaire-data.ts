@@ -18,9 +18,8 @@
 
 import { prisma } from "./db";
 import { buildProjetBaseline } from "./calcul-projet";
+import { computeVarianteHoraire, loadProjetZoneInputs } from "./calcul-projet-horaire";
 import {
-  applyGestesToBaseline,
-  computeIndicatorsFromState,
   TARIFS_ENERGIE_2025,
   type BaselineState,
   type VarianteIndicators,
@@ -152,7 +151,8 @@ export async function buildAuditReglementaireData(
     };
   }
   const baseline = baselineRes.baseline;
-  const indicateursBaseline = computeIndicatorsFromState(baseline);
+  const zoneInputs = await loadProjetZoneInputs(projetId);
+  const indicateursBaseline = computeVarianteHoraire(baseline, zoneInputs, []);
 
   // Lire les variantes existantes (si ≥ 3, on les utilise ; sinon fallback)
   const variantes = await prisma.variante.findMany({
@@ -188,15 +188,13 @@ export async function buildAuditReglementaireData(
       coutHT: g.coutHT,
     }));
 
-    const state = applyGestesToBaseline(baseline, gestesForCalc);
-    const indicateurs = computeIndicatorsFromState(
-      state,
-      {
+    const indicateurs = computeVarianteHoraire(baseline, zoneInputs, gestesForCalc, {
+      tarifs: {
         tarifChauffage: TARIFS_ENERGIE_2025[baseline.chauffageVecteur],
         tarifECS: TARIFS_ENERGIE_2025[baseline.ecsVecteur],
       },
-      indicateursBaseline.consoFinaleM2,
-    );
+      consoBaselineM2: indicateursBaseline.consoFinaleM2,
+    });
 
     const aides = calculerAides(gestesForCalc, FOYER_DEFAUT);
     const coutTotalHT = sc.gestes.reduce((sum, g) => sum + g.coutHT, 0);

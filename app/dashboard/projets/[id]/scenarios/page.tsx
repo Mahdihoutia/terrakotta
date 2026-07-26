@@ -10,16 +10,13 @@ import type { Geste, FoyerDemandeur, GesteCode } from "@/lib/aides";
 import { prisma } from "@/lib/db";
 import { buildProjetBaseline } from "@/lib/calcul-projet";
 import {
-  applyGestesToBaseline,
-  computeIndicatorsFromState,
   TARIFS_ENERGIE_2025,
   type BaselineState,
   type VarianteIndicators,
 } from "@/lib/calcul-variante";
 import {
   loadProjetZoneInputs,
-  simulerZonesAgg,
-  applyGestesToZoneInputs,
+  computeVarianteHoraire,
   type ZoneInputMeta,
 } from "@/lib/calcul-projet-horaire";
 
@@ -90,24 +87,14 @@ function buildDbScenario(
   let economieAnnuelle = 0;
 
   if (baseline && baselineIndicators) {
-    // Gestes systèmes → état agrégé ; gestes d'enveloppe → simulation horaire par zone.
-    const newState = applyGestesToBaseline(baseline, gestes);
-    let overrideState = newState;
-    if (zoneInputs.length > 0) {
-      const simV = simulerZonesAgg(applyGestesToZoneInputs(zoneInputs, gestes));
-      if (simV.surfaceTotale > 0) {
-        overrideState = {
-          ...newState,
-          besoinChauffageOverrideKwh: simV.besoinChauffageKWh,
-          besoinClimOverrideKwh: newState.hasClim ? simV.besoinClimKWh : 0,
-        };
-      }
-    }
-    const ind = computeIndicatorsFromState(
-      overrideState,
-      { tarifChauffage: TARIFS_ENERGIE_2025[baseline.chauffageVecteur], tarifECS: TARIFS_ENERGIE_2025[baseline.ecsVecteur] },
-      baselineIndicators.consoFinaleM2,
-    );
+    // Moteur horaire : gestes d'enveloppe par zone + gestes systèmes agrégés.
+    const ind = computeVarianteHoraire(baseline, zoneInputs, gestes, {
+      tarifs: {
+        tarifChauffage: TARIFS_ENERGIE_2025[baseline.chauffageVecteur],
+        tarifECS: TARIFS_ENERGIE_2025[baseline.ecsVecteur],
+      },
+      consoBaselineM2: baselineIndicators.consoFinaleM2,
+    });
     indicateurs = {
       cep: Math.round(ind.cep),
       cef: Math.round(ind.cef),
@@ -193,25 +180,15 @@ export default async function ScenariosTabPage({ params }: PageProps) {
   const hasEnvelope = baselineRes?.hasEnvelope ?? false;
   const hasSystems = baselineRes?.hasSystems ?? false;
 
-  // Moteur horaire 8760 h : zones chargées une fois, baseline simulée, besoin
-  // injecté dans computeIndicatorsFromState (même modèle de conso que Calcul).
+  // Moteur horaire 8760 h : zones chargées une fois, baseline + variantes
+  // pilotées par computeVarianteHoraire (même modèle de conso que Calcul).
   const zoneInputs =
     baseline && hasEnvelope && hasSystems
       ? await loadProjetZoneInputs(projetId)
       : [];
-  const baselineSim = zoneInputs.length > 0 ? simulerZonesAgg(zoneInputs) : null;
 
-  const baselineState: BaselineState | null =
-    baseline && baselineSim && baselineSim.surfaceTotale > 0
-      ? {
-          ...baseline,
-          besoinChauffageOverrideKwh: baselineSim.besoinChauffageKWh,
-          besoinClimOverrideKwh: baseline.hasClim ? baselineSim.besoinClimKWh : 0,
-        }
-      : baseline;
-
-  const baselineIndicators = baselineState && hasEnvelope && hasSystems
-    ? computeIndicatorsFromState(baselineState)
+  const baselineIndicators = baseline && hasEnvelope && hasSystems
+    ? computeVarianteHoraire(baseline, zoneInputs, [])
     : null;
 
   // Si la saisie projet est incomplète, on n'invente pas de chiffres :
