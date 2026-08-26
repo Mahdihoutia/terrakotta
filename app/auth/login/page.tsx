@@ -4,8 +4,9 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import Link from "next/link";
 import { Cormorant_Garamond, Manrope } from "next/font/google";
-import { Zap } from "lucide-react";
+import { CheckCircle2, Zap } from "lucide-react";
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -24,6 +25,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
+  const resetSuccess = searchParams.get("reset") === "success";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -196,6 +198,17 @@ function LoginForm() {
             </p>
           </div>
 
+          {/* Bannière — mot de passe réinitialisé avec succès */}
+          {resetSuccess && (
+            <div
+              className="mb-5 flex items-start gap-2.5 rounded-xl border px-4 py-3 text-sm"
+              style={{ borderColor: "#bbf7d0", background: "#f0fdf4", color: "#15803d" }}
+            >
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>Mot de passe réinitialisé. Connectez-vous avec votre nouveau mot de passe.</span>
+            </div>
+          )}
+
           {/* Formulaire */}
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email */}
@@ -231,12 +244,20 @@ function LoginForm() {
 
             {/* Mot de passe */}
             <div>
-              <label
-                htmlFor="password"
-                className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.12em] text-[#0D1B35]"
-              >
-                Mot de passe
-              </label>
+              <div className="mb-1.5 flex items-center justify-between">
+                <label
+                  htmlFor="password"
+                  className="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0D1B35]"
+                >
+                  Mot de passe
+                </label>
+                <Link
+                  href="/auth/forgot-password"
+                  className="text-xs font-medium text-[#6b5b50] transition-colors hover:text-[#1D4ED8]"
+                >
+                  Mot de passe oublié ?
+                </Link>
+              </div>
               <input
                 id="password"
                 type="password"

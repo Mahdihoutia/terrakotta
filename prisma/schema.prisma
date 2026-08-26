@@ -108,6 +108,25 @@ model UserInvitation {
   @@map("user_invitations")
 }
 
+// ─── Réinitialisation de mot de passe ───────────────────────────
+// Jeton à usage unique généré via /auth/forgot-password et consommé
+// sur /auth/reset-password?token=... TTL court (1 h). Anti-énumération :
+// l'endpoint /forgot-password répond toujours 200, même email inconnu.
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  email     String
+  token     String    @unique
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@index([token])
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
 // ─── Imports asynchrones (CSV / XLSX) ──────────────────────────
 
 enum ImportStatus {
