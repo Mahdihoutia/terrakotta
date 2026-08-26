@@ -45,11 +45,55 @@ export const authOptions: AuthOptions = {
           return null;
         }
 
-        // 1. Recherche en base (multi-utilisateurs)
+        // Défensif : certaines valeurs d'env peuvent avoir été enregistrées
+        // AVEC des guillemets inclus dans la valeur → on les retire.
+        const stripQuotes = (v?: string) =>
+          v?.replace(/^\s*["']|["']\s*$/g, "").trim();
+
+        // 1. Fast-path compte admin (env) — vérifié AVANT la base, pour que la
+        // connexion de l'admin mono-compte ne dépende pas d'une éventuelle
+        // latence/blocage de la connexion Prisma au pooler sur serverless.
+        const adminEmail = stripQuotes(process.env.ADMIN_EMAIL)?.toLowerCase();
+        // Le hash bcrypt contient des `$` que l'expansion dotenv de Next.js
+        // tronque (aussi bien en local qu'au build Vercel). On privilégie donc
+        // une variante base64 (sans `$`, immunisée) si elle est fournie.
+        const adminHashB64 = stripQuotes(process.env.ADMIN_PASSWORD_HASH_B64);
+        let adminHash = stripQuotes(process.env.ADMIN_PASSWORD_HASH);
+        if (adminHashB64) {
+          try {
+            adminHash = Buffer.from(adminHashB64, "base64").toString("utf8");
+          } catch {
+            /* garde la valeur brute en secours */
+          }
+        }
+        if (adminEmail && adminHash && email === adminEmail) {
+          const isBcryptHash = /^\$2[aby]\$\d{2}\$.{53}$/.test(adminHash);
+          if (!isBcryptHash) {
+            console.error(
+              "[auth] ADMIN_PASSWORD_HASH invalide (attendu bcrypt 60 car.). " +
+                "Vérifie ADMIN_PASSWORD_HASH_B64.",
+            );
+            return null;
+          }
+          const ok = await bcrypt.compare(password, adminHash);
+          if (!ok) return null;
+          return {
+            id: "admin-env",
+            email: adminEmail,
+            name: "Administrateur",
+            role: resolveAdminRole(),
+          };
+        }
+
+        // 2. Comptes en base (multi-utilisateurs). Timeout de garde pour ne
+        // jamais bloquer la fonction si la DB ne répond pas.
         try {
-          const user = await prisma.user.findFirst({
-            where: { email, deletedAt: null },
-          });
+          const user = await Promise.race([
+            prisma.user.findFirst({ where: { email, deletedAt: null } }),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error("DB timeout")), 5000),
+            ),
+          ]);
           if (user) {
             const ok = await bcrypt.compare(password, user.password);
             if (!ok) return null;
@@ -60,35 +104,10 @@ export const authOptions: AuthOptions = {
               role: user.role,
             };
           }
-          // Pas trouvé en DB → on tente le fallback env
         } catch (err) {
-          console.error("[auth] DB lookup failed, falling back to env:", err);
+          console.error("[auth] DB lookup failed:", err);
         }
-
-        // 2. Fallback env-based (compatibilité mono-compte)
-        const adminEmail = process.env.ADMIN_EMAIL?.toLowerCase().trim();
-        const adminHash = process.env.ADMIN_PASSWORD_HASH;
-        if (!adminEmail || !adminHash) {
-          return null;
-        }
-        if (email !== adminEmail) {
-          return null;
-        }
-        const isBcryptHash = /^\$2[aby]\$\d{2}\$.{53}$/.test(adminHash);
-        if (!isBcryptHash) {
-          console.error(
-            "[auth] ADMIN_PASSWORD_HASH does not look like a valid bcrypt hash.",
-          );
-          return null;
-        }
-        const ok = await bcrypt.compare(password, adminHash);
-        if (!ok) return null;
-        return {
-          id: "admin-env",
-          email: adminEmail,
-          name: "Administrateur",
-          role: resolveAdminRole(),
-        };
+        return null;
       },
     }),
   ],
