@@ -7,7 +7,7 @@ export default function RenovationEnergetiqueParisPage() {
       h1="Rénovation énergétique à Paris : copropriétés et bâtiments tertiaires"
       intro="Kilowater accompagne les rénovations énergétiques à Paris depuis l'audit jusqu'au suivi post-travaux. Spécialiste du bâti ancien parisien, nous intégrons les contraintes patrimoniales, ABF et le contexte réglementaire local pour livrer des projets de rénovation cohérents techniquement et financièrement."
       zone="Paris intra-muros"
-      zoneDescription="Rénover à Paris demande une lecture fine du bâti : haussmannien, faubourien, années 30, années 60. Chaque typologie a ses leviers et ses pièges. Notre bureau d'étude conçoit des programmes de rénovation respectueux du patrimoine, performants énergétiquement, et alignés avec les financements MaPrimeRénov', CEE, Éco-PTZ collectif."
+      zoneDescription="Rénover à Paris demande une lecture fine du bâti : haussmannien, faubourien, années 30, années 60. Chaque typologie a ses leviers et ses pièges. Notre bureau d'étude conçoit des programmes de rénovation respectueux du patrimoine, performants énergétiquement, et alignés avec les financements B2B : CEE, MaPrimeRénov' Copropriétés, Éco-PTZ collectif, Fonds Chaleur ADEME."
       serviceName="Rénovation énergétique"
       canonical="https://www.kilowater.fr/renovation-energetique-paris"
       keyPoints={[
@@ -109,8 +109,6 @@ export default function RenovationEnergetiqueParisPage() {
       ]}
       related={[
         { href: "/audit-energetique-paris", label: "Audit énergétique à Paris" },
-        { href: "/bureau-etude-thermique-ile-de-france", label: "Bureau d'étude thermique IDF" },
-        { href: "/bureau-d-etude-renovation-energetique", label: "Bureau d'étude rénovation énergétique" },
         { href: "/accompagnement-cee", label: "Accompagnement CEE" },
         { href: "/nos-references", label: "Nos références" },
         { href: "/contactez-nous", label: "Démarrer un projet" },

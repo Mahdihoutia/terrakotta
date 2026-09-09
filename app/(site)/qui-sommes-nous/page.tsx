@@ -22,8 +22,8 @@ const VALEURS = [
   },
   {
     icon: Leaf,
-    title: "Durabilité",
-    desc: "Nous concevons des rénovations pérennes, avec des solutions qui font sens sur le plan environnemental et économique.",
+    title: "Intégrité",
+    desc: "Sur le carbone comme sur l'énergie, nous ne valorisons que des projets crédibles. Pas de greenwashing, une sélection exigeante des actifs environnementaux.",
   },
   {
     icon: Users,
@@ -39,10 +39,10 @@ const VALEURS = [
 
 const CERTIFICATIONS = [
   "RGE — Reconnu Garant de l'Environnement",
-  "Audit énergétique réglementaire",
-  "Études thermiques RT 2012 / RE 2020",
-  "DPE — Diagnostic de Performance Énergétique",
-  "Certificats d'Économies d'Énergie (CEE)",
+  "Signataire de la Charte CEE — mandataire EMMY",
+  "Audit énergétique réglementaire (tertiaire, copropriété)",
+  "Bilan carbone scopes 1, 2 & 3 — méthodologie ADEME",
+  "Conformité décret tertiaire (DEET) & CSRD",
 ];
 
 export default function QuiSommesNousPage() {
@@ -62,16 +62,17 @@ export default function QuiSommesNousPage() {
                 Qui sommes-nous
               </p>
               <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-light text-[#0D1B35] leading-[1.05]">
-                Un bureau d&apos;étude
+                Une équipe,
                 <br />
-                <span className="italic text-[#2563EB]">engagé</span>
+                <span className="italic text-[#2563EB]">tous vos leviers</span>
               </h1>
             </div>
             <div className="lg:col-span-4 lg:col-start-9">
               <p className="text-[0.95rem] text-[#4A6285] leading-relaxed">
-                Fondé par des ingénieurs passionnés par la performance du bâti,
-                Kilowater accompagne la transition énergétique du parc immobilier
-                français avec exigence et humanité.
+                Kilowater est le partenaire unique entre vos obligations énergétiques
+                et les mécanismes qui les financent. Notre différence : une
+                expertise technique de terrain, du chargé d&apos;affaires CEE à
+                l&apos;ingénieur thermicien.
               </p>
             </div>
           </motion.div>
@@ -109,21 +110,21 @@ export default function QuiSommesNousPage() {
             >
               <div className="border-l-2 border-[#2563EB] pl-8 mb-10">
                 <h2 className="font-display text-3xl md:text-4xl font-light text-[#0D1B35] mb-6 leading-snug">
-                  La rénovation énergétique est un acte
+                  La décarbonation est un acte
                   <span className="italic text-[#2563EB]"> technique</span>,
-                  mais surtout un acte de
-                  <span className="italic text-[#2563EB]"> responsabilité</span>.
+                  mais surtout un acte
+                  <span className="italic text-[#2563EB]"> financier</span>.
                 </h2>
               </div>
               <p className="text-[0.92rem] text-[#4A6285] leading-[1.8] mb-6">
-                Depuis notre création, nous avons accompagné plus de 150 projets
-                de rénovation — des maisons individuelles aux copropriétés, des
-                bâtiments tertiaires aux équipements publics.
+                Depuis notre création, nous avons accompagné plus de 150 projets —
+                copropriétés, parcs de bailleurs, bâtiments tertiaires, sites
+                industriels et équipements publics.
               </p>
               <p className="text-[0.92rem] text-[#4A6285] leading-[1.8]">
-                Notre approche repose sur un diagnostic rigoureux, une conception
-                technico-économique optimisée et un suivi de chantier sans faille.
-                Chaque bâtiment mérite une solution sur mesure.
+                Notre modèle : le CEE finance et structure la relation, le conseil
+                décarbonation cadre la trajectoire, le courtage valorise les actifs
+                environnementaux. Un seul interlocuteur, de l&apos;audit à la prime.
               </p>
             </motion.div>
           </div>
@@ -230,7 +231,7 @@ export default function QuiSommesNousPage() {
       <RelatedLinks
         variant="dark"
         title="Notre savoir-faire en action"
-        subtitle="Découvrez comment nous mettons notre expertise au service des projets de rénovation énergétique."
+        subtitle="Découvrez comment nous mettons notre expertise au service de la décarbonation des entreprises."
         links={[
           {
             href: "/nos-prestations",
@@ -242,7 +243,7 @@ export default function QuiSommesNousPage() {
             href: "/nos-references",
             eyebrow: "Réalisations",
             title: "Nos références",
-            description: "Projets concrets de rénovation énergétique : copropriétés, tertiaire, collectivités.",
+            description: "Projets concrets de décarbonation et d'efficacité énergétique : copropriétés, tertiaire, collectivités, industrie.",
           },
           {
             href: "/contactez-nous",

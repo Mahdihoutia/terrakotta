@@ -5,38 +5,38 @@ import {
   Phone,
   MapPin,
   Zap,
-  ShieldCheck,
-  Award,
   BadgeCheck,
   Leaf,
   FileCheck2,
+  Gauge,
+  TrendingDown,
 } from "lucide-react";
 
 const TRUST_BADGES = [
   {
-    icon: ShieldCheck,
-    label: "RGE Études",
-    sub: "Qualification rénovation énergétique",
-  },
-  {
-    icon: Award,
-    label: "OPQIBI 1905",
-    sub: "Audit énergétique tertiaire",
-  },
-  {
     icon: FileCheck2,
-    label: "Signataire Charte CEE",
-    sub: "Certificats d'économies d'énergie",
+    label: "Mandat EMMY",
+    sub: "Dépôt & valorisation des CEE",
   },
   {
-    icon: BadgeCheck,
-    label: "ISO 50001",
-    sub: "Management de l'énergie",
+    icon: Gauge,
+    label: "Bilan Carbone®",
+    sub: "GHG Protocol — scopes 1·2·3",
+  },
+  {
+    icon: TrendingDown,
+    label: "SBTi",
+    sub: "Trajectoires de réduction",
   },
   {
     icon: Leaf,
-    label: "Décret Tertiaire",
-    sub: "Conformité DEET / BACS",
+    label: "GHG Protocol",
+    sub: "Standard comptabilité GES",
+  },
+  {
+    icon: BadgeCheck,
+    label: "Garanties d'origine",
+    sub: "Électricité & biométhane",
   },
 ];
 
@@ -49,9 +49,9 @@ const FOOTER_NAV = [
 ];
 
 const FOOTER_EXPERTISES = [
-  { href: "/bureau-d-etude-renovation-energetique", label: "Bureau d'étude" },
-  { href: "/audit-energetique", label: "Audit énergétique" },
-  { href: "/accompagnement-cee", label: "Accompagnement CEE" },
+  { href: "/accompagnement-cee", label: "Certificats d'économies d'énergie" },
+  { href: "/conseil-decarbonation", label: "Conseil en décarbonation" },
+  { href: "/courtage-environnemental", label: "Courtage environnemental" },
 ];
 
 export default function Footer() {
@@ -97,9 +97,10 @@ export default function Footer() {
               </span>
             </div>
             <p className="text-[0.9rem] leading-relaxed text-[#7BAAC8] max-w-sm">
-              Bureau d&apos;étude spécialisé en rénovation énergétique.
-              Nous accompagnons particuliers, professionnels et collectivités
-              vers un bâti plus performant et durable.
+              Partenaire décarbonation & énergie des entreprises.
+              Nous accompagnons copropriétés, bailleurs, collectivités et
+              maîtres d&apos;ouvrage tertiaires &amp; industriels — de l&apos;audit
+              technique à la valorisation CEE et carbone.
             </p>
 
             {/* Trust badges — compact */}

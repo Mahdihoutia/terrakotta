@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -10,8 +9,8 @@ import {
   X,
   Zap,
   ChevronDown,
-  Thermometer,
-  HardHat,
+  LineChart,
+  Repeat,
   FileCheck,
   ArrowRight,
   Users,
@@ -23,34 +22,34 @@ const PRESTATIONS_ITEMS = [
   {
     href: "/nos-prestations",
     label: "Toutes nos prestations",
-    desc: "Vue d'ensemble de notre expertise en rénovation énergétique",
-    icon: HardHat,
+    desc: "Notre offre intégrée décarbonation & énergie, en un coup d'œil",
+    icon: Zap,
     accent: "#2563EB",
   },
   {
-    href: "/bureau-d-etude-renovation-energetique",
-    label: "Bureau d'étude",
-    desc: "Audit, conception et pilotage de vos projets de rénovation",
-    icon: HardHat,
-    accent: "#1D4ED8",
-  },
-  {
-    href: "/audit-energetique",
-    label: "Audit énergétique",
-    desc: "Diagnostic thermique complet et préconisations chiffrées",
-    icon: Thermometer,
-    accent: "#0EA5E9",
-  },
-  {
     href: "/accompagnement-cee",
-    label: "Accompagnement CEE",
-    desc: "Montage des dossiers et calcul des kWh cumac",
+    label: "Certificats d'économie d'énergie",
+    desc: "Audit, montage des dossiers et valorisation via mandat EMMY",
     icon: FileCheck,
     accent: "#059669",
   },
+  {
+    href: "/conseil-decarbonation",
+    label: "Décarbonation",
+    desc: "Bilan carbone, trajectoires SBTi, CSRD et décret tertiaire",
+    icon: LineChart,
+    accent: "#1D4ED8",
+  },
+  {
+    href: "/courtage-environnemental",
+    label: "Courtage produits environnementaux",
+    desc: "Crédits carbone volontaires, garanties d'origine et biotickets",
+    icon: Repeat,
+    accent: "#0EA5E9",
+  },
 ];
 
-const DROPDOWN_IMAGE = "https://images.unsplash.com/photo-1544724569-5f546fd6f2b5?w=600&q=80";
+const DROPDOWN_VIDEO = "https://assets.mixkit.co/videos/34104/34104-720.mp4";
 
 /* ─── Dropdown "Qui sommes-nous" data ─── */
 const ABOUT_ITEMS = [
@@ -327,22 +326,26 @@ export default function Navbar() {
                                       href="/contactez-nous"
                                       className="group/cta flex items-center gap-2 rounded-lg px-3.5 py-2.5 text-[0.78rem] font-semibold text-[#2563EB] transition-colors hover:bg-[#2563EB]/5"
                                     >
-                                      Demander un devis gratuit
+                                      Nous contacter
                                       <ArrowRight size={13} className="transition-transform group-hover/cta:translate-x-0.5" />
                                     </Link>
                                   </div>
                                 </div>
 
-                                {/* ── Image column ── */}
+                                {/* ── Video column ── */}
                                 <div className="col-span-5 relative overflow-hidden">
                                   <div className="absolute inset-0">
-                                    <Image
-                                      src={DROPDOWN_IMAGE}
-                                      alt="Composants électroniques d&apos;installation énergétique"
-                                      fill
-                                      className="object-cover"
-                                      sizes="300px"
-                                    />
+                                    <video
+                                      ref={(el) => { if (el) el.playbackRate = 0.5; }}
+                                      autoPlay
+                                      loop
+                                      muted
+                                      playsInline
+                                      className="h-full w-full object-cover"
+                                      aria-label="Parc d&apos;éoliennes en mouvement"
+                                    >
+                                      <source src={DROPDOWN_VIDEO} type="video/mp4" />
+                                    </video>
                                     <div className="absolute inset-0 bg-gradient-to-t from-[#0D1B35]/80 via-[#0D1B35]/30 to-transparent" />
                                   </div>
                                   <div className="relative flex h-full flex-col justify-end p-5">
@@ -352,15 +355,15 @@ export default function Navbar() {
                                       transition={{ delay: 0.15, duration: 0.4 }}
                                     >
                                       <p className="text-[0.65rem] uppercase tracking-[0.2em] text-[#93C5FD] mb-1.5">
-                                        Bureau d&apos;étude RGE
+                                        Partenaire
                                       </p>
                                       <p className="font-display text-lg font-semibold text-white leading-snug">
-                                        Votre partenaire en
+                                        Votre partenaire
                                         <br />
-                                        <span className="text-[#60A5FA]">rénovation énergétique</span>
+                                        <span className="text-[#60A5FA]">décarbonation &amp; énergie</span>
                                       </p>
                                       <p className="mt-2 text-[0.72rem] leading-relaxed text-[#CBD5E1]">
-                                        De l&apos;audit initial au suivi post-travaux, une expertise complète à votre service.
+                                        De l&apos;audit technique à la valorisation CEE et carbone, une chaîne complète à votre service.
                                       </p>
                                     </motion.div>
                                   </div>

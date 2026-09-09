@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "Kilowater — Bureau d'étude en rénovation énergétique";
+export const alt = "Kilowater — Partenaire décarbonation & énergie";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -135,7 +135,7 @@ export default async function OGImage() {
               display: "flex",
             }}
           >
-            Bureau d&apos;étude en rénovation énergétique
+            Partenaire décarbonation &amp; énergie — B2B
           </div>
 
           {/* Title line 1 */}
@@ -148,7 +148,7 @@ export default async function OGImage() {
               display: "flex",
             }}
           >
-            Rénover l&apos;existant,
+            Décarboner, financer,
           </div>
 
           {/* Title line 2 */}
@@ -162,7 +162,7 @@ export default async function OGImage() {
               display: "flex",
             }}
           >
-            construire l&apos;avenir.
+            valoriser.
           </div>
         </div>
       </div>

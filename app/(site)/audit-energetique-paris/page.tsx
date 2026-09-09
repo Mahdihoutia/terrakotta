@@ -4,8 +4,8 @@ export default function AuditEnergetiqueParisPage() {
   return (
     <LocalSeoLayout
       eyebrow="Audit énergétique Paris"
-      h1="Audit énergétique à Paris : copropriétés, tertiaire et particuliers"
-      intro="Kilowater est un bureau d'étude basé dans le 7e arrondissement de Paris. Nous réalisons des audits énergétiques réglementaires et stratégiques pour les copropriétés haussmanniennes, le parc tertiaire francilien et les maîtres d'ouvrage publics. Intervention rapide partout dans Paris intra-muros et la petite couronne."
+      h1="Audit énergétique à Paris : copropriétés, tertiaire et collectivités"
+      intro="Kilowater est le partenaire décarbonation & énergie basé dans le 7e arrondissement de Paris. Nous réalisons des audits énergétiques réglementaires et stratégiques pour les copropriétés haussmanniennes, le parc tertiaire francilien, les bailleurs et les maîtres d'ouvrage publics — puis nous valorisons les économies via les CEE. Intervention rapide partout dans Paris intra-muros et la petite couronne."
       zone="Paris & Île-de-France"
       zoneDescription="Une ville de bâti ancien — 80 % des immeubles parisiens sont antérieurs à 1975. C'est aussi un terrain réglementaire dense : décret tertiaire, loi Climat & Résilience, plan climat de la Ville de Paris. Nos audits transforment ces obligations en plan d'action concret."
       serviceName="Audit énergétique"
@@ -38,7 +38,7 @@ export default function AuditEnergetiqueParisPage() {
                 L&apos;audit énergétique est <strong>l&apos;étape préalable indispensable</strong> avant tout projet
                 de rénovation. Il dresse l&apos;état des lieux thermique du bâti, hiérarchise les leviers
                 d&apos;économies d&apos;énergie et chiffre les scénarios de travaux avec leurs aides associées
-                (MaPrimeRénov&apos;, CEE, Éco-PTZ collectif).
+                (CEE, MaPrimeRénov&apos; Copropriétés, Éco-PTZ collectif, Fonds Chaleur ADEME).
               </p>
             </>
           ),
@@ -106,12 +106,10 @@ export default function AuditEnergetiqueParisPage() {
         },
       ]}
       related={[
-        { href: "/audit-energetique", label: "Audit énergétique (page complète)" },
-        { href: "/bureau-etude-thermique-ile-de-france", label: "Bureau d'étude thermique Île-de-France" },
         { href: "/renovation-energetique-paris", label: "Rénovation énergétique à Paris" },
         { href: "/accompagnement-cee", label: "Accompagnement CEE" },
         { href: "/nos-references", label: "Nos références" },
-        { href: "/contactez-nous", label: "Demander un devis" },
+        { href: "/contactez-nous", label: "Nous contacter" },
       ]}
     />
   );

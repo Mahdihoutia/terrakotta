@@ -137,7 +137,7 @@ export default function LocalSeoLayout({
               href="/contactez-nous"
               className="group inline-flex items-center gap-3 bg-[#2563EB] px-8 py-4 text-[0.8rem] font-semibold uppercase tracking-[0.14em] text-white transition-all duration-300 hover:bg-[#1E40AF]"
             >
-              Demander un devis
+              Nous contacter
               <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
             </Link>
             <a

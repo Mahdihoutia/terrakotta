@@ -58,11 +58,16 @@ interface LeadItem {
   dateCreation: string;
 }
 
+type ListMode = "imminent" | "upcoming";
+
 interface TodayResponse {
   jalons: JalonItem[];
+  jalonsMode: ListMode;
   devis: DevisItem[];
   evenements: EvenementItem[];
+  evenementsMode: ListMode;
   leads: LeadItem[];
+  leadsMode: ListMode;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────
@@ -105,10 +110,40 @@ function jalonUrgency(iso: string): { label: string; tone: string } {
       tone: "bg-amber-500/15 text-amber-400 border border-amber-500/20",
     };
   }
+  const startOfTomorrow = new Date(startOfToday);
+  startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
+  const endOfTomorrow = new Date(startOfTomorrow);
+  endOfTomorrow.setHours(23, 59, 59, 999);
+  if (echeance <= endOfTomorrow) {
+    return {
+      label: "DEMAIN",
+      tone: "bg-blue-500/15 text-blue-400 border border-blue-500/20",
+    };
+  }
+  // Mode "upcoming" : on affiche le délai en jours, ton neutre (pas d'alerte).
+  const days = Math.max(1, Math.ceil((echeance.getTime() - now.getTime()) / 86_400_000));
   return {
-    label: "DEMAIN",
-    tone: "bg-blue-500/15 text-blue-400 border border-blue-500/20",
+    label: `J+${days}`,
+    tone: "bg-tk-hover text-tk-text-secondary border border-tk-border",
   };
+}
+
+/** Date courte "jeu. 15 juil." pour les items "à venir" (RDV, jalons). */
+function formatShortDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("fr-FR", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+}
+
+/** Bandeau discret pour signaler qu'on affiche du "à venir" et pas de l'imminent. */
+function UpcomingBanner({ children }: { children: string }) {
+  return (
+    <p className="mb-2 rounded-md bg-tk-hover/60 px-2 py-1 text-[10px] uppercase tracking-wider text-tk-text-faint">
+      {children}
+    </p>
+  );
 }
 
 function formatHour(time: string): string {
@@ -195,14 +230,14 @@ export default function TodayWidget() {
         if (!res.ok) {
           // L'endpoint renvoie déjà des listes vides en cas d'erreur DB,
           // donc un res.ok = false reste exceptionnel.
-          if (!cancelled) setData({ jalons: [], devis: [], evenements: [], leads: [] });
+          if (!cancelled) setData({ jalons: [], jalonsMode: "imminent", devis: [], evenements: [], evenementsMode: "imminent", leads: [], leadsMode: "imminent" });
           return;
         }
         const json = (await res.json()) as TodayResponse;
         if (!cancelled) setData(json);
       } catch (err) {
         showNetworkError(err, "Impossible de charger les tâches du jour");
-        if (!cancelled) setData({ jalons: [], devis: [], evenements: [], leads: [] });
+        if (!cancelled) setData({ jalons: [], jalonsMode: "imminent", devis: [], evenements: [], evenementsMode: "imminent", leads: [], leadsMode: "imminent" });
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -234,11 +269,17 @@ export default function TodayWidget() {
         hrefLabel="Voir les projets"
       >
         {data.jalons.length === 0 ? (
-          <EmptyState>Rien à faire aujourd&apos;hui.</EmptyState>
+          <EmptyState>Aucun jalon ouvert.</EmptyState>
         ) : (
-          <ul className="space-y-1">
-            {data.jalons.map((j) => {
-              const u = jalonUrgency(j.echeance);
+          <>
+            {data.jalonsMode === "upcoming" && (
+              <UpcomingBanner>
+                Aucun jalon imminent · prochains jalons ouverts
+              </UpcomingBanner>
+            )}
+            <ul className="space-y-1">
+              {data.jalons.map((j) => {
+                const u = jalonUrgency(j.echeance);
               return (
                 <li key={j.id}>
                   <Link
@@ -263,9 +304,10 @@ export default function TodayWidget() {
                     </p>
                   </Link>
                 </li>
-              );
-            })}
-          </ul>
+                );
+              })}
+            </ul>
+          </>
         )}
       </TodayCard>
 
@@ -329,42 +371,51 @@ export default function TodayWidget() {
         hrefLabel="Voir le calendrier"
       >
         {data.evenements.length === 0 ? (
-          <EmptyState>Aucun rendez-vous aujourd&apos;hui.</EmptyState>
+          <EmptyState>Aucun rendez-vous à venir.</EmptyState>
         ) : (
-          <ul className="space-y-1">
-            {data.evenements.map((e) => {
-              const personne = e.client
-                ? fullName(e.client)
-                : e.lead
-                ? fullName(e.lead)
-                : null;
-              return (
-                <li
-                  key={e.id}
-                  className="rounded-lg px-2 py-2 transition-colors hover:bg-tk-hover"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="line-clamp-1 text-sm font-medium text-tk-text">
-                      {e.titre}
-                    </p>
-                    <span className="shrink-0 tabular-nums rounded-md bg-tk-hover px-1.5 py-0.5 text-[10px] font-medium text-tk-text-secondary">
-                      {formatHour(e.heureDebut)}
-                    </span>
-                  </div>
-                  {personne && (
-                    <p className="line-clamp-1 text-[11px] text-tk-text-faint">
-                      {personne}
-                    </p>
-                  )}
-                  {e.lieu && (
-                    <p className="line-clamp-1 text-[10px] text-tk-text-faint">
-                      {e.lieu}
-                    </p>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
+          <>
+            {data.evenementsMode === "upcoming" && (
+              <UpcomingBanner>
+                Aucun RDV aujourd&apos;hui · prochains à venir
+              </UpcomingBanner>
+            )}
+            <ul className="space-y-1">
+              {data.evenements.map((e) => {
+                const personne = e.client
+                  ? fullName(e.client)
+                  : e.lead
+                  ? fullName(e.lead)
+                  : null;
+                return (
+                  <li
+                    key={e.id}
+                    className="rounded-lg px-2 py-2 transition-colors hover:bg-tk-hover"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="line-clamp-1 text-sm font-medium text-tk-text">
+                        {e.titre}
+                      </p>
+                      <span className="shrink-0 tabular-nums rounded-md bg-tk-hover px-1.5 py-0.5 text-[10px] font-medium text-tk-text-secondary">
+                        {data.evenementsMode === "upcoming"
+                          ? `${formatShortDate(e.date)} · ${formatHour(e.heureDebut)}`
+                          : formatHour(e.heureDebut)}
+                      </span>
+                    </div>
+                    {personne && (
+                      <p className="line-clamp-1 text-[11px] text-tk-text-faint">
+                        {personne}
+                      </p>
+                    )}
+                    {e.lieu && (
+                      <p className="line-clamp-1 text-[10px] text-tk-text-faint">
+                        {e.lieu}
+                      </p>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </>
         )}
       </TodayCard>
 
@@ -377,10 +428,16 @@ export default function TodayWidget() {
         hrefLabel="Voir les leads"
       >
         {data.leads.length === 0 ? (
-          <EmptyState>Aucun lead nouveau récent.</EmptyState>
+          <EmptyState>Aucun lead à statut « Nouveau ».</EmptyState>
         ) : (
-          <ul className="space-y-1">
-            {data.leads.map((l) => (
+          <>
+            {data.leadsMode === "upcoming" && (
+              <UpcomingBanner>
+                Aucun lead récent · derniers « Nouveau »
+              </UpcomingBanner>
+            )}
+            <ul className="space-y-1">
+              {data.leads.map((l) => (
               <li key={l.id}>
                 <Link
                   href={`/dashboard/leads`}
@@ -409,8 +466,9 @@ export default function TodayWidget() {
                   </p>
                 </Link>
               </li>
-            ))}
-          </ul>
+              ))}
+            </ul>
+          </>
         )}
       </TodayCard>
     </div>

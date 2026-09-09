@@ -46,19 +46,19 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     // Pages SEO piliers
     {
-      url: `${BASE_URL}/bureau-d-etude-renovation-energetique`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.9,
-    },
-    {
       url: `${BASE_URL}/accompagnement-cee`,
       lastModified: now,
       changeFrequency: "monthly",
       priority: 0.9,
     },
     {
-      url: `${BASE_URL}/audit-energetique`,
+      url: `${BASE_URL}/conseil-decarbonation`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.9,
+    },
+    {
+      url: `${BASE_URL}/courtage-environnemental`,
       lastModified: now,
       changeFrequency: "monthly",
       priority: 0.9,
@@ -66,12 +66,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // Pages locales SEO (priorité élevée — fort potentiel de trafic local)
     {
       url: `${BASE_URL}/audit-energetique-paris`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.85,
-    },
-    {
-      url: `${BASE_URL}/bureau-etude-thermique-ile-de-france`,
       lastModified: now,
       changeFrequency: "monthly",
       priority: 0.85,

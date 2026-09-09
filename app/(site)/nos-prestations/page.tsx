@@ -5,12 +5,10 @@ import Image from "next/image";
 import Link from "next/link";
 import RelatedLinks from "@/components/site/RelatedLinks";
 import {
-  Thermometer,
   FileCheck,
-  HardHat,
-  Shield,
+  LineChart,
+  Repeat,
   BarChart3,
-  FileText,
   ArrowRight,
 } from "lucide-react";
 
@@ -25,57 +23,53 @@ const fadeUp = {
 
 const PRESTATIONS = [
   {
-    icon: Thermometer,
-    title: "Audit énergétique",
-    desc: "Diagnostic complet de la performance thermique de votre bâtiment : analyse des déperditions, étude des systèmes énergétiques, simulation thermique dynamique. Nous identifions les leviers d'amélioration les plus efficaces et les hiérarchisons selon leur rapport coût/performance.",
-    details: [
-      "Analyse thermographique infrarouge",
-      "Test d'étanchéité à l'air (Blower Door)",
-      "Simulation thermique dynamique (STD)",
-      "Préconisations chiffrées et hiérarchisées",
-    ],
-    image: "https://images.unsplash.com/photo-1744627049721-73c27008ad28?w=800&q=80",
-  },
-  {
-    icon: HardHat,
-    title: "Maîtrise d'œuvre & AMO",
-    desc: "Pilotage complet des travaux de rénovation énergétique, de la conception à la réception, et missions d'Assistant à Maîtrise d'Ouvrage (AMO). Nous coordonnons l'ensemble des intervenants, veillons au respect du cahier des charges et garantissons la qualité d'exécution.",
-    details: [
-      "Conception technique détaillée",
-      "Consultation et sélection des entreprises",
-      "Direction de l'exécution des travaux (DET)",
-      "Assistance aux opérations de réception (AOR)",
-    ],
-    image: "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&q=80",
-  },
-  {
     icon: FileCheck,
-    title: "Accompagnement aides & financements",
-    desc: "Montage et suivi des dossiers de financement : MaPrimeRénov', Certificats d'Économies d'Énergie (CEE), aides de l'Anah, éco-PTZ et aides locales. Nous optimisons le plan de financement pour réduire le reste à charge.",
+    pilier: "Pilier 1 — CEE",
+    title: "Certificats d'économie d'énergie (CEE)",
+    id: "cee",
+    desc: "Notre cœur de métier et notre porte d'entrée. Nous auditons le gisement d'économies d'énergie mobilisable sur votre patrimoine, montons les dossiers de Certificats d'Économies d'Énergie et les valorisons via mandat sur EMMY. Un seul interlocuteur, du diagnostic au versement de la prime.",
     details: [
-      "Audit préalable d'éligibilité",
-      "Montage des dossiers MaPrimeRénov'",
-      "Valorisation des CEE (prime énergie)",
-      "Suivi administratif jusqu'au versement",
+      "Audit du gisement d'économies d'énergie",
+      "Constitution et dépôt des dossiers CEE",
+      "Valorisation via mandat EMMY",
+      "Optimisation des kWh cumac & suivi jusqu'au versement",
     ],
     image: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=800&q=80",
   },
   {
-    icon: Shield,
-    title: "Études thermiques réglementaires",
-    desc: "Réalisation des études thermiques conformes aux réglementations en vigueur : RE 2020 pour le neuf, RT existant pour la rénovation. Nous garantissons la conformité de votre projet aux exigences réglementaires.",
+    icon: LineChart,
+    pilier: "Pilier 2 — Décarbonation",
+    title: "Bilan carbone & trajectoire de décarbonation",
+    id: "decarbonation",
+    desc: "La montée en gamme naturelle après l'audit CEE. Nous mesurons votre empreinte, structurons une trajectoire de réduction crédible et vous mettons en conformité avec vos obligations, à l'échelle du bâtiment comme du parc immobilier.",
     details: [
-      "Études RT 2012 / RE 2020",
-      "Attestations Bbio et conformité",
-      "RT existant — élément par élément ou globale",
-      "Modélisation des consommations prévisionnelles",
+      "Bilan carbone scopes 1, 2 & 3",
+      "Trajectoire de réduction (référentiel SBTi ou équivalent)",
+      "Conformité CSRD & décret tertiaire (DEET / BACS)",
+      "Plan pluriannuel de décarbonation du patrimoine",
     ],
-    image: "https://images.unsplash.com/photo-1558591710-4b4a1ae0f04d?w=800&q=80",
+    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80",
+  },
+  {
+    icon: Repeat,
+    pilier: "Pilier 3 — Courtage environnemental",
+    title: "Courtage de produits environnementaux",
+    id: "courtage",
+    desc: "Notre rôle d'agrégateur : consolider une offre fragmentée et la rendre accessible aux acheteurs. Nous connectons porteurs de projets et entreprises sur l'ensemble des actifs environnementaux, avec une exigence forte sur la crédibilité des projets — pas seulement la mise en relation.",
+    details: [
+      "Crédits carbone volontaires (Label Bas Carbone, standards internationaux)",
+      "Garanties d'origine (électricité, biométhane)",
+      "Biotickets (IRICC)",
+      "Sélection exigeante des projets & mise en relation offre / demande",
+    ],
+    image: "https://images.unsplash.com/photo-1497435334941-8c899ee9e8e9?w=800&q=80",
   },
   {
     icon: BarChart3,
-    title: "Commissionnement & suivi",
-    desc: "Vérification de la performance réelle des installations après travaux. Nous mesurons, ajustons et optimisons pour garantir que les objectifs de performance sont atteints dans la durée.",
+    pilier: "Pilier 1 — Mesure & performance",
+    title: "Commissionnement & suivi de performance",
+    id: "suivi",
+    desc: "Vérification de la performance réelle des installations après travaux. Nous mesurons, ajustons et optimisons pour garantir que les objectifs d'économies et de réduction d'émissions sont tenus dans la durée.",
     details: [
       "Mesure des consommations réelles",
       "Ajustement des réglages et paramètres",
@@ -83,18 +77,6 @@ const PRESTATIONS = [
       "Garantie de résultat énergétique (GRE)",
     ],
     image: "https://images.unsplash.com/photo-1523217582562-09d0def993a6?w=800&q=80",
-  },
-  {
-    icon: FileText,
-    title: "Conseil & stratégie patrimoniale",
-    desc: "Accompagnement stratégique pour les gestionnaires de patrimoine immobilier : plan pluriannuel de travaux, priorisation des investissements et trajectoire de décarbonation à l'échelle du portefeuille.",
-    details: [
-      "Plan pluriannuel de travaux (PPT)",
-      "Diagnostic technique global (DTG)",
-      "Stratégie de décarbonation du parc",
-      "Conformité au décret tertiaire",
-    ],
-    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80",
   },
 ];
 
@@ -111,17 +93,17 @@ export default function NosPrestationsPage() {
             className="max-w-3xl"
           >
             <p className="text-[0.72rem] uppercase tracking-[0.25em] text-[#2563EB] mb-4">
-              Nos prestations
+              Nos prestations — Une offre intégrée
             </p>
             <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-light text-[#0D1B35] leading-[1.05] mb-8">
-              Une expertise
+              Une offre intégrée,
               <br />
-              <span className="italic text-[#2563EB]">à 360°</span>
+              <span className="italic text-[#2563EB]">une seule chaîne de valeur</span>
             </h1>
             <p className="text-[1rem] text-[#4A6285] leading-relaxed max-w-xl">
-              De l&apos;audit initial au suivi post-travaux, nous couvrons
-              l&apos;ensemble du cycle de vie d&apos;un projet de rénovation
-              énergétique avec rigueur et engagement.
+              De l&apos;étude de gisement CEE au conseil en décarbonation, jusqu&apos;au
+              courtage des produits environnementaux : un interlocuteur unique
+              entre vos obligations énergétiques et les mécanismes qui les financent.
             </p>
           </motion.div>
         </div>
@@ -134,12 +116,13 @@ export default function NosPrestationsPage() {
             {PRESTATIONS.map((p, i) => (
               <motion.article
                 key={p.title}
+                id={p.id}
                 variants={fadeUp}
                 custom={0}
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true, margin: "-80px" }}
-                className={`grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 py-16 md:py-24 border-t border-[#DBEAFE] ${
+                className={`scroll-mt-28 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 py-16 md:py-24 border-t border-[#DBEAFE] ${
                   i === PRESTATIONS.length - 1 ? "border-b" : ""
                 }`}
               >
@@ -169,12 +152,17 @@ export default function NosPrestationsPage() {
                   }`}
                 >
                   <div className="flex items-center gap-4 mb-6">
-                    <div className="w-12 h-12 rounded-full border border-[#BFDBFE] flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-full border border-[#BFDBFE] flex items-center justify-center shrink-0">
                       <p.icon size={22} className="text-[#2563EB]" strokeWidth={1.5} />
                     </div>
-                    <h2 className="font-display text-3xl md:text-4xl font-normal text-[#0D1B35]">
-                      {p.title}
-                    </h2>
+                    <div>
+                      <p className="text-[0.66rem] uppercase tracking-[0.2em] text-[#2563EB] mb-1">
+                        {p.pilier}
+                      </p>
+                      <h2 className="font-display text-3xl md:text-4xl font-normal text-[#0D1B35]">
+                        {p.title}
+                      </h2>
+                    </div>
                   </div>
 
                   <p className="text-[0.92rem] text-[#4A6285] leading-[1.8] mb-8">
@@ -197,7 +185,7 @@ export default function NosPrestationsPage() {
                     href="/contactez-nous"
                     className="group inline-flex items-center gap-2 text-[0.8rem] font-semibold uppercase tracking-[0.12em] text-[#2563EB] hover:text-[#1E40AF] transition-colors w-fit"
                   >
-                    Demander un devis
+                    Nous contacter
                     <ArrowRight
                       size={14}
                       className="transition-transform group-hover:translate-x-1"
@@ -246,26 +234,26 @@ export default function NosPrestationsPage() {
       </section>
 
       <RelatedLinks
-        title="Approfondir une expertise"
-        subtitle="Chaque prestation s'appuie sur un savoir-faire métier que nous détaillons dans les pages dédiées."
+        title="Explorer notre offre"
+        subtitle="Trois leviers complémentaires, un seul interlocuteur — de la valorisation de vos économies d'énergie au courtage de vos actifs environnementaux."
         links={[
           {
-            href: "/audit-energetique",
-            eyebrow: "Diagnostic",
-            title: "Audit énergétique",
-            description: "Audit réglementaire, audit copropriété, audit décret tertiaire — tous les formats d'audit que nous réalisons.",
-          },
-          {
-            href: "/bureau-d-etude-renovation-energetique",
-            eyebrow: "Métier",
-            title: "Bureau d'étude rénovation énergétique",
-            description: "Études thermiques RE2020, STD, ACV, audits réglementaires et accompagnement projet de A à Z.",
-          },
-          {
             href: "/accompagnement-cee",
-            eyebrow: "Aides",
-            title: "Accompagnement CEE",
-            description: "Maximisez vos financements : Certificats d'Économies d'Énergie, MaPrimeRénov' et primes locales.",
+            eyebrow: "Pilier 1",
+            title: "Certificats d'économie d'énergie (CEE)",
+            description: "Notre cœur de métier : audit du gisement, montage des dossiers et valorisation via mandat EMMY. Du diagnostic au versement de la prime.",
+          },
+          {
+            href: "/conseil-decarbonation",
+            eyebrow: "Pilier 2",
+            title: "Conseil en décarbonation",
+            description: "Bilan carbone scopes 1, 2 & 3, trajectoire de réduction (SBTi) et mise en conformité CSRD et décret tertiaire.",
+          },
+          {
+            href: "/courtage-environnemental",
+            eyebrow: "Pilier 3",
+            title: "Courtage environnemental",
+            description: "Crédits carbone volontaires, garanties d'origine et biotickets : nous connectons porteurs de projets et entreprises, avec une sélection exigeante.",
           },
         ]}
       />

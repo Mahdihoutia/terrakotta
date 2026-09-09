@@ -15,7 +15,7 @@ const fadeUp = {
   }),
 };
 
-type ProjectType = "Tous" | "Résidentiel" | "Tertiaire" | "Collectivité" | "Industrie";
+type ProjectType = "Tous" | "Copropriété" | "Tertiaire" | "Collectivité" | "Industrie";
 
 interface Project {
   title: string;
@@ -31,7 +31,7 @@ interface Project {
 
 const FILTERS: ProjectType[] = [
   "Tous",
-  "Résidentiel",
+  "Copropriété",
   "Tertiaire",
   "Collectivité",
   "Industrie",
@@ -40,7 +40,7 @@ const FILTERS: ProjectType[] = [
 const PROJECTS: Project[] = [
   {
     title: "Résidence Les Oliviers",
-    type: "Résidentiel" as const,
+    type: "Copropriété" as const,
     category: "Copropriété — 48 logements",
     location: "Aix-en-Provence",
     year: "2026",
@@ -71,7 +71,7 @@ const PROJECTS: Project[] = [
   // ─── Résidentiel IDF (+150 logements) ──────────────────────
   {
     title: "Les Jardins d'Arcueil",
-    type: "Résidentiel" as const,
+    type: "Copropriété" as const,
     category: "Copropriété — 210 logements",
     location: "Arcueil, Île-de-France",
     year: "2025",
@@ -81,7 +81,7 @@ const PROJECTS: Project[] = [
   },
   {
     title: "Résidence Olympe de Gouges",
-    type: "Résidentiel" as const,
+    type: "Copropriété" as const,
     category: "Copropriété — 186 logements",
     location: "Vitry-sur-Seine, Île-de-France",
     year: "2025",
@@ -91,7 +91,7 @@ const PROJECTS: Project[] = [
   },
   {
     title: "Grand ensemble Romain Rolland",
-    type: "Résidentiel" as const,
+    type: "Copropriété" as const,
     category: "Rénovation globale — 154 logements",
     location: "Champigny-sur-Marne, Île-de-France",
     year: "2026",
@@ -182,7 +182,8 @@ export default function NosReferencesPage() {
             </h1>
             <p className="text-[1rem] text-[#4A6285] leading-relaxed max-w-xl">
               Chaque projet raconte une transformation. Découvrez comment nous
-              avons accompagné nos clients vers un bâti plus performant.
+              accompagnons copropriétés, bailleurs, tertiaire, collectivités et
+              industriels — de l&apos;audit à la valorisation des économies.
             </p>
           </motion.div>
 
@@ -296,22 +297,22 @@ export default function NosReferencesPage() {
         subtitle="Chaque référence ci-dessus s'appuie sur l'un de nos métiers. Explorez la prestation qui correspond à votre projet."
         links={[
           {
-            href: "/audit-energetique",
-            eyebrow: "Diagnostic",
-            title: "Audit énergétique",
-            description: "Bilan thermique complet pour identifier les leviers d'économie d'énergie de votre bâtiment.",
+            href: "/conseil-decarbonation",
+            eyebrow: "Pilier 2",
+            title: "Conseil en décarbonation",
+            description: "Bilan carbone scopes 1, 2 & 3, trajectoire de réduction (SBTi) et conformité CSRD / décret tertiaire.",
           },
           {
-            href: "/bureau-d-etude-renovation-energetique",
-            eyebrow: "Métier",
-            title: "Bureau d'étude rénovation énergétique",
-            description: "Calculs RE2020, simulations dynamiques, ACV — l'expertise technique au service de la performance.",
+            href: "/courtage-environnemental",
+            eyebrow: "Pilier 3",
+            title: "Courtage environnemental",
+            description: "Crédits carbone volontaires, garanties d'origine et biotickets : nous connectons porteurs de projets et entreprises.",
           },
           {
             href: "/accompagnement-cee",
-            eyebrow: "Financement",
-            title: "Accompagnement CEE",
-            description: "Maximisez vos aides : Certificats d'Économies d'Énergie, MaPrimeRénov', Coup de pouce.",
+            eyebrow: "Pilier 1",
+            title: "Étude de gisement CEE",
+            description: "Maximisez votre valorisation : Certificats d'Économies d'Énergie, mandat EMMY et aides B2B (Éco-PTZ collectif, Fonds Chaleur).",
           },
         ]}
       />

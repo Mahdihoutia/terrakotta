@@ -37,8 +37,11 @@ export async function POST(req: Request) {
   }
   const emailLower = parsed.data.email.toLowerCase();
 
-  // Réponse générique renvoyée dans tous les cas (anti-énumération).
-  const genericOk = { ok: true } as { ok: true; link?: string; emailError?: string };
+  // Réponse générique renvoyée dans tous les cas (anti-énumération) — ne
+  // contient JAMAIS le lien en production. En dev seulement, on peut y joindre
+  // le lien pour tester sans Resend.
+  const isDev = process.env.NODE_ENV !== "production";
+  const genericOk = { ok: true } as { ok: true; link?: string };
 
   try {
     const user = await prisma.user.findFirst({
@@ -77,14 +80,19 @@ export async function POST(req: Request) {
           text: renderResetText({ name: user.name, link, expiresMinutes: TTL_MINUTES }),
         });
       } catch (err) {
-        // On loggue mais on garde la réponse générique côté client.
+        // On loggue côté serveur, la réponse client reste générique.
         console.error("POST /api/auth/forgot-password — envoi email", err);
-        genericOk.emailError = err instanceof Error ? err.message : "Envoi email échoué";
       }
     } else {
-      // Dev : pas de Resend configuré → on renvoie le lien pour test manuel.
-      genericOk.link = link;
-      genericOk.emailError = "RESEND_API_KEY non configurée — lien renvoyé pour usage manuel.";
+      // Pas de Resend configuré. En dev, on expose le lien pour test local ;
+      // en production, jamais (sinon n'importe qui pourrait réinitialiser).
+      if (isDev) {
+        genericOk.link = link;
+      } else {
+        console.error(
+          "POST /api/auth/forgot-password — RESEND_API_KEY absente en production : aucun email envoyé.",
+        );
+      }
     }
 
     return NextResponse.json(genericOk);

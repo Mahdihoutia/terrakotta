@@ -1,22 +1,22 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Nos références — Projets de rénovation énergétique réalisés",
+  title: "Nos références — Projets de décarbonation & énergie réalisés",
   description:
-    "Retrouvez les références Kilowater : maisons individuelles, bâtiments tertiaires, collectivités. Des projets concrets en isolation, chauffage, ventilation et rénovation globale avec résultats chiffrés.",
+    "Retrouvez les références Kilowater : copropriétés, parcs de bailleurs, bâtiments tertiaires, sites industriels, collectivités. Des projets concrets d'efficacité énergétique, de valorisation CEE et de décarbonation avec résultats chiffrés.",
   keywords: [
-    "références rénovation énergétique",
-    "projets isolation thermique",
-    "rénovation maison individuelle",
+    "références décarbonation entreprise",
+    "projets efficacité énergétique tertiaire",
+    "valorisation CEE copropriété",
     "rénovation bâtiment tertiaire",
-    "rénovation collectivité",
-    "exemples travaux rénovation",
+    "projet énergétique collectivité",
+    "exemples décarbonation industrie",
     "résultats performance énergétique",
   ],
   openGraph: {
     title: "Nos références — Projets réalisés | Kilowater",
     description:
-      "Découvrez les projets de rénovation énergétique réalisés par Kilowater : résidentiel, tertiaire, collectivités. Résultats et économies d'énergie chiffrés.",
+      "Découvrez les projets de décarbonation et d'efficacité énergétique réalisés par Kilowater : copropriétés, tertiaire, industrie, collectivités. Résultats chiffrés.",
     url: "https://www.kilowater.fr/nos-references",
     images: [{ url: "https://www.kilowater.fr/og-image.jpg", width: 1200, height: 630, alt: "Kilowater" }],
     type: "website",

@@ -1,22 +1,22 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Nos prestations — Audit énergétique & Maîtrise d'œuvre",
+  title: "Nos prestations — Partenaire décarbonation & énergie",
   description:
-    "Découvrez les prestations de Kilowater : audit énergétique réglementaire, maîtrise d'œuvre en rénovation, accompagnement CEE et MaPrimeRénov', note de dimensionnement. Expertise pour particuliers, professionnels et collectivités.",
+    "L'offre intégrée de Kilowater : étude de gisement CEE, conseil en décarbonation (bilan carbone, CSRD, décret tertiaire) et courtage de produits environnementaux (crédits carbone, garanties d'origine, biotickets). Pour copropriétés, bailleurs, collectivités, tertiaire & industrie.",
   keywords: [
-    "audit énergétique réglementaire",
-    "maîtrise d'œuvre rénovation",
-    "accompagnement CEE",
-    "MaPrimeRénov accompagnement",
-    "note de dimensionnement",
-    "bilan thermique bâtiment",
-    "AMO rénovation énergétique",
+    "étude de gisement CEE",
+    "conseil en décarbonation",
+    "bilan carbone entreprise",
+    "courtage crédits carbone",
+    "garanties d'origine",
+    "audit énergétique tertiaire",
+    "AMO efficacité énergétique",
   ],
   openGraph: {
-    title: "Nos prestations — Audit & Maîtrise d'œuvre | Kilowater",
+    title: "Nos prestations — Partenaire décarbonation & énergie | Kilowater",
     description:
-      "Audit énergétique, maîtrise d'œuvre, CEE, MaPrimeRénov' : l'expertise complète de Kilowater pour votre projet de rénovation énergétique.",
+      "CEE, conseil décarbonation et courtage de produits environnementaux : la chaîne de valeur complète de Kilowater, de l'audit technique à la valorisation.",
     url: "https://www.kilowater.fr/nos-prestations",
     images: [{ url: "https://www.kilowater.fr/og-image.jpg", width: 1200, height: 630, alt: "Kilowater" }],
     type: "website",

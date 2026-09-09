@@ -5,7 +5,7 @@ const URL = "https://www.kilowater.fr/audit-energetique-paris";
 export const metadata: Metadata = {
   title: "Audit énergétique à Paris — Bureau d'étude Kilowater",
   description:
-    "Audit énergétique à Paris pour copropriétés, tertiaire et logements. Bureau d'étude Kilowater (75007), équipe RGE, accompagnement aides MaPrimeRénov' et CEE. Devis sous 48h.",
+    "Audit énergétique à Paris pour copropriétés, bailleurs, tertiaire et collectivités. Bureau d'étude Kilowater (75007), équipe RGE, valorisation CEE et aides B2B (MaPrimeRénov' Copropriétés, Éco-PTZ collectif). Réponse sous 48h.",
   keywords: [
     "audit énergétique Paris",
     "audit énergétique copropriété Paris",
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Audit énergétique à Paris — Bureau d'étude Kilowater",
     description:
-      "Bureau d'étude basé à Paris 7e. Audits énergétiques pour copropriétés, tertiaire et particuliers en Île-de-France.",
+      "Partenaire décarbonation & énergie basé à Paris 7e. Audits énergétiques et valorisation CEE pour copropriétés, bailleurs, tertiaire et collectivités en Île-de-France.",
     url: URL,
     type: "website",
     locale: "fr_FR",

@@ -21,25 +21,25 @@ const manrope = Manrope({
 const SITE_URL = "https://www.kilowater.fr";
 const SITE_NAME = "Kilowater";
 const DEFAULT_DESCRIPTION =
-  "Kilowater, bureau d'étude spécialisé en rénovation énergétique. Audit énergétique, maîtrise d'œuvre, accompagnement CEE et MaPrimeRénov' pour particuliers, professionnels et collectivités.";
+  "Kilowater, partenaire décarbonation & énergie des entreprises. Étude de gisement CEE, conseil en décarbonation (bilan carbone, CSRD, décret tertiaire) et courtage de produits environnementaux (crédits carbone, garanties d'origine, biotickets) pour copropriétés, bailleurs, collectivités et maîtres d'ouvrage tertiaires & industriels.";
 
 export const metadata: Metadata = {
   title: {
-    default: `${SITE_NAME} — Bureau d'étude en rénovation énergétique`,
+    default: `${SITE_NAME} — Partenaire décarbonation & énergie`,
     template: `%s | ${SITE_NAME}`,
   },
   description: DEFAULT_DESCRIPTION,
   keywords: [
-    "bureau d'étude rénovation énergétique",
-    "audit énergétique",
-    "maîtrise d'œuvre",
-    "CEE certificats économies énergie",
-    "MaPrimeRénov",
-    "isolation thermique",
-    "bilan thermique",
-    "rénovation bâtiment",
-    "DPE",
-    "performance énergétique",
+    "partenaire décarbonation & énergie",
+    "certificats d'économies d'énergie",
+    "CEE tertiaire",
+    "bilan carbone entreprise",
+    "conseil décarbonation",
+    "crédits carbone volontaires",
+    "garanties d'origine",
+    "décret tertiaire",
+    "audit énergétique tertiaire",
+    "trajectoire SBTi",
   ],
   authors: [{ name: SITE_NAME, url: SITE_URL }],
   creator: SITE_NAME,
@@ -49,20 +49,20 @@ export const metadata: Metadata = {
     locale: "fr_FR",
     url: SITE_URL,
     siteName: SITE_NAME,
-    title: `${SITE_NAME} — Bureau d'étude en rénovation énergétique`,
+    title: `${SITE_NAME} — Partenaire décarbonation & énergie`,
     description: DEFAULT_DESCRIPTION,
     images: [
       {
         url: `${SITE_URL}/opengraph-image`,
         width: 1200,
         height: 630,
-        alt: "Kilowater — Bureau d'étude en rénovation énergétique",
+        alt: "Kilowater — Partenaire décarbonation & énergie",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: `${SITE_NAME} — Bureau d'étude en rénovation énergétique`,
+    title: `${SITE_NAME} — Partenaire décarbonation & énergie`,
     description: DEFAULT_DESCRIPTION,
     creator: "@kilowater",
     images: [`${SITE_URL}/opengraph-image`],
@@ -113,18 +113,21 @@ const organizationSchema = {
     "https://www.linkedin.com/company/kilowater",
   ],
   serviceType: [
-    "Audit énergétique",
-    "Maîtrise d'œuvre",
-    "Accompagnement CEE",
-    "Accompagnement MaPrimeRénov'",
-    "Bilan thermique",
-    "Rénovation énergétique",
+    "Étude de gisement CEE",
+    "Certificats d'économies d'énergie",
+    "Conseil en décarbonation",
+    "Bilan carbone",
+    "Courtage de crédits carbone",
+    "Garanties d'origine",
+    "Audit énergétique tertiaire",
   ],
   knowsAbout: [
-    "Rénovation énergétique",
-    "Performance énergétique des bâtiments",
     "Certificats d'économies d'énergie",
-    "Isolation thermique",
+    "Décarbonation des entreprises",
+    "Bilan carbone scopes 1, 2 et 3",
+    "Crédits carbone volontaires",
+    "Garanties d'origine et biotickets",
+    "Décret tertiaire et CSRD",
   ],
   hasCredential: [
     {

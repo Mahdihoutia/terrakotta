@@ -8,8 +8,8 @@ import {
   ArrowRight,
   Thermometer,
   FileCheck,
-  HardHat,
-  Shield,
+  LineChart,
+  Repeat,
   ChevronRight,
   Zap,
 } from "lucide-react";
@@ -32,40 +32,40 @@ const stagger = {
 /* ─────────── Data ─────────── */
 const EXPERTISES = [
   {
-    icon: Thermometer,
-    title: "Audit énergétique",
-    desc: "Diagnostic complet de la performance thermique de votre bâtiment. Identification des déperditions et préconisations hiérarchisées.",
-    num: "01",
-    href: "/audit-energetique",
-  },
-  {
-    icon: HardHat,
-    title: "Bureau d'étude",
-    desc: "Conception, dimensionnement et pilotage des travaux de rénovation énergétique. Assistance à Maîtrise d'Ouvrage (AMO) du diagnostic à la réception.",
-    num: "02",
-    href: "/bureau-d-etude-renovation-energetique",
-  },
-  {
     icon: FileCheck,
-    title: "Accompagnement CEE & aides",
-    desc: "Montage des dossiers CEE, MaPrimeRénov' et aides locales. Calcul des kWh cumac et optimisation du reste à charge.",
-    num: "03",
+    title: "Certificats d'économie d'énergie",
+    desc: "Audit technique du gisement d'économies d'énergie, montage des dossiers CEE et valorisation via mandat EMMY. Notre cœur de métier, du diagnostic à la prime.",
+    num: "01",
     href: "/accompagnement-cee",
   },
   {
-    icon: Shield,
-    title: "Thermique du bâtiment",
-    desc: "Études thermiques réglementaires RT/RE. Simulations dynamiques et modélisation des performances énergétiques.",
+    icon: LineChart,
+    title: "Conseil en décarbonation",
+    desc: "Bilan carbone scopes 1, 2 & 3, trajectoires de réduction (SBTi) et accompagnement réglementaire : CSRD, décret tertiaire, futurs seuils CSDDD.",
+    num: "02",
+    href: "/conseil-decarbonation",
+  },
+  {
+    icon: Repeat,
+    title: "Courtage produits environnementaux",
+    desc: "Crédits carbone volontaires, garanties d'origine et biotickets. Nous connectons porteurs de projets et entreprises, avec une sélection exigeante des projets.",
+    num: "03",
+    href: "/courtage-environnemental",
+  },
+  {
+    icon: Thermometer,
+    title: "Expertise technique de terrain",
+    desc: "Audit énergétique, études thermiques et assistance à maîtrise d'ouvrage. L'expertise ingénierie qui fonde et fiabilise chaque euro de valorisation.",
     num: "04",
     href: "/nos-prestations",
   },
 ];
 
 const CHIFFRES = [
-  { value: "150+", label: "Projets réalisés" },
+  { value: "150+", label: "Projets accompagnés" },
   { value: "40%", label: "Économies d'énergie moyennes" },
-  { value: "12", label: "Années d'expertise" },
-  { value: "+25 TWh", label: "De réduction énergétique" },
+  { value: "1 seul", label: "Interlocuteur, de l'audit à la prime" },
+  { value: "+25 GWh", label: "D'économies valorisées" },
 ];
 
 const REFERENCES = [
@@ -88,12 +88,12 @@ const REFERENCES = [
     year: "2024",
   },
   {
-    title: "Hôtel particulier Marais",
-    type: "Particulier — Monument historique",
-    location: "Paris 4e",
-    result: "– 38% de consommation, respect du patrimoine",
+    title: "Plateforme logistique Roissy",
+    type: "Industriel — Bailleur tertiaire",
+    location: "Roissy-en-France",
+    result: "1,2 M€ de primes CEE valorisées",
     image:
-      "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&q=80",
+      "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&q=80",
     year: "2024",
   },
   {
@@ -107,8 +107,8 @@ const REFERENCES = [
   },
 ];
 
-/** Video background URL — Engineers inspecting electrical control panel */
-const VIDEO_BG_URL = "https://assets.mixkit.co/videos/23695/23695-720.mp4";
+/** Video background URL — Aerial view of a solar panel farm at sunset */
+const VIDEO_BG_URL = "https://assets.mixkit.co/videos/46623/46623-720.mp4";
 
 /* ─────────── Page Component ─────────── */
 export default function HomePage() {
@@ -126,7 +126,7 @@ export default function HomePage() {
             preload="metadata"
             crossOrigin="anonymous"
             className="absolute inset-0 w-full h-full object-cover brightness-75"
-            poster="https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=1920&q=80"
+            poster="https://images.unsplash.com/photo-1509391366360-2e959784a276?w=1920&q=80"
           >
             <source src={VIDEO_BG_URL} type="video/mp4" />
           </video>
@@ -149,7 +149,7 @@ export default function HomePage() {
                 className="text-[0.72rem] uppercase tracking-[0.3em] text-[#60A5FA] mb-6"
                 aria-hidden="true"
               >
-                Bureau d&apos;étude en rénovation énergétique
+                Partenaire décarbonation &amp; énergie — B2B
               </motion.p>
 
               <motion.h1
@@ -159,14 +159,13 @@ export default function HomePage() {
                 className="font-display text-5xl md:text-7xl lg:text-[5.5rem] font-light text-white leading-[1.05] mb-8"
               >
                 <span className="sr-only">
-                  Kilowater, bureau d&apos;étude en rénovation énergétique —{" "}
+                  Kilowater, partenaire décarbonation & énergie des entreprises —{" "}
                 </span>
-                Rénover
-                <span className="italic text-[#60A5FA]"> l&apos;existant</span>,
+                Décarboner,
                 <br />
-                construire
+                financer,
                 <br />
-                <span className="italic text-[#60A5FA]">l&apos;avenir</span>
+                <span className="italic text-[#60A5FA]">valoriser</span>
               </motion.h1>
 
               <motion.p
@@ -175,9 +174,10 @@ export default function HomePage() {
                 transition={{ duration: 0.6, delay: 0.6 }}
                 className="text-[1.05rem] text-[#BFDBFE] max-w-lg leading-relaxed mb-10"
               >
-                Nous transformons le bâti existant en espaces performants,
-                confortables et durables. De l&apos;audit à la livraison,
-                chaque projet est une promesse d&apos;excellence.
+                Un interlocuteur unique entre vos obligations énergétiques et les
+                mécanismes qui les financent : CEE, crédits carbone, garanties
+                d&apos;origine. De l&apos;audit technique à la valorisation, nous
+                pilotons toute la chaîne.
               </motion.p>
 
               <motion.div
@@ -265,19 +265,20 @@ export default function HomePage() {
           >
             <div className="lg:col-span-5">
               <p className="text-[0.72rem] uppercase tracking-[0.25em] text-[#2563EB] mb-4">
-                Nos expertises
+                Notre offre
               </p>
               <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-light text-[#0D1B35] leading-[1.1]">
-                Un savoir-faire
+                Une offre intégrée,
                 <br />
-                <span className="italic text-[#2563EB]">complet</span>
+                <span className="italic text-[#2563EB]">un seul interlocuteur</span>
               </h2>
             </div>
             <div className="lg:col-span-5 lg:col-start-8 flex items-end">
               <p className="text-[0.95rem] text-[#4A6285] leading-relaxed">
-                De l&apos;audit initial à la réception des travaux, nous mobilisons
-                une expertise transversale pour garantir la réussite de chaque
-                projet de rénovation énergétique.
+                Le CEE finance et structure la relation, le conseil décarbonation
+                cadre votre trajectoire, le courtage valorise vos actifs
+                environnementaux. Le tout adossé à une expertise technique de
+                terrain, notre vraie différence.
               </p>
             </div>
           </motion.div>
@@ -407,14 +408,19 @@ export default function HomePage() {
 
       {/* ═══════════ VIDEO SLOGAN ═══════════ */}
       <section className="relative h-[80vh] md:h-[90vh] flex items-center justify-center overflow-hidden">
-        {/* Background Image */}
-        <Image
-          src="https://images.unsplash.com/photo-1695445301510-459fb368d8af?w=1920&q=85&auto=format&fit=crop"
-          alt="Rangée de climatiseurs sur un toit — rénovation énergétique"
-          fill
-          sizes="100vw"
-          className="object-cover"
-        />
+        {/* Background Video — Ingénieurs inspectant une armoire électrique */}
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="metadata"
+          aria-label="Ingénieurs inspectant une armoire électrique"
+          poster="https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=1920&q=80"
+          className="absolute inset-0 h-full w-full object-cover"
+        >
+          <source src="https://assets.mixkit.co/videos/23695/23695-720.mp4" type="video/mp4" />
+        </video>
         {/* Overlay — adapté mobile/desktop */}
         <div className="absolute inset-0 bg-[#030D1F]/55 md:bg-[#030D1F]/50" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0A1628]/70 via-transparent to-transparent" />
@@ -432,7 +438,7 @@ export default function HomePage() {
               </span>
             </div>
             <h2 className="font-display text-5xl md:text-7xl lg:text-[6rem] xl:text-[7rem] font-light text-white leading-[1] mb-8">
-              Chaque bâtiment
+              Chaque projet
               <br />
               <span className="italic text-[#60A5FA]">mérite sa</span>
               <br />
@@ -440,9 +446,10 @@ export default function HomePage() {
               <span className="text-white">.</span>
             </h2>
             <p className="text-[1.05rem] md:text-[1.2rem] text-[#BFDBFE] max-w-2xl mx-auto leading-relaxed mb-12">
-              La transition énergétique ne se décrète pas. Elle se construit,
-              mur après mur, chantier après chantier. Nous sommes ceux qui
-              transforment l&apos;urgence en action.
+              La décarbonation ne se décrète pas, elle se pilote. Économies
+              d&apos;énergie, réduction des émissions, valorisation des actifs
+              environnementaux : nous transformons vos obligations en leviers
+              financiers.
             </p>
             <Link
               href="/contactez-nous"
@@ -621,9 +628,9 @@ export default function HomePage() {
                 <span className="italic text-[#60A5FA]">vision humaine</span>
               </h2>
               <p className="text-[0.95rem] text-[#BFDBFE] leading-relaxed max-w-md mb-8">
-                Chaque bâtiment a son histoire. Notre rôle est de comprendre ses
-                contraintes, révéler son potentiel et concevoir une rénovation
-                qui allie performance, confort et pérennité.
+                Chaque patrimoine a son gisement. Notre rôle est de le mesurer,
+                structurer la trajectoire de décarbonation la plus juste, puis
+                actionner les bons dispositifs de financement et de valorisation.
               </p>
               <Link
                 href="/qui-sommes-nous"
@@ -642,17 +649,17 @@ export default function HomePage() {
                 {
                   step: "01",
                   title: "Diagnostic",
-                  text: "Analyse complète du bâti, des usages et du potentiel d'amélioration.",
+                  text: "Audit technique du gisement d'économies d'énergie et du bilan carbone.",
                 },
                 {
                   step: "02",
-                  title: "Conception",
-                  text: "Élaboration d'un programme de travaux optimisé technico-économiquement.",
+                  title: "Structuration",
+                  text: "Trajectoire de réduction, montage des dossiers CEE et cadrage réglementaire.",
                 },
                 {
                   step: "03",
-                  title: "Réalisation",
-                  text: "Pilotage du chantier, contrôle qualité et livraison dans les délais.",
+                  title: "Valorisation",
+                  text: "Primes CEE, crédits carbone et garanties d'origine : chaque levier activé.",
                 },
               ].map((item, i) => (
                 <motion.div

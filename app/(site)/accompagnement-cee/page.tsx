@@ -47,7 +47,7 @@ const fichesResidentiel: Fiche[] = [
   {
     code: "BAR-TH-171",
     name: "Pompe à chaleur air/eau",
-    description: "Installation d'une PAC air/eau pour le chauffage résidentiel individuel.",
+    description: "Installation d'une PAC air/eau pour le chauffage des logements en habitat collectif.",
   },
   {
     code: "BAR-TH-159",
@@ -133,7 +133,7 @@ const steps = [
     icon: Search,
     title: "Audit de votre situation et éligibilité",
     description:
-      "Nous analysons votre situation : type de bâtiment, travaux envisagés, statut (propriétaire occupant, bailleur, entreprise) et vérifions votre éligibilité aux différentes fiches CEE applicables.",
+      "Nous analysons votre situation : type de bâtiment, travaux envisagés, statut (copropriété, bailleur, entreprise tertiaire, industriel, collectivité) et vérifions votre éligibilité aux différentes fiches CEE applicables.",
   },
   {
     number: "02",
@@ -169,7 +169,7 @@ const faqs = [
   {
     question: "Qui peut bénéficier des CEE ?",
     answer:
-      "Les certificats d'économies d'énergie sont accessibles à toute personne physique ou morale réalisant des travaux d'économies d'énergie : particuliers propriétaires occupants ou bailleurs, syndicats de copropriétés, entreprises du secteur tertiaire, industriels, agriculteurs et collectivités. La condition principale est que les travaux réalisés correspondent à une fiche d'opération standardisée du catalogue officiel.",
+      "Kilowater accompagne exclusivement les acteurs professionnels : syndicats de copropriétés, bailleurs sociaux et privés, entreprises du secteur tertiaire, industriels et collectivités. La condition principale est que les travaux réalisés correspondent à une fiche d'opération standardisée du catalogue officiel (fiches BAT-TH pour le tertiaire, BAR-TH pour l'habitat collectif, IND pour l'industrie).",
   },
   {
     question: "Quels travaux sont éligibles aux CEE ?",
@@ -182,9 +182,9 @@ const faqs = [
       "Le kWh cumac (cumulé et actualisé) est l'unité de mesure des certificats d'économies d'énergie. Il représente l'énergie économisée sur la durée de vie de l'équipement installé, actualisée à un taux de 4 % par an. Pour chaque fiche, une formule de calcul précise intègre plusieurs paramètres : la surface ou la puissance de l'équipement, la zone climatique du bâtiment, un coefficient de précarité énergétique le cas échéant, et la durée de vie conventionnelle de l'opération. Ces formules sont fixées par arrêté et s'appliquent de façon identique pour tous les acteurs.",
   },
   {
-    question: "Peut-on cumuler CEE et MaPrimeRénov' ?",
+    question: "Peut-on cumuler les CEE avec d'autres aides B2B ?",
     answer:
-      "Oui, dans la grande majorité des cas, les CEE sont cumulables avec MaPrimeRénov'. Ces deux dispositifs sont distincts : MaPrimeRénov' est une subvention de l'État versée par l'ANAH, tandis que les CEE sont des primes versées par les fournisseurs d'énergie (les obligés) en contrepartie des économies d'énergie générées. Le cumul est toutefois soumis à certaines conditions et plafonds selon les travaux concernés. Nous vous accompagnons pour optimiser l'articulation entre ces différentes aides.",
+      "Oui, dans la grande majorité des cas, les CEE se cumulent avec les autres dispositifs destinés aux professionnels : MaPrimeRénov' Copropriétés, Éco-PTZ collectif, Fonds Chaleur de l'ADEME, aides régionales aux entreprises et collectivités, et TVA réduite tertiaire lorsqu'elle s'applique. Les CEE sont des primes versées par les fournisseurs d'énergie (les obligés) en contrepartie des économies générées ; leur articulation avec les autres aides est soumise à conditions et plafonds. Nous optimisons l'ensemble du montage financier pour maximiser votre valorisation.",
   },
   {
     question: "Quel est le délai pour obtenir la prime CEE ?",
@@ -457,7 +457,7 @@ export default function AccompagnementCEEPage() {
             >
               <Home size={16} className="text-[#2563EB]" />
               <h3 className="font-display text-lg font-semibold text-[#0D1B35]">
-                Secteur résidentiel — Fiches BAR-TH / BAR-EN
+                Habitat collectif (copropriétés, bailleurs) — Fiches BAR-TH / BAR-EN
               </h3>
             </motion.div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
@@ -710,16 +710,16 @@ export default function AccompagnementCEEPage() {
         subtitle="Le dispositif CEE s'articule avec d'autres expertises pour maximiser la performance et le financement de votre rénovation."
         links={[
           {
-            href: "/audit-energetique",
-            eyebrow: "Préalable",
-            title: "Audit énergétique",
-            description: "Identifier les travaux éligibles aux Certificats d'Économies d'Énergie et hiérarchiser les priorités.",
+            href: "/conseil-decarbonation",
+            eyebrow: "Pilier 2",
+            title: "Conseil en décarbonation",
+            description: "Après l'audit CEE, structurer votre trajectoire bas carbone : bilan carbone, SBTi, conformité CSRD et décret tertiaire.",
           },
           {
-            href: "/bureau-d-etude-renovation-energetique",
-            eyebrow: "Études",
-            title: "Bureau d'étude rénovation énergétique",
-            description: "Calcul des kWh cumac générés par chaque opération et dimensionnement technique.",
+            href: "/courtage-environnemental",
+            eyebrow: "Pilier 3",
+            title: "Courtage environnemental",
+            description: "Valorisez vos actifs : crédits carbone volontaires, garanties d'origine et biotickets, avec une sélection exigeante des projets.",
           },
           {
             href: "/nos-references",

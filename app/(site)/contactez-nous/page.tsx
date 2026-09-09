@@ -30,11 +30,11 @@ const COORDONNEES = [
 ];
 
 const TYPES_PROJET = [
-  "Audit énergétique",
+  "Étude de gisement CEE",
+  "Audit énergétique & étude thermique",
   "Maîtrise d'œuvre & AMO",
-  "Accompagnement aides",
-  "Étude thermique",
-  "Conseil patrimonial",
+  "Conseil en décarbonation (bilan carbone, CSRD)",
+  "Courtage produits environnementaux (carbone, GO, biotickets)",
   "Autre",
 ];
 
@@ -103,8 +103,9 @@ export default function ContactezNousPage() {
               <span className="italic text-[#2563EB]">projet</span>
             </h1>
             <p className="text-[1rem] text-[#4A6285] leading-relaxed max-w-xl">
-              Que vous soyez particulier, professionnel ou collectivité,
-              décrivez-nous votre besoin. Nous vous répondons sous 48h.
+              Copropriété, bailleur, collectivité ou maître d&apos;ouvrage
+              tertiaire &amp; industriel : décrivez-nous votre besoin. Nous vous
+              répondons sous 48h.
             </p>
           </motion.div>
         </div>
