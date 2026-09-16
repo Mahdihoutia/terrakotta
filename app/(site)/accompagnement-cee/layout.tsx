@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import { getAlternates } from "@/lib/i18n/routes";
 
 export const metadata: Metadata = {
-  title: "Accompagnement CEE — Certificats d'Économies d'Énergie | Kilowater",
+  title: "Accompagnement CEE — Certificats d'Économies d'Énergie",
   description: "Kilowater, partenaire décarbonation & énergie, vous accompagne dans vos dossiers CEE : calcul kWh cumac, montage de dossier, fiches BAR-TH et BAT-TH, valorisation via mandat EMMY. Pour copropriétés, bailleurs, tertiaire, industrie et collectivités.",
   keywords: [
     "accompagnement CEE",
@@ -21,9 +22,7 @@ export const metadata: Metadata = {
     images: [{ url: "https://www.kilowater.fr/opengraph-image", width: 1200, height: 630, alt: "Kilowater — Accompagnement CEE" }],
     type: "website",
   },
-  alternates: {
-    canonical: "https://www.kilowater.fr/accompagnement-cee",
-  },
+  alternates: getAlternates("cee", "fr"),
 };
 
 const breadcrumbSchema = {

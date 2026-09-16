@@ -1,10 +1,9 @@
-import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from "sonner";
 import { Analytics } from "@vercel/analytics/next";
-import "./globals.css";
+import "@/app/globals.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,29 +15,22 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: "Kilowater — Bureau d'étude en rénovation énergétique",
-    template: "%s | Kilowater",
-  },
-  description:
-    "Kilowater, bureau d'étude spécialisé en rénovation énergétique. Audit énergétique, maîtrise d'œuvre, accompagnement CEE et MaPrimeRénov' pour particuliers, professionnels et collectivités.",
-  metadataBase: new URL("https://www.kilowater.fr"),
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: { index: true, follow: true, "max-image-preview": "large" },
-  },
-};
-
-export default function RootLayout({
-  children,
-}: Readonly<{
+interface Props {
+  lang: string;
   children: React.ReactNode;
-}>) {
+}
+
+/**
+ * Document HTML commun à toutes les racines de l'application.
+ *
+ * Le projet utilise plusieurs root layouts (`(app)`, `(site)`, `(site-en)`)
+ * afin que chaque version linguistique serve un `<html lang>` correct tout en
+ * restant générée statiquement.
+ */
+export default function RootDocument({ lang, children }: Props) {
   return (
     <html
-      lang="fr"
+      lang={lang}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >

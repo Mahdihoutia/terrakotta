@@ -16,66 +16,40 @@ import {
   Users,
   Mail,
 } from "lucide-react";
-
-/* ─── Dropdown prestations data ─── */
-const PRESTATIONS_ITEMS = [
-  {
-    href: "/nos-prestations",
-    label: "Toutes nos prestations",
-    desc: "Notre offre intégrée décarbonation & énergie, en un coup d'œil",
-    icon: Zap,
-    accent: "#2563EB",
-  },
-  {
-    href: "/accompagnement-cee",
-    label: "Certificats d'économie d'énergie",
-    desc: "Audit, montage des dossiers et valorisation via mandat EMMY",
-    icon: FileCheck,
-    accent: "#059669",
-  },
-  {
-    href: "/conseil-decarbonation",
-    label: "Décarbonation",
-    desc: "Bilan carbone, trajectoires SBTi, CSRD et décret tertiaire",
-    icon: LineChart,
-    accent: "#1D4ED8",
-  },
-  {
-    href: "/courtage-environnemental",
-    label: "Courtage produits environnementaux",
-    desc: "Crédits carbone volontaires, garanties d'origine et biotickets",
-    icon: Repeat,
-    accent: "#0EA5E9",
-  },
-];
+import type { Locale } from "@/lib/i18n/config";
+import type { Dictionary } from "@/lib/i18n/get-dictionary";
+import { ROUTES } from "@/lib/i18n/routes";
+import LanguageSwitcher from "@/components/site/LanguageSwitcher";
 
 const DROPDOWN_VIDEO = "https://assets.mixkit.co/videos/34104/34104-720.mp4";
 
-/* ─── Dropdown "Qui sommes-nous" data ─── */
-const ABOUT_ITEMS = [
-  {
-    href: "/qui-sommes-nous",
-    label: "Qui sommes-nous",
-    desc: "Notre histoire, nos valeurs et notre équipe d'ingénieurs",
-    icon: Users,
-    accent: "#2563EB",
-  },
-  {
-    href: "/contactez-nous",
-    label: "Contactez-nous",
-    desc: "Coordonnées, formulaire et prise de rendez-vous",
-    icon: Mail,
-    accent: "#0EA5E9",
-  },
-];
+interface Props {
+  locale: Locale;
+  dict: Dictionary["nav"];
+  switcherDict: Dictionary["languageSwitcher"];
+}
 
-/* ─── Top-level nav links ─── */
-const NAV_LINKS = [
-  { href: "/qui-sommes-nous", label: "Le Bureau", dropdown: "about" as const },
-  { href: "/nos-prestations", label: "Nos prestations", dropdown: "prestations" as const },
-  { href: "/nos-references", label: "Nos références" },
-  { href: "/laboratoire-idees", label: "Laboratoire d'idées" },
-];
+/** Construit les menus à partir du dictionnaire et des routes de la langue. */
+function buildMenus(locale: Locale, dict: Dictionary["nav"]) {
+  const routes = ROUTES[locale];
+  const prestations = [
+    { href: routes.services, ...dict.services.all, icon: Zap, accent: "#2563EB" },
+    { href: routes.cee, ...dict.services.cee, icon: FileCheck, accent: "#059669" },
+    { href: routes.decarbonation, ...dict.services.decarbonation, icon: LineChart, accent: "#1D4ED8" },
+    { href: routes.brokerage, ...dict.services.brokerage, icon: Repeat, accent: "#0EA5E9" },
+  ];
+  const about = [
+    { href: routes.about, ...dict.about.about, icon: Users, accent: "#2563EB" },
+    { href: routes.contact, ...dict.about.contact, icon: Mail, accent: "#0EA5E9" },
+  ];
+  const links = [
+    { href: routes.about, label: dict.links.about, dropdown: "about" as const },
+    { href: routes.services, label: dict.links.services, dropdown: "prestations" as const },
+    { href: routes.references, label: dict.links.references },
+    { href: routes.lab, label: dict.links.lab },
+  ];
+  return { prestations, about, links, routes };
+}
 
 /* ─── Animations ─── */
 const dropdownVariants = {
@@ -108,9 +82,15 @@ const itemVariants = {
   }),
 };
 
-export default function Navbar() {
+export default function Navbar({ locale, dict, switcherDict }: Props) {
   const pathname = usePathname();
-  const isHomepage = pathname === "/";
+  const {
+    prestations: PRESTATIONS_ITEMS,
+    about: ABOUT_ITEMS,
+    links: NAV_LINKS,
+    routes,
+  } = buildMenus(locale, dict);
+  const isHomepage = pathname === routes.home;
   const [scrolled, setScrolled] = useState(!isHomepage);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openDropdownKey, setOpenDropdownKey] = useState<string | null>(null);
@@ -193,9 +173,9 @@ export default function Navbar() {
             : "bg-transparent"
         }`}
       >
-        <nav className="mx-auto flex max-w-[1400px] items-center justify-between px-6 md:px-10 lg:px-16 py-5">
+        <nav className="mx-auto flex max-w-[1400px] items-center justify-between gap-6 px-6 md:px-10 lg:px-16 py-5">
           {/* Logo */}
-          <Link href="/" className="group flex items-center gap-2">
+          <Link href={routes.home} className="group flex items-center gap-2">
             <Zap className="h-6 w-6 rotate-12 fill-[#3B82F6] text-[#3B82F6] transition-transform duration-300 group-hover:rotate-6" />
             <span
               className={`font-display text-[1.45rem] font-bold tracking-[0.08em] transition-colors duration-500 ${
@@ -207,7 +187,7 @@ export default function Navbar() {
           </Link>
 
           {/* ─── Desktop Nav ─── */}
-          <ul className="hidden lg:flex items-center gap-10">
+          <ul className="hidden xl:flex items-center gap-6 2xl:gap-10">
             {NAV_LINKS.map((link) => {
               const isActive =
                 link.dropdown === "prestations"
@@ -232,7 +212,7 @@ export default function Navbar() {
                   >
                     <button
                       onClick={() => setOpenDropdownKey((k) => (k === key ? null : key))}
-                      className={`group relative flex items-center gap-1 text-[0.82rem] font-medium uppercase tracking-[0.14em] transition-colors duration-500 ${
+                      className={`group relative flex items-center gap-1 whitespace-nowrap text-[0.82rem] font-medium uppercase tracking-[0.14em] transition-colors duration-500 ${
                         scrolled
                           ? "text-[#1D4ED8] hover:text-[#2563EB]"
                           : "text-white/80 hover:text-white"
@@ -268,7 +248,7 @@ export default function Navbar() {
                                 {/* ── Links column ── */}
                                 <div className="col-span-7 p-5">
                                   <p className="mb-3 text-[0.65rem] uppercase tracking-[0.2em] text-[#94A3B8]">
-                                    Nos expertises
+                                    {dict.services.heading}
                                   </p>
                                   <div className="space-y-0.5">
                                     {items.map((item, i) => {
@@ -323,10 +303,10 @@ export default function Navbar() {
 
                                   <div className="mt-3 border-t border-[#F1F5F9] pt-3">
                                     <Link
-                                      href="/contactez-nous"
+                                      href={routes.contact}
                                       className="group/cta flex items-center gap-2 rounded-lg px-3.5 py-2.5 text-[0.78rem] font-semibold text-[#2563EB] transition-colors hover:bg-[#2563EB]/5"
                                     >
-                                      Nous contacter
+                                      {dict.services.contact}
                                       <ArrowRight size={13} className="transition-transform group-hover/cta:translate-x-0.5" />
                                     </Link>
                                   </div>
@@ -342,7 +322,7 @@ export default function Navbar() {
                                       muted
                                       playsInline
                                       className="h-full w-full object-cover"
-                                      aria-label="Parc d&apos;éoliennes en mouvement"
+                                      aria-label={dict.services.videoLabel}
                                     >
                                       <source src={DROPDOWN_VIDEO} type="video/mp4" />
                                     </video>
@@ -355,15 +335,15 @@ export default function Navbar() {
                                       transition={{ delay: 0.15, duration: 0.4 }}
                                     >
                                       <p className="text-[0.65rem] uppercase tracking-[0.2em] text-[#93C5FD] mb-1.5">
-                                        Partenaire
+                                        {dict.services.promo.eyebrow}
                                       </p>
                                       <p className="font-display text-lg font-semibold text-white leading-snug">
-                                        Votre partenaire
+                                        {dict.services.promo.title}
                                         <br />
-                                        <span className="text-[#60A5FA]">décarbonation &amp; énergie</span>
+                                        <span className="text-[#60A5FA]">{dict.services.promo.titleAccent}</span>
                                       </p>
                                       <p className="mt-2 text-[0.72rem] leading-relaxed text-[#CBD5E1]">
-                                        De l&apos;audit technique à la valorisation CEE et carbone, une chaîne complète à votre service.
+                                        {dict.services.promo.text}
                                       </p>
                                     </motion.div>
                                   </div>
@@ -374,7 +354,7 @@ export default function Navbar() {
                               <div className="grid grid-cols-12">
                                 <div className="col-span-7 p-5">
                                   <p className="mb-3 text-[0.65rem] uppercase tracking-[0.2em] text-[#94A3B8]">
-                                    Le cabinet
+                                    {dict.about.heading}
                                   </p>
                                   <div className="space-y-0.5">
                                     {items.map((item, i) => {
@@ -437,7 +417,7 @@ export default function Navbar() {
                                       muted
                                       playsInline
                                       className="h-full w-full object-cover"
-                                      aria-label="Cheminée industrielle en activité"
+                                      aria-label={dict.about.videoLabel}
                                     >
                                       <source src="https://assets.mixkit.co/videos/47738/47738-720.mp4" type="video/mp4" />
                                     </video>
@@ -450,15 +430,15 @@ export default function Navbar() {
                                       transition={{ delay: 0.15, duration: 0.4 }}
                                     >
                                       <p className="text-[0.65rem] uppercase tracking-[0.2em] text-[#93C5FD] mb-1.5">
-                                        Décarbonation
+                                        {dict.about.promo.eyebrow}
                                       </p>
                                       <p className="font-display text-lg font-semibold text-white leading-snug">
-                                        Réduire l&apos;empreinte
+                                        {dict.about.promo.title}
                                         <br />
-                                        <span className="text-[#60A5FA]">de vos bâtiments</span>
+                                        <span className="text-[#60A5FA]">{dict.about.promo.titleAccent}</span>
                                       </p>
                                       <p className="mt-2 text-[0.72rem] leading-relaxed text-[#CBD5E1]">
-                                        Une mission : accompagner la transition énergétique du tertiaire et de l&apos;industrie.
+                                        {dict.about.promo.text}
                                       </p>
                                     </motion.div>
                                   </div>
@@ -477,7 +457,7 @@ export default function Navbar() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className={`group relative text-[0.82rem] font-medium uppercase tracking-[0.14em] transition-colors duration-500 ${
+                    className={`group relative whitespace-nowrap text-[0.82rem] font-medium uppercase tracking-[0.14em] transition-colors duration-500 ${
                       scrolled
                         ? "text-[#1D4ED8] hover:text-[#2563EB]"
                         : "text-white/80 hover:text-white"
@@ -495,25 +475,32 @@ export default function Navbar() {
             })}
           </ul>
 
-          {/* CTA Desktop */}
-          <Link
-            href="/contactez-nous"
-            className={`hidden lg:inline-flex items-center gap-2 rounded-none border px-6 py-2.5 text-[0.78rem] font-semibold uppercase tracking-[0.12em] text-white transition-all duration-500 ${
-              scrolled
-                ? "border-[#2563EB] bg-[#2563EB] hover:bg-transparent hover:text-[#2563EB]"
-                : "border-white/40 bg-white/10 backdrop-blur-sm hover:bg-white hover:text-[#0D1B35]"
-            }`}
-          >
-            Démarrer un projet
-          </Link>
+          {/* Langue + CTA Desktop */}
+          <div className="hidden xl:flex items-center gap-5 2xl:gap-6">
+            <LanguageSwitcher
+              locale={locale}
+              dict={switcherDict}
+              className={scrolled ? "text-[#1D4ED8]" : "text-white/80"}
+            />
+            <Link
+              href={routes.contact}
+              className={`inline-flex items-center gap-2 whitespace-nowrap rounded-none border px-6 py-2.5 text-[0.78rem] font-semibold uppercase tracking-[0.12em] text-white transition-all duration-500 ${
+                scrolled
+                  ? "border-[#2563EB] bg-[#2563EB] hover:bg-transparent hover:text-[#2563EB]"
+                  : "border-white/40 bg-white/10 backdrop-blur-sm hover:bg-white hover:text-[#0D1B35]"
+              }`}
+            >
+              {dict.cta}
+            </Link>
+          </div>
 
           {/* Mobile Toggle */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className={`lg:hidden relative z-50 p-2 transition-colors duration-500 ${
+            className={`xl:hidden relative z-50 p-2 transition-colors duration-500 ${
               scrolled ? "text-[#0D1B35]" : "text-white"
             }`}
-            aria-label={mobileOpen ? "Fermer le menu" : "Ouvrir le menu"}
+            aria-label={mobileOpen ? dict.closeMenu : dict.openMenu}
           >
             {mobileOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -629,13 +616,19 @@ export default function Navbar() {
                 transition={{ delay: NAV_LINKS.length * 0.08, duration: 0.4 }}
               >
                 <Link
-                  href="/contactez-nous"
+                  href={routes.contact}
                   onClick={() => setMobileOpen(false)}
                   className="mt-4 inline-flex border border-[#2563EB] bg-[#2563EB] px-8 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-white"
                 >
-                  Démarrer un projet
+                  {dict.cta}
                 </Link>
               </motion.div>
+
+              <LanguageSwitcher
+                locale={locale}
+                dict={switcherDict}
+                className="mt-2 text-[#1D4ED8]"
+              />
             </nav>
           </motion.div>
         )}

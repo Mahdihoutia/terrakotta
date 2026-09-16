@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import { getAlternates } from "@/lib/i18n/routes";
 
 const URL = "https://www.kilowater.fr/conseil-decarbonation";
 
 export const metadata: Metadata = {
-  title: "Conseil en décarbonation — Bilan carbone & trajectoire | Kilowater",
+  title: "Conseil en décarbonation — Bilan carbone & trajectoire",
   description:
     "Conseil en décarbonation par Kilowater : bilan carbone scopes 1, 2 & 3, trajectoire de réduction (SBTi), conformité CSRD et décret tertiaire. Pour copropriétés, bailleurs, tertiaire, industrie et collectivités.",
   keywords: [
@@ -15,7 +16,7 @@ export const metadata: Metadata = {
     "décret tertiaire OPERAT",
     "plan de décarbonation",
   ],
-  alternates: { canonical: URL },
+  alternates: getAlternates("decarbonation", "fr"),
   openGraph: {
     title: "Conseil en décarbonation | Kilowater",
     description:

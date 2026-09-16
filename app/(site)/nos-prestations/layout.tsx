@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getAlternates } from "@/lib/i18n/routes";
 
 export const metadata: Metadata = {
   title: "Nos prestations — Partenaire décarbonation & énergie",
@@ -21,9 +22,7 @@ export const metadata: Metadata = {
     images: [{ url: "https://www.kilowater.fr/og-image.jpg", width: 1200, height: 630, alt: "Kilowater" }],
     type: "website",
   },
-  alternates: {
-    canonical: "https://www.kilowater.fr/nos-prestations",
-  },
+  alternates: getAlternates("services", "fr"),
 };
 
 export default function NosPrestation({ children }: { children: React.ReactNode }) {

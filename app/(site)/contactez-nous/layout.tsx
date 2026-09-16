@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getAlternates } from "@/lib/i18n/routes";
 
 export const metadata: Metadata = {
   title: "Contactez-nous — Parlons de votre projet",
@@ -19,9 +20,7 @@ export const metadata: Metadata = {
     images: [{ url: "https://www.kilowater.fr/og-image.jpg", width: 1200, height: 630, alt: "Kilowater" }],
     type: "website",
   },
-  alternates: {
-    canonical: "https://www.kilowater.fr/contactez-nous",
-  },
+  alternates: getAlternates("contact", "fr"),
 };
 
 export default function ContactezNousLayout({ children }: { children: React.ReactNode }) {

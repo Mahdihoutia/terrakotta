@@ -7,6 +7,7 @@ interface ContactPayload {
   fonction?: string;
   typeProjet?: string;
   message: string;
+  locale?: "fr" | "en";
   leadId?: string;
 }
 
@@ -27,6 +28,7 @@ export function notificationEmail(p: ContactPayload) {
     ["Raison sociale", p.raisonSociale],
     ["Fonction", p.fonction],
     ["Type de projet", p.typeProjet],
+    ["Langue", p.locale === "en" ? "Anglais — répondre en anglais" : undefined],
   ];
 
   const rowsHtml = rows
@@ -72,6 +74,7 @@ ${p.leadId ? `\nVoir : ${dashboardUrl(p.leadId)}` : ""}`;
 }
 
 export function ackEmail(p: ContactPayload) {
+  if (p.locale === "en") return ackEmailEn(p);
   const prenom = p.prenom ? escape(p.prenom) : "";
   const greeting = prenom ? `Bonjour ${prenom},` : "Bonjour,";
 
@@ -84,7 +87,7 @@ export function ackEmail(p: ContactPayload) {
     <p style="font-size:15px;color:#4A6285;line-height:1.6">Merci d'avoir pris contact avec Kilowater. Notre équipe étudie votre demande et reviendra vers vous <strong style="color:#0D1B35">sous 48 heures ouvrées</strong>.</p>
     <p style="font-size:15px;color:#4A6285;line-height:1.6">Pour toute demande urgente, vous pouvez nous joindre directement au <a href="tel:+33184161178" style="color:#2563EB;text-decoration:none">+33 1 84 16 11 78</a>.</p>
     <div style="margin-top:32px;padding-top:24px;border-top:1px solid #E5EEFB">
-      <p style="margin:0;font-size:13px;color:#94A3B8">Bureau d'étude en rénovation énergétique</p>
+      <p style="margin:0;font-size:13px;color:#94A3B8">Partenaire décarbonation &amp; énergie</p>
       <p style="margin:4px 0 0;font-size:13px;color:#94A3B8">115 Rue Saint-Dominique · 75007 Paris</p>
     </div>
   </div>
@@ -98,11 +101,49 @@ Merci d'avoir pris contact avec Kilowater. Notre équipe étudie votre demande e
 Pour toute demande urgente : +33 1 84 16 11 78
 
 —
-Kilowater · Bureau d'étude en rénovation énergétique
+Kilowater · Partenaire décarbonation & énergie
 115 Rue Saint-Dominique · 75007 Paris`;
 
   return {
     subject: "Nous avons bien reçu votre message — Kilowater",
+    html,
+    text,
+  };
+}
+
+/** Accusé de réception pour les demandes envoyées depuis la version anglaise du site. */
+function ackEmailEn(p: ContactPayload) {
+  const firstName = p.prenom ? escape(p.prenom) : "";
+  const greeting = firstName ? `Hello ${firstName},` : "Hello,";
+
+  const html = `<!doctype html><html lang="en"><body style="margin:0;background:#F5FAFF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+<div style="max-width:600px;margin:0 auto;padding:32px 24px">
+  <div style="background:white;border:1px solid #DBEAFE;padding:40px 32px">
+    <p style="margin:0 0 8px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#2563EB">Kilowater</p>
+    <h1 style="margin:0 0 24px;font-size:24px;font-weight:300;color:#0D1B35;line-height:1.3">We have received<br/>your message</h1>
+    <p style="font-size:15px;color:#0D1B35;line-height:1.6">${greeting}</p>
+    <p style="font-size:15px;color:#4A6285;line-height:1.6">Thank you for contacting Kilowater. Our team is reviewing your request and will get back to you <strong style="color:#0D1B35">within 48 business hours</strong>.</p>
+    <p style="font-size:15px;color:#4A6285;line-height:1.6">For urgent requests, you can reach us directly on <a href="tel:+33184161178" style="color:#2563EB;text-decoration:none">+33 1 84 16 11 78</a> (Paris time, CET).</p>
+    <div style="margin-top:32px;padding-top:24px;border-top:1px solid #E5EEFB">
+      <p style="margin:0;font-size:13px;color:#94A3B8">Decarbonisation &amp; energy partner</p>
+      <p style="margin:4px 0 0;font-size:13px;color:#94A3B8">115 Rue Saint-Dominique · 75007 Paris · France</p>
+    </div>
+  </div>
+  <p style="margin:16px 0 0;font-size:11px;color:#94A3B8;text-align:center">You are receiving this email following your request on kilowater.fr</p>
+</div></body></html>`;
+
+  const text = `${greeting}
+
+Thank you for contacting Kilowater. Our team is reviewing your request and will get back to you within 48 business hours.
+
+For urgent requests: +33 1 84 16 11 78 (Paris time, CET)
+
+—
+Kilowater · Decarbonisation & energy partner
+115 Rue Saint-Dominique · 75007 Paris · France`;
+
+  return {
+    subject: "We have received your message — Kilowater",
     html,
     text,
   };

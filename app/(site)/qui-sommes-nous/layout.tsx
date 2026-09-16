@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import { getAlternates } from "@/lib/i18n/routes";
 
 export const metadata: Metadata = {
-  title: "Qui sommes-nous — Partenaire décarbonation & énergie Kilowater",
+  title: "Qui sommes-nous — Partenaire décarbonation & énergie",
   description:
     "Kilowater est le partenaire décarbonation & énergie des entreprises : étude de gisement CEE, conseil en décarbonation et courtage de produits environnementaux, adossés à une expertise technique de terrain. Découvrez notre modèle, nos valeurs et nos qualifications RGE.",
   keywords: [
@@ -21,9 +22,7 @@ export const metadata: Metadata = {
     images: [{ url: "https://www.kilowater.fr/og-image.jpg", width: 1200, height: 630, alt: "Kilowater" }],
     type: "website",
   },
-  alternates: {
-    canonical: "https://www.kilowater.fr/qui-sommes-nous",
-  },
+  alternates: getAlternates("about", "fr"),
 };
 
 export default function QuiSommesNousLayout({ children }: { children: React.ReactNode }) {

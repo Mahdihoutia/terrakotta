@@ -9,6 +9,8 @@ interface RelatedLink {
 }
 
 interface Props {
+  eyebrow?: string;
+  ctaLabel?: string;
   title?: string;
   subtitle?: string;
   links: RelatedLink[];
@@ -16,6 +18,8 @@ interface Props {
 }
 
 export default function RelatedLinks({
+  eyebrow = "Pour aller plus loin",
+  ctaLabel = "Découvrir",
   title = "Aller plus loin",
   subtitle,
   links,
@@ -33,7 +37,7 @@ export default function RelatedLinks({
               isDark ? "text-[#60A5FA]" : "text-[#2563EB]"
             }`}
           >
-            Pour aller plus loin
+            {eyebrow}
           </p>
           <h2
             className={`font-display text-3xl md:text-4xl lg:text-5xl font-light leading-[1.1] ${
@@ -90,7 +94,7 @@ export default function RelatedLinks({
                   isDark ? "text-[#60A5FA]" : "text-[#2563EB]"
                 }`}
               >
-                Découvrir
+                {ctaLabel}
                 <ArrowUpRight
                   size={14}
                   className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"

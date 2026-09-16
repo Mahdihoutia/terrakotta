@@ -11,50 +11,41 @@ import {
   Gauge,
   TrendingDown,
 } from "lucide-react";
+import type { Locale } from "@/lib/i18n/config";
+import type { Dictionary } from "@/lib/i18n/get-dictionary";
+import { ROUTES } from "@/lib/i18n/routes";
 
-const TRUST_BADGES = [
-  {
-    icon: FileCheck2,
-    label: "Mandat EMMY",
-    sub: "Dépôt & valorisation des CEE",
-  },
-  {
-    icon: Gauge,
-    label: "Bilan Carbone®",
-    sub: "GHG Protocol — scopes 1·2·3",
-  },
-  {
-    icon: TrendingDown,
-    label: "SBTi",
-    sub: "Trajectoires de réduction",
-  },
-  {
-    icon: Leaf,
-    label: "GHG Protocol",
-    sub: "Standard comptabilité GES",
-  },
-  {
-    icon: BadgeCheck,
-    label: "Garanties d'origine",
-    sub: "Électricité & biométhane",
-  },
-];
+const BADGE_ICONS = {
+  emmy: FileCheck2,
+  bilanCarbone: Gauge,
+  sbti: TrendingDown,
+  ghg: Leaf,
+  go: BadgeCheck,
+} as const;
 
-const FOOTER_NAV = [
-  { href: "/qui-sommes-nous", label: "Qui sommes-nous" },
-  { href: "/nos-prestations", label: "Nos prestations" },
-  { href: "/nos-references", label: "Nos références" },
-  { href: "/laboratoire-idees", label: "Laboratoire d'idées" },
-  { href: "/contactez-nous", label: "Contactez-nous" },
-];
+interface Props {
+  locale: Locale;
+  dict: Dictionary["footer"];
+}
 
-const FOOTER_EXPERTISES = [
-  { href: "/accompagnement-cee", label: "Certificats d'économies d'énergie" },
-  { href: "/conseil-decarbonation", label: "Conseil en décarbonation" },
-  { href: "/courtage-environnemental", label: "Courtage environnemental" },
-];
+export default function Footer({ locale, dict }: Props) {
+  const routes = ROUTES[locale];
+  const trustBadges = (Object.keys(BADGE_ICONS) as (keyof typeof BADGE_ICONS)[]).map(
+    (key) => ({ icon: BADGE_ICONS[key], ...dict.badges[key] }),
+  );
+  const footerNav = [
+    { href: routes.about, label: dict.nav.about },
+    { href: routes.services, label: dict.nav.services },
+    { href: routes.references, label: dict.nav.references },
+    { href: routes.lab, label: dict.nav.lab },
+    { href: routes.contact, label: dict.nav.contact },
+  ];
+  const footerExpertises = [
+    { href: routes.cee, label: dict.expertises.cee },
+    { href: routes.decarbonation, label: dict.expertises.decarbonation },
+    { href: routes.brokerage, label: dict.expertises.brokerage },
+  ];
 
-export default function Footer() {
   return (
     <footer className="bg-[#0D1B35] text-[#BFDBFE]">
       {/* CTA Band */}
@@ -63,19 +54,19 @@ export default function Footer() {
           <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-8">
             <div>
               <p className="text-[0.75rem] uppercase tracking-[0.2em] text-[#7BAAC8] mb-4">
-                Prêt à transformer votre bâtiment ?
+                {dict.ctaEyebrow}
               </p>
               <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-light text-[#EFF6FF] leading-[1.1]">
-                Parlons de votre
+                {dict.ctaTitle}
                 <br />
-                <span className="italic text-[#60A5FA]">projet</span>
+                <span className="italic text-[#60A5FA]">{dict.ctaTitleAccent}</span>
               </h2>
             </div>
             <Link
-              href="/contactez-nous"
+              href={routes.contact}
               className="group inline-flex items-center gap-3 border border-[#60A5FA] px-8 py-4 text-[0.82rem] font-semibold uppercase tracking-[0.14em] text-[#EFF6FF] transition-all duration-300 hover:bg-[#60A5FA] hover:text-[#0D1B35]"
             >
-              Contactez-nous
+              {dict.ctaButton}
               <ArrowUpRight
                 size={16}
                 className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
@@ -97,19 +88,16 @@ export default function Footer() {
               </span>
             </div>
             <p className="text-[0.9rem] leading-relaxed text-[#7BAAC8] max-w-sm">
-              Partenaire décarbonation & énergie des entreprises.
-              Nous accompagnons copropriétés, bailleurs, collectivités et
-              maîtres d&apos;ouvrage tertiaires &amp; industriels — de l&apos;audit
-              technique à la valorisation CEE et carbone.
+              {dict.tagline}
             </p>
 
             {/* Trust badges — compact */}
             <div className="mt-6 max-w-sm">
               <p className="text-[0.62rem] uppercase tracking-[0.18em] text-[#7BAAC8] mb-3">
-                Qualifications &amp; référentiels
+                {dict.badgesHeading}
               </p>
               <ul className="flex flex-wrap gap-1.5">
-                {TRUST_BADGES.map(({ icon: Icon, label, sub }) => (
+                {trustBadges.map(({ icon: Icon, label, sub }) => (
                   <li
                     key={label}
                     title={sub}
@@ -132,10 +120,10 @@ export default function Footer() {
           {/* Navigation */}
           <div className="md:col-span-2">
             <h3 className="text-[0.7rem] uppercase tracking-[0.2em] text-[#7BAAC8] mb-6">
-              Navigation
+              {dict.navHeading}
             </h3>
             <ul className="space-y-3">
-              {FOOTER_NAV.map((link) => (
+              {footerNav.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
@@ -151,10 +139,10 @@ export default function Footer() {
           {/* Expertises */}
           <div className="md:col-span-2">
             <h3 className="text-[0.7rem] uppercase tracking-[0.2em] text-[#7BAAC8] mb-6">
-              Expertises
+              {dict.expertisesHeading}
             </h3>
             <ul className="space-y-3">
-              {FOOTER_EXPERTISES.map((link) => (
+              {footerExpertises.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
@@ -170,7 +158,7 @@ export default function Footer() {
           {/* Contact */}
           <div className="md:col-span-3">
             <h3 className="text-[0.7rem] uppercase tracking-[0.2em] text-[#7BAAC8] mb-6">
-              Contact
+              {dict.contactHeading}
             </h3>
             <ul className="space-y-4">
               <li className="flex items-start gap-3">
@@ -196,12 +184,12 @@ export default function Footer() {
       <div className="border-t border-[#1B3356]">
         <div className="mx-auto max-w-[1400px] px-6 md:px-10 lg:px-16 py-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-[0.75rem] text-[#7BAAC8]">
-            &copy; {new Date().getFullYear()} Kilowater. Tous droits réservés.
+            &copy; {new Date().getFullYear()} Kilowater. {dict.rights}
           </p>
           <ul className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[0.75rem] text-[#7BAAC8]">
             <li>
-              <Link href="/cookies" className="hover:text-[#BFDBFE] transition-colors">
-                Cookies
+              <Link href={routes.cookies} className="hover:text-[#BFDBFE] transition-colors">
+                {dict.cookies}
               </Link>
             </li>
           </ul>

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { CONTACT_EMAIL, EMAIL_FROM, getResend } from "@/lib/email/resend";
 import { ackEmail, notificationEmail } from "@/lib/email/templates";
+import { LOCALES } from "@/lib/i18n/config";
 
 export const runtime = "nodejs";
 
@@ -15,6 +16,7 @@ const schema = z.object({
   fonction: z.string().max(120).optional(),
   typeProjet: z.string().max(120).optional(),
   message: z.string().min(10).max(5000),
+  locale: z.enum(LOCALES).optional(), // langue du formulaire (site FR ou /en)
   website: z.string().optional(), // honeypot
 });
 
@@ -64,6 +66,7 @@ export async function POST(req: Request) {
   }
 
   const notes = [
+    data.locale === "en" ? "Langue : anglais (formulaire /en) — répondre en anglais" : "",
     data.typeProjet ? `Type de projet : ${data.typeProjet}` : "",
     data.message,
   ]

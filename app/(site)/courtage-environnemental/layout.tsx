@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import { getAlternates } from "@/lib/i18n/routes";
 
 const URL = "https://www.kilowater.fr/courtage-environnemental";
 
 export const metadata: Metadata = {
-  title: "Courtage de produits environnementaux — Crédits carbone, GO | Kilowater",
+  title: "Courtage de produits environnementaux — Crédits carbone, GO",
   description:
     "Courtage de produits environnementaux par Kilowater : crédits carbone volontaires (Label Bas Carbone), garanties d'origine et biotickets. Agrégateur avec une sélection exigeante des projets, contre le greenwashing.",
   keywords: [
@@ -15,7 +16,7 @@ export const metadata: Metadata = {
     "agrégateur carbone",
     "achat crédits carbone entreprise",
   ],
-  alternates: { canonical: URL },
+  alternates: getAlternates("brokerage", "fr"),
   openGraph: {
     title: "Courtage de produits environnementaux | Kilowater",
     description:

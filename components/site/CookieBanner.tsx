@@ -4,12 +4,20 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Cookie, X } from "lucide-react";
+import type { Locale } from "@/lib/i18n/config";
+import type { Dictionary } from "@/lib/i18n/get-dictionary";
+import { ROUTES } from "@/lib/i18n/routes";
 
 const STORAGE_KEY = "kw_cookie_consent_v1";
 
 type Consent = "accepted" | "rejected";
 
-export default function CookieBanner() {
+interface Props {
+  locale: Locale;
+  dict: Dictionary["cookies"];
+}
+
+export default function CookieBanner({ locale, dict }: Props) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -39,7 +47,7 @@ export default function CookieBanner() {
         <motion.div
           role="dialog"
           aria-live="polite"
-          aria-label="Préférences cookies"
+          aria-label={dict.dialogLabel}
           initial={{ y: 80, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 80, opacity: 0 }}
@@ -54,16 +62,17 @@ export default function CookieBanner() {
                 </div>
                 <div>
                   <p className="text-[0.7rem] uppercase tracking-[0.18em] text-[#2563EB] mb-1.5">
-                    Cookies & confidentialité
+                    {dict.eyebrow}
                   </p>
                   <p className="text-[0.88rem] text-[#0D1B35] leading-relaxed">
-                    Nous utilisons uniquement des cookies <strong>strictement nécessaires</strong> au fonctionnement du site.
-                    Des mesures d&apos;audience anonymes peuvent être activées avec votre accord.{" "}
+                    {dict.textBefore}
+                    <strong>{dict.textStrong}</strong>
+                    {dict.textAfter}{" "}
                     <Link
-                      href="/cookies"
+                      href={ROUTES[locale].cookies}
                       className="underline underline-offset-2 text-[#2563EB] hover:text-[#1E40AF]"
                     >
-                      En savoir plus
+                      {dict.learnMore}
                     </Link>
                   </p>
                 </div>
@@ -75,19 +84,19 @@ export default function CookieBanner() {
                   onClick={() => setConsent("rejected")}
                   className="flex-1 md:flex-none px-5 py-3 text-[0.78rem] font-semibold uppercase tracking-[0.12em] text-[#4A6285] hover:text-[#0D1B35] border border-[#BFDBFE] hover:border-[#2563EB] transition-colors"
                 >
-                  Refuser
+                  {dict.reject}
                 </button>
                 <button
                   type="button"
                   onClick={() => setConsent("accepted")}
                   className="flex-1 md:flex-none px-5 py-3 text-[0.78rem] font-semibold uppercase tracking-[0.12em] text-white bg-[#2563EB] hover:bg-[#1E40AF] transition-colors"
                 >
-                  Accepter
+                  {dict.accept}
                 </button>
                 <button
                   type="button"
                   onClick={() => setConsent("rejected")}
-                  aria-label="Fermer (équivaut à Refuser)"
+                  aria-label={dict.close}
                   className="hidden md:inline-flex w-10 h-10 items-center justify-center text-[#94A3B8] hover:text-[#0D1B35] transition-colors"
                 >
                   <X size={16} />
