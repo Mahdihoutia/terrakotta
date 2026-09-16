@@ -627,6 +627,7 @@ export default function Navbar({ locale, dict, switcherDict }: Props) {
               <LanguageSwitcher
                 locale={locale}
                 dict={switcherDict}
+                align="center"
                 className="mt-2 text-[#1D4ED8]"
               />
             </nav>

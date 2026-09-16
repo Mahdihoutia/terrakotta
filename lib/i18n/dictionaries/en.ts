@@ -30,8 +30,6 @@ export const en: Dictionary = {
 
   languageSwitcher: {
     label: "Language",
-    fr: "Version française",
-    en: "English version",
   },
 
   nav: {

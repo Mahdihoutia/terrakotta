@@ -13,8 +13,6 @@ export const fr = {
 
   languageSwitcher: {
     label: "Langue",
-    fr: "Version française",
-    en: "English version",
   },
 
   nav: {
