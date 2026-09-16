@@ -22,7 +22,7 @@ const fr = {
       ],
       [
         "Pour structurer ce système, le ministère chargé de l'énergie publie un catalogue de **fiches d'opérations standardisées**, classées par secteur (résidentiel, tertiaire, industriel, agricole, transport, réseaux) et par type de travaux. Chaque fiche définit les conditions d'éligibilité, les critères techniques à respecter et la formule de calcul des kWh cumac générés.",
-        "Nous sommes actuellement dans la **6ᵉ période CEE (P6), qui court de 2026 à 2030**. L'objectif national fixé pour cette période est de **5 250 TWh cumac**, un niveau d'ambition inédit qui témoigne de la montée en puissance du dispositif. Cette période introduit de nouvelles fiches et révise certains calculs, rendant l'accompagnement par un bureau d'étude CEE plus que jamais nécessaire pour sécuriser vos dossiers.",
+        "Nous sommes actuellement dans la **6ᵉ période CEE (P6), qui court de 2026 à 2030**. L'objectif national fixé pour cette période est de **5 250 TWh cumac**, un niveau d'ambition inédit qui témoigne de la montée en puissance du dispositif. Cette période introduit de nouvelles fiches et révise certains calculs, rendant l'accompagnement par un spécialiste CEE plus que jamais nécessaire pour sécuriser vos dossiers.",
       ],
     ],
   },
@@ -66,7 +66,7 @@ const fr = {
     eyebrow: "Méthode",
     title: "Notre accompagnement",
     intro:
-      "Un accompagnement CEE réussi repose sur la rigueur à chaque étape. Notre bureau d'étude prend en charge l'intégralité du processus, de l'évaluation initiale à la réception de la prime énergie.",
+      "Un accompagnement CEE réussi repose sur la rigueur à chaque étape. Notre équipe prend en charge l'intégralité du processus, de l'évaluation initiale à la réception de la prime énergie.",
     steps: [
       {
         title: "Audit de votre situation et éligibilité",

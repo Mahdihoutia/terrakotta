@@ -263,7 +263,7 @@ export const fr = {
       items: {
         rigour: {
           title: "Exigence",
-          desc: "Chaque projet est traité avec la rigueur et la précision d'un bureau d'étude de référence. Pas de compromis sur la qualité.",
+          desc: "Chaque projet est traité avec la rigueur et la précision d'une ingénierie de référence. Pas de compromis sur la qualité.",
         },
         integrity: {
           title: "Intégrité",

@@ -1,6 +1,7 @@
 import { MetadataRoute } from "next";
 import { getAllArticles } from "@/lib/articles";
-import { getAlternates, ROUTES, type RouteKey } from "@/lib/i18n/routes";
+import { ARTICLE_SLUGS_EN } from "@/lib/i18n/article-slugs";
+import { getAlternates, getArticleAlternates, ROUTES, type RouteKey } from "@/lib/i18n/routes";
 
 const BASE_URL = "https://www.kilowater.fr";
 
@@ -65,7 +66,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: now,
       changeFrequency: "weekly",
       priority: 0.7,
+      alternates: { languages: languagesOf("lab") },
     },
+    enEntry("lab", { lastModified: now, changeFrequency: "weekly", priority: 0.6 }),
     // Pages SEO piliers
     {
       url: `${BASE_URL}/accompagnement-cee`,
@@ -108,16 +111,21 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   // Articles du laboratoire d'idées
   const articles = getAllArticles();
-  const articleRoutes: MetadataRoute.Sitemap = articles.map((article) => {
+  const articleRoutes: MetadataRoute.Sitemap = articles.flatMap((article) => {
     // article.date is French format like "18 février 2026" — not parseable by Date()
     const parsed = new Date(article.date);
     const lastMod = isNaN(parsed.getTime()) ? now : parsed;
-    return {
-      url: `${BASE_URL}/laboratoire-idees/${article.slug}`,
+    const { languages } = getArticleAlternates(article.slug, "fr");
+    const entry = {
       lastModified: lastMod,
       changeFrequency: "yearly" as const,
-      priority: 0.7,
+      ...(languages ? { alternates: { languages } } : {}),
     };
+    const enSlug = ARTICLE_SLUGS_EN[article.slug];
+    return [
+      { url: `${BASE_URL}/laboratoire-idees/${article.slug}`, priority: 0.7, ...entry },
+      ...(enSlug ? [{ url: `${BASE_URL}${ROUTES.en.lab}/${enSlug}`, priority: 0.6, ...entry }] : []),
+    ];
   });
 
   const legalRoutes: MetadataRoute.Sitemap = [

@@ -13,7 +13,17 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/bureau-d-etude-thermique",
-        destination: "/bureau-d-etude-renovation-energetique",
+        destination: "/nos-prestations",
+        permanent: true,
+      },
+      {
+        source: "/bureau-d-etude-renovation-energetique",
+        destination: "/nos-prestations",
+        permanent: true,
+      },
+      {
+        source: "/audit-energetique",
+        destination: "/audit-energetique-paris",
         permanent: true,
       },
     ];

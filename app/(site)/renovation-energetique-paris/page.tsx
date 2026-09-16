@@ -7,7 +7,7 @@ export default function RenovationEnergetiqueParisPage() {
       h1="Rénovation énergétique à Paris : copropriétés et bâtiments tertiaires"
       intro="Kilowater accompagne les rénovations énergétiques à Paris depuis l'audit jusqu'au suivi post-travaux. Spécialiste du bâti ancien parisien, nous intégrons les contraintes patrimoniales, ABF et le contexte réglementaire local pour livrer des projets de rénovation cohérents techniquement et financièrement."
       zone="Paris intra-muros"
-      zoneDescription="Rénover à Paris demande une lecture fine du bâti : haussmannien, faubourien, années 30, années 60. Chaque typologie a ses leviers et ses pièges. Notre bureau d'étude conçoit des programmes de rénovation respectueux du patrimoine, performants énergétiquement, et alignés avec les financements B2B : CEE, MaPrimeRénov' Copropriétés, Éco-PTZ collectif, Fonds Chaleur ADEME."
+      zoneDescription="Rénover à Paris demande une lecture fine du bâti : haussmannien, faubourien, années 30, années 60. Chaque typologie a ses leviers et ses pièges. Nous construisons des programmes de rénovation respectueux du patrimoine, performants énergétiquement, et alignés avec les financements B2B : CEE, MaPrimeRénov' Copropriétés, Éco-PTZ collectif, Fonds Chaleur ADEME."
       serviceName="Rénovation énergétique"
       canonical="https://www.kilowater.fr/renovation-energetique-paris"
       keyPoints={[
@@ -71,7 +71,7 @@ export default function RenovationEnergetiqueParisPage() {
                 <li><strong>Éco-rénovons Paris+</strong> : accompagnement gratuit + subvention complémentaire pour les copropriétés.</li>
                 <li><strong>MaPrimeRénov&apos; Copropriété</strong> : jusqu&apos;à 25 % du montant des travaux + bonus.</li>
                 <li><strong>CEE Coup de pouce Rénovation globale</strong> : prime majorée sur projets ambitieux.</li>
-                <li><strong>Aides ANAH</strong> pour copropriétés en difficulté ou propriétaires modestes.</li>
+                <li><strong>Aides ANAH</strong> pour les copropriétés en difficulté.</li>
               </ul>
               <p>
                 Notre équipe optimise le cumul des aides pour maximiser le reste-à-charge final des copropriétaires.

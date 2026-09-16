@@ -1,3 +1,4 @@
+import { ARTICLE_SLUGS_EN, ARTICLE_SLUGS_FR } from "./article-slugs";
 import { DEFAULT_LOCALE, LOCALES, SITE_URL, type Locale } from "./config";
 
 export type RouteKey =
@@ -41,6 +42,7 @@ export const ROUTES: Record<Locale, Record<RouteKey, string>> = {
     cee: "/en/energy-efficiency-certificates",
     decarbonation: "/en/decarbonisation-advisory",
     brokerage: "/en/environmental-brokerage",
+    lab: "/en/insights",
   },
 };
 
@@ -54,6 +56,9 @@ export function isTranslated(key: RouteKey, locale: Locale): boolean {
  * Retourne `null` si la page n'existe pas (encore) dans la langue cible.
  */
 export function getAlternatePath(pathname: string, target: Locale): string | null {
+  const article = getArticleAlternatePath(pathname, target);
+  if (article !== undefined) return article;
+
   for (const locale of LOCALES) {
     const entry = (Object.keys(ROUTES[locale]) as RouteKey[]).find(
       (key) => ROUTES[locale][key] === pathname && isTranslated(key, locale),
@@ -78,5 +83,33 @@ export function getAlternates(key: RouteKey, locale: Locale) {
   return {
     canonical: `${SITE_URL}${ROUTES[locale][key]}`,
     languages,
+  };
+}
+
+/**
+ * Équivalent d'une page article (`/laboratoire-idees/<slug>` ↔ `/en/insights/<slug>`).
+ * `undefined` si le chemin n'est pas un article, `null` si l'article n'est pas traduit.
+ */
+function getArticleAlternatePath(pathname: string, target: Locale): string | null | undefined {
+  for (const locale of LOCALES) {
+    const prefix = `${ROUTES[locale].lab}/`;
+    if (!pathname.startsWith(prefix)) continue;
+    const slug = pathname.slice(prefix.length);
+    if (locale === target) return pathname;
+    const frSlug = locale === "fr" ? slug : ARTICLE_SLUGS_FR[slug];
+    const targetSlug = target === "fr" ? frSlug : frSlug && ARTICLE_SLUGS_EN[frSlug];
+    return targetSlug ? `${ROUTES[target].lab}/${targetSlug}` : null;
+  }
+  return undefined;
+}
+
+/** Bloc `alternates` (canonical + hreflang) d'un article, à partir de son slug FR. */
+export function getArticleAlternates(frSlug: string, locale: Locale) {
+  const enSlug = ARTICLE_SLUGS_EN[frSlug];
+  const frUrl = `${SITE_URL}${ROUTES.fr.lab}/${frSlug}`;
+  const enUrl = enSlug ? `${SITE_URL}${ROUTES.en.lab}/${enSlug}` : null;
+  return {
+    canonical: locale === "en" && enUrl ? enUrl : frUrl,
+    languages: enUrl ? { fr: frUrl, en: enUrl, "x-default": frUrl } : undefined,
   };
 }

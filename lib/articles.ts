@@ -1,19 +1,4 @@
-import {
-  Sun,
-  Wind,
-  TreePine,
-  Globe,
-  Leaf,
-  Building2,
-  Thermometer,
-  Zap,
-  Droplets,
-  FlaskConical,
-  BadgeEuro,
-  ShieldCheck,
-  Scale,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import type { ArticleIconName } from "@/lib/article-icons";
 
 /* ─────────── Types ─────────── */
 export type Category =
@@ -33,7 +18,7 @@ export interface Article {
   readTime: string;
   date: string;
   image: string;
-  icon: LucideIcon;
+  icon: ArticleIconName;
   featured?: boolean;
   content: string;
 }
@@ -61,6 +46,224 @@ export const CATEGORY_COLORS: Record<string, string> = {
 /* ─────────── Articles ─────────── */
 export const ARTICLES: Article[] = [
   {
+    slug: "obligations-decarbonation-entreprises-2026",
+    title:
+      "Bilan carbone, CSRD, décret tertiaire : quelles obligations de décarbonation pour votre organisation en 2026 ?",
+    excerpt:
+      "BEGES réglementaire, CSRD recentrée par l'Omnibus, décret tertiaire, audit énergétique : les obligations se superposent et se recoupent. Décryptage pour savoir ce qui s'applique réellement à votre organisation, et comment mutualiser l'effort.",
+    category: "Réglementation",
+    readTime: "11 min",
+    date: "16 septembre 2026",
+    image:
+      "https://images.unsplash.com/photo-1497366216548-37526070297c?w=900&q=80",
+    icon: "Scale",
+    featured: true,
+    content: `## Un empilement d'obligations difficile à lire
+
+Directions financières, immobilières et RSE font face à un paysage réglementaire dense : bilan des émissions de gaz à effet de serre, reporting de durabilité européen, trajectoire de consommation des bâtiments tertiaires, audits énergétiques, pilotage des équipements techniques. Chaque obligation a son périmètre, son calendrier et sa plateforme de déclaration.
+
+La bonne nouvelle, c'est que ces textes s'appuient largement sur les mêmes données : consommations d'énergie, surfaces, usages, émissions. Bien cartographiées, elles se traitent en une seule démarche plutôt qu'en cinq projets parallèles. Encore faut-il savoir lesquelles vous concernent.
+
+## Le bilan GES réglementaire (BEGES) : l'obligation la plus large
+
+Prévu par l'article L229-25 du Code de l'environnement, le bilan des émissions de gaz à effet de serre s'applique aux **entreprises de plus de 500 salariés** (250 en outre-mer), aux **collectivités de plus de 50 000 habitants**, à l'État et aux établissements publics de plus de 250 agents.
+
+Il doit être actualisé tous les quatre ans pour les entreprises (tous les trois ans pour les acteurs publics) et publié sur la plateforme de l'ADEME. Depuis 2023, il intègre obligatoirement les **émissions indirectes significatives du scope 3** — achats, fret, déplacements, usage des produits — et doit s'accompagner d'un plan de transition présentant les actions de réduction envisagées. Le défaut de publication expose à une amende administrative.
+
+En pratique, c'est souvent le scope 3 qui représente l'essentiel de l'empreinte, et celui qui demande le plus de travail de collecte.
+
+## La CSRD après l'Omnibus : un périmètre recentré
+
+La directive européenne sur le reporting de durabilité (CSRD) devait progressivement concerner près de 50 000 entreprises européennes. Le paquet de simplification « Omnibus », engagé par la Commission en février 2025, a profondément revu ce calendrier et ce périmètre.
+
+Une première directive dite « stop-the-clock », adoptée au printemps 2025, a reporté de deux ans les obligations des entreprises qui n'avaient pas encore commencé leur reporting. L'accord politique conclu fin 2025 recentre ensuite l'obligation sur les **entreprises de plus de 1 000 salariés réalisant plus de 450 millions d'euros de chiffre d'affaires**, avec des normes de reporting (ESRS) simplifiées.
+
+Deux points restent essentiels pour les organisations qui sortent du périmètre. D'une part, leurs grands clients assujettis continueront de leur demander des données carbone au titre de leur propre chaîne de valeur, dans les limites fixées par la standard volontaire pour les PME (VSME). D'autre part, banques et investisseurs intègrent de plus en plus ces indicateurs dans leurs décisions de financement.
+
+Le calendrier de transposition évoluant encore, nous recommandons de vérifier votre situation précise avant d'arbitrer un budget de reporting.
+
+## Le décret tertiaire : une trajectoire chiffrée bâtiment par bâtiment
+
+Le dispositif Éco Énergie Tertiaire concerne les bâtiments, parties de bâtiments ou ensembles de bâtiments à **usage tertiaire de 1 000 m² et plus**, qu'ils soient publics ou privés. Propriétaires et occupants doivent réduire leur consommation d'énergie finale de **40 % en 2030, 50 % en 2040 et 60 % en 2050** par rapport à une année de référence postérieure à 2010, ou atteindre un seuil exprimé en valeur absolue.
+
+Les consommations sont déclarées chaque année sur la plateforme OPERAT, avant le 30 septembre. Des modulations sont possibles (contraintes techniques, architecturales, coûts disproportionnés), à condition d'être justifiées par un dossier technique. Le non-respect expose à une publication des manquements (« name and shame ») et à des amendes administratives.
+
+C'est l'obligation la plus directement liée aux travaux, et donc au financement par les Certificats d'Économies d'Énergie.
+
+## Le décret BACS : piloter les équipements techniques
+
+Le décret BACS impose l'installation de systèmes d'automatisation et de contrôle des bâtiments tertiaires sur les installations de chauffage, de climatisation et de ventilation dépassant certains seuils de puissance. Les systèmes de plus de 290 kW sont concernés en premier ; l'obligation s'étend ensuite aux systèmes de plus de 70 kW, selon un calendrier qui a été assoupli.
+
+Au-delà de la conformité, la GTB est l'un des leviers les plus rentables du décret tertiaire : elle permet souvent 10 à 20 % d'économies sur les postes pilotés, et plusieurs opérations standardisées CEE en financent une partie.
+
+## L'audit énergétique réglementaire : un critère de consommation
+
+La révision de la directive européenne sur l'efficacité énergétique fait évoluer l'audit énergétique obligatoire : le critère historique de taille d'entreprise laisse place à un **critère de consommation d'énergie**. Les organisations dont la consommation dépasse certains seuils doivent réaliser un audit tous les quatre ans, et les plus consommatrices doivent mettre en place un système de management de l'énergie de type ISO 50001.
+
+Cette évolution concerne en priorité les sites industriels et les grands parcs tertiaires. Elle rapproche encore l'audit énergétique des autres obligations : les données collectées servent aussi au BEGES, à OPERAT et, le cas échéant, au reporting CSRD.
+
+## SBTi : volontaire, mais de plus en plus attendu
+
+La Science Based Targets initiative n'est pas une obligation légale. Elle est pourtant devenue un standard de fait : de nombreux donneurs d'ordre exigent de leurs fournisseurs des objectifs de réduction alignés sur l'Accord de Paris, validés ou au moins construits selon cette méthode. Un objectif SBTi porte sur les réductions réelles d'émissions ; les crédits carbone n'y sont pas comptabilisés.
+
+## Par où commencer
+
+**Cartographier vos obligations.** Effectif, chiffre d'affaires, surfaces tertiaires, consommation d'énergie, statut public ou privé : ces quelques critères suffisent à dresser la liste de ce qui s'applique à votre organisation, et à quelle échéance.
+
+**Mutualiser les données.** Un inventaire unique des consommations et des surfaces alimente à la fois OPERAT, le BEGES, l'audit énergétique et le reporting extra-financier. C'est le principal gisement de gain de temps.
+
+**Construire une trajectoire unique.** Plutôt que de répondre texte par texte, une trajectoire de décarbonation hiérarchise les actions par impact et par coût, et fixe les jalons qui répondent à toutes les obligations à la fois.
+
+**Financer les actions.** Une large part des travaux d'efficacité énergétique est éligible aux CEE. Anticiper leur valorisation, avant la signature des devis, change souvent l'équation économique du plan d'action.
+
+[Faites le point sur vos obligations](/conseil-decarbonation) avec Kilowater : nous cadrons votre situation réglementaire et la trajectoire la plus efficace pour y répondre.`,
+  },
+
+  {
+    slug: "biodiversite-entreprises-patrimoine-immobilier",
+    title:
+      "Biodiversité : le nouveau chantier des entreprises et des patrimoines immobiliers",
+    excerpt:
+      "Après le climat, la nature entre dans le reporting et la stratégie des organisations : norme ESRS E4, recommandations TNFD, objectif Zéro artificialisation nette. Ce que cela change pour un parc immobilier, et les leviers concrets à activer lors des travaux.",
+    category: "Biodiversité",
+    readTime: "9 min",
+    date: "9 septembre 2026",
+    image:
+      "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=900&q=80",
+    icon: "Leaf",
+    featured: true,
+    content: `## Du climat à la nature : le second front
+
+Pendant quinze ans, la stratégie environnementale des entreprises s'est concentrée sur le carbone. La biodiversité revient désormais au premier plan, portée par un constat scientifique sans ambiguïté : selon l'IPBES, le « GIEC de la biodiversité », environ un million d'espèces sont menacées d'extinction, sous l'effet de cinq pressions principales — le changement d'usage des terres et des mers, l'exploitation directe des ressources, le changement climatique, les pollutions et les espèces exotiques envahissantes.
+
+En décembre 2022, le Cadre mondial de Kunming-Montréal a fixé 23 cibles pour 2030, dont la protection de 30 % des terres et des mers et l'obligation, pour les grandes entreprises, d'évaluer et de publier leurs impacts et leurs dépendances vis-à-vis de la nature. La France l'a décliné dans sa Stratégie nationale biodiversité 2030.
+
+Pour une organisation, la question n'est plus de savoir si la biodiversité la concerne, mais comment l'intégrer sans la traiter comme un sujet de communication.
+
+## Ce que le reporting demande désormais
+
+**La norme ESRS E4.** Dans le cadre de la CSRD, la biodiversité fait l'objet d'une norme dédiée. Elle ne s'applique que si le sujet ressort comme matériel dans l'analyse de double matérialité — ce qui est fréquent pour l'immobilier, l'agroalimentaire, l'industrie ou la distribution. L'entreprise doit alors décrire ses impacts, ses dépendances, ses politiques, ses objectifs et des indicateurs comme l'emprise de ses sites dans ou à proximité de zones sensibles.
+
+**Les recommandations TNFD.** Publiées en septembre 2023, les recommandations de la Taskforce on Nature-related Financial Disclosures proposent une démarche en quatre temps : localiser les interfaces avec la nature, évaluer les dépendances et impacts, analyser les risques et opportunités, se préparer à y répondre. Investisseurs et banques s'en inspirent de plus en plus.
+
+**Les objectifs fondés sur la science.** À l'image de la SBTi pour le climat, le Science Based Targets Network publie des méthodes pour fixer des objectifs sur l'eau douce et les sols. Elles restent exigeantes, mais structurent déjà les démarches les plus avancées.
+
+## Le bâtiment, premier consommateur d'espace
+
+L'artificialisation des sols est la première cause d'érosion de la biodiversité en France. La loi Climat et Résilience de 2021 a fixé l'objectif de **Zéro artificialisation nette (ZAN) en 2050**, avec une première étape de division par deux du rythme de consommation d'espaces naturels, agricoles et forestiers sur la décennie 2021-2031.
+
+Pour les maîtres d'ouvrage, cela se traduit par plusieurs évolutions très concrètes : la rénovation et la densification des sites existants deviennent la norme face à la construction neuve en extension ; les plans locaux d'urbanisme imposent de plus en plus un coefficient de biotope par surface ; les nouveaux bâtiments commerciaux, industriels et de bureaux doivent intégrer en toiture des dispositifs de production d'énergie renouvelable ou de végétalisation, et les grands parkings extérieurs se voient imposer des ombrières photovoltaïques.
+
+## Les leviers concrets sur un patrimoine existant
+
+**Anticiper la faune protégée avant les travaux.** C'est le point le plus souvent négligé des rénovations énergétiques. Martinets, hirondelles, moineaux et chauves-souris nichent dans les façades, les combles et les coffres de volets. Une isolation par l'extérieur ou une réfection de toiture menée en période de nidification peut entraîner la destruction d'espèces protégées, avec un risque pénal et un arrêt de chantier. Un diagnostic écologique préalable, un calendrier adapté et l'intégration de nichoirs ou de gîtes dans l'isolant règlent le problème pour un coût marginal.
+
+**Désimperméabiliser et végétaliser.** Parkings, cours et toitures offrent un potentiel important. Une toiture végétalisée ou une cour désimperméabilisée réduit aussi les îlots de chaleur et améliore le confort d'été — avec des effets directs sur les besoins de climatisation, donc sur la trajectoire du décret tertiaire.
+
+**Réduire la pollution lumineuse.** L'éclairage extérieur nocturne perturbe fortement la faune. La réglementation sur les nuisances lumineuses encadre déjà les horaires d'extinction et les caractéristiques des luminaires ; aller au-delà, en créant une « trame noire » sur les sites, est souvent source d'économies d'énergie.
+
+**Gérer les espaces verts autrement.** Gestion différenciée, fin des produits phytosanitaires, essences locales adaptées au climat futur : ces pratiques améliorent la biodiversité ordinaire des sites tout en réduisant les coûts d'entretien et les besoins en arrosage.
+
+## Climat et biodiversité : chercher les co-bénéfices, éviter les conflits
+
+Les deux enjeux ne vont pas toujours dans le même sens. Une plantation monospécifique à croissance rapide stocke du carbone mais appauvrit la biodiversité ; un parc photovoltaïque au sol mal implanté peut artificialiser un milieu naturel. À l'inverse, la restauration de haies, de zones humides ou de forêts diversifiées produit des bénéfices sur les deux plans.
+
+C'est un critère que nous regardons de près dans la sélection des projets carbone : le Label Bas Carbone, par exemple, permet de reconnaître et de documenter les co-bénéfices environnementaux des projets forestiers et agricoles.
+
+Quant aux « crédits biodiversité » qui émergent sur le marché volontaire, ils restent à un stade très précoce : absence de métrique commune, standards en construction, risque de confusion avec la compensation écologique réglementaire de la séquence Éviter-Réduire-Compenser. La prudence s'impose avant d'en faire un argument.
+
+## Par où commencer
+
+**Localiser.** Identifier les sites situés dans ou à proximité de zones à enjeu écologique (Natura 2000, ZNIEFF, trames vertes et bleues) permet de hiérarchiser l'effort.
+
+**Intégrer la biodiversité au plan de travaux.** Chaque rénovation énergétique, chaque réfection de toiture ou de parking est l'occasion de traiter le sujet à faible coût, à condition de l'anticiper dès la conception.
+
+**Relier au reporting.** Les actions menées sur le patrimoine alimentent directement l'analyse de double matérialité et, le cas échéant, les indicateurs ESRS E4.
+
+[Parlons de votre stratégie environnementale](/conseil-decarbonation) : Kilowater intègre la biodiversité à la trajectoire de décarbonation de votre patrimoine, pour que chaque chantier serve les deux enjeux.`,
+  },
+
+  {
+    slug: "credits-carbone-volontaires-projet-credible",
+    title:
+      "Crédits carbone volontaires : reconnaître un projet crédible et éviter le greenwashing",
+    excerpt:
+      "Après plusieurs années de controverses, le marché volontaire du carbone se recentre sur la qualité. Additionnalité, permanence, labels, allégations autorisées : les critères pour acheter des crédits qui tiennent la route, et les erreurs à ne plus commettre.",
+    category: "Climat",
+    readTime: "10 min",
+    date: "2 septembre 2026",
+    image:
+      "https://images.unsplash.com/photo-1473448912268-2022ce9509d8?w=900&q=80",
+    icon: "TreePine",
+    featured: true,
+    content: `## Un marché en pleine remise en question
+
+En janvier 2023, une enquête menée par plusieurs médias internationaux a mis en cause la réalité des réductions d'émissions revendiquées par une large part des crédits issus de projets de déforestation évitée, certifiés par le principal standard du marché. D'autres analyses ont suivi, sur les projets de foyers de cuisson améliorés ou d'énergies renouvelables dans des pays où elles étaient déjà rentables.
+
+Le marché volontaire du carbone en est sorti durablement transformé : les volumes ont reculé, les écarts de prix entre crédits de faible et de haute qualité se sont creusés, et les acheteurs sont devenus beaucoup plus exigeants. Pour une entreprise, acheter des crédits carbone n'est plus un geste de communication anodin : c'est une décision qui engage sa crédibilité.
+
+## Volontaire n'est pas réglementé
+
+Première source de confusion : les crédits carbone volontaires n'ont rien à voir avec les **quotas du système européen d'échange (EU ETS)**. Ces quotas sont une obligation réglementaire pour les installations industrielles et énergétiques, l'aviation et le transport maritime ; un second marché (ETS2) doit s'appliquer aux carburants du bâtiment et du transport routier dans les prochaines années.
+
+Un crédit volontaire ne permet en aucun cas de remplir une obligation au titre de l'EU ETS. Il finance un projet de réduction ou de séquestration d'émissions en dehors du périmètre de l'entreprise, sur une base volontaire. Mélanger les deux notions dans un discours commercial ou un rapport extra-financier est une erreur, et un risque.
+
+## Trois grandes natures de crédits
+
+**L'évitement.** Le projet empêche des émissions qui auraient eu lieu sans lui : protection d'une forêt menacée, remplacement d'un combustible fossile. C'est la catégorie la plus exposée aux critiques, car le scénario de référence est difficile à établir.
+
+**La réduction.** Le projet diminue des émissions existantes : captage de méthane, efficacité énergétique, changement de pratiques agricoles.
+
+**La séquestration.** Le projet retire du CO₂ de l'atmosphère et le stocke : boisement, restauration de sols, haies, biochar, ou solutions technologiques de captage direct. Ces crédits sont plus rares et plus chers, mais de plus en plus recherchés pour les émissions résiduelles.
+
+## Les critères d'un crédit de qualité
+
+**L'additionnalité.** Le projet n'aurait pas vu le jour sans le financement carbone. Un parc solaire déjà rentable ou une forêt qui n'était pas menacée ne sont pas additionnels.
+
+**Un scénario de référence prudent.** Les réductions sont calculées par rapport à ce qui se serait passé sans le projet. Un scénario trop pessimiste gonfle artificiellement le nombre de crédits.
+
+**La permanence.** Le carbone séquestré doit le rester durablement. Les projets forestiers doivent prévoir une réserve de crédits (« buffer ») pour couvrir les risques d'incendie, de tempête ou de dépérissement.
+
+**L'absence de double comptage.** Une même tonne ne doit être revendiquée qu'une seule fois — ni par deux acheteurs, ni à la fois par l'acheteur et par le pays hôte dans ses engagements climatiques.
+
+**Une vérification indépendante et une traçabilité complète.** Chaque crédit doit être vérifié par un tiers, inscrit dans un registre public et « retiré » au nom de l'acheteur lorsqu'il est utilisé.
+
+**Des garanties sociales et environnementales.** Respect des droits des populations locales, absence d'impact négatif sur la biodiversité, et idéalement des co-bénéfices documentés.
+
+## Labels et standards : utiles, mais pas suffisants
+
+**Le Label Bas Carbone.** Créé en 2018 par le ministère de la Transition écologique, il certifie des projets situés en France : forêt, agriculture, haies, sols. Il offre une forte traçabilité et un ancrage territorial apprécié, pour des volumes plus limités.
+
+**Les standards internationaux.** Verra (VCS), Gold Standard ou Puro.earth pour les séquestrations durables certifient la majorité des volumes mondiaux, avec des niveaux d'exigence variables selon les méthodologies.
+
+**Les initiatives d'intégrité.** L'Integrity Council for the Voluntary Carbon Market (ICVCM) attribue un label « Core Carbon Principles » aux programmes et méthodologies jugés robustes. La Voluntary Carbon Markets Integrity Initiative (VCMI) encadre, de son côté, les allégations des entreprises. Au niveau européen, un cadre de certification des absorptions de carbone (règlement CRCF, adopté en 2024) se met en place.
+
+Un label est un point de départ, pas une garantie : au sein d'un même standard, la qualité varie fortement d'une méthodologie et d'un projet à l'autre. L'analyse projet par projet reste indispensable.
+
+## Ce que vous avez le droit de dire
+
+En France, depuis 2023, une entreprise qui affirme qu'un produit ou un service est « neutre en carbone » doit publier le bilan de ses émissions, sa trajectoire de réduction et les modalités de compensation des émissions résiduelles.
+
+La directive européenne « EmpCo », qui doit s'appliquer à partir du 27 septembre 2026, va plus loin : elle interdit les allégations selon lesquelles un produit a un impact neutre, réduit ou positif sur le climat lorsqu'elles reposent sur la compensation des émissions. Les mentions du type « produit neutre en carbone grâce à la compensation » deviennent donc proscrites dans la communication commerciale.
+
+La formulation qui s'impose est celle de la **contribution** : l'entreprise réduit d'abord ses propres émissions, puis finance des projets de qualité qui contribuent à l'effort climatique mondial, sans prétendre annuler son empreinte.
+
+## Où les crédits trouvent leur place dans une stratégie climat
+
+**Après la réduction, jamais à la place.** Les crédits ne comptent pas dans l'atteinte d'objectifs SBTi et ne dispensent d'aucune obligation réglementaire. Ils interviennent une fois la trajectoire de réduction engagée.
+
+**Pour les émissions résiduelles ou en contribution.** À horizon 2050, seules les émissions impossibles à éliminer ont vocation à être neutralisées par des séquestrations durables. D'ici là, les crédits servent à contribuer à des projets additionnels, au-delà de sa propre chaîne de valeur.
+
+**Avec une stratégie d'achat assumée.** Portefeuille diversifié, part de séquestration croissante, préférence pour des projets proches de vos activités ou de vos territoires, contrats pluriannuels pour sécuriser volumes et prix : l'achat de crédits se pilote comme n'importe quel achat stratégique.
+
+## Notre approche
+
+Le marché volontaire est fragmenté et opaque pour un acheteur non spécialiste. Notre rôle d'agrégateur consiste à sourcer les projets, à les analyser au regard de ces critères, à écarter ceux qui ne tiennent pas, puis à mettre en relation acheteurs et porteurs de projets dans une relation transparente — sans trading pour compte propre.
+
+[Échangeons sur votre stratégie carbone](/courtage-environnemental) : Kilowater vous aide à sélectionner des projets crédibles et à formuler des allégations conformes.`,
+  },
+
+  {
     slug: "re2020-bilan-carbone-construction",
     title: "RE 2020 : le bilan carbone au coeur de la construction neuve",
     excerpt:
@@ -70,8 +273,7 @@ export const ARTICLES: Article[] = [
     date: "18 février 2026",
     image:
       "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=900&q=80",
-    icon: Globe,
-    featured: true,
+    icon: "Globe",
     content: `## Au-delà de la performance énergétique
 
 Pendant près de cinquante ans, les réglementations thermiques successives (RT 1974, RT 1988, RT 2000, RT 2005, RT 2012) se sont concentrées sur un objectif unique : réduire la consommation d'énergie des bâtiments neufs. La Réglementation Environnementale 2020 (RE 2020), entrée en vigueur le 1er janvier 2022, marque une rupture fondamentale en ajoutant deux nouvelles dimensions : l'impact carbone sur l'ensemble du cycle de vie et le confort d'été.
@@ -125,7 +327,7 @@ Si la rénovation ne fait pas l'objet d'une obligation d'ACV comparable à la RE
     date: "5 février 2026",
     image:
       "https://images.unsplash.com/photo-1628744448840-55bdb2497bd4?w=900&q=80",
-    icon: Sun,
+    icon: "Sun",
     featured: true,
     content: `## Le contexte : une copropriété des années 1970
 
@@ -178,7 +380,7 @@ Ce retour d'expérience confirme que la rénovation globale en copropriété est
     date: "28 mars 2026",
     image:
       "https://images.unsplash.com/photo-1590274853856-f22d5ee3d228?w=900&q=80",
-    icon: Wind,
+    icon: "Wind",
     content: `## La PAC : principe et familles technologiques
 
 La pompe à chaleur (PAC) fonctionne sur un principe thermodynamique simple : elle prélève les calories présentes dans un milieu extérieur (air, eau, sol) et les transfère à un circuit de chauffage intérieur via un cycle de compression-détente d'un fluide frigorigène. Pour chaque kilowattheure d'électricité consommé, une PAC restitue en moyenne 3 à 5 kilowattheures de chaleur, ce qui en fait un système nettement plus efficient qu'une chaudière classique.
@@ -217,12 +419,12 @@ Il est essentiel de faire appel à un installateur certifié QualiPAC, seule gar
 
 ## Aides financières et rentabilité
 
-L'installation d'une PAC est éligible à MaPrimeRénov', avec des montants variant de 2 000 à 11 000 euros selon les revenus du ménage et le type de PAC. Les CEE complètent le financement. L'éco-PTZ permet d'emprunter sans intérêts pour financer le reste à charge. Le temps de retour sur investissement se situe généralement entre 6 et 12 ans pour une PAC air-eau en remplacement d'une chaudière fioul, et entre 8 et 15 ans en remplacement d'une chaudière gaz.`,
+En tertiaire comme en habitat collectif, l'installation d'une PAC est valorisable en Certificats d'Économies d'Énergie, via les fiches d'opérations standardisées dédiées, à condition de respecter leurs exigences de performance et d'engager le dossier avant la signature des devis. Selon les projets, le Fonds Chaleur de l'ADEME peut soutenir les PAC géothermiques de forte puissance, et MaPrimeRénov' Copropriétés ou l'éco-PTZ collectif complètent le financement dans le cadre d'une rénovation globale de copropriété. Le temps de retour sur investissement se situe généralement entre 6 et 12 ans pour une PAC air-eau en remplacement d'une chaudière fioul, et entre 8 et 15 ans en remplacement d'une chaudière gaz.`,
   },
   {
     slug: "isolation-thermique-guide-renovation",
     title:
-      "Isolation thermique : choisir la bonne stratégie pour son logement",
+      "Isolation thermique : choisir la bonne stratégie pour son bâtiment",
     excerpt:
       "ITE, ITI, isolation des combles et des planchers bas : chaque technique répond à des contraintes spécifiques. Guide méthodique pour hiérarchiser les travaux, sélectionner les matériaux et maximiser le retour sur investissement de l'isolation.",
     category: "Énergie",
@@ -230,10 +432,10 @@ L'installation d'une PAC est éligible à MaPrimeRénov', avec des montants vari
     date: "15 mars 2026",
     image:
       "https://images.unsplash.com/photo-1416331108676-a22ccb276e35?w=900&q=80",
-    icon: Thermometer,
+    icon: "Thermometer",
     content: `## Comprendre les déperditions thermiques
 
-Avant de choisir une technique d'isolation, il est indispensable de comprendre par où un bâtiment perd sa chaleur. Dans une maison individuelle non isolée des années 1970, les déperditions se répartissent approximativement ainsi : 25 à 30 % par la toiture, 20 à 25 % par les murs, 10 à 15 % par les planchers bas, 10 à 15 % par les fenêtres, et 20 à 25 % par le renouvellement d'air (ventilation et infiltrations).
+Avant de choisir une technique d'isolation, il est indispensable de comprendre par où un bâtiment perd sa chaleur. À titre d'ordre de grandeur, dans un bâtiment de faible hauteur non isolé des années 1970, les déperditions se répartissent approximativement ainsi : 25 à 30 % par la toiture, 20 à 25 % par les murs, 10 à 15 % par les planchers bas, 10 à 15 % par les fenêtres, et 20 à 25 % par le renouvellement d'air (ventilation et infiltrations).
 
 Cette hiérarchie des déperditions guide la stratégie de rénovation. L'isolation de la toiture offre le meilleur rapport coût-efficacité, car elle traite la plus grande source de pertes avec une mise en oeuvre relativement simple. Les murs viennent ensuite, avec des techniques plus lourdes mais des gains significatifs. Les planchers bas et les menuiseries complètent le bouquet de travaux.
 
@@ -275,25 +477,25 @@ Le traitement de l'étanchéité à l'air doit être coordonné avec la mise en 
 
 ## Le retour sur investissement
 
-Le coût de l'isolation varie considérablement selon la technique et le matériau : de 15 à 30 euros par mètre carré pour des combles perdus en soufflage, de 80 à 180 euros par mètre carré pour une ITE sous enduit, de 50 à 100 euros par mètre carré pour une ITI avec doublage. Les aides financières (MaPrimeRénov', CEE, éco-PTZ) couvrent typiquement 40 à 70 % du coût pour les ménages aux revenus modestes, réduisant significativement le temps de retour sur investissement.`,
+Le coût de l'isolation varie considérablement selon la technique et le matériau : de 15 à 30 euros par mètre carré pour des combles perdus en soufflage, de 80 à 180 euros par mètre carré pour une ITE sous enduit, de 50 à 100 euros par mètre carré pour une ITI avec doublage. Les Certificats d'Économies d'Énergie financent une part significative de ces travaux en tertiaire comme en habitat collectif ; en copropriété, MaPrimeRénov' Copropriétés et l'éco-PTZ collectif peuvent s'y ajouter dans le cadre d'une rénovation globale, réduisant significativement le temps de retour sur investissement.`,
   },
   {
     slug: "passoires-thermiques-2025",
     title:
-      "Passoires thermiques : ce qui change en 2025 pour les propriétaires",
+      "Passoires thermiques : ce que le calendrier de la loi Climat impose aux bailleurs et aux copropriétés",
     excerpt:
-      "Depuis le 1er janvier 2025, les logements classés G au DPE sont interdits à la location. Décryptage des obligations, des aides disponibles et des stratégies de rénovation pour les propriétaires bailleurs concernés par cette échéance réglementaire.",
+      "Depuis le 1er janvier 2025, les logements classés G au DPE sont interdits à la location. Décryptage des obligations, des financements disponibles et des stratégies de rénovation pour les bailleurs professionnels, les organismes HLM et les copropriétés concernés.",
     category: "Énergie",
     readTime: "8 min",
     date: "2 mars 2026",
     image:
       "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&q=80",
-    icon: Sun,
+    icon: "Sun",
     content: `## Une échéance réglementaire majeure
 
 Le calendrier de la loi Climat et Résilience de 2021 est désormais entré dans sa phase opérationnelle. Depuis le 1er janvier 2025, les logements classés G au Diagnostic de Performance Énergétique (DPE) ne peuvent plus faire l'objet d'un nouveau contrat de location. Cette mesure concerne environ 600 000 logements en France, selon les estimations du ministère de la Transition écologique.
 
-Pour les propriétaires bailleurs, cette interdiction n'est pas une surprise : elle avait été annoncée dès 2021, laissant un délai de préparation de plus de trois ans. Pourtant, de nombreux propriétaires se retrouvent aujourd'hui dans l'urgence, faute d'avoir anticipé les travaux nécessaires.
+Pour les bailleurs, cette interdiction n'est pas une surprise : elle avait été annoncée dès 2021, laissant un délai de préparation de plus de trois ans. Pourtant, de nombreux gestionnaires de patrimoine se retrouvent aujourd'hui dans l'urgence, faute d'avoir anticipé les travaux nécessaires — en particulier dans les copropriétés, où les décisions de travaux passent par l'assemblée générale.
 
 ## Qu'est-ce qu'une passoire thermique ?
 
@@ -309,7 +511,7 @@ Ce calendrier peut sembler lointain, mais l'ampleur des travaux à réaliser imp
 
 ## Les aides financières disponibles
 
-Le dispositif MaPrimeRénov' reste le principal levier de financement pour les propriétaires bailleurs. Depuis 2024, le parcours "accompagné" est privilégié pour les rénovations d'ampleur, avec des aides pouvant atteindre 63 000 euros pour les ménages aux revenus les plus modestes.
+Pour les bailleurs professionnels et institutionnels, les Certificats d'Économies d'Énergie constituent le premier levier de financement, avec des bonifications pour les rénovations performantes. Les organismes HLM peuvent mobiliser l'éco-prêt logement social de la Banque des Territoires. Lorsque les logements sont situés dans une copropriété qui engage une rénovation globale, MaPrimeRénov' Copropriétés et l'éco-PTZ collectif complètent le plan de financement.
 
 Les Certificats d'Économies d'Énergie (CEE) complètent le dispositif. Ils permettent de financer une partie des travaux via les fournisseurs d'énergie, qui ont l'obligation réglementaire de promouvoir l'efficacité énergétique. L'éco-prêt à taux zéro (éco-PTZ) permet quant à lui d'emprunter jusqu'à 50 000 euros sans intérêts pour financer des travaux de rénovation énergétique.
 
@@ -325,7 +527,7 @@ La rénovation globale, en revanche, traite le bâtiment comme un système : iso
 
 Avant tout projet de rénovation, un audit énergétique réglementaire est désormais obligatoire pour les logements classés F ou G lors de leur mise en vente. Cet audit va au-delà du simple DPE : il propose des scénarios de travaux chiffrés, hiérarchisés et adaptés au bâtiment.
 
-L'audit identifie les déperditions thermiques prioritaires, évalue les gains attendus pour chaque scénario et fournit une estimation des coûts et des aides mobilisables. C'est un outil de décision essentiel pour le propriétaire, qui lui permet de choisir la stratégie la plus pertinente au regard de son budget et de ses objectifs.
+L'audit identifie les déperditions thermiques prioritaires, évalue les gains attendus pour chaque scénario et fournit une estimation des coûts et des aides mobilisables. C'est un outil de décision essentiel pour le bailleur ou la copropriété, qui permet de choisir la stratégie la plus pertinente au regard de son budget et de ses objectifs.
 
 ## Un enjeu de justice sociale
 
@@ -344,7 +546,7 @@ La rénovation énergétique de ces logements contribue donc à réduire les in�
     date: "22 janvier 2026",
     image:
       "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=900&q=80",
-    icon: TreePine,
+    icon: "TreePine",
     content: `## Le déclin silencieux de la faune urbaine
 
 Les villes ne sont pas des déserts biologiques, mais elles subissent un appauvrissement accéléré de leur biodiversité. En France, les populations d'oiseaux communs des milieux bâtis ont diminué de 30 % en vingt ans selon le Muséum national d'Histoire naturelle. Les hirondelles de fenêtre, les martinets noirs et les moineaux domestiques, autrefois omniprésents dans nos villes, voient leurs effectifs chuter de manière préoccupante.
@@ -392,7 +594,7 @@ Ces évolutions réglementaires vont progressivement s'étendre au parc existant
     date: "8 janvier 2026",
     image:
       "https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd6?w=900&q=80",
-    icon: Leaf,
+    icon: "Leaf",
     content: `## Un marché en pleine expansion
 
 Les isolants biosourcés, fabriqués à partir de matières premières renouvelables d'origine végétale ou animale, connaissent une croissance soutenue sur le marché français de la rénovation. La fibre de bois, le chanvre, la ouate de cellulose, le liège et la laine de mouton représentent aujourd'hui environ 10 % du marché de l'isolation, un chiffre en augmentation constante depuis cinq ans.
@@ -450,7 +652,7 @@ Ce circuit court de production réduit l'impact carbone du transport et soutient
     date: "18 décembre 2025",
     image:
       "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&q=80",
-    icon: Building2,
+    icon: "Building2",
     content: `## Un cadre réglementaire ambitieux
 
 Le décret tertiaire, officiellement dénommé "dispositif Éco Énergie Tertiaire", est issu de la loi ELAN de 2018 et précisé par le décret du 23 juillet 2019. Il impose aux propriétaires et exploitants de bâtiments à usage tertiaire dont la surface d'exploitation est supérieure ou égale à 1 000 mètres carrés de réduire progressivement leur consommation d'énergie finale par rapport à une année de référence choisie entre 2010 et 2019.
@@ -504,7 +706,7 @@ Les bâtiments tertiaires qui anticipent les échéances du décret et affichent
     date: "4 décembre 2025",
     image:
       "https://images.unsplash.com/photo-1558449028-b53a39d100fc?w=900&q=80",
-    icon: Zap,
+    icon: "Zap",
     content: `## Distinguer sobriété et efficacité
 
 La transition énergétique du bâtiment repose sur trois piliers complémentaires, souvent confondus dans le débat public. L'efficacité énergétique consiste à obtenir le même service avec moins d'énergie : isoler un mur, installer une chaudière à condensation, remplacer des ampoules par des LED. Les énergies renouvelables substituent des sources décarbonées aux énergies fossiles : panneaux photovoltaïques, pompes à chaleur, bois-énergie. La sobriété énergétique, quant à elle, interroge le besoin lui-même : a-t-on besoin de chauffer à 22 degrés ? De climatiser dès 24 degrés ? D'éclairer un parking la nuit entière ?
@@ -519,7 +721,7 @@ Les résultats ont été significatifs : la consommation de gaz a diminué de 15
 
 ## La température de consigne : un levier puissant
 
-La température de chauffage est le levier de sobriété le plus efficace dans le résidentiel. Chaque degré supplémentaire au-dessus de 19 degrés augmente la consommation de chauffage d'environ 7 %. Passer de 21 à 19 degrés dans un logement chauffé au gaz permet d'économiser environ 14 % de la facture de chauffage, soit plusieurs centaines d'euros par an pour une maison individuelle.
+La température de chauffage est le levier de sobriété le plus efficace dans le résidentiel. Chaque degré supplémentaire au-dessus de 19 degrés augmente la consommation de chauffage d'environ 7 %. Passer de 21 à 19 degrés dans un immeuble chauffé au gaz permet d'économiser environ 14 % de la facture de chauffage, soit plusieurs milliers d'euros par an à l'échelle d'une copropriété ou d'un immeuble de bureaux.
 
 Cette mesure suppose toutefois un bâtiment correctement isolé. Dans une passoire thermique, baisser la consigne sans traiter l'enveloppe peut conduire à un inconfort réel (parois froides, courants d'air) et à des risques de condensation. La sobriété et l'efficacité sont indissociables : on ne peut demander aux occupants de réduire leur consommation si le bâtiment ne leur offre pas un confort thermique minimal.
 
@@ -552,139 +754,147 @@ Cette réflexion ne doit pas être perçue comme une régression mais comme une 
 
   {
     slug: "comment-choisir-bureau-etude-renovation-energetique",
-    title: "Comment choisir son bureau d'étude en rénovation énergétique ?",
+    title:
+      "Bureau d'étude, AMO, partenaire CEE : comment bien s'entourer pour un projet de rénovation énergétique ?",
     excerpt:
-      "Qualifications, indépendance, méthodologie, tarifs : les 7 critères essentiels pour sélectionner un bureau d'étude thermique capable de mener un projet de rénovation énergétique à son terme sans mauvaise surprise.",
+      "Bureau d'étude thermique, assistant à maîtrise d'ouvrage, maître d'œuvre, partenaire CEE : qui fait quoi dans un projet de rénovation tertiaire ou de copropriété, et les critères pour choisir chaque intervenant sans mauvaise surprise.",
     category: "Énergie",
     readTime: "10 min",
     date: "16 avril 2026",
     image:
       "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=900&q=80",
-    icon: ShieldCheck,
-    featured: true,
+    icon: "ShieldCheck",
     content: `## Un choix structurant pour la réussite du projet
 
-Lancer une rénovation énergétique ambitieuse sans s'entourer des bonnes compétences techniques revient à construire sans architecte : le résultat peut fonctionner, mais il sera rarement optimal. Le bureau d'étude en rénovation énergétique est l'acteur qui traduit les objectifs du maître d'ouvrage — réduction des charges, valorisation patrimoniale, conformité réglementaire — en solutions techniques dimensionnées, chiffrées et coordonnées. Son choix conditionne la qualité des études, la pertinence des préconisations et, finalement, l'atteinte des performances réelles.
+Lancer une rénovation énergétique ambitieuse sans s'entourer des bonnes compétences revient à construire sans architecte : le résultat peut fonctionner, mais il sera rarement optimal. Sur un bâtiment tertiaire, un site industriel ou une copropriété, plusieurs métiers se partagent la réussite du projet. Les confondre, ou en oublier un, se paie en performances décevantes, en surcoûts ou en aides perdues.
 
-Pourtant, le marché est pléthorique et hétérogène. Entre les généralistes multicartes, les spécialistes thermique pure, les bureaux filiales d'installateurs et les indépendants qualifiés RGE, les profils varient considérablement. Voici les sept critères qui doivent guider votre sélection.
+Avant de comparer des devis, il faut donc savoir qui fait quoi.
+
+## Qui fait quoi dans un projet de rénovation
+
+**Le bureau d'étude technique.** Il analyse le bâtiment et dimensionne les solutions : audit énergétique, simulation thermique dynamique, calculs de déperditions, conception des systèmes de chauffage, ventilation et climatisation. Selon sa spécialité, on parle de bureau d'étude thermique ou fluides.
+
+**L'assistant à maîtrise d'ouvrage (AMO).** Il accompagne le propriétaire dans la définition du programme, le choix des prestataires et le suivi global, sans concevoir lui-même les travaux. C'est un rôle clé en copropriété, où les décisions passent par l'assemblée générale.
+
+**Le maître d'œuvre.** Il conçoit le projet détaillé, consulte les entreprises, dirige l'exécution des travaux et assiste le propriétaire à la réception. Cette mission peut être assurée par un architecte ou un bureau d'étude.
+
+**Le partenaire CEE et décarbonation.** Il identifie le gisement d'économies d'énergie finançable, sécurise l'éligibilité des travaux aux Certificats d'Économies d'Énergie, monte et valorise les dossiers, et inscrit le projet dans la trajectoire de décarbonation et les obligations réglementaires de l'organisation. C'est le rôle de Kilowater, aux côtés des bureaux d'étude et maîtres d'œuvre de votre projet.
 
 ## 1. Les qualifications officielles
 
-Première règle absolue : vérifier que le [bureau d'étude dispose des qualifications RGE](/bureau-d-etude-renovation-energetique) correspondant à votre projet. Sans qualification RGE Études, vos travaux ne seront pas éligibles à MaPrimeRénov', aux Certificats d'Économies d'Énergie (CEE) ni à l'éco-PTZ. Pour les missions techniques, la qualification OPQIBI est le gage d'une compétence reconnue : OPQIBI 1905 pour l'audit énergétique tertiaire, 1911 pour l'audit industriel EED, 1901 pour les études thermiques de conception.
+Pour les missions d'études, les qualifications OPQIBI sont le gage d'une compétence reconnue : 1905 pour l'audit énergétique tertiaire, 1911 pour l'audit industriel, 1901 pour les études thermiques de conception. Selon les dispositifs et les opérations, la qualification RGE de l'entreprise de travaux ou du prestataire d'études conditionne aussi l'éligibilité aux aides, notamment pour de nombreuses opérations CEE en habitat collectif et pour l'audit réglementaire.
 
-Exigez la copie des attestations et vérifiez leur validité sur les sites officiels opqibi.com et qualibat.com. Une qualification expirée n'a aucune valeur juridique et peut rendre les travaux inéligibles aux aides.
+Exigez la copie des attestations et vérifiez leur validité sur opqibi.com et qualibat.com. Une qualification expirée n'a aucune valeur et peut rendre les travaux inéligibles.
 
 ## 2. L'indépendance commerciale
 
-Un bureau d'étude réellement indépendant n'a aucun lien capitalistique, commercial ou promotionnel avec les fournisseurs d'équipements, les installateurs ou les entreprises de travaux. Cette neutralité est essentielle : elle garantit que les préconisations sont fondées sur l'intérêt technique et économique du maître d'ouvrage, pas sur des marges de rétrocession ou des partenariats commerciaux.
+Un prestataire d'études réellement indépendant n'a aucun lien capitalistique ou commercial avec les fabricants d'équipements ou les entreprises de travaux. Cette neutralité garantit que les préconisations servent l'intérêt technique et économique du maître d'ouvrage, pas des marges de rétrocession.
 
-Posez la question frontalement lors du premier contact : le bureau d'étude touche-t-il des commissions ? Recommande-t-il systématiquement les mêmes marques ? Propose-t-il ses propres artisans ? Les réponses doivent être non, non et non.
+Posez la question dès le premier contact : touche-t-il des commissions ? Recommande-t-il systématiquement les mêmes marques ? Propose-t-il ses propres installateurs ?
 
 ## 3. La spécialisation sectorielle
 
-Un bureau d'étude généraliste qui fait du tertiaire, de l'industrie, du résidentiel individuel et collectif, du neuf et de la rénovation, avec cinq personnes au total, ne peut pas être excellent partout. Privilégiez un acteur qui maîtrise votre typologie de bâtiment. Rénover une copropriété haussmannienne n'a rien à voir avec l'optimisation énergétique d'un data center ou l'audit EED d'un site de production agroalimentaire.
-
-Demandez des références récentes sur des projets comparables — surface, usage, niveau de performance visé — et, si possible, un contact client pour recueillir un retour d'expérience direct.
+Rénover une copropriété haussmannienne n'a rien à voir avec l'optimisation énergétique d'un data center ou l'audit d'un site agroalimentaire. Privilégiez des intervenants qui maîtrisent votre typologie de bâtiment, et demandez des références récentes sur des projets comparables en surface, en usage et en niveau de performance visé.
 
 ## 4. La méthodologie et les outils
 
-Un [bureau d'étude thermique](/bureau-d-etude-renovation-energetique) sérieux travaille avec des outils de calcul professionnels : Pleiades+COMFIE, Design Builder, EnergyPlus ou ClimaWin pour la simulation thermique dynamique, Perrenoud pour les calculs réglementaires, base INIES pour les analyses de cycle de vie. Méfiez-vous des cabinets qui n'utilisent qu'un tableur Excel ou un logiciel gratuit : les résultats manquent de finesse et les dimensionnements risquent d'être approximatifs.
+Un bureau d'étude sérieux travaille avec des outils professionnels : Pleiades+COMFIE, Design Builder ou EnergyPlus pour la simulation thermique dynamique, logiciels réglementaires reconnus pour les calculs. Demandez un plan type de rapport d'audit ou une étude anonymisée : la qualité des livrables est le meilleur indicateur du sérieux technique.
 
-La méthodologie doit également être documentée. Demandez le plan type d'un rapport d'audit, un exemple de cahier des charges ou une simulation STD anonymisée. La qualité des livrables est le meilleur indicateur du sérieux technique.
+## 5. La capacité à suivre le chantier
 
-## 5. La capacité à piloter le chantier
+Beaucoup de prestataires s'arrêtent à la conception. C'est pourtant sur le chantier que les performances se dégradent : isolation mal mise en œuvre, étanchéité à l'air négligée, réglages approximatifs. Assurez-vous qu'un intervenant est missionné pour la direction de l'exécution des travaux et la réception, puis pour la vérification des performances après mise en service.
 
-Beaucoup de bureaux d'étude s'arrêtent à la phase conception et laissent le maître d'ouvrage gérer seul l'appel d'offres et le chantier. C'est précisément là que les performances théoriques se dégradent : mauvaise mise en œuvre de l'isolation, raccordements hydrauliques approximatifs, étanchéité à l'air négligée. Un bon bureau d'étude doit pouvoir assurer la maîtrise d'œuvre complète : direction de l'exécution des travaux (DET), assistance aux opérations de réception (AOR), levée des réserves.
+## 6. L'anticipation du financement
 
-Sur les projets complexes, cette présence sur le terrain représente 60 à 70 % de la valeur ajoutée réelle.
+C'est le critère le plus souvent oublié, et l'un des plus coûteux. Pour être valorisés en CEE, les travaux doivent respecter les exigences techniques de la fiche d'opération concernée, et surtout **l'engagement de l'obligé doit intervenir avant la signature des devis**. Un projet parfaitement conçu mais engagé trop tôt peut perdre l'intégralité de sa prime.
 
-## 6. La transparence tarifaire
+Vérifiez que le financement est intégré dès la phase d'étude : identification des opérations éligibles, exigences techniques reprises dans les cahiers des charges, pièces justificatives prévues avant le lancement des travaux.
 
-Un devis clair, détaillé et engageant est la norme. Méfiez-vous des cabinets qui facturent à la régie sans plafond, ou qui proposent des forfaits suspicieusement bas : un audit énergétique tertiaire sérieux coûte rarement moins de 3 000 € HT, et une mission complète de maîtrise d'œuvre représente 8 à 12 % du montant des travaux. Un tarif cassé traduit souvent une superficialité dans les études.
+## 7. La transparence tarifaire et la relation
 
-À l'inverse, un tarif deux fois supérieur à la concurrence doit être justifié par une valeur ajoutée tangible : spécialisation rare, accompagnement renforcé, livrables enrichis. Demandez toujours plusieurs devis pour calibrer.
+Un devis clair, détaillé et forfaitaire est la norme. Un audit énergétique tertiaire sérieux coûte rarement moins de 3 000 € HT ; une mission complète de maîtrise d'œuvre représente classiquement 8 à 12 % du montant des travaux. Un tarif cassé traduit souvent des études superficielles.
 
-## 7. La proximité et la relation humaine
-
-Un projet de rénovation énergétique s'étend sur 12 à 36 mois. Vous allez travailler de près avec votre interlocuteur technique : visites de chantier, réunions de coordination, arbitrages. Le courant doit passer. Préférez un bureau d'étude basé dans votre région, qui connaît les contraintes climatiques locales (zones H1a, H1b, H2, H3), les filières artisanales du territoire et les spécificités des aides régionales.
-
-La disponibilité compte aussi : un bureau d'étude saturé qui met trois semaines à répondre à vos mails n'est pas le bon partenaire, même s'il est techniquement excellent.
+Un projet de rénovation s'étend sur 12 à 36 mois : la disponibilité et la qualité du dialogue comptent autant que la compétence technique.
 
 ## Passer à l'action
 
-Une fois ces critères validés, ne signez pas avant d'avoir rencontré physiquement au moins deux à trois prestataires. Présentez-leur votre projet, écoutez leurs premières intuitions techniques, posez des questions précises. Le bureau d'étude qui pose les bonnes questions sur votre situation est presque toujours celui qui fera le bon travail.
+Rencontrez au moins deux ou trois prestataires pour chaque rôle, présentez-leur votre projet et observez les questions qu'ils posent. Et associez le financement dès le départ : c'est souvent lui qui détermine l'ambition réaliste du programme.
 
-[Contactez Kilowater](/contactez-nous) pour un premier échange gratuit sur votre projet de rénovation énergétique. Nous vous rappelons sous 48h avec une première analyse des enjeux et un pré-chiffrage de notre intervention.`,
+[Évaluez le potentiel CEE de votre projet](/accompagnement-cee) avec Kilowater avant de lancer vos consultations : nous identifions les opérations finançables et les conditions à intégrer dans vos cahiers des charges.`,
   },
 
   {
     slug: "prix-bureau-etude-renovation-energetique-2026",
-    title: "Prix d'un bureau d'étude en rénovation énergétique en 2026",
+    title: "Prix d'un bureau d'étude en rénovation énergétique en 2026 : fourchettes et financement",
     excerpt:
-      "Audit énergétique, simulation thermique dynamique, maîtrise d'œuvre : combien coûte réellement un bureau d'étude en rénovation énergétique en 2026 ? Décryptage des fourchettes, des facteurs d'influence et des aides qui réduisent le reste à charge.",
+      "Audit énergétique tertiaire ou industriel, simulation thermique dynamique, maîtrise d'œuvre : combien coûtent les études d'un projet de rénovation en 2026, ce qui fait varier les prix, et comment les CEE et les aides B2B pèsent sur l'équation économique.",
     category: "Énergie",
     readTime: "11 min",
     date: "14 avril 2026",
     image:
       "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=900&q=80",
-    icon: BadgeEuro,
+    icon: "BadgeEuro",
     content: `## Un investissement, pas une charge
 
-Avant d'aborder les tarifs, il faut clarifier une idée reçue : les honoraires d'un [bureau d'étude en rénovation énergétique](/bureau-d-etude-renovation-energetique) ne sont pas un coût, mais un investissement qui se rentabilise plusieurs fois sur la durée du projet. Les études permettent d'éviter les sur-dimensionnements (qui représentent parfois 20 à 30 % du montant des équipements), de négocier au plus juste avec les entreprises via une consultation formalisée, et surtout de garantir que les performances théoriques se retrouvent dans la consommation réelle post-travaux.
+Avant d'aborder les tarifs, il faut clarifier une idée reçue : les honoraires d'études ne sont pas un coût, mais un investissement qui se rentabilise sur la durée du projet. Les études évitent les surdimensionnements (qui représentent parfois 20 à 30 % du montant des équipements), permettent de consulter les entreprises sur une base comparable, et garantissent que les performances théoriques se retrouvent dans la consommation réelle après travaux.
 
-Autrement dit : un bureau d'étude facturé 50 000 € HT sur un projet à 600 000 € HT peut générer 120 000 à 180 000 € d'économies en optimisation des coûts et des consommations sur 15 ans. Le ratio est presque toujours favorable au maître d'ouvrage.
+Sur un projet de rénovation à 600 000 € HT, des études et une maîtrise d'œuvre facturées 50 000 € HT peuvent générer bien davantage en optimisation des coûts de travaux et en économies d'exploitation sur quinze ans.
 
 ## Les grandes catégories de missions et leurs tarifs
 
-Les honoraires varient selon le périmètre de mission. Voici les fourchettes observées sur le marché français en 2026.
+Les honoraires varient selon le périmètre de la mission. Voici les fourchettes observées sur le marché français en 2026, à titre indicatif.
 
 ### Audit énergétique tertiaire
 
-Il s'agit de la mission la plus courante. L'audit comprend une visite sur site, la collecte des données de consommation, la modélisation du bâtiment, l'identification des gisements d'économies et le chiffrage des scénarios de rénovation. Pour un bâtiment tertiaire classique (bureaux, commerces, ERP), comptez entre **2 000 € et 10 000 € HT** selon la surface (de 500 m² à plus de 5 000 m²) et la complexité des systèmes. Un audit sur une foncière multi-sites avec enveloppe standardisée peut descendre à 1 500 € HT par site ; un audit sur un bâtiment d'exception (patrimoine classé, usage spécifique) peut dépasser 15 000 € HT.
+C'est la mission la plus courante : visite sur site, collecte des consommations, modélisation du bâtiment, identification des gisements d'économies et chiffrage des scénarios. Pour des bureaux, commerces ou établissements recevant du public, comptez entre **2 000 € et 10 000 € HT** selon la surface et la complexité des systèmes. Sur un parc multi-sites homogène, le coût par site peut descendre autour de 1 500 € HT ; un bâtiment patrimonial ou à usage spécifique peut dépasser 15 000 € HT.
 
-### Audit énergétique industriel (EED)
+### Audit énergétique industriel
 
-Le périmètre est nettement plus large : au-delà de l'enveloppe et des systèmes CVC, l'auditeur analyse les process énergivores, les utilités (air comprimé, vapeur, groupes froid), la cogénération éventuelle. Les tarifs démarrent à **15 000 € HT** pour un site de taille modeste et peuvent atteindre 80 000 € HT pour les grands sites industriels. La norme NF EN 16247 encadre la démarche.
+Le périmètre est nettement plus large : au-delà de l'enveloppe et du CVC, l'audit analyse les procédés, les utilités (air comprimé, vapeur, froid) et les possibilités de récupération de chaleur. Les tarifs démarrent autour de **15 000 € HT** pour un site de taille modeste et peuvent atteindre 80 000 € HT pour les grands sites. La norme NF EN 16247 encadre la démarche.
 
 ### Simulation thermique dynamique (STD)
 
-La STD est une modélisation numérique heure par heure du comportement thermique du bâtiment. Elle est souvent demandée pour anticiper le confort d'été, dimensionner finement les systèmes de rafraîchissement passif ou valider un projet architectural. Les tarifs se situent entre **3 500 € et 8 000 € HT** pour un bâtiment tertiaire, davantage pour les programmes complexes avec plusieurs zones thermiques distinctes.
+La STD modélise heure par heure le comportement du bâtiment sur une année climatique. Elle sert à anticiper le confort d'été, dimensionner finement les systèmes ou valider un projet architectural. Comptez **3 500 € à 8 000 € HT** pour un bâtiment tertiaire, davantage pour les programmes à nombreuses zones thermiques.
 
 ### Maîtrise d'œuvre complète
 
-C'est la mission la plus engageante. Le bureau d'étude pilote le projet du diagnostic initial jusqu'à la réception des travaux : conception, consultation des entreprises, direction de l'exécution, opérations de réception. Les honoraires représentent classiquement **8 à 12 % du montant HT des travaux**, avec des variations selon la complexité. Pour un projet de rénovation énergétique à 500 000 € HT, la maîtrise d'œuvre sera donc facturée 40 000 à 60 000 € HT.
+Du diagnostic à la réception des travaux : conception, consultation des entreprises, direction de l'exécution, opérations de réception. Les honoraires représentent classiquement **8 à 12 % du montant HT des travaux**. Pour un projet à 500 000 € HT, la maîtrise d'œuvre se situera donc entre 40 000 et 60 000 € HT.
 
-### Audit de copropriété
+### Diagnostic et projet de plan pluriannuel de travaux en copropriété
 
-Les audits énergétiques de copropriété (obligatoires dans le cadre d'un Plan Pluriannuel de Travaux depuis 2023) coûtent entre **4 000 € et 12 000 € HT** selon le nombre de lots, l'âge de l'immeuble et la complexité des équipements collectifs (chaudière centrale, ventilation mécanique, etc.).
+Le projet de plan pluriannuel de travaux, rendu progressivement obligatoire depuis 2023 selon la taille de la copropriété, s'appuie sur un diagnostic technique global et énergétique de l'immeuble. Comptez **4 000 € à 12 000 € HT** selon le nombre de lots, l'âge du bâtiment et la complexité des équipements collectifs.
 
 ## Les facteurs qui font varier les prix
 
-Plusieurs éléments expliquent les écarts parfois importants entre devis.
+**La surface et la complexité géométrique.** Un bâtiment compact de 1 000 m² se modélise bien plus vite qu'un ensemble de même surface réparti sur plusieurs niveaux décalés.
 
-**La surface et la complexité géométrique.** Un bâtiment simple monobloc de 1 000 m² se modélise plus vite qu'un bâtiment morcelé de même surface réparti sur six niveaux décalés.
+**Le nombre de systèmes techniques.** Une chaufferie gaz et une VMC simple flux se traitent rapidement ; une installation combinant pompe à chaleur, centrale double flux, groupes froid et récupération d'énergie demande plusieurs semaines d'études.
 
-**Le nombre de systèmes techniques.** Un bâtiment avec chaudière gaz centrale, VMC simple flux et quelques radiateurs électriques se traite rapidement. Un bâtiment avec PAC air/eau, CTA double flux avec récupération, groupes froid, plancher chauffant et solaire thermique demande plusieurs semaines d'études.
+**La qualité des données disponibles.** Plans, factures d'énergie, fiches techniques des équipements : si tout est documenté, l'étude démarre vite. Sinon, les relevés sur site alourdissent le temps passé.
 
-**La qualité des données disponibles.** Si les plans existent, si les factures d'énergie sont archivées, si les fiches techniques des équipements sont conservées, l'étude démarre vite. Si rien n'est documenté, le bureau d'étude doit reconstituer les informations à partir de relevés in situ, ce qui alourdit le temps passé.
+**Le niveau d'exigence des livrables.** Un rapport synthétique de vingt pages n'a pas la même valeur qu'un dossier détaillé avec notes de calcul et scénarios comparatifs modélisés.
 
-**Le niveau d'exigence des livrables.** Un rapport d'audit synthétique de 20 pages n'a pas la même valeur qu'un dossier de 120 pages avec notes de calcul détaillées, annexes techniques et scénarios comparatifs modélisés.
+## Ce que les aides financent vraiment
 
-## Les aides qui réduisent le reste à charge
+Il faut être précis, car les raccourcis sont fréquents.
 
-Bonne nouvelle : la majorité des missions de [bureau d'étude thermique](/bureau-d-etude-renovation-energetique) sont finançables par les Certificats d'Économies d'Énergie (CEE). Pour les entreprises, les fiches BAT-TH (tertiaire) et IND-UT (industrie) prennent en charge une large part des honoraires. Pour les copropriétés, MaPrimeRénov' Copropriétés couvre jusqu'à 30 % du coût de l'audit et de l'assistance à maîtrise d'ouvrage. Pour les industriels, le Fonds Chaleur et les dispositifs de l'ADEME complètent le financement.
+**Les CEE financent d'abord les travaux.** Sur les opérations standardisées, la prime CEE est calculée sur les économies d'énergie générées par les travaux, pas sur le montant des études. Mais son niveau est souvent suffisant pour compenser largement le coût des études et de la maîtrise d'œuvre, à condition que le projet ait été conçu pour respecter les exigences techniques des fiches et que l'engagement de l'obligé intervienne avant la signature des devis.
 
-Concrètement, sur un audit tertiaire facturé 6 000 € HT, le reste à charge après aides peut descendre à 2 000 € HT. Sur une maîtrise d'œuvre complète, le bureau d'étude peut souvent mobiliser 30 à 50 % d'aides cumulées.
+**Certains programmes CEE financent les études.** Des programmes spécifiques, comme ACTEE pour les collectivités, prennent en charge une partie des audits, des études et de l'accompagnement de projets de rénovation.
+
+**MaPrimeRénov' Copropriétés.** Pour les copropriétés éligibles, l'aide couvre une partie des travaux de rénovation globale et une partie de l'assistance à maîtrise d'ouvrage, qui est obligatoire dans ce cadre.
+
+**Les dispositifs de l'ADEME.** Pour les projets industriels et les réseaux de chaleur, le Fonds Chaleur et les appels à projets de l'ADEME peuvent soutenir les études de faisabilité et les investissements.
 
 ## Comment structurer un bon devis
 
-Un devis clair doit comporter : le périmètre précis de la mission (ce qui est inclus et ce qui ne l'est pas), le rétroplanning avec les jalons clés, les livrables attendus, le tarif forfaitaire ou le détail des postes, les modalités de facturation, les conditions de révision en cas d'évolution du programme. Méfiez-vous des devis très brefs ou très bas : ils cachent souvent des sous-estimations qui se traduiront en avenants en cours de mission.
+Un devis clair comporte le périmètre précis de la mission, le rétroplanning, les livrables attendus, le tarif forfaitaire ou le détail des postes, les modalités de facturation et les conditions de révision en cas d'évolution du programme. Méfiez-vous des devis très brefs ou très bas : ils se traduisent souvent en avenants en cours de mission.
 
 ## En pratique
 
-Pour estimer le budget de votre bureau d'étude, partez de la règle simple : 1 à 2 % du montant HT des travaux pour un audit seul, 8 à 12 % pour une maîtrise d'œuvre complète. Déduisez ensuite 30 à 50 % d'aides CEE et publiques mobilisables. Le reste à charge réel est souvent très supportable au regard des économies générées sur le projet.
+Pour estimer votre budget d'études, partez d'une règle simple : 1 à 2 % du montant HT des travaux pour un audit seul, 8 à 12 % pour une maîtrise d'œuvre complète. Évaluez ensuite, avant tout engagement, le montant des CEE et des aides mobilisables sur les travaux : c'est lui qui détermine le reste à charge réel du projet.
 
-[Demandez un devis personnalisé](/contactez-nous) à Kilowater : nous vous rappelons sous 48h avec une première analyse de votre projet et un pré-chiffrage argumenté.`,
+[Évaluez le potentiel CEE de vos travaux](/accompagnement-cee) avec Kilowater : nous chiffrons la valorisation mobilisable avant que vous ne lanciez vos consultations.`,
   },
 
   {
@@ -697,10 +907,10 @@ Pour estimer le budget de votre bureau d'étude, partez de la règle simple : 1 
     date: "10 avril 2026",
     image:
       "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=900&q=80",
-    icon: Scale,
+    icon: "Scale",
     content: `## Deux métiers, un même bâtiment
 
-Sur un projet de construction ou de rénovation, plusieurs bureaux d'étude interviennent en parallèle : structure, thermique, fluides, acoustique, électricité, environnement. Parmi eux, le [bureau d'étude thermique](/bureau-d-etude-renovation-energetique) et le bureau d'étude fluides (souvent abrégés BET thermique et BET fluides) sont les plus directement liés à la performance énergétique. Leurs périmètres se recouvrent en partie, ce qui explique la confusion fréquente. Ils sont pourtant complémentaires et remplissent des rôles bien distincts.
+Sur un projet de construction ou de rénovation, plusieurs bureaux d'étude interviennent en parallèle : structure, thermique, fluides, acoustique, électricité, environnement. Parmi eux, le bureau d'étude thermique et le bureau d'étude fluides (souvent abrégés BET thermique et BET fluides) sont les plus directement liés à la performance énergétique. Leurs périmètres se recouvrent en partie, ce qui explique la confusion fréquente. Ils sont pourtant complémentaires et remplissent des rôles bien distincts.
 
 ## Le bureau d'étude thermique : l'enveloppe et la performance
 
@@ -734,9 +944,13 @@ Autre exemple : la gestion de la ventilation. Le BET thermique évalue les besoi
 
 ## Quand cumuler les deux approches ?
 
-Sur les projets de rénovation énergétique ambitieux — tertiaire, industrie, copropriétés —, disposer d'un [bureau d'étude en rénovation énergétique](/bureau-d-etude-renovation-energetique) qui maîtrise les deux périmètres offre un avantage décisif. L'interlocuteur unique garantit la cohérence technique, raccourcit les boucles de décision, évite les zones grises de responsabilité.
+Sur les projets de rénovation énergétique ambitieux — tertiaire, industrie, copropriétés —, confier les deux périmètres à un même cabinet, ou organiser une coordination serrée entre deux bureaux distincts, offre un avantage décisif : cohérence technique, boucles de décision raccourcies, absence de zones grises de responsabilité.
 
-C'est le modèle adopté par Kilowater : nos ingénieurs thermiciens pilotent les études de performance énergétique tout en dimensionnant les systèmes CVC adaptés. Cette double compétence nous permet de proposer à nos clients des projets intégrés, de l'audit initial jusqu'à la mise en service.
+## Le chaînon souvent oublié : le financement
+
+Thermicien et fluidien conçoivent la solution ; encore faut-il qu'elle soit finançable. Pour être valorisés en Certificats d'Économies d'Énergie, les équipements et l'isolation doivent respecter des exigences précises — performance minimale des pompes à chaleur, résistance thermique des isolants, caractéristiques des systèmes de régulation — et les pièces justificatives doivent être prévues avant le lancement des travaux.
+
+C'est là qu'intervient un partenaire CEE comme Kilowater, aux côtés des bureaux d'étude du projet : vérifier que les dimensionnements retenus correspondent aux fiches d'opérations visées, intégrer ces exigences dans les cahiers des charges, puis monter et valoriser les dossiers. Une coordination en amont évite de découvrir, une fois les devis signés, qu'un équipement ou une date d'engagement rend la prime inaccessible.
 
 ## Quand un BET spécialisé suffit-il ?
 
@@ -744,9 +958,9 @@ Tous les projets ne justifient pas cette approche intégrée. Pour un audit éne
 
 ## Conclusion
 
-BET thermique et BET fluides ne sont pas concurrents : ils sont complémentaires. Sur un projet de rénovation énergétique d'ampleur, la meilleure organisation est souvent de confier la mission à un cabinet qui maîtrise les deux spectres, ou à défaut de s'assurer d'une coordination serrée entre deux bureaux distincts.
+BET thermique et BET fluides ne sont pas concurrents : ils sont complémentaires. Sur un projet de rénovation énergétique d'ampleur, la meilleure organisation est souvent de confier la mission à un cabinet qui maîtrise les deux spectres, ou à défaut de s'assurer d'une coordination serrée entre deux bureaux distincts — en associant dès la conception l'enjeu du financement.
 
-[Parlons de votre projet](/contactez-nous) pour déterminer ensemble la bonne organisation technique.`,
+[Évaluez le potentiel CEE de votre projet](/accompagnement-cee) avec Kilowater, en lien avec vos bureaux d'étude.`,
   },
 
   {
@@ -759,12 +973,12 @@ BET thermique et BET fluides ne sont pas concurrents : ils sont complémentaires
     date: "6 avril 2026",
     image:
       "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=900&q=80",
-    icon: ShieldCheck,
+    icon: "ShieldCheck",
     content: `## Un label encadré par l'État
 
-RGE signifie Reconnu Garant de l'Environnement. Ce label, créé en 2011 par les pouvoirs publics, identifie les professionnels du bâtiment habilités à réaliser des travaux et des études en rénovation énergétique éligibles aux aides publiques : MaPrimeRénov', Certificats d'Économies d'Énergie (CEE), éco-prêt à taux zéro, TVA réduite à 5,5 %. Sans cette qualification, les artisans et les bureaux d'études ne peuvent pas faire bénéficier leurs clients des dispositifs d'aide.
+RGE signifie Reconnu Garant de l'Environnement. Ce label, créé en 2011 par les pouvoirs publics, identifie les professionnels du bâtiment habilités à réaliser des travaux et des études en rénovation énergétique éligibles aux aides publiques : Certificats d'Économies d'Énergie (CEE) pour de nombreuses opérations, MaPrimeRénov' Copropriétés, éco-prêt à taux zéro collectif. Sans cette qualification, les artisans et les bureaux d'études ne peuvent pas faire bénéficier leurs clients des dispositifs d'aide.
 
-Le label RGE se décline en deux grandes familles : RGE Travaux pour les artisans et entreprises qui exécutent les chantiers, et RGE Études pour les [bureaux d'étude en rénovation énergétique](/bureau-d-etude-renovation-energetique) et auditeurs. Ces deux catégories répondent à des référentiels différents mais partagent la même philosophie : garantir un niveau de compétence contrôlé et régulièrement vérifié.
+Le label RGE se décline en deux grandes familles : RGE Travaux pour les artisans et entreprises qui exécutent les chantiers, et RGE Études pour les bureaux d'étude en rénovation énergétique et auditeurs. Ces deux catégories répondent à des référentiels différents mais partagent la même philosophie : garantir un niveau de compétence contrôlé et régulièrement vérifié.
 
 ## Qui délivre la qualification RGE Études ?
 
@@ -808,7 +1022,7 @@ Soyons lucides : la qualification RGE Études est un filtre utile, mais elle ne 
 
 **L'étendue du cabinet varie.** Une qualification est délivrée à une structure, pas à chaque ingénieur individuellement. Un gros cabinet qualifié peut confier votre dossier à un stagiaire ou à un junior peu expérimenté. Exigez de savoir qui est l'ingénieur référent de votre projet et quelle est son expérience.
 
-**La qualification ne certifie pas l'indépendance.** Un [bureau d'étude thermique](/bureau-d-etude-renovation-energetique) qualifié peut parfaitement être une filiale d'un fabricant d'équipement ou d'un installateur. Cette situation n'est pas interdite, mais elle peut biaiser les recommandations. La qualification ne remplace pas votre vigilance sur le modèle économique du cabinet.
+**La qualification ne certifie pas l'indépendance.** Un bureau d'étude thermique qualifié peut parfaitement être une filiale d'un fabricant d'équipement ou d'un installateur. Cette situation n'est pas interdite, mais elle peut biaiser les recommandations. La qualification ne remplace pas votre vigilance sur le modèle économique du cabinet.
 
 **La qualification n'est pas un gage d'adéquation à votre projet.** Un cabinet qualifié OPQIBI 1905 (audit tertiaire) ne sera pas forcément le meilleur pour un audit industriel (1911), même s'il a le droit d'intervenir. Vérifiez que la spécialisation du cabinet correspond à votre typologie de bâtiment.
 
@@ -820,7 +1034,7 @@ Tous les organismes maintiennent un annuaire public des entreprises qualifiées.
 
 La qualification RGE Études est un prérequis indispensable pour tout bureau d'étude en rénovation énergétique sérieux en France. Elle ouvre l'accès aux aides publiques et témoigne d'un premier niveau de compétence contrôlée. Mais elle ne dispense pas de vérifier la spécialisation, l'indépendance et la méthodologie du cabinet avant de s'engager.
 
-[Kilowater est qualifié OPQIBI](/bureau-d-etude-renovation-energetique) sur les référentiels audit, études thermiques et rénovation énergétique. N'hésitez pas à nous contacter pour vérifier notre couverture sur votre projet spécifique.`,
+Vous préparez un projet et souhaitez savoir quelles qualifications conditionnent la valorisation de vos travaux en CEE ? [Contactez Kilowater](/accompagnement-cee) : nous vérifions l'éligibilité de votre projet avant tout engagement.`,
   },
 
   /* ═════════════ EXTRAS — Eau & Hydrogène ═════════════ */
@@ -835,8 +1049,7 @@ La qualification RGE Études est un prérequis indispensable pour tout bureau d'
     date: "2 avril 2026",
     image:
       "https://images.unsplash.com/photo-1498623116890-37e912163d5d?w=1200&q=80",
-    icon: Droplets,
-    featured: true,
+    icon: "Droplets",
     content: `## Un basculement silencieux
 
 Pendant des décennies, l'eau a été considérée en France comme une ressource abondante et gratuite, ou presque. Le climat tempéré, les nappes phréatiques généreuses et un réseau de distribution parmi les plus performants du monde ont nourri cette illusion. Les étés 2022, 2023 et 2024, avec leurs sécheresses historiques, leurs nappes en déficit, leurs restrictions préfectorales étendues à plus de 90 départements, ont brutalement rappelé que cette abondance n'était ni garantie ni pérenne.
@@ -887,7 +1100,7 @@ Cette situation pourrait rapidement évoluer. Le Plan Eau présenté par le gouv
 
 ## Intégrer l'eau dans la stratégie du bâtiment
 
-Pour un bureau d'étude en rénovation énergétique, l'enjeu de l'eau invite à élargir le périmètre des audits au-delà du seul carbone et de la seule énergie. Un [audit énergétique complet](/audit-energetique) peut désormais intégrer un diagnostic hydrique : mesure des consommations par usage, identification des équipements surconsommants, chiffrage des scénarios d'économie.
+Pour un propriétaire ou un gestionnaire de patrimoine, l'enjeu de l'eau invite à élargir le périmètre des audits au-delà du seul carbone et de la seule énergie. Un audit énergétique complet peut désormais intégrer un diagnostic hydrique : mesure des consommations par usage, identification des équipements surconsommants, chiffrage des scénarios d'économie.
 
 Cette approche élargie s'inscrit dans la démarche "One Water" promue par le Water Europe Research Group : considérer l'ensemble des flux d'eau du bâtiment comme un cycle fermé à optimiser, plutôt que comme une ressource infinie à consommer.
 
@@ -895,7 +1108,7 @@ Cette approche élargie s'inscrit dans la démarche "One Water" promue par le Wa
 
 L'eau n'est plus la ressource anodine qu'elle semblait être. Les bâtiments que nous rénovons aujourd'hui devront fonctionner encore cinquante ans dans un climat profondément transformé. Intégrer dès maintenant les enjeux hydriques dans la conception, au même titre que les enjeux énergétiques et carbone, relève simplement du bon sens stratégique.
 
-[Kilowater intègre l'analyse des consommations d'eau](/contactez-nous) dans ses missions d'audit tertiaire et industriel. N'hésitez pas à nous solliciter pour en savoir plus.`,
+[Kilowater intègre la dimension eau](/conseil-decarbonation) dans la stratégie de décarbonation de vos bâtiments tertiaires et industriels. N'hésitez pas à nous solliciter pour en savoir plus.`,
   },
 
   {
@@ -908,7 +1121,7 @@ L'eau n'est plus la ressource anodine qu'elle semblait être. Les bâtiments que
     date: "28 mars 2026",
     image:
       "https://images.unsplash.com/photo-1527689368864-3a821dbccc34?w=900&q=80",
-    icon: Droplets,
+    icon: "Droplets",
     content: `## La nouvelle ruée vers l'eau
 
 "L'eau sera le pétrole du XXIe siècle" — la formule, attribuée à Ismail Serageldin, vice-président de la Banque Mondiale en 1995, a longtemps paru exagérée. Trente ans plus tard, elle semble prémonitoire. Les marchés à terme sur l'eau ont été créés au NASDAQ en décembre 2020. Les fonds d'investissement spécialisés dans l'eau (Pictet-Water, BNP Paribas Aqua) ont vu leurs encours multipliés par cinq en dix ans. Plusieurs grandes foncières intègrent désormais l'empreinte hydrique dans leurs critères de gestion d'actif.
@@ -961,13 +1174,13 @@ Sur un bâtiment en exploitation, plusieurs actions permettent de renforcer la r
 
 **L'optimisation des tours aéro-réfrigérantes.** Contrôle du taux de concentration, filtration poussée, dispositifs anti-légionelles optimisés : quelques réglages peuvent réduire de 15 à 25 % la consommation d'appoint.
 
-Ces actions s'intègrent naturellement dans un projet global de [rénovation énergétique](/bureau-d-etude-renovation-energetique) et bénéficient souvent des aides CEE existantes.
+Ces actions s'intègrent naturellement dans un projet global de [rénovation énergétique](/accompagnement-cee) et bénéficient souvent des aides CEE existantes.
 
 ## L'eau comme catalyseur de valeur
 
 L'eau n'est plus un poste de coût marginal dans l'immobilier. Elle devient progressivement un critère central de valorisation patrimoniale, de gestion du risque et de conformité aux standards ESG. Les actifs sobres et résilients seront mieux valorisés, plus faciles à louer, moins exposés aux chocs réglementaires et climatiques. Les actifs vulnérables subiront une décote progressive.
 
-Pour les maîtres d'ouvrage qui engagent aujourd'hui des projets de rénovation, la prise en compte de l'eau ne doit plus être une option. Intégrer cette dimension dans [l'audit initial et la conception](/audit-energetique) coûte peu ; la négliger peut coûter cher à long terme.
+Pour les maîtres d'ouvrage qui engagent aujourd'hui des projets de rénovation, la prise en compte de l'eau ne doit plus être une option. Intégrer cette dimension dans l'audit initial et la conception coûte peu ; la négliger peut coûter cher à long terme.
 
 [Kilowater accompagne ses clients](/contactez-nous) dans l'analyse croisée énergie-eau-carbone de leurs bâtiments. Parlons de votre stratégie.`,
   },
@@ -982,7 +1195,7 @@ Pour les maîtres d'ouvrage qui engagent aujourd'hui des projets de rénovation,
     date: "22 mars 2026",
     image:
       "https://images.unsplash.com/photo-1635048260151-f4a04c7e520f?w=900&q=80",
-    icon: FlaskConical,
+    icon: "FlaskConical",
     content: `## Une promesse énergétique ambiguë
 
 L'hydrogène fascine. Présenté tour à tour comme le carburant du futur, le chaînon manquant de la transition énergétique ou la fausse bonne idée surmédiatisée, il occupe une place disproportionnée dans les débats publics. Entre les annonces d'investissements massifs (France : 7 milliards d'euros engagés par le Plan Hydrogène, Europe : 430 milliards dans le cadre du Green Deal, Japon et Corée du Sud en tête sur les piles à combustible) et les critiques sévères de scientifiques appelant à la mesure, difficile de se faire une opinion équilibrée.
@@ -1041,7 +1254,7 @@ Pour le résidentiel et le tertiaire, l'hydrogène ne s'impose pas comme une sol
 
 **Les applications de niche.** Certains bâtiments industriels cohabitant avec des procédés utilisant de l'hydrogène peuvent valoriser les co-produits thermiques ou utiliser l'hydrogène pour des applications spécifiques. Pertinent au cas par cas, pas une règle générale.
 
-Autrement dit : pour un [bureau d'étude en rénovation énergétique](/bureau-d-etude-renovation-energetique) travaillant sur un bâtiment résidentiel, tertiaire ou industriel standard, l'hydrogène n'est généralement pas une solution à retenir dans les scénarios d'optimisation. Les pompes à chaleur, les réseaux de chaleur, la géothermie, l'isolation et la sobriété restent les leviers prioritaires.
+Autrement dit : pour un projet de rénovation énergétique sur un bâtiment résidentiel collectif, tertiaire ou industriel standard, l'hydrogène n'est généralement pas une solution à retenir dans les scénarios d'optimisation. Les pompes à chaleur, les réseaux de chaleur, la géothermie, l'isolation et la sobriété restent les leviers prioritaires.
 
 ## Les projets pilotes en France et en Europe
 
@@ -1064,6 +1277,15 @@ L'hydrogène vert est un pilier indispensable de la décarbonation mondiale — 
 ];
 
 /* ─────────── Helpers ─────────── */
+/** Données d'un article utiles aux listes (sans le contenu, sérialisables). */
+export type ArticleSummary = Omit<Article, "content">;
+
+export function toSummary(article: Article): ArticleSummary {
+  const summary: Partial<Article> = { ...article };
+  delete summary.content;
+  return summary as ArticleSummary;
+}
+
 export function getAllArticles(): Article[] {
   return ARTICLES;
 }

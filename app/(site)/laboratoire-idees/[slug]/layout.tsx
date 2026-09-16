@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getArticleBySlug, getAllArticles } from "@/lib/articles";
+import { getArticleAlternates } from "@/lib/i18n/routes";
 
 const BASE_URL = "https://www.kilowater.fr";
 
@@ -37,7 +38,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     keywords: [
       article.category.toLowerCase(),
       "rénovation énergétique",
-      "bureau d'étude",
+      "décarbonation",
       "kilowater",
     ],
     openGraph: {
@@ -55,9 +56,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         },
       ],
     },
-    alternates: {
-      canonical: `${BASE_URL}/laboratoire-idees/${slug}`,
-    },
+    alternates: getArticleAlternates(slug, "fr"),
   };
 }
 

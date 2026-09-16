@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description: "Kilowater, partenaire décarbonation & énergie, vous accompagne dans vos dossiers CEE : calcul kWh cumac, montage de dossier, fiches BAR-TH et BAT-TH, valorisation via mandat EMMY. Pour copropriétés, bailleurs, tertiaire, industrie et collectivités.",
   keywords: [
     "accompagnement CEE",
-    "bureau d'étude CEE",
+    "partenaire CEE",
     "certificats d'économies d'énergie",
     "kWh cumac",
     "fiches CEE tertiaire",

@@ -12,7 +12,7 @@ export default function AuditEnergetiqueParisPage() {
       canonical="https://www.kilowater.fr/audit-energetique-paris"
       keyPoints={[
         {
-          title: "Bureau d'étude implanté à Paris 7e",
+          title: "Une équipe implantée à Paris 7e",
           description: "115 rue Saint-Dominique. Une équipe locale, disponible pour visite sur site sous 5 jours ouvrés.",
         },
         {
@@ -82,7 +82,7 @@ export default function AuditEnergetiqueParisPage() {
         {
           question: "Combien coûte un audit énergétique à Paris ?",
           answer:
-            "Le coût d'un audit énergétique varie selon la typologie : entre 800 € et 1 500 € pour une maison individuelle, entre 5 000 € et 15 000 € pour une copropriété selon sa taille, et de 8 000 € à 30 000 € pour un bâtiment tertiaire. Une partie est financée par MaPrimeRénov' Copropriété ou les CEE selon les cas.",
+            "Le coût d'un audit énergétique varie selon la typologie : entre 5 000 € et 15 000 € pour une copropriété selon sa taille, et de 8 000 € à 30 000 € pour un bâtiment tertiaire. Une partie est financée par MaPrimeRénov' Copropriété ou les CEE selon les cas.",
         },
         {
           question: "L'audit énergétique est-il obligatoire pour ma copropriété parisienne ?",
@@ -92,7 +92,7 @@ export default function AuditEnergetiqueParisPage() {
         {
           question: "Quels arrondissements de Paris couvrez-vous ?",
           answer:
-            "Tous les arrondissements de Paris (1er au 20e) ainsi que la petite couronne (92, 93, 94). Notre bureau est situé rue Saint-Dominique dans le 7e arrondissement, ce qui nous permet d'intervenir rapidement sur l'ensemble de l'agglomération parisienne.",
+            "Tous les arrondissements de Paris (1er au 20e) ainsi que la petite couronne (92, 93, 94). Nos locaux sont situés rue Saint-Dominique dans le 7e arrondissement, ce qui nous permet d'intervenir rapidement sur l'ensemble de l'agglomération parisienne.",
         },
         {
           question: "Quelle est la différence entre un audit énergétique et un DPE ?",

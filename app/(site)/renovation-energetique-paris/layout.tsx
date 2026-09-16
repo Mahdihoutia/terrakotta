@@ -3,9 +3,9 @@ import type { Metadata } from "next";
 const URL = "https://www.kilowater.fr/renovation-energetique-paris";
 
 export const metadata: Metadata = {
-  title: "Rénovation énergétique à Paris — Bureau d'étude Kilowater",
+  title: "Rénovation énergétique à Paris — Copropriétés et bâtiments tertiaires",
   description:
-    "Rénovation énergétique à Paris : audit, maîtrise d'œuvre, accompagnement aides. Spécialiste du bâti haussmannien et de la copropriété parisienne. Bureau d'étude Kilowater, Paris 7e.",
+    "Rénovation énergétique à Paris : audit, maîtrise d'œuvre, accompagnement aides. Spécialiste du bâti haussmannien et de la copropriété parisienne. Kilowater, partenaire décarbonation & énergie, Paris 7e.",
   keywords: [
     "rénovation énergétique Paris",
     "rénovation copropriété Paris",
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical: URL },
   openGraph: {
-    title: "Rénovation énergétique à Paris — Bureau d'étude Kilowater",
+    title: "Rénovation énergétique à Paris | Kilowater — Partenaire décarbonation & énergie",
     description:
       "Audit, maîtrise d'œuvre et accompagnement aides pour rénover votre bâtiment à Paris. Spécialiste copropriété et bâti haussmannien.",
     url: URL,

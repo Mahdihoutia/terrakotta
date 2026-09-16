@@ -2,10 +2,10 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Kilowater — Bureau d'étude en rénovation énergétique",
+    name: "Kilowater — Partenaire décarbonation & énergie",
     short_name: "Kilowater",
     description:
-      "Bureau d'étude spécialisé en rénovation énergétique des bâtiments tertiaires et industriels. Audit énergétique, accompagnement CEE, maîtrise d'œuvre.",
+      "Partenaire décarbonation & énergie des entreprises : étude de gisement CEE, conseil en décarbonation et courtage de produits environnementaux.",
     start_url: "/",
     display: "standalone",
     background_color: "#FAF8F5",
