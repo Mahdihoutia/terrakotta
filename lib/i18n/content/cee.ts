@@ -17,12 +17,12 @@ const fr = {
     title: "Qu'est-ce que les certificats d'économies d'énergie ?",
     columns: [
       [
-        "Le dispositif des certificats d'économies d'énergie, instauré par la loi POPE de 2005, oblige les grandes entreprises de l'énergie — appelées les **obligés** (EDF, Engie, Total Énergies, TotalEnergies Marketing France…) — à promouvoir activement l'efficacité énergétique auprès de leurs clients. Pour satisfaire leurs obligations, ces acteurs financent des travaux d'économies d'énergie réalisés par des tiers, en échange de quoi ils reçoivent des certificats attestant des économies générées.",
-        "Chaque certificat représente 1 kWh cumac — c'est-à-dire 1 kilowattheure d'énergie finale économisé, **cumulé sur la durée de vie de l'équipement** et actualisé à un taux de 4 % par an. Concrètement, une isolation de combles génère plusieurs dizaines de milliers de kWh cumac, et chaque MWh cumac se négocie entre 5 et 10 € selon les conditions de marché.",
+        "Instauré par la loi POPE de 2005, le dispositif oblige les grands fournisseurs d'énergie — les **obligés** (EDF, Engie, TotalEnergies…) — à financer des travaux d'économies d'énergie réalisés par des tiers. En échange, ils reçoivent des certificats attestant des économies générées.",
+        "Chaque certificat vaut 1 kWh cumac : un kilowattheure économisé, **cumulé sur la durée de vie de l'équipement** et actualisé à 4 % par an. Le MWh cumac se négocie aujourd'hui entre 5 et 10 €.",
       ],
       [
-        "Pour structurer ce système, le ministère chargé de l'énergie publie un catalogue de **fiches d'opérations standardisées**, classées par secteur (résidentiel, tertiaire, industriel, agricole, transport, réseaux) et par type de travaux. Chaque fiche définit les conditions d'éligibilité, les critères techniques à respecter et la formule de calcul des kWh cumac générés.",
-        "Nous sommes actuellement dans la **6ᵉ période CEE (P6), qui court de 2026 à 2030**. L'objectif national fixé pour cette période est de **5 250 TWh cumac**, un niveau d'ambition inédit qui témoigne de la montée en puissance du dispositif. Cette période introduit de nouvelles fiches et révise certains calculs, rendant l'accompagnement par un spécialiste CEE plus que jamais nécessaire pour sécuriser vos dossiers.",
+        "Le ministère chargé de l'énergie publie un catalogue de **fiches d'opérations standardisées**, classées par secteur et par type de travaux. Chaque fiche fixe les conditions d'éligibilité, les critères techniques et la formule de calcul des kWh cumac.",
+        "Nous sommes dans la **6ᵉ période (P6), de 2026 à 2030**, avec un objectif national de **5 250 TWh cumac** — un niveau inédit. Nouvelles fiches, calculs révisés : l'enjeu est de sécuriser vos dossiers.",
       ],
     ],
   },
@@ -179,12 +179,12 @@ const en: CeeContent = {
     title: "What are Energy Efficiency Certificates?",
     columns: [
       [
-        "The Energy Efficiency Certificates scheme, introduced by France's 2005 POPE Act, requires major energy companies — known as **obligated parties** (EDF, Engie, TotalEnergies…) — to actively promote energy efficiency among their customers. To meet their obligations, these companies fund energy-saving works carried out by third parties, and in return receive certificates attesting to the savings achieved.",
-        "Each certificate represents 1 kWh cumac — that is, 1 kilowatt-hour of final energy saved, **accumulated over the lifetime of the equipment** and discounted at 4% per year. In practice, loft insulation generates tens of thousands of kWh cumac, and each MWh cumac trades at €5 to €10 depending on market conditions.",
+        "Introduced by France's 2005 POPE Act, the scheme requires major energy suppliers — the **obligated parties** (EDF, Engie, TotalEnergies…) — to fund energy-saving works carried out by third parties. In return, they receive certificates attesting to the savings achieved.",
+        "Each certificate is worth 1 kWh cumac: one kilowatt-hour saved, **accumulated over the lifetime of the equipment** and discounted at 4% per year. One MWh cumac currently trades at €5 to €10.",
       ],
       [
-        "To structure the system, the French ministry in charge of energy publishes a catalogue of **standardised operation sheets**, organised by sector (residential, commercial, industrial, agricultural, transport, networks) and type of works. Each sheet sets out eligibility conditions, technical criteria and the formula for calculating the kWh cumac generated.",
-        "We are currently in the **6th EEC period (P6), running from 2026 to 2030**. The national target for this period is **5,250 TWh cumac**, an unprecedented level of ambition that reflects the growing importance of the scheme. This period introduces new operation sheets and revises some calculations, making expert EEC support more necessary than ever to secure your applications.",
+        "The French ministry in charge of energy publishes a catalogue of **standardised operation sheets**, organised by sector and type of works. Each sheet sets out the eligibility conditions, the technical criteria and the formula for calculating the kWh cumac.",
+        "We are in the **6th period (P6), running from 2026 to 2030**, with a national target of **5,250 TWh cumac** — an unprecedented level. New sheets, revised calculations: the challenge is to secure your applications.",
       ],
     ],
   },
