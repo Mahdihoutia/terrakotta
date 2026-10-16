@@ -59,8 +59,10 @@ export default function DecarbonisationPage({ locale, content, relatedDict }: Pr
             className="object-cover"
             priority
           />
-          <div className="absolute inset-0 bg-[#0D1B35]/85" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0D1B35] via-[#0D1B35]/60 to-transparent" />
+          {/* Voiles : protègent le texte à gauche, laissent la photo respirer à droite */}
+          <div className="absolute inset-0 bg-[#0D1B35]/80 md:bg-[#0D1B35]/58" />
+          <div className="absolute inset-0 hidden md:block bg-gradient-to-r from-[#0D1B35]/75 via-[#0D1B35]/45 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#0D1B35] to-transparent" />
         </div>
         <div className="relative z-10 mx-auto max-w-[1400px] px-6 md:px-10 lg:px-16">
           <motion.div
@@ -143,8 +145,21 @@ export default function DecarbonisationPage({ locale, content, relatedDict }: Pr
       </section>
 
       {/* Méthode */}
-      <section className="py-24 md:py-32 bg-[#0D1B35]">
-        <div className="mx-auto max-w-[1400px] px-6 md:px-10 lg:px-16">
+      <section className="relative py-24 md:py-32 bg-[#0D1B35] overflow-hidden">
+        <div className="absolute inset-0" aria-hidden="true">
+          <Image
+            src="https://images.unsplash.com/photo-1431576901776-e539bd916ba2?w=1920&q=80"
+            alt=""
+            fill
+            sizes="100vw"
+            className="object-cover brightness-50"
+          />
+          {/* Voile : le fond reste une texture, le texte garde son contraste AA */}
+          <div className="absolute inset-0 bg-[#0D1B35]/45" />
+          <div className="absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-[#0D1B35] via-[#0D1B35]/70 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#0D1B35] to-transparent" />
+        </div>
+        <div className="relative z-10 mx-auto max-w-[1400px] px-6 md:px-10 lg:px-16">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
             <div className="lg:col-span-4">
               <p className="text-[0.72rem] uppercase tracking-[0.25em] text-[#60A5FA] mb-4">
@@ -164,16 +179,16 @@ export default function DecarbonisationPage({ locale, content, relatedDict }: Pr
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.15, duration: 0.6 }}
-                  className="flex gap-6 border-b border-[#1B3356] pb-8 last:border-0"
+                  className="flex gap-6 border-b border-white/15 pb-8 last:border-0"
                 >
-                  <span className="font-display text-3xl font-light text-[#60A5FA]/50 shrink-0">
+                  <span className="font-display text-3xl font-light text-[#93C5FD]/70 shrink-0">
                     {String(i + 1).padStart(2, "0")}
                   </span>
                   <div>
                     <h3 className="font-display text-xl text-[#F5FAFF] mb-2">
                       {item.title}
                     </h3>
-                    <p className="text-[0.9rem] text-[#7BAAC8] leading-relaxed">
+                    <p className="text-[0.9rem] text-[#BFDBFE] leading-relaxed">
                       {item.text}
                     </p>
                   </div>

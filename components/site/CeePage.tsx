@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 import Link from "next/link";
 import RelatedLinks from "@/components/site/RelatedLinks";
 import Emphasis from "@/components/site/Emphasis";
@@ -163,15 +164,29 @@ export default function CeePage({ locale, content, relatedDict }: Props) {
       />
 
       {/* ── 1. HERO ─────────────────────────────── */}
-      <section className="bg-[#FAF8F5] pb-20 pt-24 md:pt-32">
-        <div className="mx-auto max-w-[1400px] px-6 md:px-10 lg:px-16">
+      <section className="relative overflow-hidden bg-[#FAF8F5] pb-20 pt-24 md:pt-32">
+        <div className="absolute inset-0" aria-hidden="true">
+          <Image
+            src="https://images.unsplash.com/photo-1515263487990-61b07816b324?w=1920&q=80"
+            alt=""
+            fill
+            sizes="100vw"
+            className="object-cover"
+            priority
+          />
+          {/* Voile crème : la photo reste un lavis, le texte garde son contraste AA */}
+          <div className="absolute inset-0 bg-[#FAF8F5]/[0.76]" />
+          <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[#FAF8F5] to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#FAF8F5] to-transparent" />
+        </div>
+        <div className="relative z-10 mx-auto max-w-[1400px] px-6 md:px-10 lg:px-16">
           <div className="max-w-3xl">
             <motion.p
               custom={0}
               variants={fadeUp}
               initial="hidden"
               animate="visible"
-              className="mb-4 text-[0.72rem] uppercase tracking-[0.25em] text-[#2563EB]"
+              className="mb-4 text-[0.72rem] uppercase tracking-[0.25em] text-[#1D4ED8]"
             >
               {content.hero.eyebrow}
             </motion.p>
@@ -449,8 +464,21 @@ export default function CeePage({ locale, content, relatedDict }: Props) {
       </section>
 
       {/* ── 7. CTA ───────────────────────────────── */}
-      <section className="bg-[#F5FAFF] py-20 md:py-28">
-        <div className="mx-auto max-w-[1400px] px-6 md:px-10 lg:px-16">
+      <section className="relative overflow-hidden bg-[#F5FAFF] py-20 md:py-28">
+        <div className="absolute inset-0" aria-hidden="true">
+          <Image
+            src="https://images.unsplash.com/photo-1497604401993-f2e922e5cb0a?w=1920&q=80"
+            alt=""
+            fill
+            sizes="100vw"
+            className="object-cover"
+          />
+          {/* Voile bleuté : la photo reste un lavis, le texte garde son contraste AA */}
+          <div className="absolute inset-0 bg-[#F5FAFF]/70" />
+          <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[#F5FAFF] to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#F5FAFF] to-transparent" />
+        </div>
+        <div className="relative z-10 mx-auto max-w-[1400px] px-6 md:px-10 lg:px-16">
           <motion.div
             custom={0}
             variants={fadeUp}
@@ -459,7 +487,7 @@ export default function CeePage({ locale, content, relatedDict }: Props) {
             viewport={{ once: true }}
             className="mx-auto max-w-2xl text-center"
           >
-            <p className="mb-3 text-[0.72rem] uppercase tracking-[0.25em] text-[#2563EB]">
+            <p className="mb-3 text-[0.72rem] uppercase tracking-[0.25em] text-[#1D4ED8]">
               {content.cta.eyebrow}
             </p>
             <h2 className="font-display mb-5 text-3xl font-bold text-[#0D1B35] md:text-4xl">

@@ -59,8 +59,10 @@ export default function BrokeragePage({ locale, content, relatedDict }: Props) {
             className="object-cover"
             priority
           />
-          <div className="absolute inset-0 bg-[#0D1B35]/85" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0D1B35] via-[#0D1B35]/60 to-transparent" />
+          {/* Voiles : protègent le texte à gauche, laissent la photo respirer à droite */}
+          <div className="absolute inset-0 bg-[#0D1B35]/80 md:bg-[#0D1B35]/58" />
+          <div className="absolute inset-0 hidden md:block bg-gradient-to-r from-[#0D1B35]/75 via-[#0D1B35]/45 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#0D1B35] to-transparent" />
         </div>
         <div className="relative z-10 mx-auto max-w-[1400px] px-6 md:px-10 lg:px-16">
           <motion.div
@@ -143,8 +145,21 @@ export default function BrokeragePage({ locale, content, relatedDict }: Props) {
       </section>
 
       {/* Points de vigilance */}
-      <section className="py-24 md:py-32 bg-[#0D1B35]">
-        <div className="mx-auto max-w-[1400px] px-6 md:px-10 lg:px-16">
+      <section className="relative py-24 md:py-32 bg-[#0D1B35] overflow-hidden">
+        <div className="absolute inset-0" aria-hidden="true">
+          <Image
+            src="https://images.unsplash.com/photo-1511497584788-876760111969?w=1920&q=80"
+            alt=""
+            fill
+            sizes="100vw"
+            className="object-cover brightness-50"
+          />
+          {/* Voile : le fond reste une texture, le texte garde son contraste AA */}
+          <div className="absolute inset-0 bg-[#0D1B35]/45" />
+          <div className="absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-[#0D1B35] via-[#0D1B35]/70 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#0D1B35] to-transparent" />
+        </div>
+        <div className="relative z-10 mx-auto max-w-[1400px] px-6 md:px-10 lg:px-16">
           <div className="max-w-2xl mb-16">
             <p className="text-[0.72rem] uppercase tracking-[0.25em] text-[#60A5FA] mb-4">
               {content.vigilance.eyebrow}
@@ -162,10 +177,10 @@ export default function BrokeragePage({ locale, content, relatedDict }: Props) {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.12, duration: 0.6 }}
-                className="border-t border-[#1B3356] pt-6"
+                className="border-t border-white/15 pt-6"
               >
                 <h3 className="font-display text-xl text-[#F5FAFF] mb-3">{item.title}</h3>
-                <p className="text-[0.9rem] text-[#7BAAC8] leading-[1.7]">{item.text}</p>
+                <p className="text-[0.9rem] text-[#BFDBFE] leading-[1.7]">{item.text}</p>
               </motion.div>
             ))}
           </div>
