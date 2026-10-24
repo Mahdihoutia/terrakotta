@@ -131,10 +131,10 @@ export const fr = {
       scroll: "Défiler",
     },
     figures: [
-      { value: "150+", label: "Projets accompagnés" },
+      { value: "250+", label: "Projets accompagnés" },
       { value: "40%", label: "Économies d'énergie moyennes" },
       { value: "1 seul", label: "Interlocuteur, de l'audit à la prime" },
-      { value: "+25 GWh", label: "D'économies valorisées" },
+      { value: "+350 GWh", label: "D'économies valorisées" },
     ],
     offer: {
       eyebrow: "Notre offre",

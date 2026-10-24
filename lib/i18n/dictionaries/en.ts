@@ -148,10 +148,10 @@ export const en: Dictionary = {
       scroll: "Scroll",
     },
     figures: [
-      { value: "150+", label: "Projects delivered" },
+      { value: "250+", label: "Projects delivered" },
       { value: "40%", label: "Average energy savings" },
       { value: "1", label: "Point of contact, from audit to incentive" },
-      { value: "25+ GWh", label: "Of energy savings monetised" },
+      { value: "350+ GWh", label: "Of energy savings monetised" },
     ],
     offer: {
       eyebrow: "Our offering",
